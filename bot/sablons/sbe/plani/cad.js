@@ -584,10 +584,10 @@ function elevation(parent, v, side, opt = { levels: true }) {
   el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth, stroke: C.ink, "stroke-width": 45, "data-keep": 1 }, g);
 
   // wall cladding
-  const wallPoly = gable ? [P(0, -fT), P(span, -fT), P(span, roofTopW), P(span / 2, ridgeTop), P(0, roofTopW)] : [P(0, -fT), P(span, -fT), P(span, FAS ? eEdge : ROOF.eave), P(0, FAS ? eEdge : ROOF.eave)];
+  const wallPoly = gable ? [P(0, -fT), P(span, -fT), P(span, roofTopW), P(span / 2, ridgeTop), P(0, roofTopW)] : [P(0, -fT), P(span, -fT), P(span, FAS ? eEdge : eEdge + thV - 20), P(0, FAS ? eEdge : eEdge + thV - 20)];
   const wid = "wall-" + side + "-" + Math.random().toString(36).slice(2, 7);
   el("polygon", { points: wallPoly.join(" ") }, el("clipPath", { id: wid }, g));
-  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeTop : (FAS ? eEdge : ROOF.eave)), fT, side.length);
+  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);
   el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);
   if (opt.houseH !== false && fT) {   // [MM] viena mēra ķēde: mājas augstums no grīdas paneļa apakšas (−G1) līdz jumta virsmai (kore)
     const hy0 = -ridgeTop, hy1 = fT, hx = span + 900, Ht = (window.AR && AR.projekts && AR.projekts.ievade && AR.projekts.ievade.augstums) || Math.round(ridgeTop + fT);
