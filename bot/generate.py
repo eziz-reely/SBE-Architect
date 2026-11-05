@@ -355,6 +355,7 @@ if __name__ == '__main__':
     for p in ps:   # model.json: ievade.augstums = klienta kores augstums (no paneļa apakšas), augstums_0 = kore virs ±0,000
         mj = json.load(open(p, encoding='utf-8'))
         mj['ievade'] = {**mj.get('ievade', {}), 'augstums': a.augstums, 'augstums_0': H0}
+        mj['entryInChain'] = True   # ārdurvju platums (1000) ārsienas mēru ķēdē
         if a.viesistaba_skapis == 'ne':   # tikai izņem skapi dzīvojamajā, pārējais plānojums paliek tāds pats
             def _liv(f):
                 return any(r['n'].startswith('Dzīvojam') and any(x <= f[1] + 1 and f[1] + f[3] <= x + w + 1 and y <= f[2] + 1 and f[2] + f[4] <= y + h + 1
