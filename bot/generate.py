@@ -336,12 +336,21 @@ if __name__ == '__main__':
     import planlib   # zināšanu bibliotēka: tikai brīdinājumi, noformējumu nemaina
     for x in planlib.check_input(a.garums, a.platums, a.augstums):
         print('BRĪDINĀJUMS:', x)
+    # [MM] Mājas (kores) augstums ir no grīdas paneļa APAKŠAS; arhitektūras atzīmes ir no ±0,000 (grīdas pīrāga augšas).
+    # Stabveida pamatiem ģeometrijai kore virs ±0,000 = augstums − grīdas pīrāgs (G1); platnei grīdas paneļa nav.
+    pam = a.pamati or CFG['projekts'].get('pamati', 'stabveida')
+    flT = sum(l[1] for l in CFG['layers']['G1']['layers']) if pam == 'stabveida' else 0
+    H0 = a.augstums - flT
     if a.varianti > 0:
-        ps = variants(a.garums, a.platums, a.augstums, a.varianti, a.mansards == 'ja', pr, a.gulamistabas, a.vannas,
+        ps = variants(a.garums, a.platums, H0, a.varianti, a.mansards == 'ja', pr, a.gulamistabas, a.vannas,
                       tuple(f.strip().upper() for f in a.forma.split(',')), a.id)
     else:
-        p = model(a.garums, a.platums, a.augstums, a.id, pr)
+        p = model(a.garums, a.platums, H0, a.id, pr)
         ps = [bez_mansarda(p) if a.mansards == 'ne' else p]
+    for p in ps:   # model.json: ievade.augstums = klienta kores augstums (no paneļa apakšas), augstums_0 = kore virs ±0,000
+        mj = json.load(open(p, encoding='utf-8'))
+        mj['ievade'] = {**mj.get('ievade', {}), 'augstums': a.augstums, 'augstums_0': H0}
+        json.dump(mj, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     from ref import main as ref_main   # 3D references bildes Gemini vizualizācijām (visi toņi)
     for p in ps:
         for x in planlib.check_model(p):

@@ -61,7 +61,7 @@ def render(m, tone_key):
     W, D = m['W'], m['D']
     pitch = m['jumts']['pitch']
     eave = m['jumts']['eave']
-    ridge = m['ievade']['augstums']
+    ridge = m['ievade'].get('augstums_0', m['ievade']['augstums'])   # kore virs ±0,000
     floorT = sum(l[1] for l in CFG['layers']['G1']['layers'])
     cam = Cam(m)
     g0 = cam.ground
