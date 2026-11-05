@@ -23,7 +23,7 @@ Python 3, Node.js ar Playwright (pārbaudei un ekrānuzņēmumiem). Vizualizāci
 
 ## Kā lietot (īsi)
 
-1. **Jauns modelis:** jaunā threadā raksti `/sbe` (vai "jauns modelis"). Atbildi uz kartīti ar ķeksīšiem: gabarīti (garums × platums × kores augstums), nosaukums, tonis, mansards. Pārējam ir noklusējumi.
+1. **Jauns modelis:** jaunā threadā raksti `/sbe` (vai "jauns modelis"). Atbildi čatā uz jautājumu sarakstu ar ķeksīšiem: gabarīti (garums × platums × kores augstums), nosaukums, tonis, mansards. Pārējam ir noklusējumi.
 2. **Bots uztaisa vienu plānojumu (V01)**, A3 lapu LV un EN un pārbauda to ar `rules_check` un `mm-check`. Tu redzi plāna bildi.
 3. **Tu apstiprini vai labo.** Ja kaut kas nav labi, raksti `/editbot` ar numurētiem punktiem un bildi. Bots to ieraksta noteikumos un nākamie modeļi to ievēro.
 4. **Tikai pēc apstiprinājuma** raksti, ka gribi vizualizācijas. Tām vajag `GEMINI_API_KEY` (iestatīts projekta vidē `gemini`).

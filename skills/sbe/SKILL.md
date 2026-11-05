@@ -12,8 +12,8 @@ Botam ir divas sadaļas: **KLIENTA PROJEKTS** (aktīvā, visu dara šeit) un **R
 
 Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jautājumus OBLIGĀTI uzdod kā atķeksējamus variantus:
 - Claude Code datorā: rīks AskUserQuestion (ķeksīši).
-- Projekta thread: kartīte `writing_draft_v0` (post_widget) ar visiem jautājumiem un noklusējumiem jau atzīmētiem [x]. Lietotājs pārliek [x], ieraksta gabarītus un nosaukumu un nosūta atpakaļ.
-- Numurēts saraksts tikai tad, ja neviena no tiem nav. Pie katra jautājuma noklusējums ir atzīmēts.
+- Projekta thread: jautājumus raksti PARASTĀ ČATA ZIŅĀ (post_message) kā numurētu sarakstu ar [x]/[ ] variantiem un noklusējumiem jau atzīmētiem [x]. Kartīti (`writing_draft_v0`, post_widget) NELIETO, lietotājam tā ir neērta. Lietotājs atbild čatā ar numuriem (piem. "1 ok, 2 Freya, 3 sarkans"), ieraksta gabarītus un nosaukumu. Kas nav pateikts, paliek noklusējums.
+- Numurēts saraksts čatā arī tad, ja AskUserQuestion nav pieejams. Pie katra jautājuma noklusējums ir atzīmēts.
 
 1. **Fāze**: [x] Klienta projekts (uz lapas "SKICES PROJEKTS")   [ ] Ražošanas projekts (vēl nav pieejams)
 2. **Gabarīti** (jāieraksta): garums × platums × kores augstums, mm. Piemērs: 8570 × 3500 × 4000.
