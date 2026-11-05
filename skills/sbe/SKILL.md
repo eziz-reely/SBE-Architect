@@ -58,6 +58,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
 
 ## 3. KLIENTA PROJEKTS: noteikumi
 
+0. **Mansarda plānam pēc noklusējuma ir tie paši ārējie izmēri (garums, platums) kā 1. stāvam**, ar asīm tuvu izmēru ķēdēm (axOff 1650). Neslēpt (`noDims`).
 1. **Rakstlaukums ir dizainisks un vertikāls**, labajā joslā (x 247–287). No augšas uz leju tajā ir:
    - MM HOMES zīmols tumšā laukā;
    - fāzes nosaukums: uz lapas "SKICES PROJEKTS" (EN "SKETCH DESIGN"), iekšēji fāze saucas klienta projekts;

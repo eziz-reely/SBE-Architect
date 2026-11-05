@@ -147,17 +147,17 @@ function modelSheet(v) {
   sheetHeading(svg, 26, y, 215, tx.plan);
   mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly));
 
-  // 2) loft: short axes, no outer chains; its own room table beside it
+  // 2) loft: tie paši ārējie izmēri (garums, platums) kā 1. stāvam; sava telpu tabula blakus
   if (lf) {
-    const LY = y + 23;
-    cadPlan(el("g", { "data-block": "loft", transform: `translate(${PX} ${LY}) scale(${k})` }, svg), lf, { furniture: true, axes: true, levels: true, tag: "-loft", tags: false, axOff: 900, noDims: true });
+    const LY = y + 27;
+    cadPlan(el("g", { "data-block": "loft", transform: `translate(${PX} ${LY}) scale(${k})` }, svg), lf, { furniture: true, axes: true, levels: true, tag: "-loft", tags: false, axOff: 1650 });
     mmTable(svg, TX, LY - 8, TW, tx.expl, tx.f2, mmRooms(lf), L);
-    y = LY + d + 21;
+    y = LY + d + 27;
     sheetHeading(svg, 26, y, 215, tx.loft);
   }
 
   // 3) four facades, two rows; long side left, gable right
-  const row1 = y + 56, row2 = row1 + 77, gx = Math.min(60 + w + 36, 229 - d);
+  const row1 = y + 50, row2 = row1 + 77, gx = Math.min(60 + w + 36, 229 - d);
   const fas = (side, x, yy) => elevation(el("g", { "data-block": "elev-" + side, transform: `translate(${x} ${yy}) scale(${k})` }, svg), v, side, { levels: x < 100, noScale: x >= 100, ground: x < 100 && 46 + w + 36 > gx ? 600 : 0, title: `${tx.fas} ${sideAxes(v, side)}` });
   fas("south", 46, row1); fas("west", gx, row1);
   fas("north", 46, row2); fas("east", gx, row2);
@@ -170,7 +170,7 @@ function modelSheet(v) {
     : m[0] === "#383E42" && PR.logi ? [PR.logi_hex || m[0], m[1], PR.logi]
     : m[0] === "#1d1d1d" && PR.cokols ? [PR.cokols_hex || m[0], m[1], PR.cokols] : m);
   if (PR.sturi) ARC.materials.push(["#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, "white"] : [`Stūru dēļi ${PR.sturi} mm,`, "balti"])]);
-  const mg = materials(svg, 26, row2 + 33, true);
+  const mg = materials(svg, 26, row2 + 31, true);
   ARC.materials = keep;
   mg.querySelector("text").textContent = tx.matT;
   el("line", { x1: 0, y1: 2.2, x2: 215, y2: 2.2, stroke: C.ink, "stroke-width": .3 }, mg);
