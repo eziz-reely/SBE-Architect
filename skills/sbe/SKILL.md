@@ -12,16 +12,17 @@ Botam ir divas sadaļas: **KLIENTA PROJEKTS** (aktīvā, visu dara šeit) un **R
 
 Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jautājumus OBLIGĀTI uzdod kā atķeksējamus variantus:
 - Claude Code datorā: rīks AskUserQuestion (ķeksīši).
-- Projekta thread: kartīte `writing_draft_v0` (post_widget) ar visiem jautājumiem un noklusējumiem jau atzīmētiem [x]. Lietotājs pārliek [x], ieraksta gabarītus un nosaukumu un nosūta atpakaļ.
-- Numurēts saraksts tikai tad, ja neviena no tiem nav. Pie katra jautājuma noklusējums ir atzīmēts.
+- Projekta thread: jautājumus raksti PARASTĀ ČATA ZIŅĀ (post_message) kā numurētu sarakstu ar [x]/[ ] variantiem un noklusējumiem jau atzīmētiem [x]. Kartīti (`writing_draft_v0`, post_widget) NELIETO, lietotājam tā ir neērta. Lietotājs atbild čatā ar numuriem (piem. "1 ok, 2 Freya, 3 sarkans"), ieraksta gabarītus un nosaukumu. Kas nav pateikts, paliek noklusējums.
+- Numurēts saraksts čatā arī tad, ja AskUserQuestion nav pieejams. Pie katra jautājuma noklusējums ir atzīmēts.
 
 1. **Fāze**: [x] Klienta projekts (uz lapas "SKICES PROJEKTS")   [ ] Ražošanas projekts (vēl nav pieejams)
 2. **Gabarīti** (jāieraksta): garums × platums × kores augstums, mm. Piemērs: 8570 × 3500 × 4000.
-   Kores augstumu mēra no ±0,000 līdz jumta virsmai; "4m" nozīmē kori 4000 mm.
+   Kores augstumu (mājas augstumu) lietotājs norāda no grīdas paneļa APAKŠAS ("4m" = 4000 mm no paneļa apakšas). Arhitektūras atzīmes paliek no ±0,000 (grīdas pīrāga augšas), tāpēc stabveida pamatiem kore virs ±0,000 = augstums − grīdas pīrāgs G1 (275,5 mm): 4000 mm → atzīme +3,725. Bots to izdara pats (`augstums_0` model.json); rakstlaukumā rāda lietotāja augstumu. Platnei grīdas paneļa nav, atņem 0. Piezīme: pie 4000 un griestiem 2200 kore virs lofta grīdas ir ~1029 mm (< 1100), mansards neder; vajag augstumu ≥ 4075 vai griestus ≤ 2100.
 3. **Modeļa nosaukums** (jāieraksta, piem. Freya). Rakstlaukumā zem tā raksta "MM <m²>", piem. "MM 30". Mapes id paliek MM-<m2>-NN.
-4. **Fasādes tonis** (tekstūras `sablons\tex`): [x] Grafīta pelēks   [ ] Norvēģu sarkans (automātiski balti logi, durvis, apmales un 90 mm stūru apdare)   [ ] Dabīgs koks
+4. **Fasādes tonis** (tekstūras `sablons\tex`): [x] Grafīta pelēks   [ ] Norvēģu sarkans (automātiski balti logi, durvis, apmales un 90 mm stūru apdare)   [ ] Dabīgs koks   [ ] Tumši zaļš (balti logi)   [ ] Balts (gaiši pelēks, tumši logi)
 5. **Mansards**: [x] Jā, mansarda stāvs ar guļvietu un logiem (`--mansards ja`)   [ ] Nē (`--mansards ne`)
 5a. **Plānojuma varianti**: [x] Nē, viens plāns (etalons MM 30 tips)   [ ] Jā, N varianti (`--varianti N`, plānotājs: II/L/T, ar mansardu tikai II; guļamistabu skaits pēc laukuma vai `--gulamistabas`)
+5b. **Pīrāgu biezumi** (sienu, grīdas un jumta pīrāgi ar mēriem): [x] Nerādīt (klienta lapā tikai gala biezumi plānā)   [ ] Rādīt ar mēriem (vēl nav uztaisīts: lapā nav vietas, pasaki lietotājam un jautā, kur to rādīt; `buildUp` zīmē ražošanas projekta lapai)
 6. **Pamati**: [x] Stabveida, cokols metāla apdare RAL 9005   [ ] Stabveida, cokols metāla apdare RAL 7016 (`--cokols "RAL 7016"`)   [ ] Pamatu plātne, betona cokols
 7. **Piezīmes rakstlaukumā** (var atķeksēt vairākas):
    [x] Pamatu veids un cokols (no 6. jautājuma)
@@ -51,13 +52,14 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
        python3 generate.py 11425 3500 4000 MM-40-03 --mansards ja --varianti 1 --nosaukums <nos> --tonis peleks --pamati stabveida --griesti 2200 --rev 00 --adrese "..."
 
 5. Pārbaude: `node sablons/mm-check.mjs <html>` jābeidzas ar "OK". Ja ir kļūdas, pasaki lietotājam. Lapu apskati ar Playwright ekrānuzņēmumu (`/opt/node22/lib/node_modules/playwright`).
-6. **Plānojumus vispirms rāda lietotājam apstiprināšanai (bildes pievienotas ziņai). Vizualizācijas (`viz.py` vai `--viz`) netaisa, kamēr lietotājs nav apstiprinājis plānojumu UN pateicis, ka grib redzēt viz.** Tad: `python3 viz.py <id>` (Gemini, atslēga `GEMINI_API_KEY`).
+6. **Plānojumus vispirms rāda lietotājam apstiprināšanai. Projekta threadā PĒC NOKLUSĒJUMA plānu rāda tieši čatā kā Artifact (publicē rasējumu HTML `rasejumi/<id>_LV.html` ar Artifact rīku un pievieno ziņai). Ne PDF, ne PNG, ne failu pielikumi. Ekrānuzņēmumu pievieno tikai, ja lietotājs to prasa. Vizualizācijas (`viz.py` vai `--viz`) netaisa, kamēr lietotājs nav apstiprinājis plānojumu UN pateicis, ka grib redzēt viz.** Tad: `python3 viz.py <id>` (Gemini, atslēga `GEMINI_API_KEY`).
 7. Pēc apstiprinājuma failus saglabā `/mnt/project-files/mm-system/MAJAS/<m2>/<id>/` un lietotāja datorā `MM System\MĀJAS\<m2>\<id>\` (device_commit_files): model.json, rasejumi/*.html, viz/*. Visi izveidotie faili tiks izmantoti mājaslapā, tāpēc nekā neizlaid.
 
-`--griesti 0` nozīmē, ka griestu piezīmi nerāda. Ja `model.json` ir labots ar roku, lapu pārbūvē ar `python3 build_model.py <model.json>`. Individuālie toņi (zaļš, zils) tiek taisīti tikai pēc pieprasījuma: `--tonis zals zils`.
+`--griesti 0` nozīmē, ka griestu piezīmi nerāda. Ja `model.json` ir labots ar roku, lapu pārbūvē ar `python3 build_model.py <model.json>`. Pieejami 5 fasādes toņi: `peleks` (grafīta pelēks, noklusējums), `koks` (dabīgs koks), `sarkans`, `zals` (tumši zaļš), `balts` (gaiši pelēks/balts). Visi tiek taisīti vizualizācijās (`viz.py`), `--tonis` izvēlas lapas toni.
 
 ## 3. KLIENTA PROJEKTS: noteikumi
 
+0. **Izmēru ķēdes:** mansarda plānam ir tie paši mājas gabarīti (garums, platums) kā 1. stāvam. Ķēde ar atverēm, kurā nav atveru, nedublē kopējo izmēru: 1. stāva apakšā un sānos katrs gabarīts parādās vienu reizi (10 000 un 4000).
 1. **Rakstlaukums ir dizainisks un vertikāls**, labajā joslā (x 247–287). No augšas uz leju tajā ir:
    - MM HOMES zīmols tumšā laukā;
    - fāzes nosaukums: uz lapas "SKICES PROJEKTS" (EN "SKETCH DESIGN"), iekšēji fāze saucas klienta projekts;

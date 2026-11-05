@@ -519,6 +519,7 @@ function cadPlan(parent, v, opt = {}) {
     if (ax) { if (ax.length > 2) rows.push(ax); rows.push([Math.min(...ax), Math.max(...ax)]); }
     else if (wl.length > 2) rows.push([Math.min(...wl), Math.max(...wl)]);
     else rows[0] = [...open, ...wl];
+    if (rows.length > 1 && uniq(open).length <= 2) rows.shift();   // atveru ķēde bez atverēm = tas pats kopējais izmērs, nedublē
     rows.forEach((p, i) => chainCad(dg, p, dir, base + sgn * (650 + 600 * i)));
   };
   side([0, v.W, ...wins(w => w.o === "h" && winSide(v, w) === "north", w => w.x)], [0, v.W, ...at(1, 0)], axX, "x", -1, -E);
@@ -708,8 +709,9 @@ function elevation(parent, v, side, opt = { levels: true }) {
     el("rect", { x: a0 - 40 - cas, y: -z0, width: a1 - a0 + 80 + 2 * cas, height: 45, fill: "#2b2f32" }, gg);
   });
   if (side === "south") v.doors.filter(d => d.entry).forEach(d => {
-    el("rect", { x: d.x - 45, y: -2145, width: d.w + 90, height: 2145, fill: "#1f2326", stroke: "#111", "stroke-width": 12 }, g);
-    el("rect", { x: d.x, y: -2100, width: d.w, height: 2100, fill: C.ral, stroke: "#111", "stroke-width": 10 }, g);
+    const dc = (window.AR && window.AR.win && window.AR.win.casing) ?? 100;   // ārdurvju apmale tāda pati kā logiem (win.casing, mm)
+    el("rect", { x: d.x - dc, y: -2100 - dc, width: d.w + 2 * dc, height: 2100 + dc, fill: colHex(WINC().cas, "#1f2326"), stroke: "#111", "stroke-width": 8 }, g);
+    el("rect", { x: d.x, y: -2100, width: d.w, height: 2100, fill: colHex(WINC().out, C.ral), stroke: "#111", "stroke-width": 10 }, g);
     const hl = hingeLeft(v, { o: d.o, x: d.x, y: d.y, hinge: d.hinge });
     el("rect", { x: hl ? d.x + d.w - 260 : d.x + 220, y: -1600, width: 40, height: 1100, fill: "#b9bcbe" }, g);
     el("rect", { x: hl ? d.x + 120 : d.x + d.w - 280, y: -1950, width: 160, height: 1800, fill: "url(#glass)" }, g);

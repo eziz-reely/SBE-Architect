@@ -273,29 +273,27 @@
       "tex": "tex/zals.jpg",
       "lv": [
         "Fasāde: vertikāls apdares dēlis,",
-        "krāsota putekļaini zaļa"
+        "krāsota tumši zaļa"
       ],
       "en": [
         "Facade: vertical cladding board,",
-        "painted dusty green"
+        "painted dark green"
       ],
-      "sw": "#7C8A72",
-      "logi": "RAL 9016",
-      "individuals": true
+      "sw": "#46564A",
+      "logi": "RAL 9016"
     },
-    "zils": {
-      "tex": "tex/zils.jpg",
+    "balts": {
+      "tex": "tex/balts.jpg",
       "lv": [
         "Fasāde: vertikāls apdares dēlis,",
-        "krāsota putekļaini zila"
+        "krāsota gaiši pelēka (balta)"
       ],
       "en": [
         "Facade: vertical cladding board,",
-        "painted dusty blue"
+        "painted light grey (white)"
       ],
-      "sw": "#6F8296",
-      "logi": "RAL 9016",
-      "individuals": true
+      "sw": "#BABBC0",
+      "logi": "RAL 7016"
     }
   },
   "pamati": {
