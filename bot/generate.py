@@ -307,7 +307,7 @@ if __name__ == '__main__':
     ap.add_argument('--rev-apraksts', help='revīzijas apraksts')
     ap.add_argument('--raditajs', action='append', default=[], help='papildu rādītājs rakstlaukumā "Nosaukums=Vērtība", var atkārtot')
     ap.add_argument('--nosaukums', help='modeļa nosaukums rakstlaukumā, piem. Freya')
-    ap.add_argument('--skp', action='store_true', help='uztaisa SketchUp 3D modeli (3d/<id>.dae + <id>_skp.rb + .obj), skat. skp.py')
+    ap.add_argument('--skp', action='store_true', help='uztaisa SketchUp 3D modeli kā Ruby skriptu 3d/<id>_skp.rb (tikai .rb), skat. skp.py')
     ap.add_argument('--piragi', choices=['ja', 'ne'], default='ne', help='pīrāgu (sienu) biezumi ar mēriem lapā; noklusējums ne (nerādīt)')
     ap.add_argument('--tonis', choices=['peleks', 'koks', 'sarkans', 'zals', 'balts'], help='fasādes tonis (sablons/tex), noklusējums peleks')
     ap.add_argument('--pamati', choices=['stabveida', 'platne'], help='pamatu veids, noklusējums stabveida')

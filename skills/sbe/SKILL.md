@@ -32,7 +32,7 @@ Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jaut
 9. **Revīzija**: [x] 00, pirmais izdevums   [ ] Nākamā (01, 02, ...), jāieraksta, kas mainīts
 10. **Papildu rādītāji rakstlaukumā**: [x] Tikai standarta   [ ] Pievienot (ierakstīt "Nosaukums=Vērtība")
 11. **Valodas**: [x] LV un EN   [ ] Tikai LV (`--valodas LV`)
-11b. **3D modelis SketchUp**: [ ] Nē   [x] Jā, uztaisīt `--skp` (3d/<id>.dae atveras SketchUp ar File > Import, vienības mm; <id>_skp.rb palaiž Ruby konsolē; .obj rezerves). Modelis no model.json: grīdas panelis uz stabiem, cokols, ārsienas ar logu/durvju caurumiem, iekšsienas, mansarda grīda, divslīpju jumts, logi ar rāmjiem un apmalēm, ārdurvis, mansarda logi. Mēbeles netiek modelētas. Pa tiešo .skp bots nevar uzrakstīt (SketchUp slēgts formāts), tāpēc .dae un Ruby skripts.
+11b. **3D modelis SketchUp** (taisa TIKAI tad, kad lietotājs to prasa, ar `--skp`; pēc noklusējuma netaisa): rezultāts ir TIKAI Ruby skripts `3d/<id>_skp.rb` (SketchUp: Window > Ruby Console: `load 'ceļš\<id>_skp.rb'`). Nekādus .dae, .obj, .skp netaisa un nepiedāvā. Modelis no model.json: grīdas panelis uz stabiem, cokols, ārsienas ar logu/durvju caurumiem, iekšsienas, mansarda grīda, divslīpju jumts, logi ar rāmjiem un apmalēm, ārdurvis, mansarda logi; mēbeles netiek modelētas.
 12. **Vizualizāciju atmosfēra** (katram modelim sava, visiem 3 toņiem tā pati):
     [x] Automātiski pēc modeļa numura (01 mežs, 02 fjords, 03 krasts, 04 plato, 05 ziema, 06 rudens, tad no sākuma)
     [ ] Priežu mežs un granīta klintis (`mezs`)   [ ] Fjords un kalni (`fjords`)   [ ] Jūras krasts (`krasts`)

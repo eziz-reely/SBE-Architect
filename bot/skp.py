@@ -2,10 +2,9 @@
 
     python skp.py <model.json> [izvades mape]
 
-Izvade (mapē `3d/` blakus model.json):
-  <id>.dae      Collada, SketchUp to atver tieši (File > Import, vienības mm) — vecākām versijām arī vissvarīgākais
-  <id>_skp.rb   SketchUp Ruby skripts (Window > Ruby Console: load 'ceļš/<id>_skp.rb'), uztaisa grupas ar materiāliem
-  <id>.obj      rezerves formāts
+Izvade (mapē `3d/` blakus model.json): TIKAI <id>_skp.rb, SketchUp Ruby skripts
+(Window > Ruby Console: load 'ceļš/<id>_skp.rb'), uztaisa grupas ar materiāliem. [MM] .dae un .obj netaisa
+(funkcijas write_dae / write_obj paliek kodā, bet netiek izsauktas).
 
 Ko modelis satur: grīdas panelis uz stabiem, cokols, ārsienas ar logu un durvju caurumiem, iekšsienas (iegūtas kā
 iekšējā laukuma un telpu starpība), mansarda grīda, divslīpju jumts, logi (rāmis, apmale, stikls), ārdurvis,
@@ -332,9 +331,7 @@ def main(model_path, out_dir=None):
     M, mats = build(m)
     mid = m['id']
     outs = []
-    write_dae(os.path.join(out_dir, mid + '.dae'), M, mats, mid); outs.append(mid + '.dae')
-    write_rb(os.path.join(out_dir, mid + '_skp.rb'), M, mats, mid); outs.append(mid + '_skp.rb')
-    write_obj(os.path.join(out_dir, mid + '.obj'), M, mats); outs.append(mid + '.obj')
+    write_rb(os.path.join(out_dir, mid + '_skp.rb'), M, mats, mid); outs.append(mid + '_skp.rb')   # [MM] SKP pieprasījumam tiek taisīts tikai .rb
     return [os.path.join(out_dir, o) for o in outs]
 
 
