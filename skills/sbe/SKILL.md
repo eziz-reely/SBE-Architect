@@ -71,7 +71,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
    - galvenie rādītāji (apbūves laukums, iekštelpu platība, gabarīti, kores augstums, jumta slīpums);
    - objekta adrese;
    - PIEZĪMES: konkrētā projekta piezīmes no izvēlēm (pamati un cokols, griestu augstums, papildu info);
-   - revīziju tabula (nr., datums, apraksts);
+   - revīziju tabula (nr., datums; kolonna APRAKSTS un teksts "Pirmais izdevums" pēc noklusējuma netiek rādīti, tikai ja norādīts --rev-apraksts);
    - mērogs, formāts un lapa;
    - apakšā REV. nr. un datums.
    Revīzijas nr. ir obligāts. Adresi var izlaist ar `--bez-adreses`.

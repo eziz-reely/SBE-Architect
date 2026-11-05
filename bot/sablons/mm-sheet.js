@@ -111,7 +111,7 @@ function mmTitleBlock(svg, v, lf, L) {
   // revisions
   lab(350, tx.rev);
   const ry = 355;
-  T_(g, X + 3, ry, tx.rNr, { fs: 1.7, fill: MM_GREY }); T_(g, X + 10, ry, tx.rDate, { fs: 1.7, fill: MM_GREY }); T_(g, X + 23, ry, tx.rDesc, { fs: 1.7, fill: MM_GREY });
+  T_(g, X + 3, ry, tx.rNr, { fs: 1.7, fill: MM_GREY }); T_(g, X + 10, ry, tx.rDate, { fs: 1.7, fill: MM_GREY }); if (P.rev_apraksts) T_(g, X + 23, ry, tx.rDesc, { fs: 1.7, fill: MM_GREY });
   T_(g, X + 3, ry + 4, P.revizija || "00", { fs: 2.2, fw: 700 });
   T_(g, X + 10, ry + 4, P.datums || "", { fs: 2.1 });
   wrap(L === "en" ? (P.rev_apraksts_en || P.rev_apraksts || "") : (P.rev_apraksts || ""), 10).forEach((l, i) => T_(g, X + 23, ry + 4 + i * 2.8, l, { fs: 1.9 }));
