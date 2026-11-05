@@ -61,7 +61,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
 
 0. **Izmēru ķēdes:** mansarda plānam ir tie paši mājas gabarīti (garums, platums) kā 1. stāvam. Ķēde ar atverēm, kurā nav atveru, nedublē kopējo izmēru: 1. stāva apakšā un sānos katrs gabarīts parādās vienu reizi (10 000 un 4000).
 0a. **Mājas augstuma ķēde:** katrā fasādē pa labi viena vertikāla mēra ķēde ar mājas augstumu no grīdas paneļa apakšas līdz kores jumta virsmai (piem. 4000). Skaitlis ir lietotāja ievadītais augstums; atzīmes (+3,725 u.c.) paliek no ±0,000.
-0b. **Mansarda piecstūra (slīpais) logs** gala fasādē vienmēr ir simetrisks un centrēts uz kores asi (virs lielā stiklojuma). Ja logu sašaurina (zemāka kore), to centrē no jauna, nevis atstāj sākotnējo `y` (tad forma sanāk sakropļota).
+0b. **Mansarda piecstūra (slīpais) logs** gala fasādē ir TĀDĀ PAŠĀ platumā kā lielais frontālais stiklojums zem tā, simetrisks un centrēts uz kores ass. Ja ar rāmi neietilpst, logu nesašaurina, bet paaugstina virzienā uz jumtu (atkāpe no jumta 200 mm, sānu malas ≥ 300 mm); šaurāku logu pieļauj tikai tad, ja sānu malas citādi < 300 mm. Pēc jebkuras sašaurināšanas logu pārcentrē (nevis atstāj veco `y`, tad forma sanāk sakropļota).
 1. **Rakstlaukums ir dizainisks un vertikāls**, labajā joslā (x 247–287). No augšas uz leju tajā ir:
    - MM HOMES zīmols tumšā laukā;
    - fāzes nosaukums: uz lapas "SKICES PROJEKTS" (EN "SKETCH DESIGN"), iekšēji fāze saucas klienta projekts;

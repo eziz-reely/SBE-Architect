@@ -697,7 +697,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
       return;
     }
     // fixed gable window with two sloping edges (pentagon), outside casing like the standard windows
-    const gg = el("g", {}, g), z0 = gw.z0 || 2450, off = 450, k = 1 / Math.cos(ROOF.pitch * Math.PI / 180), cas = (window.AR && window.AR.win && window.AR.win.casing) ?? 0;
+    const gg = el("g", {}, g), z0 = gw.z0 || 2450, off = 200, k = 1 / Math.cos(ROOF.pitch * Math.PI / 180), cas = (window.AR && window.AR.win && window.AR.win.casing) ?? 0;
     const a0 = b0, a1 = b1, mid = (a0 + a1) / 2;
     const zTop = u => ROOF.eave + Math.min(u, span - u) * tan - off;
     const shape = (i, o = 0) => {

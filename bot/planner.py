@@ -1626,7 +1626,7 @@ def _loft_west(L, eave, griesti, x0, rx, vx1):
         y2 = r1((D - g2) / 2)
         if big:
             g2, y2 = big['len'], big['y']
-        while g2 >= 600 and eave + ((D - g2) / 2) * tn < 2900 + 150:
+        while g2 >= 600 and eave + ((D - g2) / 2) * tn < 2300 + 300 + 200:   # [MM] piecstūra logs = lielā stiklojuma platumā; sānu malas vismaz 300 mm augstas (jumta atkāpe 200)
             g2 -= 200
         y2 = r1(big['y'] + (big['len'] - g2) / 2) if big else r1((D - g2) / 2)   # pēc samazināšanas centrē virs lielā stiklojuma (piecstūra virsotne uz kores ass)
         if g2 >= 600:
