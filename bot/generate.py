@@ -313,6 +313,7 @@ if __name__ == '__main__':
     ap.add_argument('--pamati', choices=['stabveida', 'platne'], help='pamatu veids, noklusējums stabveida')
     ap.add_argument('--cokols', choices=['RAL 9005', 'RAL 7016'], help='stabveida pamatu metāla cokola tonis, noklusējums RAL 9005')
     ap.add_argument('--atmosfera', help='vizualizāciju atmosfēra (mm-config.json atmosferas), noklusējums pēc modeļa numura')
+    ap.add_argument('--viesistaba-skapis', choices=['ja', 'ne'], default='ja', help='ne: viesistabā skapi neliek')
     ap.add_argument('--bez-adreses', action='store_true', help='rakstlaukumā bez objekta adreses')
     ap.add_argument('--valodas', default='LV,EN', help='lapas valodas, piem. LV vai LV,EN')
     ap.add_argument('--griesti', type=int, help='1. stāva griestu augstums mm, noklusējums 2200; 0 = nerādīt piezīmēs')
@@ -325,6 +326,7 @@ if __name__ == '__main__':
     ap.add_argument('--vannas', type=int, help='variantiem: vannasistabu skaits (noklusējums pēc laukuma)')
     ap.add_argument('--forma', default='II,L,T', help='variantiem: formas II, L, T (komatiem)')
     a = ap.parse_args()
+    import planner as _pl; _pl.R['liv_skapis'] = a.viesistaba_skapis != 'ne'
     if a.atmosfera and a.atmosfera not in CFG['atmosferas']:
         raise SystemExit('Nezināma atmosfēra: %s. Ir: %s' % (a.atmosfera, ', '.join(CFG['atmosferas'])))
     if a.faze != 'klients':

@@ -48,6 +48,7 @@ R = {
     'loft_edge_h': 700, 'loft_ridge_min': 1000,
     # [MM] 05.11.2026 /editbot noteikumi
     'bed_wardrobe_min_m2': 9.0,          # guļamistaba < 9 m²: drēbju skapi neliek
+    'liv_skapis': True,                  # False: viesistabā skapi neliek (--viesistaba-skapis ne)
     'hall_pass': 900,                    # skapis priekšnamā/gaitenī drīkst atstāt >= 900 mm brīvu caurgājienu, citādi dzēš vai liek dzīvojamā
     'win_fixed_min': 1100,               # logs līdz zemei un platāks par 1100: neverams (fixed)
     'win_split_min': 1000,               # logs ne līdz zemei un platāks par 1000: daļēji vēramais (fiksēts + labā vērtne vēramā/gāžamā)
@@ -1211,7 +1212,7 @@ def furnish_liv(ctx, wet_walls, wardrobe=False):
         if tried > 40:
             break
         placed = [k]
-        if wardrobe:
+        if wardrobe and R['liv_skapis']:
             wd = liv_wardrobe(ctx, k, placed)
             if wd:
                 placed.append(wd)
