@@ -219,8 +219,8 @@
     ],
     "revizija": "00",
     "datums": "",
-    "rev_apraksts": "Pirmais izdevums",
-    "rev_apraksts_en": "First issue",
+    "rev_apraksts": "",
+    "rev_apraksts_en": "",
     "lapa": "1/1",
     "tonis": "peleks",
     "pamati": "stabveida",
@@ -293,7 +293,7 @@
         "painted light grey (white)"
       ],
       "sw": "#BABBC0",
-      "logi": "RAL 7016"
+      "logi": "RAL 9005"
     }
   },
   "pamati": {

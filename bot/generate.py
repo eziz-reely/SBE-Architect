@@ -35,6 +35,8 @@ SHARE = {'bed': .13, 'wc': .53}  # etalona proporcijas virs minimuma; atlikums d
 def fbox(f):
     """Mēbeles aizņemtais taisnstūris [x0, y0, x1, y1] vai None (līnijas)."""
     n, a = f[0], f[1:]
+    if n == 'bed' and len(a) > 4 and a[4] in ('n', 's'):      # galvgalis pie ziemeļu/dienvidu sienas: garums pa y
+        return [a[0], a[1], a[0] + a[3], a[1] + a[2]]
     if n in ('bed', 'R', 'sofa', 'basin'):
         return [a[0], a[1], a[0] + a[2], a[1] + a[3]]
     if n == 'nightstand': return [a[0], a[1], a[0] + 450, a[1] + 420]
@@ -307,10 +309,13 @@ if __name__ == '__main__':
     ap.add_argument('--rev-apraksts', help='revīzijas apraksts')
     ap.add_argument('--raditajs', action='append', default=[], help='papildu rādītājs rakstlaukumā "Nosaukums=Vērtība", var atkārtot')
     ap.add_argument('--nosaukums', help='modeļa nosaukums rakstlaukumā, piem. Freya')
+    ap.add_argument('--skp', action='store_true', help='uztaisa SketchUp 3D modeli kā Ruby skriptu 3d/<id>_skp.rb (tikai .rb), skat. skp.py')
+    ap.add_argument('--piragi', choices=['ja', 'ne'], default='ne', help='pīrāgu (sienu) biezumi ar mēriem lapā; noklusējums ne (nerādīt)')
     ap.add_argument('--tonis', choices=['peleks', 'koks', 'sarkans', 'zals', 'balts'], help='fasādes tonis (sablons/tex), noklusējums peleks')
     ap.add_argument('--pamati', choices=['stabveida', 'platne'], help='pamatu veids, noklusējums stabveida')
     ap.add_argument('--cokols', choices=['RAL 9005', 'RAL 7016'], help='stabveida pamatu metāla cokola tonis, noklusējums RAL 9005')
     ap.add_argument('--atmosfera', help='vizualizāciju atmosfēra (mm-config.json atmosferas), noklusējums pēc modeļa numura')
+    ap.add_argument('--viesistaba-skapis', choices=['ja', 'ne'], default='ja', help='ne: viesistabā skapi neliek')
     ap.add_argument('--bez-adreses', action='store_true', help='rakstlaukumā bez objekta adreses')
     ap.add_argument('--valodas', default='LV,EN', help='lapas valodas, piem. LV vai LV,EN')
     ap.add_argument('--griesti', type=int, help='1. stāva griestu augstums mm, noklusējums 2200; 0 = nerādīt piezīmēs')
@@ -332,7 +337,7 @@ if __name__ == '__main__':
                             'cokols': a.cokols, 'atmosfera': a.atmosfera,
                             'raditaji': [r.split('=', 1) for r in a.raditajs] or None,
                             'piezimes': a.piezime or None, 'modela_nosaukums': a.nosaukums, 'tonis': a.tonis, 'pamati': a.pamati,
-                            'griesti': a.griesti}.items() if v is not None and (v != [] or k == 'adrese')}
+                            'griesti': a.griesti, 'piragi': a.piragi}.items() if v is not None and (v != [] or k == 'adrese')}
     import planlib   # zināšanu bibliotēka: tikai brīdinājumi, noformējumu nemaina
     for x in planlib.check_input(a.garums, a.platums, a.augstums):
         print('BRĪDINĀJUMS:', x)
@@ -340,7 +345,7 @@ if __name__ == '__main__':
     # Stabveida pamatiem ģeometrijai kore virs ±0,000 = augstums − grīdas pīrāgs (G1); platnei grīdas paneļa nav.
     pam = a.pamati or CFG['projekts'].get('pamati', 'stabveida')
     flT = sum(l[1] for l in CFG['layers']['G1']['layers']) if pam == 'stabveida' else 0
-    H0 = a.augstums - flT
+    H0 = math.ceil(a.augstums - flT)   # 4000 - 275,5 = +3,725 (veselā mm)
     if a.varianti > 0:
         ps = variants(a.garums, a.platums, H0, a.varianti, a.mansards == 'ja', pr, a.gulamistabas, a.vannas,
                       tuple(f.strip().upper() for f in a.forma.split(',')), a.id)
@@ -350,7 +355,18 @@ if __name__ == '__main__':
     for p in ps:   # model.json: ievade.augstums = klienta kores augstums (no paneļa apakšas), augstums_0 = kore virs ±0,000
         mj = json.load(open(p, encoding='utf-8'))
         mj['ievade'] = {**mj.get('ievade', {}), 'augstums': a.augstums, 'augstums_0': H0}
+        mj['entryInChain'] = True   # ārdurvju platums (1000) ārsienas mēru ķēdē
+        if a.viesistaba_skapis == 'ne':   # tikai izņem skapi dzīvojamajā, pārējais plānojums paliek tāds pats
+            def _liv(f):
+                return any(r['n'].startswith('Dzīvojam') and any(x <= f[1] + 1 and f[1] + f[3] <= x + w + 1 and y <= f[2] + 1 and f[2] + f[4] <= y + h + 1
+                                                                 for x, y, w, h in r['r']) for r in mj['rooms'])
+            mj['furniture'] = [f for f in mj['furniture'] if not (f[0] == 'wardrobe' and _liv(f))]
         json.dump(mj, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    if a.skp:
+        from skp import main as skp_main
+        for p in ps:
+            for o in skp_main(p):
+                print(o)
     from ref import main as ref_main   # 3D references bildes Gemini vizualizācijām (visi toņi)
     for p in ps:
         for x in planlib.check_model(p):

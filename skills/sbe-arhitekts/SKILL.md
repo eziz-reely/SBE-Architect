@@ -1,5 +1,5 @@
 ---
-name: sbe
+name: sbe-arhitekts
 description: MM Homes modeļu bots: no mājas gabarītiem (garums, platums, kores augstums) uztaisa klienta projekta A3 lapu (plāni, fasādes, eksplikācija, rakstlaukums) LV un EN.
 ---
 
@@ -17,12 +17,12 @@ Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jaut
 
 1. **Fāze**: [x] Klienta projekts (uz lapas "SKICES PROJEKTS")   [ ] Ražošanas projekts (vēl nav pieejams)
 2. **Gabarīti** (jāieraksta): garums × platums × kores augstums, mm. Piemērs: 8570 × 3500 × 4000.
-   Kores augstumu (mājas augstumu) lietotājs norāda no grīdas paneļa APAKŠAS ("4m" = 4000 mm no paneļa apakšas). Arhitektūras atzīmes paliek no ±0,000 (grīdas pīrāga augšas), tāpēc stabveida pamatiem kore virs ±0,000 = augstums − grīdas pīrāgs G1 (275,5 mm): 4000 mm → atzīme +3,725. Bots to izdara pats (`augstums_0` model.json); rakstlaukumā rāda lietotāja augstumu. Platnei grīdas paneļa nav, atņem 0. Piezīme: pie 4000 un griestiem 2200 kore virs lofta grīdas ir ~1029 mm (< 1100), mansards neder; vajag augstumu ≥ 4075 vai griestus ≤ 2100.
+   Kores augstumu (mājas augstumu) lietotājs norāda no grīdas paneļa APAKŠAS ("4m" = 4000 mm no paneļa apakšas). Arhitektūras atzīmes paliek no ±0,000 (grīdas pīrāga augšas), tāpēc stabveida pamatiem kore virs ±0,000 = augstums − grīdas pīrāgs G1 (275,5 mm): 4000 mm → atzīme +3,725. Bots to izdara pats (`augstums_0` model.json); rakstlaukumā rāda lietotāja augstumu. Platnei grīdas paneļa nav, atņem 0. Pie 4000 un griestiem 2200 kore virs lofta grīdas ir ~1029 mm; loft derīgs, ja ≥ 1000 mm [MM].
 3. **Modeļa nosaukums** (jāieraksta, piem. Freya). Rakstlaukumā zem tā raksta "MM <m²>", piem. "MM 30". Mapes id paliek MM-<m2>-NN.
 4. **Fasādes tonis** (tekstūras `sablons\tex`): [x] Grafīta pelēks   [ ] Norvēģu sarkans (automātiski balti logi, durvis, apmales un 90 mm stūru apdare)   [ ] Dabīgs koks   [ ] Tumši zaļš (balti logi)   [ ] Balts (gaiši pelēks, tumši logi)
 5. **Mansards**: [x] Jā, mansarda stāvs ar guļvietu un logiem (`--mansards ja`)   [ ] Nē (`--mansards ne`)
 5a. **Plānojuma varianti**: [x] Nē, viens plāns (etalons MM 30 tips)   [ ] Jā, N varianti (`--varianti N`, plānotājs: II/L/T, ar mansardu tikai II; guļamistabu skaits pēc laukuma vai `--gulamistabas`)
-5b. **Pīrāgu biezumi** (sienu, grīdas un jumta pīrāgi ar mēriem): [x] Nerādīt (klienta lapā tikai gala biezumi plānā)   [ ] Rādīt ar mēriem (vēl nav uztaisīts: lapā nav vietas, pasaki lietotājam un jautā, kur to rādīt; `buildUp` zīmē ražošanas projekta lapai)
+5b. **Pīrāgu biezumi** (ārsienu pīrāga biezumi ar mēriem plānos): [x] Nerādīt (`--piragi ne`, noklusējums: sienu biezuma mēri 284/283 netiek zīmēti, un telpu mēru ķēdes beidzas pie telpu virsmām bez sienas biezuma atzīmēm/svītriņām ārpus sienas)   [ ] Rādīt (`--piragi ja`). Pīrāgu zīmējumi ar slāņiem (S1, S2, grīda, jumts) botā vēl nav uztaisīti klienta lapai, tos pasaki lietotājam, ja prasa.
 6. **Pamati**: [x] Stabveida, cokols metāla apdare RAL 9005   [ ] Stabveida, cokols metāla apdare RAL 7016 (`--cokols "RAL 7016"`)   [ ] Pamatu plātne, betona cokols
 7. **Piezīmes rakstlaukumā** (var atķeksēt vairākas):
    [x] Pamatu veids un cokols (no 6. jautājuma)
@@ -32,6 +32,8 @@ Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jaut
 9. **Revīzija**: [x] 00, pirmais izdevums   [ ] Nākamā (01, 02, ...), jāieraksta, kas mainīts
 10. **Papildu rādītāji rakstlaukumā**: [x] Tikai standarta   [ ] Pievienot (ierakstīt "Nosaukums=Vērtība")
 11. **Valodas**: [x] LV un EN   [ ] Tikai LV (`--valodas LV`)
+11b. **3D modelis SketchUp** (taisa TIKAI tad, kad lietotājs to prasa, ar `--skp`; pēc noklusējuma netaisa): rezultāts ir TIKAI Ruby skripts `3d/<id>_skp.rb` (SketchUp: Window > Ruby Console: `load 'ceļš\<id>_skp.rb'`). Nekādus .dae, .obj, .skp netaisa un nepiedāvā. Modelis no model.json: grīdas panelis uz stabiem, cokols, ārsienas ar logu/durvju caurumiem, iekšsienas, mansarda grīda, divslīpju jumts, logi ar rāmjiem un apmalēm, ārdurvis, mansarda logi; mēbeles netiek modelētas.
+    **Vienmēr, kad nodod .rb, ziņā uzraksti arī kā to palaist:** 1) SketchUp: File > New, vienības milimetri; 2) Extensions > Developer > Ruby Console (vecākās versijās Window > Ruby Console); 3) ieraksti `load 'C:/ceļš/<id>_skp.rb'` (ar slīpsvītrām /), Enter; 4) Camera > Zoom Extents. Ja ceļā ir ā, ē u.c., nokopē failu uz C:/temp/. Šie paši soļi ir arī .rb faila sākumā komentāros.
 12. **Vizualizāciju atmosfēra** (katram modelim sava, visiem 3 toņiem tā pati):
     [x] Automātiski pēc modeļa numura (01 mežs, 02 fjords, 03 krasts, 04 plato, 05 ziema, 06 rudens, tad no sākuma)
     [ ] Priežu mežs un granīta klintis (`mezs`)   [ ] Fjords un kalni (`fjords`)   [ ] Jūras krasts (`krasts`)
@@ -60,6 +62,8 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
 ## 3. KLIENTA PROJEKTS: noteikumi
 
 0. **Izmēru ķēdes:** mansarda plānam ir tie paši mājas gabarīti (garums, platums) kā 1. stāvam. Ķēde ar atverēm, kurā nav atveru, nedublē kopējo izmēru: 1. stāva apakšā un sānos katrs gabarīts parādās vienu reizi (10 000 un 4000).
+0a. **Mājas augstuma ķēde:** katrā fasādē pa labi viena vertikāla mēra ķēde ar mājas augstumu no grīdas paneļa apakšas līdz kores jumta virsmai (piem. 4000). Skaitlis ir lietotāja ievadītais augstums; atzīmes (+3,725 u.c.) paliek no ±0,000.
+0b. **Mansarda piecstūra (slīpais) logs** gala fasādē ir TĀDĀ PAŠĀ platumā kā lielais frontālais stiklojums zem tā, simetrisks un centrēts uz kores ass. Ja ar rāmi neietilpst, logu nesašaurina, bet paaugstina virzienā uz jumtu (atkāpe no jumta 200 mm, sānu malas ≥ 300 mm); šaurāku logu pieļauj tikai tad, ja sānu malas citādi < 300 mm. Pēc jebkuras sašaurināšanas logu pārcentrē (nevis atstāj veco `y`, tad forma sanāk sakropļota).
 1. **Rakstlaukums ir dizainisks un vertikāls**, labajā joslā (x 247–287). No augšas uz leju tajā ir:
    - MM HOMES zīmols tumšā laukā;
    - fāzes nosaukums: uz lapas "SKICES PROJEKTS" (EN "SKETCH DESIGN"), iekšēji fāze saucas klienta projekts;
@@ -67,7 +71,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
    - galvenie rādītāji (apbūves laukums, iekštelpu platība, gabarīti, kores augstums, jumta slīpums);
    - objekta adrese;
    - PIEZĪMES: konkrētā projekta piezīmes no izvēlēm (pamati un cokols, griestu augstums, papildu info);
-   - revīziju tabula (nr., datums, apraksts);
+   - revīziju tabula (nr., datums; kolonna APRAKSTS un teksts "Pirmais izdevums" pēc noklusējuma netiek rādīti, tikai ja norādīts --rev-apraksts);
    - mērogs, formāts un lapa;
    - apakšā REV. nr. un datums.
    Revīzijas nr. ir obligāts. Adresi var izlaist ar `--bez-adreses`.
@@ -92,6 +96,9 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
    - WC logs ir virs poda. Izlietne var būt pie ārsienas blakus podam.
 9. **Mēbeles netraucē durvīm.** Starp mēbeli un durvju vērtnes zonu paliek vismaz 50 mm.
    - Dīvāns ir vismaz 700 mm no virtuves fronta. Ja tā dīvāns neietilpst (īsāks par 1200 mm), dīvānu neliek.
+   - **Kārtojuma līnijas [MM]:** dīvāna mala ir vienā līnijā ar blakus esošā loga ailas malu uz tās pašas sienas (dīvānu pabīda uz galasienas pusi, ja līnijas nesakrīt). Ārdurvju ailas mala ir vienā līnijā ar virtuves rindas sākumu, ja priekšnams robežojas ar virtuvi.
+   - **Guļamistaba [MM]:** gulta centrēta pa istabas platumu, ja nav citādi prasīts; naktsgaldiņus liek tikai pēc prasības. Guļamistabas durvis vēras uz priekšnamu. Gulta drīkst stāvēt garenisko malu pret logu (loga zona tai netiek skaitīta, `winOk`).
+   - **Ārdurvju platums [MM]:** ārsienas mēru ķēdē vienmēr ir ārdurvju ailas platums (parasti 1000 mm); generate.py ieraksta `entryInChain`.
 10. Telpu nosaukumu zīmes neuzbrauc mēbelēm, durvju vērtnēm un izmēru ķēdēm.
 11. **Fasādes:**
    - Notekcaurules ir zīmētas ar diametru (Ø100, ar kontūru).
@@ -124,6 +131,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
 - Prompti tiek saglabāti blakus bildei (`*_prompt.txt`). Jaunu atmosfēru pievieno `mm-config.json` → `atmosferas` ar `lv` nosaukumu un `en` aprakstu (Setting + Light).
 - **Logi un durvis ir iedziļināti sienā** (~150 mm), nevis vienā plaknē ar apšuvumu. ref.py to zīmē 3D: rāmis ailas dziļumā, redzamie ailas sāni un augša fasādes tonī (ēnoti), palodze izvirzīta no sienas. Aila (ailas sāni un augša) ir tajā pašā tonī un materiālā kā fasāde. Katram logam apakšā ir izvirzīta metāla palodze loga rāmja tonī.
 - **Jumta vējmala (slīpā fascia gala fasādē):** baltus koka vējmalas dēļus liek TIKAI sarkanajam tonim (kopā ar baltajiem logiem un stūru apdari; `mm-config.json` → `toni.sarkans.vejmala = "balta"`). Pelēkajam un koka (dzeltenajam) tonim ir tikai tieva metāla vējmalas skārda RAL 7016.
+- **Fascia dēlis (horizontālais) [MM]:** TIKAI sarkanajam tonim: balts, zem notekas, ar nelielu jumta toņa skārda lenti virs tā; gala fasādēs balta vējmala ~220 mm. Pelēkajam, zaļajam, baltajam un koka tonim horizontāla fascia dēļa NAV: vertikālie fasādes dēļi iet līdz jumta malai, ir tikai notekas, un jumta mala (garajā pusē un gala fasādēs, 1. un 2. ass) ir tikai ~100 mm skārda mala (nevis ~330 mm biezs pārsegums). Tas jāievēro gan rasējumos (`cad.js`, `projekts.fascia`), gan references bildē (`ref.py`), gan Gemini tekstā (`viz.py`). Baltajam tonim logu rāmji un apmales melni (RAL 9005).
 - **Ārdurvis** (references bildē, fasādēs un Gemini promptā vienādi): plakana vērtne rāmja tonī, viena šaura vertikāla stikla josla (160 mm, 150–1950 mm augstumā) eņģu pusē un garš vertikāls nerūsējošā tērauda rokturis (~1100 mm, 500–1600 mm augstumā) atvēršanas pusē. ref.py `opening(door=True)` to zīmē, viz.py `materials()` to prasa.
 - Ja Gemini maina logus vai durvis, ģenerē vēlreiz. Prompts to aizliedz ("Do not add, remove, merge, enlarge or divide any opening").
 
@@ -153,3 +161,9 @@ Noteikumus pierakstīs, kad lietotājs sāks šo fāzi.
 
 - `SBE-ARHITEKTS` mapi nemaina. Bots izmanto savu kopiju `sablons/sbe`, un MM labojumi tiek ielikti būvējot (build_model.py).
 - Google API atslēgu neglabā bota failos: tikai mākoņa vides mainīgajā `GEMINI_API_KEY` vai `MM System\.env`.
+
+**Vizualizāciju pamats mājām līdz 60 m² [MM]:** vizualizācijā un 3D references bildē māja stāv uz plātnes (grīdas paneļa biezums 275,5 mm = plātne, bez stabiem un cokola) ar koka terasi RAL 7016, viens pakāpiens 250 mm virs zemes: 1100 mm dziļa gar ieejas garsienu un 3075 mm aiz austrumu gala (`ref.py` slab_mode, `projekts.terase` ja/ne). Betons, cokols un plātnes mala NAV redzami: terase tieši sniedzas līdz zālei, sienu dēļi iet līdz terases virsmai. Slīpajam (piecstūra) galu logam jābūt redzamam un piecstūrainam gan references bildē, gan promptā, nekad taisnstūrim. Lietotāja bildes kā vizuālu paraugu NEIZMANTO, tā ir tikai izmēriem. **Pirms vizualizācijām botam VIENMĒR jāpajautā lietotājam:** taisīt vai nē, kuri toņi, kura atmosfēra (mežs, fjords, krasts, plato, ziema, rudens), kuri skati. Balto toni logu rāmji un aplodas pēc noklusējuma ir melni (RAL 9005), sarkanajam balti (RAL 9016). Vizualizāciju prompts satur precīzu atveru skaitu (`viz.openings`), lai Gemini neizdomā logus.
+**Vizualizāciju un rasējumu detaļas pa toņiem [MM]:** (1) noteknes caurule beidzas 50 mm virs terases virsmas un neiet terasē (references bildē un promptā). (2) Palodzes (sill) loga apmales/rāmja tonī: sarkanajam un zaļajam baltas, baltajam melnas, pārējiem RAL 7016; tas attiecas arī uz rasējumu fasādēm (cad.js). (3) Zaļajam logu rāmji, aplodas un palodzes baltas (RAL 9016) rasējumos un viz. (4) Slīpais galu logs vajadzīgs visos toņos. (5) Plātnes/betona nav nevienā tonī.
+Slīpā (piecstūra) galu loga rāmis un aploda ir tādā pašā tonī kā visi pārējie logi (sarkanajam/zaļajam balti, baltajam melni): rasējumā, references bildē un viz promptā.
+Noteka (rene) ir piestiprināta pie fascijas (dzegas joslas) tieši zem jumta malas, ne zemu uz sienas; caurule iet no tās līdz 50 mm virs terases.
+Fascija (garā mala) sarkanajam tonim ir balta kā vējmala, ar nelielu jumta toņa (RAL 7016) skārda lentu virs tās. Atsauces bilde ir vienkāršota (`ref.py` SIMPLE): bez aplodām, ailu virsmām un palodzēm, tās Gemini zīmē pēc teksta, lai nebūtu artefaktu.
