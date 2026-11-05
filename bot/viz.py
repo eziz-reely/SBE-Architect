@@ -96,6 +96,7 @@ def materials(tk, m=None):
          f"Glass reflects the overcast sky. "
          f"{foundation}")
     if t.get('vejmala') == 'balta':
+        s += " The fascia board along the long eave side is white painted timber like the verge boards, with only a narrow, small roof-coloured (RAL 7016) metal drip flashing over its top edge."
         s += " Roof verge (sloping fascia board along the gable roof edge): white painted timber verge boards (classic Norwegian detail)."
     else:
         s += " Roof verge (sloping fascia along the gable roof edge): only a slim anthracite RAL 7016 metal verge flashing, no timber boards, no white."
