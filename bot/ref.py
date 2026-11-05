@@ -252,8 +252,8 @@ def render(m, tone_key):
     s.append(poly(cam, [(W, D, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, D, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
     s.append(poly(cam, [(W, 0, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, 0, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
     # notekas: gar dienvidu dzegu, caurule pie austrumu stūra līdz 50 mm virs zemes
-    s.append(poly(cam, [(0, D + 120, eave - 60), (W, D + 120, eave - 60), (W, D + 120, eave - 180), (0, D + 120, eave - 180)], fill='#2f3438'))
-    s.append(poly(cam, [(W - 230, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, eave - 180), (W - 230, D + 120, eave - 180)], fill='#2f3438'))
+    s.append(poly(cam, [(0, D + 120, eaveTop - 20), (W, D + 120, eaveTop - 20), (W, D + 120, eaveTop - 150), (0, D + 120, eaveTop - 150)], fill='#1c2124', stroke='#0b0d0e', stroke_width=1))
+    s.append(poly(cam, [(W - 230, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, eaveTop - 150), (W - 230, D + 120, eaveTop - 150)], fill='#2f3438'))
     s.append('</svg>')
     return '\n'.join(s)
 

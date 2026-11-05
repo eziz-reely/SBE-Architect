@@ -85,7 +85,7 @@ def materials(tk, m=None):
     pipe_end = '5 cm above the terrace deck surface (it never goes into or through the terrace boards)' if (m and slab_mode(m)) else '5 cm above the ground'
     frames = {'RAL 9016': 'white (RAL 9016)', 'RAL 9005': 'black (RAL 9005)'}.get(t.get('logi'), 'anthracite grey (RAL 7016)')
     s = (f"Materials: walls are vertical cladding boards {wall}. Roof: dark anthracite standing seam steel RAL 7016, no overhang, "
-         f"thin anthracite gutter along the eave and a round anthracite downpipe ending {pipe_end}. "
+         f"thin anthracite gutter mounted on the fascia board directly under the roof edge (high up, not low on the wall) and a round anthracite downpipe ending {pipe_end}. "
          f"Windows and the entrance door: {frames} frames, set back (recessed) into the wall about 15 cm, NOT flush with the cladding: the reference image shows the visible reveal sides of every opening, keep that depth. "
          f"The window reveals (jambs and heads of each opening) are clad in the same colour and material as the facade walls. "
          f"The entrance door leaf is flat in the frame colour, with one narrow vertical glass strip (about 16 cm wide, almost full door height) along the hinge side "
