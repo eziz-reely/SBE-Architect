@@ -20,3 +20,18 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 ## Vides prasības
 
 Python 3, Node.js ar Playwright (pārbaudei un ekrānuzņēmumiem). Vizualizācijām vides mainīgais `GEMINI_API_KEY` (to nekad neglabā repo).
+
+## Kā lietot (īsi)
+
+1. **Jauns modelis:** jaunā threadā raksti `/sbe` (vai "jauns modelis"). Atbildi uz kartīti ar ķeksīšiem: gabarīti (garums × platums × kores augstums), nosaukums, tonis, mansards. Pārējam ir noklusējumi.
+2. **Bots uztaisa vienu plānojumu (V01)**, A3 lapu LV un EN un pārbauda to ar `rules_check` un `mm-check`. Tu redzi plāna bildi.
+3. **Tu apstiprini vai labo.** Ja kaut kas nav labi, raksti `/editbot` ar numurētiem punktiem un bildi. Bots to ieraksta noteikumos un nākamie modeļi to ievēro.
+4. **Tikai pēc apstiprinājuma** raksti, ka gribi vizualizācijas. Tām vajag `GEMINI_API_KEY` (iestatīts projekta vidē `gemini`).
+5. Faili ir `MM System\MĀJAS\<m2>\<id>\`: `model.json`, `rasejumi/*.html`, `viz/*.png`. Tos vēlāk izmanto mājaslapai.
+
+## Lai komandas nesajūk
+
+- `/sbe`: tikai jauns modelis. Neko nemaina botā.
+- `/editbot`: tikai bota noteikumu maiņa. Jaunu modeli neveido (tikai testam).
+- Vecie konta skill (`modelu-bots`, `sbe-arhitekts`, `gemini-arch-foto`, `lwdc-plani-fasades`) ir citi rīki un šo plugin neaizstāj. Ja tie traucē, izslēdz tos Settings > Skills.
+- Vienīgā galvenā bota versija ir šis repo. Neviena cita kopija (dators, projekta faili) vairs nav jālabo.
