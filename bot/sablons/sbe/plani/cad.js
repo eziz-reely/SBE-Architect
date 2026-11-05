@@ -521,12 +521,19 @@ function cadPlan(parent, v, opt = {}) {
     else rows[0] = [...open, ...wl];
     rows.forEach((p, i) => chainCad(dg, p, dir, base + sgn * (650 + 600 * i)));
   };
+  if (opt.loftDims) {   // mansards: tikai paša lofta (guļvietas) garums un platums, bez mājas gabarītiem
+    const lr = v.rooms.filter(rm => !rm.void).flatMap(rm => rm.r);
+    const lx = [Math.min(...lr.map(q => q[0])), Math.max(...lr.map(q => q[0] + q[2]))], ly = [Math.min(...lr.map(q => q[1])), Math.max(...lr.map(q => q[1] + q[3]))];
+    chainCad(dg, lx, "x", -650 - E);
+    chainCad(dg, ly, "y", -650 - E);
+  } else {
   side([0, v.W, ...wins(w => w.o === "h" && winSide(v, w) === "north", w => w.x)], [0, v.W, ...at(1, 0)], axX, "x", -1, -E);
-  side([0, v.D, ...wins(w => w.o === "v" && winSide(v, w) === "west", w => w.y)], [0, v.D, ...at(0, 0)], axY, "y", -1, -E);
-  side([0, v.D, ...wins(w => w.o === "v" && winSide(v, w) === "east", w => w.y)], [0, v.D, ...at(0, v.W)], axY, "y", 1, v.W + E);
-  const bot = [0, v.W]; v.poly.forEach(p => { if (p[1] === v.D) bot.push(p[0]); });
-  const entryX = v.entryInChain ? v.doors.filter(d => d.entry).flatMap(d => [d.x, d.x + d.w]) : [];
-  side([0, v.W, ...entryX, ...wins(w => w.o === "h" && winSide(v, w) === "south", w => w.x)], bot, axX, "x", 1, v.D + E);
+    side([0, v.D, ...wins(w => w.o === "v" && winSide(v, w) === "west", w => w.y)], [0, v.D, ...at(0, 0)], axY, "y", -1, -E);
+    side([0, v.D, ...wins(w => w.o === "v" && winSide(v, w) === "east", w => w.y)], [0, v.D, ...at(0, v.W)], axY, "y", 1, v.W + E);
+    const bot = [0, v.W]; v.poly.forEach(p => { if (p[1] === v.D) bot.push(p[0]); });
+    const entryX = v.entryInChain ? v.doors.filter(d => d.entry).flatMap(d => [d.x, d.x + d.w]) : [];
+    side([0, v.W, ...entryX, ...wins(w => w.o === "h" && winSide(v, w) === "south", w => w.x)], bot, axX, "x", 1, v.D + E);
+}
   // interior chains: wall faces crossed by a line through the plan
   const R = v.rooms.flatMap(rm => rm.r);
   const cross = (axis, at) => {

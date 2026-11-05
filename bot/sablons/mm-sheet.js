@@ -147,10 +147,10 @@ function modelSheet(v) {
   sheetHeading(svg, 26, y, 215, tx.plan);
   mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly));
 
-  // 2) loft: tie paši ārējie izmēri (garums, platums) kā 1. stāvam; sava telpu tabula blakus
+  // 2) loft: paša lofta garums un platums (loftDims); sava telpu tabula blakus
   if (lf) {
     const LY = y + 27;
-    cadPlan(el("g", { "data-block": "loft", transform: `translate(${PX} ${LY}) scale(${k})` }, svg), lf, { furniture: true, axes: true, levels: true, tag: "-loft", tags: false, axOff: 1650 });
+    cadPlan(el("g", { "data-block": "loft", transform: `translate(${PX} ${LY}) scale(${k})` }, svg), lf, { furniture: true, axes: true, levels: true, tag: "-loft", tags: false, axOff: 1650, loftDims: true });
     mmTable(svg, TX, LY - 8, TW, tx.expl, tx.f2, mmRooms(lf), L);
     y = LY + d + 27;
     sheetHeading(svg, 26, y, 215, tx.loft);
