@@ -59,6 +59,7 @@ def build(model_path, langs=None):
     tone = cfg['toni'][pr.get('tonis', 'peleks')]
     pr['tonis_lv'], pr['tonis_en'], pr['tonis_sw'] = tone['lv'], tone['en'], tone['sw']
     pr['sturi'] = tone.get('sturi', 0)   # sarkanajam tonim: balti 90 mm stūru dēļi (norvēģu standarts)
+    pr['fascia'] = tone.get('vejmala') == 'balta'   # horizontāla balta fascija tikai sarkanajam
     pr['logi'], pr['logi_hex'] = tone.get('logi', 'RAL 7016'), {'RAL 9016': '#F1F0EA', 'RAL 7016': '#383E42'}.get(tone.get('logi', 'RAL 7016'), '#383E42')
     cfg.setdefault('win', {}).update(colorOut=pr['logi'], casingColor=pr['logi'])   # logu rāmji un apmales pēc toņa (sarkanajam balti RAL 9016)
     cfg['projekts'] = pr

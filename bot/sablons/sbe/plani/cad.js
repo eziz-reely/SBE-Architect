@@ -575,16 +575,19 @@ function elevation(parent, v, side, opt = { levels: true }) {
   const P = (u, z) => `${u},${-z}`;
   const eEdge = ROOF.eave - ROOF.ov * tan, thV = ROOF.th / Math.cos(ROOF.pitch * Math.PI / 180);
   const ridgeU = ROOF.eave + (v.D / 2) * tan, ridgeTop = eEdge + thV + (v.D / 2 + ROOF.ov) * tan;
+  const FAS = !!(window.AR && AR.projekts && AR.projekts.fascia);   // [MM] horizontāla fascija tikai sarkanajam tonim (balta); pārējiem dēļi iet līdz jumtam
+  const vt = FAS ? 220 : 100;                                          // vējmalas biezums (mm) pie gala fasādēm
+  const roofTopW = ridgeTop - (v.D / 2) * tan;                         // jumta virsmas augstums pie sienas gala fasādē
 
   // ground
   { let d = ""; for (let x = -1400; x < span + 1400 - 260; x += 200) d += `M ${x} ${ROOF.plinth + 260} L ${x + 260} ${ROOF.plinth} `; el("path", { d, stroke: "#666", "stroke-width": 8, fill: "none" }, g); }
   el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth, stroke: C.ink, "stroke-width": 45, "data-keep": 1 }, g);
 
   // wall cladding
-  const wallPoly = gable ? [P(0, -fT), P(span, -fT), P(span, ROOF.eave), P(span / 2, ridgeU), P(0, ROOF.eave)] : [P(0, -fT), P(span, -fT), P(span, eEdge), P(0, eEdge)];
+  const wallPoly = gable ? [P(0, -fT), P(span, -fT), P(span, roofTopW), P(span / 2, ridgeTop), P(0, roofTopW)] : [P(0, -fT), P(span, -fT), P(span, FAS ? eEdge : ROOF.eave), P(0, FAS ? eEdge : ROOF.eave)];
   const wid = "wall-" + side + "-" + Math.random().toString(36).slice(2, 7);
   el("polygon", { points: wallPoly.join(" ") }, el("clipPath", { id: wid }, g));
-  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeU : eEdge), fT, side.length);
+  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeTop : (FAS ? eEdge : ROOF.eave)), fT, side.length);
   el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);
   if (opt.houseH !== false && fT) {   // [MM] viena mēra ķēde: mājas augstums no grīdas paneļa apakšas (−G1) līdz jumta virsmai (kore)
     const hy0 = -ridgeTop, hy1 = fT, hx = span + 900, Ht = (window.AR && AR.projekts && AR.projekts.ievade && AR.projekts.ievade.augstums) || Math.round(ridgeTop + fT);
@@ -743,16 +746,18 @@ function elevation(parent, v, side, opt = { levels: true }) {
       el("line", { x1: u, y1: -ridgeTop, x2: u, y2: -(eEdge + thV), stroke: "#2a2f33", "stroke-width": 14 }, sg);
       el("line", { x1: u + 16, y1: -ridgeTop, x2: u + 16, y2: -(eEdge + thV), stroke: "rgba(255,255,255,.12)", "stroke-width": 6 }, sg);
     }
-    // drip edge + fascia board
-    el("rect", { x: -ROOF.ov - 20, y: -(eEdge + thV), width: span + 2 * ROOF.ov + 40, height: 70, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
-    el("rect", { x: -ROOF.ov, y: -(eEdge + thV - 70), width: span + 2 * ROOF.ov, height: thV - 70, fill: "#30363a", stroke: C.ink, "stroke-width": 12 }, g);
-    el("line", { x1: -ROOF.ov, y1: -(eEdge + thV - 90), x2: span + ROOF.ov, y2: -(eEdge + thV - 90), stroke: "rgba(255,255,255,.14)", "stroke-width": 10 }, g);
+    // sarkanajam: balta fascija ar mazu jumta toņa skārda lentu; pārējiem tikai tieva (100 mm) skārda mala, dēļi iet līdz jumtam
+    if (FAS) {
+      el("rect", { x: -ROOF.ov, y: -(eEdge + thV - 70), width: span + 2 * ROOF.ov, height: thV - 70, fill: "#F2F0EA", stroke: C.ink, "stroke-width": 12 }, g);
+      el("rect", { x: -ROOF.ov - 20, y: -(eEdge + thV), width: span + 2 * ROOF.ov + 40, height: 70, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
+    } else {
+      el("rect", { x: -ROOF.ov - 20, y: -(eEdge + thV), width: span + 2 * ROOF.ov + 40, height: vt, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
+    }
   } else {
-    // verge: fascia board under the roof edge, standing-seam cover with drip edge on top
-    el("polygon", { points: [P(-ROOF.ov, eEdge), P(-ROOF.ov, eEdge + thV), P(span / 2, ridgeTop), P(span + ROOF.ov, eEdge + thV), P(span + ROOF.ov, eEdge), P(span / 2, ridgeU)].join(" "), fill: "#30363a", stroke: C.ink, "stroke-width": 12 }, g);
-    const cov = 75;
-    el("polygon", { points: [P(-ROOF.ov - 20, eEdge + thV + 5), P(span / 2, ridgeTop + 5), P(span + ROOF.ov + 20, eEdge + thV + 5), P(span + ROOF.ov + 20, eEdge + thV - cov), P(span / 2, ridgeTop - cov), P(-ROOF.ov - 20, eEdge + thV - cov)].join(" "), fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
-    el("polyline", { points: [P(-ROOF.ov, eEdge + thV - cov - 22), P(span / 2, ridgeTop - cov - 22), P(span + ROOF.ov, eEdge + thV - cov - 22)].join(" "), fill: "none", stroke: "rgba(255,255,255,.14)", "stroke-width": 10 }, g);
+    // verge: sarkanajam balta ~220 mm dēļu mala ar jumta toņa lentu, pārējiem tikai ~100 mm skārda vējmala
+    const eT = eEdge + thV, cov = FAS ? 60 : 0;
+    el("polygon", { points: [P(-ROOF.ov, eT - vt), P(-ROOF.ov, eT), P(span / 2, ridgeTop), P(span + ROOF.ov, eT), P(span + ROOF.ov, eT - vt), P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? "#F2F0EA" : "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
+    if (cov) el("polygon", { points: [P(-ROOF.ov - 20, eT + 5), P(span / 2, ridgeTop + 5), P(span + ROOF.ov + 20, eT + 5), P(span + ROOF.ov + 20, eT - cov), P(span / 2, ridgeTop - cov), P(-ROOF.ov - 20, eT - cov)].join(" "), fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
   }
 
   // gutters and downpipes, RAL 7016

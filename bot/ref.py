@@ -197,9 +197,11 @@ def render(m, tone_key):
                 continue
             z1 = min(gable_top(u0), gable_top(u1)) - 450
             s += opening('east', u0, u1, gw['z0'], z1)
-    # dienvidu (ieejas) fasāde
-    s.append(poly(cam, wall('south', 0, W, -floorT, eave), fill=clad, stroke='#111', stroke_width=1.5))
-    s += boards('south', 0, W, eave)
+    # dienvidu (ieejas) fasāde; tikai sarkanajam ir horizontāla fascija, pārējiem dēļi iet līdz jumtam
+    white_f = tone.get('vejmala') == 'balta'
+    sTop = eave if white_f else eaveTop
+    s.append(poly(cam, wall('south', 0, W, -floorT, sTop), fill=clad, stroke='#111', stroke_width=1.5))
+    s += boards('south', 0, W, sTop)
     for w in m['windows']:
         if wside(m, w) == 'south':
             s += opening('south', w['x'], w['x'] + w['len'], w['sill'], w['head'])
@@ -230,15 +232,15 @@ def render(m, tone_key):
     # jumts: dienvidu slīpne ar valcprofila šuvēm, austrumu vējmala
     rz = ridge
     white_f = tone.get('vejmala') == 'balta'      # sarkanajam fascija (arī garajā malā) balta, virs tās neliela jumta toņa skārda lenta
-    s.append(poly(cam, [(0, D, eave), (W, D, eave), (W, D, eaveTop), (0, D, eaveTop)], fill='#F2F0EA' if white_f else '#30363a', stroke='#111', stroke_width=1))   # dzega josla
     if white_f:
+        s.append(poly(cam, [(0, D, eave), (W, D, eave), (W, D, eaveTop), (0, D, eaveTop)], fill='#F2F0EA', stroke='#111', stroke_width=1))   # dzega josla
         s.append(poly(cam, [(0, D + 25, eaveTop - 45), (W, D + 25, eaveTop - 45), (W, D + 25, eaveTop + 10), (0, D + 25, eaveTop + 10)], fill='#40464b', stroke='#111', stroke_width=.8))
     roof = [(0, D, eaveTop), (W, D, eaveTop), (W, D / 2, rz), (0, D / 2, rz)]
     s.append(poly(cam, roof, fill='#40464b', stroke='#111', stroke_width=1.5))
     for x in range(265, int(W), 530):
         s.append(line(cam, (x, D, eaveTop), (x, D / 2, rz), stroke='#2a2f33', stroke_width=1.5))
     # vējmala: sarkanajam balti koka dēļi (~200 mm), pārējiem tieva metāla vējmalas skārda RAL 7016
-    vb, vh = ('#F2F0EA', 220) if tone.get('vejmala') == 'balta' else ('#30363a', 90)
+    vb, vh = ('#F2F0EA', 220) if tone.get('vejmala') == 'balta' else ('#30363a', 100)
     s.append(poly(cam, [(W, D, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, D, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
     s.append(poly(cam, [(W, 0, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, 0, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
     # notekas: gar dienvidu dzegu, caurule pie austrumu stūra līdz 50 mm virs zemes

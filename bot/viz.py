@@ -99,7 +99,9 @@ def materials(tk, m=None):
         s += " The fascia board along the long eave side is white painted timber like the verge boards, with only a narrow, small roof-coloured (RAL 7016) metal drip flashing over its top edge."
         s += " Roof verge (sloping fascia board along the gable roof edge): white painted timber verge boards (classic Norwegian detail)."
     else:
-        s += " Roof verge (sloping fascia along the gable roof edge): only a slim anthracite RAL 7016 metal verge flashing, no timber boards, no white."
+        s += (" NO horizontal fascia board anywhere: the vertical cladding boards run straight up the wall to the underside of the roof edge, "
+              "and the only thing at the eave is the thin anthracite gutter fixed to the cladding directly under the roof edge. "
+              "The roof edge itself (long side and both gable ends) is only a slim roof-coloured RAL 7016 metal edge flashing about 10 cm thick, no timber boards, no white, no thick overhang fascia.")
     if t.get('sturi'):
         s += f" White corner trims {t['sturi']} mm wide on every corner of the house (classic Norwegian detail)."
     return s
