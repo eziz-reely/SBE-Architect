@@ -307,6 +307,7 @@ if __name__ == '__main__':
     ap.add_argument('--rev-apraksts', help='revīzijas apraksts')
     ap.add_argument('--raditajs', action='append', default=[], help='papildu rādītājs rakstlaukumā "Nosaukums=Vērtība", var atkārtot')
     ap.add_argument('--nosaukums', help='modeļa nosaukums rakstlaukumā, piem. Freya')
+    ap.add_argument('--skp', action='store_true', help='uztaisa SketchUp 3D modeli (3d/<id>.dae + <id>_skp.rb + .obj), skat. skp.py')
     ap.add_argument('--piragi', choices=['ja', 'ne'], default='ne', help='pīrāgu (sienu) biezumi ar mēriem lapā; noklusējums ne (nerādīt)')
     ap.add_argument('--tonis', choices=['peleks', 'koks', 'sarkans', 'zals', 'balts'], help='fasādes tonis (sablons/tex), noklusējums peleks')
     ap.add_argument('--pamati', choices=['stabveida', 'platne'], help='pamatu veids, noklusējums stabveida')
@@ -352,6 +353,11 @@ if __name__ == '__main__':
         mj = json.load(open(p, encoding='utf-8'))
         mj['ievade'] = {**mj.get('ievade', {}), 'augstums': a.augstums, 'augstums_0': H0}
         json.dump(mj, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    if a.skp:
+        from skp import main as skp_main
+        for p in ps:
+            for o in skp_main(p):
+                print(o)
     from ref import main as ref_main   # 3D references bildes Gemini vizualizācijām (visi toņi)
     for p in ps:
         for x in planlib.check_model(p):
