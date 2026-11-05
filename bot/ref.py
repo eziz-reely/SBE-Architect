@@ -139,7 +139,10 @@ def render(m, tone_key):
         (redzamās virsmas ēnotas), metāla palodze loga tonī izvirzīta no sienas plaknes."""
         R = 150
         Q = lambda uu0, uu1, zz0, zz1, d=R: [at(face, uu0, d, zz0), at(face, uu1, d, zz0), at(face, uu1, d, zz1), at(face, uu0, d, zz1)]
-        o = [poly(cam, Q(u0, u1, z0, z1), fill=shade(clad, .55), stroke='#111', stroke_width=1)]   # ailas aizmugure (ēna)
+        cs = 100     # aploda (apmale) 100 mm ap atveri, plakana, sienas plaknē (kā rasējumā win.casing)
+        zc0 = z0 - cs if (not door and z0 > 0) else z0
+        o = [poly(cam, Q(u0 - cs, u1 + cs, zc0, z1 + cs, 0), fill=frame, stroke='#111', stroke_width=1),
+             poly(cam, Q(u0, u1, z0, z1), fill=shade(clad, .55), stroke='#111', stroke_width=1)]   # aploda + ailas aizmugure (ēna)
         f0, f1, fz0, fz1 = u0, u1, z0, z1
         o.append(poly(cam, Q(f0, f1, fz0, fz1), fill=frame, stroke='#111', stroke_width=1))
         o.append(poly(cam, Q(f0 + 60, f1 - 60, fz0 + (0 if door else 60), fz1 - 60), fill=frame if door else '#8fa3ad', stroke='#111', stroke_width=1))
@@ -183,7 +186,7 @@ def render(m, tone_key):
                     L0, R0 = u0 + i - o, u1 - i + o
                     return [(L0, zb + i), (R0, zb + i), (R0, zt(R0) - i * kk + o * kk), (mid, zt(mid) - i * kk + o * kk), (L0, zt(L0) - i * kk + o * kk)]
                 P = lambda pts, d=150: [at('east', u, d, z) for u, z in pts]
-                s.append(poly(cam, P(shp(0, 100), 100), fill=frame, stroke='#111', stroke_width=1))          # apmale
+                s.append(poly(cam, P(shp(0, 100), 0), fill=frame, stroke='#111', stroke_width=1))          # apmale sienas plaknē
                 s.append(poly(cam, P(shp(0)), fill=frame, stroke='#111', stroke_width=1))
                 s.append(poly(cam, P(shp(95)), fill='#8fa3ad', stroke='#111', stroke_width=1))
                 s.append(poly(cam, P([(u0 - 70, zb), (u1 + 70, zb), (u1 + 70, zb - 45), (u0 - 70, zb - 45)], -40), fill=shade(frame, 1.25), stroke='#111', stroke_width=.8))
