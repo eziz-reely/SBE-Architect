@@ -19,7 +19,7 @@ def js(o):
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'entryInChain']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
@@ -59,6 +59,7 @@ def build(model_path, langs=None):
     tone = cfg['toni'][pr.get('tonis', 'peleks')]
     pr['tonis_lv'], pr['tonis_en'], pr['tonis_sw'] = tone['lv'], tone['en'], tone['sw']
     pr['sturi'] = tone.get('sturi', 0)   # sarkanajam tonim: balti 90 mm stūru dēļi (norvēģu standarts)
+    pr['fascia'] = tone.get('vejmala') == 'balta'   # horizontāla balta fascija tikai sarkanajam
     pr['logi'], pr['logi_hex'] = tone.get('logi', 'RAL 7016'), {'RAL 9016': '#F1F0EA', 'RAL 7016': '#383E42'}.get(tone.get('logi', 'RAL 7016'), '#383E42')
     cfg.setdefault('win', {}).update(colorOut=pr['logi'], casingColor=pr['logi'])   # logu rāmji un apmales pēc toņa (sarkanajam balti RAL 9016)
     cfg['projekts'] = pr

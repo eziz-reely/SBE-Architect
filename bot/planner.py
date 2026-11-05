@@ -45,7 +45,7 @@ R = {
     'hall_d': 1200, 'hall_min': 1000, 'corridor': {'lidz60': 1100, 'virs60': 1200},
     'bed_min_side': {'lidz60': 2400, 'virs60': 2700},
     'bath_min_side': 1500,
-    'loft_edge_h': 700, 'loft_ridge_min': 1100,
+    'loft_edge_h': 700, 'loft_ridge_min': 1000,
     # [MM] 05.11.2026 /editbot noteikumi
     'bed_wardrobe_min_m2': 9.0,          # guļamistaba < 9 m²: drēbju skapi neliek
     'hall_pass': 900,                    # skapis priekšnamā/gaitenī drīkst atstāt >= 900 mm brīvu caurgājienu, citādi dzēš vai liek dzīvojamā
@@ -1626,8 +1626,9 @@ def _loft_west(L, eave, griesti, x0, rx, vx1):
         y2 = r1((D - g2) / 2)
         if big:
             g2, y2 = big['len'], big['y']
-        while g2 >= 600 and eave + ((D - g2) / 2) * tn < 2900 + 150:
+        while g2 >= 600 and eave + ((D - g2) / 2) * tn < 2300 + 300 + 200:   # [MM] piecstūra logs = lielā stiklojuma platumā; sānu malas vismaz 300 mm augstas (jumta atkāpe 200)
             g2 -= 200
+        y2 = r1(big['y'] + (big['len'] - g2) / 2) if big else r1((D - g2) / 2)   # pēc samazināšanas centrē virs lielā stiklojuma (piecstūra virsotne uz kores ass)
         if g2 >= 600:
             pent = {'len': r1(g2), 'sill': 2300, 'head': 2900, 'kind': 'fixed', 'shape': 'gable', 'x': r1(W - T) if lside == 'east' else 0,
                     'y': y2, 'o': 'v', 'out': 1 if lside == 'east' else -1, 'side': lside}

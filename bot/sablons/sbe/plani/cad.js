@@ -245,6 +245,7 @@ function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
   for (let i = 0; i < pts.length - 1; i++) {
     const len = pts[i + 1] - pts[i], m = (pts[i] + pts[i + 1]) / 2;
     if (hideWall && len === T) continue;
+    if (!(window.AR && AR.projekts && AR.projekts.piragi === "ja") && (window.AR && AR.projekts) && Math.abs(len - T) <= 1) continue;   // [MM] pīrāgu (ārsienas) biezumus nerāda, ja nav prasīts (--piragi ja)
     // short end pieces (e.g. axis to the cladding face): text just outside the chain end
     let mm = m;
     if (len < 200) { if (i === 0) mm = pts[0] - 260; else if (i === pts.length - 2) mm = pts[i + 1] + 260; else continue; }
@@ -537,7 +538,7 @@ function cadPlan(parent, v, opt = {}) {
     const hit = []; iv.forEach(c => { const l = hit.find(h => h[2] === c[2] && c[0] <= h[1] + 60 && c[1] >= h[0] - 60); if (l) { l[0] = Math.min(l[0], c[0]); l[1] = Math.max(l[1], c[1]); } else hit.push([...c]); });
     const pts = hit.flatMap(q => [q[0], q[1]]);
     const lo = Math.min(...pts), hi = Math.max(...pts);
-    return [...pts, lo - T, hi + T];
+    return (window.AR && AR.projekts && AR.projekts.piragi !== "ja") ? pts : [...pts, lo - T, hi + T];   // bez pīrāgu mēriem ķēde beidzas pie telpu virsmām (nav sienas biezuma atzīmju)
   };
   (v.innerDims || []).forEach(([axis, at], k) => chainCad(dg, cross(axis, at), axis, at, 0, true, k > 0));
   v.rooms.forEach((rm, i) => {
@@ -574,17 +575,27 @@ function elevation(parent, v, side, opt = { levels: true }) {
   const P = (u, z) => `${u},${-z}`;
   const eEdge = ROOF.eave - ROOF.ov * tan, thV = ROOF.th / Math.cos(ROOF.pitch * Math.PI / 180);
   const ridgeU = ROOF.eave + (v.D / 2) * tan, ridgeTop = eEdge + thV + (v.D / 2 + ROOF.ov) * tan;
+  const FAS = !!(window.AR && AR.projekts && AR.projekts.fascia);   // [MM] horizontāla fascija tikai sarkanajam tonim (balta); pārējiem dēļi iet līdz jumtam
+  const vt = FAS ? 220 : 100;                                          // vējmalas biezums (mm) pie gala fasādēm
+  const roofTopW = ridgeTop - (v.D / 2) * tan;                         // jumta virsmas augstums pie sienas gala fasādē
 
   // ground
   { let d = ""; for (let x = -1400; x < span + 1400 - 260; x += 200) d += `M ${x} ${ROOF.plinth + 260} L ${x + 260} ${ROOF.plinth} `; el("path", { d, stroke: "#666", "stroke-width": 8, fill: "none" }, g); }
   el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth, stroke: C.ink, "stroke-width": 45, "data-keep": 1 }, g);
 
   // wall cladding
-  const wallPoly = gable ? [P(0, -fT), P(span, -fT), P(span, ROOF.eave), P(span / 2, ridgeU), P(0, ROOF.eave)] : [P(0, -fT), P(span, -fT), P(span, eEdge), P(0, eEdge)];
+  const wallPoly = gable ? [P(0, -fT), P(span, -fT), P(span, roofTopW), P(span / 2, ridgeTop), P(0, roofTopW)] : [P(0, -fT), P(span, -fT), P(span, FAS ? eEdge : eEdge + thV - 20), P(0, FAS ? eEdge : eEdge + thV - 20)];
   const wid = "wall-" + side + "-" + Math.random().toString(36).slice(2, 7);
   el("polygon", { points: wallPoly.join(" ") }, el("clipPath", { id: wid }, g));
-  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeU : eEdge), fT, side.length);
+  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);
   el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);
+  if (opt.houseH !== false && fT) {   // [MM] viena mēra ķēde: mājas augstums no grīdas paneļa apakšas (−G1) līdz jumta virsmai (kore)
+    const hy0 = -ridgeTop, hy1 = fT, hx = span + 900, Ht = (window.AR && AR.projekts && AR.projekts.ievade && AR.projekts.ievade.augstums) || Math.round(ridgeTop + fT);
+    const dl = (x1, y1, x2, y2, sw = 7) => el("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": sw }, g);
+    dl(hx, hy0 - 120, hx, hy1 + 120);
+    [hy0, hy1].forEach(y => { dl(hx - 130, y, hx + 130, y, 6); dl(hx - 75, y + 75, hx + 75, y - 75, 16); dl(span + 80, y, hx + 130, y, 4); });
+    T_(g, hx - 70, (hy0 + hy1) / 2, Math.round(Ht).toLocaleString("lv-LV").replace(/\s/g, " "), { a: "middle", fs: 190, tr: `rotate(-90 ${hx - 70} ${(hy0 + hy1) / 2})` });
+  }
   if (fT) {
     // post foundation: floor build-up clad like the wall, shaded gap with posts down to the ground
     el("line", { x1: 0, y1: 0, x2: span, y2: 0, stroke: C.ink, "stroke-width": 7, "stroke-dasharray": "60 40" }, g);
@@ -668,11 +679,11 @@ function elevation(parent, v, side, opt = { levels: true }) {
       // sill: plate wider than the casing, front edge line, drip shadow on the wall
       const s0 = u0 - (cas || 0) - 45, s1 = u1 + (cas || 0) + 45;
       el("polygon", { points: [P(s0, z0 - 40), P(s1, z0 - 40), P(s1 - 30, z0 - 110), P(s0 + 30, z0 - 110)].join(" "), fill: "rgba(0,0,0,.35)" }, gg);
-      R(s0, s1, z0 - 40, z0 + 10, { fill: "#2b2f32", ...ln });
+      R(s0, s1, z0 - 40, z0 + 10, { fill: cc, ...ln });   // palodze loga apmales tonī (sarkanajam/zaļajam balta)
       el("line", { x1: s0, y1: -(z0 - 22), x2: s1, y2: -(z0 - 22), ...thin }, gg);
     } else {
       // window down to the floor: threshold plate only, no casing below
-      R(u0 - 15, u1 + 15, z0, z0 + 30, { fill: "#2b2f32", ...ln });
+      R(u0 - 15, u1 + 15, z0, z0 + 30, { fill: cc, ...ln });
     }
   };
   v.windows.forEach(w => {
@@ -689,7 +700,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
       return;
     }
     // fixed gable window with two sloping edges (pentagon), outside casing like the standard windows
-    const gg = el("g", {}, g), z0 = gw.z0 || 2450, off = 450, k = 1 / Math.cos(ROOF.pitch * Math.PI / 180), cas = (window.AR && window.AR.win && window.AR.win.casing) ?? 0;
+    const gg = el("g", {}, g), z0 = gw.z0 || 2450, off = 200, k = 1 / Math.cos(ROOF.pitch * Math.PI / 180), cas = (window.AR && window.AR.win && window.AR.win.casing) ?? 0;
     const a0 = b0, a1 = b1, mid = (a0 + a1) / 2;
     const zTop = u => ROOF.eave + Math.min(u, span - u) * tan - off;
     const shape = (i, o = 0) => {
@@ -735,16 +746,18 @@ function elevation(parent, v, side, opt = { levels: true }) {
       el("line", { x1: u, y1: -ridgeTop, x2: u, y2: -(eEdge + thV), stroke: "#2a2f33", "stroke-width": 14 }, sg);
       el("line", { x1: u + 16, y1: -ridgeTop, x2: u + 16, y2: -(eEdge + thV), stroke: "rgba(255,255,255,.12)", "stroke-width": 6 }, sg);
     }
-    // drip edge + fascia board
-    el("rect", { x: -ROOF.ov - 20, y: -(eEdge + thV), width: span + 2 * ROOF.ov + 40, height: 70, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
-    el("rect", { x: -ROOF.ov, y: -(eEdge + thV - 70), width: span + 2 * ROOF.ov, height: thV - 70, fill: "#30363a", stroke: C.ink, "stroke-width": 12 }, g);
-    el("line", { x1: -ROOF.ov, y1: -(eEdge + thV - 90), x2: span + ROOF.ov, y2: -(eEdge + thV - 90), stroke: "rgba(255,255,255,.14)", "stroke-width": 10 }, g);
+    // sarkanajam: balta fascija ar mazu jumta toņa skārda lentu; pārējiem tikai tieva (100 mm) skārda mala, dēļi iet līdz jumtam
+    if (FAS) {
+      el("rect", { x: -ROOF.ov, y: -(eEdge + thV - 70), width: span + 2 * ROOF.ov, height: thV - 70, fill: "#F2F0EA", stroke: C.ink, "stroke-width": 12 }, g);
+      el("rect", { x: -ROOF.ov - 20, y: -(eEdge + thV), width: span + 2 * ROOF.ov + 40, height: 70, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
+    } else {
+      el("rect", { x: -ROOF.ov - 20, y: -(eEdge + thV), width: span + 2 * ROOF.ov + 40, height: vt, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
+    }
   } else {
-    // verge: fascia board under the roof edge, standing-seam cover with drip edge on top
-    el("polygon", { points: [P(-ROOF.ov, eEdge), P(-ROOF.ov, eEdge + thV), P(span / 2, ridgeTop), P(span + ROOF.ov, eEdge + thV), P(span + ROOF.ov, eEdge), P(span / 2, ridgeU)].join(" "), fill: "#30363a", stroke: C.ink, "stroke-width": 12 }, g);
-    const cov = 75;
-    el("polygon", { points: [P(-ROOF.ov - 20, eEdge + thV + 5), P(span / 2, ridgeTop + 5), P(span + ROOF.ov + 20, eEdge + thV + 5), P(span + ROOF.ov + 20, eEdge + thV - cov), P(span / 2, ridgeTop - cov), P(-ROOF.ov - 20, eEdge + thV - cov)].join(" "), fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
-    el("polyline", { points: [P(-ROOF.ov, eEdge + thV - cov - 22), P(span / 2, ridgeTop - cov - 22), P(span + ROOF.ov, eEdge + thV - cov - 22)].join(" "), fill: "none", stroke: "rgba(255,255,255,.14)", "stroke-width": 10 }, g);
+    // verge: sarkanajam balta ~220 mm dēļu mala ar jumta toņa lentu, pārējiem tikai ~100 mm skārda vējmala
+    const eT = eEdge + thV, cov = FAS ? 60 : 0;
+    el("polygon", { points: [P(-ROOF.ov, eT - vt), P(-ROOF.ov, eT), P(span / 2, ridgeTop), P(span + ROOF.ov, eT), P(span + ROOF.ov, eT - vt), P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? "#F2F0EA" : "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
+    if (cov) el("polygon", { points: [P(-ROOF.ov - 20, eT + 5), P(span / 2, ridgeTop + 5), P(span + ROOF.ov + 20, eT + 5), P(span + ROOF.ov + 20, eT - cov), P(span / 2, ridgeTop - cov), P(-ROOF.ov - 20, eT - cov)].join(" "), fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
   }
 
   // gutters and downpipes, RAL 7016
@@ -1043,6 +1056,12 @@ if (r5) {
   };
   // bed: head "w" or "e"; pillows, duvet with turned-down edge
   const bed = (x, y, w, h, head) => {
+    if (head === "n" || head === "s") {   // galvgalis pie ziemeļu/dienvidu sienas: zīmē kā w un pagriež
+      const i0 = F.length; bed(0, 0, w, h, "w");
+      const tr = head === "n" ? `translate(${x + h} ${y}) rotate(90)` : `translate(${x} ${y + w}) rotate(-90)`;
+      for (let i = i0; i < F.length; i++) F[i].tr = tr;
+      return;
+    }
     const dir = head === "w" ? 1 : -1, h0 = head === "w" ? x : x + w, X = d => h0 + dir * d;
     // upholstered headboard
     R(Math.min(X(0), X(80)), y - 20, 80, h + 40, { rx: 35 });

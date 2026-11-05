@@ -223,7 +223,7 @@ Papildu normas [Arka/Timb/Eco]:
 - Mansards ir tikai II formai. Tas atrodas virs privātā bloka vienā mājas galā, rietumu vai austrumu, un plānotājs izmēģina abus galus.
 - Dzīvojamā istaba aizņem visu mājas dziļumu. Virs tās ir "Atvērts uz 1. stāvu", un šai daļai jābūt vismaz 2400 platai. Ja aiz dzīvojamās ir vēl viens bloks (guļamistabas abos galos), tam ir griesti bez mansarda, un mansarda plānā tas paliek tukšs.
 - Kāpnes (trepes 1000) ir priekšnamā vai gaitenī, dzīvojamās pusē. Priekšnams var būt gan dienvidos, gan ziemeļos.
-- Loft malā augstums ≥700 (gultas mala). Kores augstums virs loft grīdas ≥1100. Zem 1500 `rules_check` dod tikai INFO.
+- Loft malā augstums ≥700 (gultas mala). Kores augstums virs loft grīdas ≥1000 [MM]: māja 4000 mm no grīdas paneļa apakšas ar griestiem 2200 dod ~1029 mm, un to lietotājs pieņem. Zem 1500 `rules_check` dod tikai INFO.
 - Loft gultu (1600, ja nav vietas, tad 1400) liek centrā pa kori, gala sienas pusē, ne pāri trepju atverei. Loft garums ir ≥2300.
 - **Mansarda logi:**
   - Mansarda gala fasādē ir 600 logs. Palodze ir 2700, bet, ja jumts zems, 2300.

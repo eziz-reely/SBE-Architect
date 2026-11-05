@@ -33,7 +33,7 @@ function mmTable(svg, x, y, w, title, sub, rooms, L, foot) {
     const nm = L === "en" ? (rm.en || rm.n) : rm.n;
     el("circle", { cx: 3.6, cy: yy + RH / 2, r: 1.75, fill: "none", stroke: MM_ACC, "stroke-width": .25 }, g);
     T_(g, 3.6, yy + RH / 2 + .75, String(i + 1), { fs: 1.9, a: "middle", fw: 600 });
-    T_(g, 7, yy + RH / 2 + .8, nm, { fs: nm.length > 24 ? 1.9 : 2.2 });
+    T_(g, 7, yy + RH / 2 + .8, nm, { fs: 2.2 });
     T_(g, w - 2, yy + RH / 2 + .8, mmNum(area(rm)) + " m²", { fs: 2.2, a: "end" });
     yy += RH;
   });
@@ -111,7 +111,7 @@ function mmTitleBlock(svg, v, lf, L) {
   // revisions
   lab(350, tx.rev);
   const ry = 355;
-  T_(g, X + 3, ry, tx.rNr, { fs: 1.7, fill: MM_GREY }); T_(g, X + 10, ry, tx.rDate, { fs: 1.7, fill: MM_GREY }); T_(g, X + 23, ry, tx.rDesc, { fs: 1.7, fill: MM_GREY });
+  T_(g, X + 3, ry, tx.rNr, { fs: 1.7, fill: MM_GREY }); T_(g, X + 10, ry, tx.rDate, { fs: 1.7, fill: MM_GREY }); if (P.rev_apraksts) T_(g, X + 23, ry, tx.rDesc, { fs: 1.7, fill: MM_GREY });
   T_(g, X + 3, ry + 4, P.revizija || "00", { fs: 2.2, fw: 700 });
   T_(g, X + 10, ry + 4, P.datums || "", { fs: 2.1 });
   wrap(L === "en" ? (P.rev_apraksts_en || P.rev_apraksts || "") : (P.rev_apraksts || ""), 10).forEach((l, i) => T_(g, X + 23, ry + 4 + i * 2.8, l, { fs: 1.9 }));

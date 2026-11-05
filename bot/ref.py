@@ -10,6 +10,7 @@ import json, math, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CFG = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
+SIMPLE = True                      # references bilde bez aplodām, ailu virsmām un palodzēm: tās Gemini zīmē pēc teksta (mazāk artefaktu)
 IMG_W, IMG_H = 1536, 1024          # 3:2
 EYE = 1600                         # acu augstums virs zemes, mm
 YAW = 35                           # galvenā (ieejas) fasāde ~35° no frontāla
@@ -19,14 +20,30 @@ def ral(s):
     return {'RAL 7016': '#383E42', 'RAL 9016': '#F1F0EA', 'RAL 9005': '#1d1d1d'}.get(s, '#383E42')
 
 
+TER_H, TER_D, TER_X = 250, 1100, 3075    # terase uz plātnes: augstums virs zemes, dziļums pie ieejas, garums aiz austrumu gala
+
+
+def floor_t():
+    return sum(l[1] for l in CFG['layers']['G1']['layers'])
+
+
+def slab_mode(m):
+    """[MM] mājām līdz 60 m²: vizualizācijā māja stāv uz plātnes (grīdas paneļa biezums = plātne, bez stabiem) ar koka terasi 250 mm.
+    model.json projekts.terase: 'ja' | 'ne' | nav (= pēc laukuma)."""
+    t = (m.get('projekts') or {}).get('terase')
+    return t == 'ja' or (t != 'ne' and m['W'] * m['D'] / 1e6 <= 60.5)
+
+
 class Cam:
     def __init__(self, m):
         W, D = m['W'], m['D']
-        self.ground = -CFG['floor'].get('posts_ground', 600)
-        dist = max(W, D) * 2.1
-        a = math.radians(YAW)
+        self.slab = slab_mode(m)
+        self.ground = -floor_t() if self.slab else -CFG['floor'].get('posts_ground', 600)
+        EW, ED = (W + TER_X, D + TER_D) if self.slab else (W, D)
+        dist = max(EW, ED) * (1.8 if self.slab else 2.1)
+        a = math.radians(48 if self.slab else YAW)
         # skatītājs dienvidaustrumos: dienvidu (ieejas) fasāde dominē, austrumu gals ar lielo stiklu redzams
-        tx, ty = W * .5, D * .5
+        tx, ty = EW * .5, ED * .5
         self.C = (tx + math.sin(a) * dist, ty + math.cos(a) * dist, self.ground + EYE)
         fx, fy = tx - self.C[0], ty - self.C[1]
         n = math.hypot(fx, fy)
@@ -55,6 +72,14 @@ def line(cam, p, q, **a):
     return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" {attrs}/>'
 
 
+def wside(m, w):
+    if w.get('side'):
+        return w['side']
+    if w['o'] == 'v':
+        return 'west' if w['x'] < m['W'] / 2 else 'east'
+    return 'south' if w['y'] >= m['D'] / 2 else 'north'
+
+
 def render(m, tone_key):
     tone = CFG['toni'][tone_key]
     plinth = ral((m.get('projekts') or {}).get('cokols') or 'RAL 9005')
@@ -70,9 +95,11 @@ def render(m, tone_key):
     tan = math.tan(math.radians(pitch))
 
     # kadrs: māja ~2/3 platuma, horizonts apakšējā trešdaļā
-    pts = [(x, y, z) for x in (0, W) for y in (0, D) for z in (g0, ridge)]
+    slab = cam.slab
+    EW, ED = (W + TER_X, D + TER_D) if slab else (W, D)
+    pts = [(x, y, z) for x in (0, EW) for y in (0, ED) for z in (g0, ridge)]
     us = [cam.raw(p)[0] for p in pts]
-    cam.k = IMG_W * .66 / (max(us) - min(us))
+    cam.k = IMG_W * (.80 if slab else .66) / (max(us) - min(us))
     cam.ox = IMG_W / 2 - cam.k * (max(us) + min(us)) / 2
     cam.oy = IMG_H * .64
 
@@ -111,9 +138,13 @@ def render(m, tone_key):
     def opening(face, u0, u1, z0, z1, door=False, glass_left=True):
         """logs vai durvis iedziļināti R = 150 mm: rāmis ailas dziļumā, ailas sāni un augša fasādes tonī un materiālā
         (redzamās virsmas ēnotas), metāla palodze loga tonī izvirzīta no sienas plaknes."""
-        R = 150
+        R = 0 if SIMPLE else 150
         Q = lambda uu0, uu1, zz0, zz1, d=R: [at(face, uu0, d, zz0), at(face, uu1, d, zz0), at(face, uu1, d, zz1), at(face, uu0, d, zz1)]
-        o = [poly(cam, Q(u0, u1, z0, z1), fill=shade(clad, .55), stroke='#111', stroke_width=1)]   # ailas aizmugure (ēna)
+        cs = 100     # aploda (apmale) 100 mm ap atveri, plakana gredzens sienas plaknē (kā rasējumā win.casing), zīmē pēdējā
+        zc0 = z0 if door else z0 - cs
+        ring = ('M ' + ' L '.join('%s,%s' % cam(p) for p in Q(u0 - cs, u1 + cs, zc0, z1 + cs, 0)) + ' Z '
+                'M ' + ' L '.join('%s,%s' % cam(p) for p in Q(u0, u1, z0, z1, 0)) + ' Z')
+        o = [] if SIMPLE else [poly(cam, Q(u0, u1, z0, z1), fill=shade(clad, .55), stroke='#111', stroke_width=1)]   # ailas aizmugure (ēna)
         f0, f1, fz0, fz1 = u0, u1, z0, z1
         o.append(poly(cam, Q(f0, f1, fz0, fz1), fill=frame, stroke='#111', stroke_width=1))
         o.append(poly(cam, Q(f0 + 60, f1 - 60, fz0 + (0 if door else 60), fz1 - 60), fill=frame if door else '#8fa3ad', stroke='#111', stroke_width=1))
@@ -130,33 +161,49 @@ def render(m, tone_key):
                ([at(face, u1, 0, z0), at(face, u1, R, z0), at(face, u1, R, z1), at(face, u1, 0, z1)], (-1, 0, 0), 1.45),
                ([at(face, u0, 0, z1), at(face, u1, 0, z1), at(face, u1, R, z1), at(face, u0, R, z1)], (0, 0, -1), .5),
                ([at(face, u0, 0, z0), at(face, u1, 0, z0), at(face, u1, R, z0), at(face, u0, R, z0)], (0, 0, 1), 1.6)]
-        for pts, n, k in rev:
+        for pts, n, k in ([] if SIMPLE else rev):
             if seen(face, pts[0], n):
                 o.append(poly(cam, pts, fill=shade(clad, k), stroke='#111', stroke_width=.8))
-        if not door and z0 > 0:
+        if not door and z0 > 0 and not SIMPLE:
             # metāla palodze loga tonī: no rāmja līdz 40 mm ārpus sienas, augšējā virsma + priekšmala
             o.append(poly(cam, [at(face, u0 - 30, -40, z0), at(face, u1 + 30, -40, z0), at(face, u1, R, z0), at(face, u0, R, z0)], fill=shade(frame, 1.25), stroke='#111', stroke_width=.8))
             o.append(poly(cam, Q(u0 - 30, u1 + 30, z0 - 45, z0, -40), fill=frame, stroke='#111', stroke_width=1))
+        if not SIMPLE:
+            o.append(f'<path d="{ring}" fill="{frame}" fill-rule="evenodd" stroke="#111" stroke-width="1"/>')
         return o
 
     gable_top = lambda y: eave + min(y, D - y) * tan
+    eaveTop = ridge - (D / 2) * tan          # jumta virsmas mala pie sienas (25° slīpums); siena beidzas pie eave (zem jumta konstrukcijas)
+    dh = eaveTop - eave
     # austrumu gala fasāde (aiz dienvidu stūra)
-    east = [(W, 0, -floorT), (W, D, -floorT), (W, D, eave), (W, D / 2, ridge), (W, 0, eave)]
+    east = [(W, 0, -floorT), (W, D, -floorT), (W, D, eaveTop), (W, D / 2, ridge), (W, 0, eaveTop)]
     s.append(poly(cam, east, fill=clad, stroke='#111', stroke_width=1.5))
-    s += boards('east', 0, D, gable_top)
+    s += boards('east', 0, D, lambda y: gable_top(y) + dh)
     for w in m['windows']:
-        if w['side'] == 'east':
+        if wside(m, w) == 'east':
             s += opening('east', w['y'], w['y'] + w['len'], w['sill'], w['head'])
     for gw in m.get('gableWins', []):
         if gw['side'] == 'east':
             u0, u1 = D - gw['u1'], D - gw['u0']
+            if gw.get('shape') == 'pent':      # slīpais (piecstūra) logs kā rasējumā (cad.js): sāni vertikāli, augša 200 mm zem jumta, ar apmali
+                zb, mid, off, kk = gw['z0'], (u0 + u1) / 2, 200, 1 / math.cos(math.radians(pitch))
+                zt = lambda u: gable_top(u) - off
+                def shp(i, o=0):
+                    L0, R0 = u0 + i - o, u1 - i + o
+                    return [(L0, zb + i), (R0, zb + i), (R0, zt(R0) - i * kk + o * kk), (mid, zt(mid) - i * kk + o * kk), (L0, zt(L0) - i * kk + o * kk)]
+                P = lambda pts, d=0: [at('east', u, d, z) for u, z in pts]       # references bilde: logs sienas plaknē, bez aplodas un palodzes
+                s.append(poly(cam, P(shp(0)), fill=frame, stroke='#111', stroke_width=1))
+                s.append(poly(cam, P(shp(95)), fill='#8fa3ad', stroke='#111', stroke_width=1))
+                continue
             z1 = min(gable_top(u0), gable_top(u1)) - 450
             s += opening('east', u0, u1, gw['z0'], z1)
-    # dienvidu (ieejas) fasāde
-    s.append(poly(cam, wall('south', 0, W, -floorT, eave), fill=clad, stroke='#111', stroke_width=1.5))
-    s += boards('south', 0, W, eave)
+    # dienvidu (ieejas) fasāde; tikai sarkanajam ir horizontāla fascija, pārējiem dēļi iet līdz jumtam
+    white_f = tone.get('vejmala') == 'balta'
+    sTop = eave if white_f else eaveTop
+    s.append(poly(cam, wall('south', 0, W, -floorT, sTop), fill=clad, stroke='#111', stroke_width=1.5))
+    s += boards('south', 0, W, sTop)
     for w in m['windows']:
-        if w['side'] == 'south':
+        if wside(m, w) == 'south':
             s += opening('south', w['x'], w['x'] + w['len'], w['sill'], w['head'])
     for d in m['doors']:
         if d.get('entry'):
@@ -165,23 +212,40 @@ def render(m, tone_key):
     if cb:
         s.append(poly(cam, wall('south', W - cb, W, -floorT, eave), fill='#F2F0EA', stroke='#111', stroke_width=1))
         s.append(poly(cam, wall('south', 0, cb, -floorT, eave), fill='#F2F0EA', stroke='#111', stroke_width=1))
-        s.append(poly(cam, [(W, D - cb, -floorT), (W, D, -floorT), (W, D, eave), (W, D - cb, eave)], fill='#F2F0EA', stroke='#111', stroke_width=1))
+        s.append(poly(cam, [(W, D - cb, -floorT), (W, D, -floorT), (W, D, eaveTop), (W, D - cb, eaveTop)], fill='#F2F0EA', stroke='#111', stroke_width=1))
     # metāla cokols (stabveida pamati), tonis projekts.cokols, noklusējums RAL 9005
-    s.append(poly(cam, wall('south', 0, W, g0 + 40, -floorT), fill=plinth))
-    s.append(poly(cam, [(W, 0, g0 + 40), (W, D, g0 + 40), (W, D, -floorT), (W, 0, -floorT)], fill=plinth))
+    if not slab:
+        s.append(poly(cam, wall('south', 0, W, g0 + 40, -floorT), fill=plinth))
+        s.append(poly(cam, [(W, 0, g0 + 40), (W, D, g0 + 40), (W, D, -floorT), (W, 0, -floorT)], fill=plinth))
+    else:   # terase: koka dēļi RAL 7016, augšma 250 mm virs zemes, dēļi gar mājas garo asi
+        zt = g0 + TER_H
+        deck, dline = '#454b4f', 'rgba(0,0,0,.35)'
+        s.append(poly(cam, [(0, ED, g0), (EW, ED, g0), (EW, ED, zt), (0, ED, zt)], fill='#2f3438', stroke='#111', stroke_width=1))     # priekšmala
+        s.append(poly(cam, [(EW, ED, g0), (EW, 0, g0), (EW, 0, zt), (EW, ED, zt)], fill='#262b2e', stroke='#111', stroke_width=1))      # austrumu mala
+        s.append(poly(cam, [(0, D, zt), (W, D, zt), (W, 0, zt), (EW, 0, zt), (EW, ED, zt), (0, ED, zt)], fill=deck, stroke='#111', stroke_width=1.5))
+        for y in range(0, int(ED), 140):
+            if y <= D:
+                if y > 0: s.append(line(cam, (W, y, zt), (EW, y, zt), stroke=dline, stroke_width=1))
+            elif y >= D + 140 - 1:
+                s.append(line(cam, (0, y, zt), (EW, y, zt), stroke=dline, stroke_width=1))
+        s.append(line(cam, (0, ED - 20, zt), (EW, ED - 20, zt), stroke='rgba(255,255,255,.12)', stroke_width=1))
     # jumts: dienvidu slīpne ar valcprofila šuvēm, austrumu vējmala
     rz = ridge
-    roof = [(0, D, eave), (W, D, eave), (W, D / 2, rz), (0, D / 2, rz)]
+    white_f = tone.get('vejmala') == 'balta'      # sarkanajam fascija (arī garajā malā) balta, virs tās neliela jumta toņa skārda lenta
+    if white_f:
+        s.append(poly(cam, [(0, D, eave), (W, D, eave), (W, D, eaveTop), (0, D, eaveTop)], fill='#F2F0EA', stroke='#111', stroke_width=1))   # dzega josla
+        s.append(poly(cam, [(0, D + 25, eaveTop - 45), (W, D + 25, eaveTop - 45), (W, D + 25, eaveTop + 10), (0, D + 25, eaveTop + 10)], fill='#40464b', stroke='#111', stroke_width=.8))
+    roof = [(0, D, eaveTop), (W, D, eaveTop), (W, D / 2, rz), (0, D / 2, rz)]
     s.append(poly(cam, roof, fill='#40464b', stroke='#111', stroke_width=1.5))
     for x in range(265, int(W), 530):
-        s.append(line(cam, (x, D, eave), (x, D / 2, rz), stroke='#2a2f33', stroke_width=1.5))
+        s.append(line(cam, (x, D, eaveTop), (x, D / 2, rz), stroke='#2a2f33', stroke_width=1.5))
     # vējmala: sarkanajam balti koka dēļi (~200 mm), pārējiem tieva metāla vējmalas skārda RAL 7016
-    vb, vh = ('#F2F0EA', 220) if tone.get('vejmala') == 'balta' else ('#30363a', 90)
-    s.append(poly(cam, [(W, D, eave), (W, D / 2, rz), (W, D / 2, rz - vh), (W, D, eave - vh)], fill=vb, stroke='#111', stroke_width=1))
-    s.append(poly(cam, [(W, 0, eave), (W, D / 2, rz), (W, D / 2, rz - vh), (W, 0, eave - vh)], fill=vb, stroke='#111', stroke_width=1))
+    vb, vh = ('#F2F0EA', 220) if tone.get('vejmala') == 'balta' else ('#30363a', 100)
+    s.append(poly(cam, [(W, D, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, D, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
+    s.append(poly(cam, [(W, 0, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, 0, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
     # notekas: gar dienvidu dzegu, caurule pie austrumu stūra līdz 50 mm virs zemes
-    s.append(poly(cam, [(0, D + 120, eave - 60), (W, D + 120, eave - 60), (W, D + 120, eave - 180), (0, D + 120, eave - 180)], fill='#2f3438'))
-    s.append(poly(cam, [(W - 230, D + 120, g0 + 50), (W - 130, D + 120, g0 + 50), (W - 130, D + 120, eave - 180), (W - 230, D + 120, eave - 180)], fill='#2f3438'))
+    s.append(poly(cam, [(0, D + 120, eaveTop - 90), (W, D + 120, eaveTop - 90), (W, D + 120, eaveTop - 220), (0, D + 120, eaveTop - 220)], fill='#1c2124', stroke='#0b0d0e', stroke_width=1))
+    s.append(poly(cam, [(W - 230, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, eaveTop - 220), (W - 230, D + 120, eaveTop - 220)], fill='#2f3438'))
     s.append('</svg>')
     return '\n'.join(s)
 
