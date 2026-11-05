@@ -60,6 +60,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
 ## 3. KLIENTA PROJEKTS: noteikumi
 
 0. **Izmēru ķēdes:** mansarda plānam ir tie paši mājas gabarīti (garums, platums) kā 1. stāvam. Ķēde ar atverēm, kurā nav atveru, nedublē kopējo izmēru: 1. stāva apakšā un sānos katrs gabarīts parādās vienu reizi (10 000 un 4000).
+0a. **Mājas augstuma ķēde:** katrā fasādē pa labi viena vertikāla mēra ķēde ar mājas augstumu no grīdas paneļa apakšas līdz kores jumta virsmai (piem. 4000). Skaitlis ir lietotāja ievadītais augstums; atzīmes (+3,725 u.c.) paliek no ±0,000.
 1. **Rakstlaukums ir dizainisks un vertikāls**, labajā joslā (x 247–287). No augšas uz leju tajā ir:
    - MM HOMES zīmols tumšā laukā;
    - fāzes nosaukums: uz lapas "SKICES PROJEKTS" (EN "SKETCH DESIGN"), iekšēji fāze saucas klienta projekts;

@@ -585,6 +585,13 @@ function elevation(parent, v, side, opt = { levels: true }) {
   el("polygon", { points: wallPoly.join(" ") }, el("clipPath", { id: wid }, g));
   boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeU : eEdge), fT, side.length);
   el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);
+  if (opt.houseH !== false && fT) {   // [MM] viena mēra ķēde: mājas augstums no grīdas paneļa apakšas (−G1) līdz jumta virsmai (kore)
+    const hy0 = -ridgeTop, hy1 = fT, hx = span + 900, Ht = (window.AR && AR.projekts && AR.projekts.ievade && AR.projekts.ievade.augstums) || Math.round(ridgeTop + fT);
+    const dl = (x1, y1, x2, y2, sw = 7) => el("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": sw }, g);
+    dl(hx, hy0 - 120, hx, hy1 + 120);
+    [hy0, hy1].forEach(y => { dl(hx - 130, y, hx + 130, y, 6); dl(hx - 75, y + 75, hx + 75, y - 75, 16); dl(span + 80, y, hx + 130, y, 4); });
+    T_(g, hx - 70, (hy0 + hy1) / 2, Math.round(Ht).toLocaleString("lv-LV").replace(/\s/g, " "), { a: "middle", fs: 190, tr: `rotate(-90 ${hx - 70} ${(hy0 + hy1) / 2})` });
+  }
   if (fT) {
     // post foundation: floor build-up clad like the wall, shaded gap with posts down to the ground
     el("line", { x1: 0, y1: 0, x2: span, y2: 0, stroke: C.ink, "stroke-width": 7, "stroke-dasharray": "60 40" }, g);
