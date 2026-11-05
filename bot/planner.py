@@ -1440,11 +1440,12 @@ def stamp_spot(room, items, doors):
     best = None
     for rb in sorted(room.boxes(), key=lambda b: -(b[2] - b[0]) * (b[3] - b[1])):
         x0, y0, x1, y1 = rb
-        for sc, (hw, hh) in ((0.6, (750, 330)), (0.5, (620, 280)), (0.45, (560, 250))):
+        fw = max(1.0, len(room.name) / 22)     # garš nosaukums = platāka telpas zīme
+        for sc, (hw, hh) in ((0.6, (750 * fw, 330)), (0.5, (620 * fw, 280)), (0.45, (560 * fw, 250))):
             for cx in frange(x0 + hw + 50, x1 - hw - 50, 100):
                 for cy in frange(y0 + hh + 50, y1 - hh - 50, 100):
                     b = [cx - hw, cy - hh, cx + hw, cy + hh]
-                    if not any(ov(b, o) for o in occ):
+                    if not any(ov(b, o, 60) for o in occ):
                         d = abs(cx - (x0 + x1) / 2) + abs(cy - (y0 + y1) / 2)
                         if not best or (sc, -d) > (best[0], -best[3]):
                             best = (sc, cx, cy, d)

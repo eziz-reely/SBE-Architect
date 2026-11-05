@@ -51,7 +51,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
        python3 generate.py 11425 3500 4000 MM-40-03 --mansards ja --varianti 1 --nosaukums <nos> --tonis peleks --pamati stabveida --griesti 2200 --rev 00 --adrese "..."
 
 5. Pārbaude: `node sablons/mm-check.mjs <html>` jābeidzas ar "OK". Ja ir kļūdas, pasaki lietotājam. Lapu apskati ar Playwright ekrānuzņēmumu (`/opt/node22/lib/node_modules/playwright`).
-6. **Plānojumus vispirms rāda lietotājam apstiprināšanai (bildes pievienotas ziņai). Vizualizācijas (`viz.py` vai `--viz`) netaisa, kamēr lietotājs nav apstiprinājis plānojumu UN pateicis, ka grib redzēt viz.** Tad: `python3 viz.py <id>` (Gemini, atslēga `GEMINI_API_KEY`).
+6. **Plānojumus vispirms rāda lietotājam apstiprināšanai. Projekta threadā PĒC NOKLUSĒJUMA plānu rāda tieši čatā kā Artifact (publicē rasējumu HTML `rasejumi/<id>_LV.html` ar Artifact rīku un pievieno ziņai). Ne PDF, ne PNG, ne failu pielikumi. Ekrānuzņēmumu pievieno tikai, ja lietotājs to prasa. Vizualizācijas (`viz.py` vai `--viz`) netaisa, kamēr lietotājs nav apstiprinājis plānojumu UN pateicis, ka grib redzēt viz.** Tad: `python3 viz.py <id>` (Gemini, atslēga `GEMINI_API_KEY`).
 7. Pēc apstiprinājuma failus saglabā `/mnt/project-files/mm-system/MAJAS/<m2>/<id>/` un lietotāja datorā `MM System\MĀJAS\<m2>\<id>\` (device_commit_files): model.json, rasejumi/*.html, viz/*. Visi izveidotie faili tiks izmantoti mājaslapā, tāpēc nekā neizlaid.
 
 `--griesti 0` nozīmē, ka griestu piezīmi nerāda. Ja `model.json` ir labots ar roku, lapu pārbūvē ar `python3 build_model.py <model.json>`. Individuālie toņi (zaļš, zils) tiek taisīti tikai pēc pieprasījuma: `--tonis zals zils`.
