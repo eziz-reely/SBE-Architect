@@ -74,7 +74,7 @@ def materials(tk, m=None):
     if m and slab_mode(m):
         foundation = ("The house stands directly on the ground. NO concrete, NO foundation, NO plinth, NO posts and NO slab edge are visible anywhere: "
                       "only a wooden terrace (single step, 25 cm above the ground) touches the ground and the house. The vertical cladding boards of the house walls "
-                      "go down to the terrace deck surface and stop there. The terrace edge (a dark anthracite grey RAL 7016 deck-board fascia, about 25 cm high) meets the grass directly, "
+                      "go down to the terrace deck surface and stop there. The terrace edge (a dark anthracite grey RAL 7016 deck-board edge, about 25 cm high) meets the grass directly, "
                       "with a thin shadow gap and NO concrete strip under or beside it. "
                       "The terrace is made of horizontal anthracite grey (RAL 7016) wooden deck boards laid along the long side of the house, thin gaps between boards. "
                       "It runs 1.1 m deep along the whole entrance wall (the long wall with the entrance door) and continues 3 m beyond the glazed gable end, "
@@ -84,8 +84,9 @@ def materials(tk, m=None):
                       "with a thin shadow gap above the ground.")
     pipe_end = '5 cm above the terrace deck surface (it never goes into or through the terrace boards)' if (m and slab_mode(m)) else '5 cm above the ground'
     frames = {'RAL 9016': 'white (RAL 9016)', 'RAL 9005': 'black (RAL 9005)'}.get(t.get('logi'), 'anthracite grey (RAL 7016)')
+    gut_on = 'mounted on the white fascia board directly under the roof edge' if t.get('vejmala') == 'balta' else 'fixed to the top of the cladding boards directly under the roof edge (there is no fascia board)'
     s = (f"Materials: walls are vertical cladding boards {wall}. Roof: dark anthracite standing seam steel RAL 7016, no overhang, "
-         f"thin anthracite gutter mounted on the fascia board directly under the roof edge (high up, not low on the wall) and a round anthracite downpipe ending {pipe_end}. "
+         f"thin anthracite gutter {gut_on} (high up, not low on the wall) and a round anthracite downpipe ending {pipe_end}. "
          f"Windows and the entrance door: {frames} frames, set back (recessed) into the wall about 15 cm, NOT flush with the cladding: the reference image shows the visible reveal sides of every opening, keep that depth. "
          f"The window reveals (jambs and heads of each opening) are clad in the same colour and material as the facade walls. "
          f"The entrance door leaf is flat in the frame colour, with one narrow vertical glass strip (about 16 cm wide, almost full door height) along the hinge side "
