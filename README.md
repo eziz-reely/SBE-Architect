@@ -9,13 +9,13 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 
 ## Komandas
 
-- `/modelu-bots`: jauns modelis. Uzdod jautājumus ar ķeksīšiem, uzģenerē plānojumu (vienmēr sāk ar 1. variantu), pārbauda un parāda apstiprināšanai. Vizualizācijas tikai pēc apstiprinājuma.
+- `/sbe`: jauns modelis. Uzdod jautājumus ar ķeksīšiem, uzģenerē plānojumu (vienmēr sāk ar 1. variantu), pārbauda un parāda apstiprināšanai. Vizualizācijas tikai pēc apstiprinājuma.
 - `/editbot <komentārs>`: papildina botu (noteikumi, logu veidi, mēbeļu izkārtojums), pārbauda un saglabā šajā repo.
 
 ## Struktūra
 
 - `bot/`: kods (`planner.py`, `rules_check.py`, `generate.py`, `build_model.py`, `ref.py`, `viz.py`), `sablons/` (SBE šablons, toņu tekstūras) un noteikumi `bot/zinasanas_mebeles_logi.md`.
-- `skills/modelu-bots`, `skills/editbot`: komandu instrukcijas.
+- `skills/sbe`, `skills/editbot`: komandu instrukcijas.
 
 ## Vides prasības
 

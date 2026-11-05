@@ -1,6 +1,6 @@
 {
   "name": "sbe-architect",
   "version": "0.1.0",
-  "description": "SBE Architect: MM Homes modeļu bots. No mājas gabarītiem uztaisa skiču projekta A3 lapu (plāni, fasādes, eksplikācija) un Gemini vizualizācijas. /modelu-bots palaiž botu, /editbot papildina to.",
+  "description": "SBE Architect: MM Homes modeļu bots. No mājas gabarītiem uztaisa skiču projekta A3 lapu (plāni, fasādes, eksplikācija) un Gemini vizualizācijas. /sbe palaiž botu, /editbot papildina to.",
   "author": { "name": "EZIZ" }
 }

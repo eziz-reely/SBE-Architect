@@ -1,5 +1,5 @@
 ---
-name: modelu-bots
+name: sbe
 description: MM Homes modeļu bots: no mājas gabarītiem (garums, platums, kores augstums) uztaisa klienta projekta A3 lapu (plāni, fasādes, eksplikācija, rakstlaukums) LV un EN.
 ---
 
