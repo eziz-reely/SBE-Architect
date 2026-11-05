@@ -33,7 +33,7 @@ function mmTable(svg, x, y, w, title, sub, rooms, L, foot) {
     const nm = L === "en" ? (rm.en || rm.n) : rm.n;
     el("circle", { cx: 3.6, cy: yy + RH / 2, r: 1.75, fill: "none", stroke: MM_ACC, "stroke-width": .25 }, g);
     T_(g, 3.6, yy + RH / 2 + .75, String(i + 1), { fs: 1.9, a: "middle", fw: 600 });
-    T_(g, 7, yy + RH / 2 + .8, nm, { fs: nm.length > 24 ? 1.9 : 2.2 });
+    T_(g, 7, yy + RH / 2 + .8, nm, { fs: 2.2 });
     T_(g, w - 2, yy + RH / 2 + .8, mmNum(area(rm)) + " m²", { fs: 2.2, a: "end" });
     yy += RH;
   });
