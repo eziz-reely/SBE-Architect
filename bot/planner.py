@@ -45,7 +45,7 @@ R = {
     'hall_d': 1200, 'hall_min': 1000, 'corridor': {'lidz60': 1100, 'virs60': 1200},
     'bed_min_side': {'lidz60': 2400, 'virs60': 2700},
     'bath_min_side': 1500,
-    'loft_edge_h': 700, 'loft_ridge_min': 1100,
+    'loft_edge_h': 700, 'loft_ridge_min': 1000,
     # [MM] 05.11.2026 /editbot noteikumi
     'bed_wardrobe_min_m2': 9.0,          # guļamistaba < 9 m²: drēbju skapi neliek
     'hall_pass': 900,                    # skapis priekšnamā/gaitenī drīkst atstāt >= 900 mm brīvu caurgājienu, citādi dzēš vai liek dzīvojamā

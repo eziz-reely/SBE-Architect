@@ -340,7 +340,7 @@ if __name__ == '__main__':
     # Stabveida pamatiem ģeometrijai kore virs ±0,000 = augstums − grīdas pīrāgs (G1); platnei grīdas paneļa nav.
     pam = a.pamati or CFG['projekts'].get('pamati', 'stabveida')
     flT = sum(l[1] for l in CFG['layers']['G1']['layers']) if pam == 'stabveida' else 0
-    H0 = a.augstums - flT
+    H0 = math.ceil(a.augstums - flT)   # 4000 - 275,5 = +3,725 (veselā mm)
     if a.varianti > 0:
         ps = variants(a.garums, a.platums, H0, a.varianti, a.mansards == 'ja', pr, a.gulamistabas, a.vannas,
                       tuple(f.strip().upper() for f in a.forma.split(',')), a.id)
