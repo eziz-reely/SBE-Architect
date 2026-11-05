@@ -30,6 +30,8 @@ DOOR_GAP_MIN = 50        # [MM] mēbele — durvju vērtne
 def fbox(f):
     """Mēbeles taisnstūris [x0, y0, x1, y1] vai None (kā generate.fbox)."""
     n, a = f[0], f[1:]
+    if n == 'bed' and len(a) > 4 and a[4] in ('n', 's'):      # galvgalis pie ziemeļu/dienvidu sienas: garums pa y
+        return [a[0], a[1], a[0] + a[3], a[1] + a[2]]
     if n in ('bed', 'R', 'sofa', 'basin'):
         return [a[0], a[1], a[0] + a[2], a[1] + a[3]]
     if n == 'nightstand': return [a[0], a[1], a[0] + 450, a[1] + 420]

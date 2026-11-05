@@ -1051,6 +1051,12 @@ if (r5) {
   };
   // bed: head "w" or "e"; pillows, duvet with turned-down edge
   const bed = (x, y, w, h, head) => {
+    if (head === "n" || head === "s") {   // galvgalis pie ziemeļu/dienvidu sienas: zīmē kā w un pagriež
+      const i0 = F.length; bed(0, 0, w, h, "w");
+      const tr = head === "n" ? `translate(${x + h} ${y}) rotate(90)` : `translate(${x} ${y + w}) rotate(-90)`;
+      for (let i = i0; i < F.length; i++) F[i].tr = tr;
+      return;
+    }
     const dir = head === "w" ? 1 : -1, h0 = head === "w" ? x : x + w, X = d => h0 + dir * d;
     // upholstered headboard
     R(Math.min(X(0), X(80)), y - 20, 80, h + 40, { rx: 35 });
