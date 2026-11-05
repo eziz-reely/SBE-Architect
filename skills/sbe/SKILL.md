@@ -33,6 +33,7 @@ Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jaut
 10. **Papildu rādītāji rakstlaukumā**: [x] Tikai standarta   [ ] Pievienot (ierakstīt "Nosaukums=Vērtība")
 11. **Valodas**: [x] LV un EN   [ ] Tikai LV (`--valodas LV`)
 11b. **3D modelis SketchUp** (taisa TIKAI tad, kad lietotājs to prasa, ar `--skp`; pēc noklusējuma netaisa): rezultāts ir TIKAI Ruby skripts `3d/<id>_skp.rb` (SketchUp: Window > Ruby Console: `load 'ceļš\<id>_skp.rb'`). Nekādus .dae, .obj, .skp netaisa un nepiedāvā. Modelis no model.json: grīdas panelis uz stabiem, cokols, ārsienas ar logu/durvju caurumiem, iekšsienas, mansarda grīda, divslīpju jumts, logi ar rāmjiem un apmalēm, ārdurvis, mansarda logi; mēbeles netiek modelētas.
+    **Vienmēr, kad nodod .rb, ziņā uzraksti arī kā to palaist:** 1) SketchUp: File > New, vienības milimetri; 2) Extensions > Developer > Ruby Console (vecākās versijās Window > Ruby Console); 3) ieraksti `load 'C:/ceļš/<id>_skp.rb'` (ar slīpsvītrām /), Enter; 4) Camera > Zoom Extents. Ja ceļā ir ā, ē u.c., nokopē failu uz C:/temp/. Šie paši soļi ir arī .rb faila sākumā komentāros.
 12. **Vizualizāciju atmosfēra** (katram modelim sava, visiem 3 toņiem tā pati):
     [x] Automātiski pēc modeļa numura (01 mežs, 02 fjords, 03 krasts, 04 plato, 05 ziema, 06 rudens, tad no sākuma)
     [ ] Priežu mežs un granīta klintis (`mezs`)   [ ] Fjords un kalni (`fjords`)   [ ] Jūras krasts (`krasts`)

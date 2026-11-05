@@ -308,7 +308,10 @@ def write_dae(path, M, mats, name):
 
 
 def write_rb(path, M, mats, name):
-    out = ["# MM modelis: palaid SketchUp Ruby konsolē: load '%s'" % os.path.basename(path),
+    out = ["# MM modelis %s. KĀ PALAIST SketchUp: 1) File > New, mērvienības milimetri (Millimeters);" % name,
+           "# 2) Extensions > Developer > Ruby Console (vecākās versijās Window > Ruby Console);",
+           "# 3) ieraksti: load 'C:/ceļš/%s' (slīpsvītras uz priekšu /) un Enter; modelis parādīsies, tad Camera > Zoom Extents." % os.path.basename(path),
+           "# Neko citu nevajag. Ja ceļā ir mīkstinājuma zīmes (ā, ē ...), nokopē failu uz C:/temp/ un ielādē no turienes.",
            'model = Sketchup.active_model', 'model.start_operation("MM %s", true)' % name, 'ents = model.active_entities', 'mats = {}']
     for k, h in mats.items():
         r, g, b = (int(x * 255) for x in hex2rgb(h))
