@@ -96,6 +96,8 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
    - WC logs ir virs poda. Izlietne var būt pie ārsienas blakus podam.
 9. **Mēbeles netraucē durvīm.** Starp mēbeli un durvju vērtnes zonu paliek vismaz 50 mm.
    - Dīvāns ir vismaz 700 mm no virtuves fronta. Ja tā dīvāns neietilpst (īsāks par 1200 mm), dīvānu neliek.
+   - **Kārtojuma līnijas [MM]:** dīvāna mala ir vienā līnijā ar blakus esošā loga ailas malu uz tās pašas sienas (dīvānu pabīda uz galasienas pusi, ja līnijas nesakrīt). Ārdurvju ailas mala ir vienā līnijā ar virtuves rindas sākumu, ja priekšnams robežojas ar virtuvi.
+   - **Guļamistaba [MM]:** gulta centrēta pa istabas platumu, ja nav citādi prasīts; naktsgaldiņus liek tikai pēc prasības. Guļamistabas durvis vēras uz priekšnamu. Gulta drīkst stāvēt garenisko malu pret logu (loga zona tai netiek skaitīta, `winOk`).
 10. Telpu nosaukumu zīmes neuzbrauc mēbelēm, durvju vērtnēm un izmēru ķēdēm.
 11. **Fasādes:**
    - Notekcaurules ir zīmētas ar diametru (Ø100, ar kontūru).
