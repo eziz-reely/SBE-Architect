@@ -176,16 +176,17 @@ def render(m, tone_key):
     for gw in m.get('gableWins', []):
         if gw['side'] == 'east':
             u0, u1 = D - gw['u1'], D - gw['u0']
-            if gw.get('shape') == 'pent':      # slīpais (piecstūra) logs: sāni vertikāli, augša seko jumta slīpumam
-                uc, zb = (u0 + u1) / 2, gw['z0']
-                zs, za = gable_top(u0) - 450, gable_top((u0 + u1) / 2) - 450
+            if gw.get('shape') == 'pent':      # slīpais (piecstūra) logs kā rasējumā (cad.js): sāni vertikāli, augša 200 mm zem jumta, ar apmali
+                zb, mid, off, kk = gw['z0'], (u0 + u1) / 2, 200, 1 / math.cos(math.radians(pitch))
+                zt = lambda u: gable_top(u) - off
+                def shp(i, o=0):
+                    L0, R0 = u0 + i - o, u1 - i + o
+                    return [(L0, zb + i), (R0, zb + i), (R0, zt(R0) - i * kk + o * kk), (mid, zt(mid) - i * kk + o * kk), (L0, zt(L0) - i * kk + o * kk)]
                 P = lambda pts, d=150: [at('east', u, d, z) for u, z in pts]
-                outer = [(u0, zb), (u1, zb), (u1, zs), (uc, za), (u0, zs)]
-                k = 60
-                inner = [(u0 + k, zb + k), (u1 - k, zb + k), (u1 - k, zs - k * .3), (uc, za - k * 1.6), (u0 + k, zs - k * .3)]
-                s.append(poly(cam, P(outer), fill=frame, stroke='#111', stroke_width=1))
-                s.append(poly(cam, P(inner), fill='#8fa3ad', stroke='#111', stroke_width=1))
-                s.append(poly(cam, P([(u0, zb), (u1, zb), (u1, zb + 50), (u0, zb + 50)], -40), fill=shade(frame, 1.25), stroke='#111', stroke_width=.8))
+                s.append(poly(cam, P(shp(0, 100), 100), fill=frame, stroke='#111', stroke_width=1))          # apmale
+                s.append(poly(cam, P(shp(0)), fill=frame, stroke='#111', stroke_width=1))
+                s.append(poly(cam, P(shp(95)), fill='#8fa3ad', stroke='#111', stroke_width=1))
+                s.append(poly(cam, P([(u0 - 70, zb), (u1 + 70, zb), (u1 + 70, zb - 45), (u0 - 70, zb - 45)], -40), fill=shade(frame, 1.25), stroke='#111', stroke_width=.8))
                 continue
             z1 = min(gable_top(u0), gable_top(u1)) - 450
             s += opening('east', u0, u1, gw['z0'], z1)

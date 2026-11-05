@@ -57,7 +57,7 @@ def openings(m):
     ng = sum(1 for g in m.get('gableWins', []) if g['side'] == 'east')
     south = 'the entrance door and ' + (f'exactly {ns} window(s)' if ns else 'NO windows at all') 
     return (f" OPENING COUNT (from the reference image, exact): the long entrance facade has {south}, nothing else, the rest of that wall is plain cladding. "
-            f"The east gable end has exactly {ne} large glazing and {ng} sloped pentagon (house-shaped) window above it: vertical sides and a pointed top whose two upper edges run parallel to the roof slopes, as drawn in the reference image. It must be clearly pentagonal, NOT a rectangle and NOT a thin strip. Nothing else, the wall areas beside the glazing are plain cladding. "
+            f"The east gable end has exactly {ne} large glazing and {ng} sloped pentagon (house-shaped) window above it: vertical sides and a pointed top whose two upper edges run parallel to the roof slopes about 20 cm below the roof edge, exactly as wide as the large glazing below it and with a flat casing around it, as drawn in the reference image. It must be clearly pentagonal, NOT a rectangle and NOT a thin strip. Nothing else, the wall areas beside the glazing are plain cladding. "
             "Do not invent any additional window, door, vent or shutter anywhere.")
 
 
