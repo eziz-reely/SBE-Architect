@@ -307,7 +307,7 @@ if __name__ == '__main__':
     ap.add_argument('--rev-apraksts', help='revīzijas apraksts')
     ap.add_argument('--raditajs', action='append', default=[], help='papildu rādītājs rakstlaukumā "Nosaukums=Vērtība", var atkārtot')
     ap.add_argument('--nosaukums', help='modeļa nosaukums rakstlaukumā, piem. Freya')
-    ap.add_argument('--tonis', choices=['peleks', 'sarkans', 'koks'], help='fasādes tonis (sablons/tex), noklusējums peleks')
+    ap.add_argument('--tonis', choices=['peleks', 'koks', 'sarkans', 'zals', 'balts'], help='fasādes tonis (sablons/tex), noklusējums peleks')
     ap.add_argument('--pamati', choices=['stabveida', 'platne'], help='pamatu veids, noklusējums stabveida')
     ap.add_argument('--cokols', choices=['RAL 9005', 'RAL 7016'], help='stabveida pamatu metāla cokola tonis, noklusējums RAL 9005')
     ap.add_argument('--atmosfera', help='vizualizāciju atmosfēra (mm-config.json atmosferas), noklusējums pēc modeļa numura')

@@ -53,10 +53,8 @@ def materials(tk, m=None):
     wall = {'peleks': 'painted graphite grey (close to RGB %s)' % t['sw'],
             'sarkans': 'painted traditional Norwegian red (close to RGB %s)' % t['sw'],
             'koks': 'natural oiled timber, warm honey-brown (close to RGB %s)' % t['sw'],
-            'zals': 'painted dusty green: a soft, muted grey-sage green with low saturation, matte Scandinavian paint, '
-                    'not bright, not olive, not mint (close to RGB %s)' % t['sw'],
-            'zils': 'painted dusty blue: a soft, muted grey-blue with low saturation, matte Scandinavian paint, '
-                    'not bright, not navy, not turquoise (close to RGB %s)' % t['sw']}[tk]
+            'zals': 'painted dark forest green, deep and muted, matte Scandinavian paint (close to RGB %s)' % t['sw'],
+            'balts': 'painted soft light grey-white, matte Scandinavian paint, clean and bright but not pure white (close to RGB %s)' % t['sw']}[tk]
     frames = 'white (RAL 9016)' if t.get('logi') == 'RAL 9016' else 'anthracite grey (RAL 7016)'
     s = (f"Materials: walls are vertical cladding boards {wall}. Roof: dark anthracite standing seam steel RAL 7016, no overhang, "
          f"thin anthracite gutter along the eave and a round anthracite downpipe ending 5 cm above the ground. "
@@ -151,8 +149,8 @@ def run(mid, mode='viss', tones=None):
     """mode: 'viss' = pelēkais + visi toņi (botam pilnā automātā), 'pamats' = tikai pelēkais, 'toni' = tikai toņi."""
     viz = os.path.join(model_dir(mid), 'viz')
     key, model = env()
-    # individuālos toņus (zaļš, zils) taisa tikai, ja tos prasa: --tonis zals zils
-    tones = tones or [t for t in CFG['toni'] if t != 'peleks' and not CFG['toni'][t].get('individuals')]
+    # visi toņi (sarkans, koks, zaļš, balts) pēc noklusējuma; ar --tonis var norādīt konkrētus
+    tones = tones or [t for t in CFG['toni'] if t != 'peleks']
     outs = []
     if mode in ('viss', 'pamats'):
         outs.append(make_base(mid, viz, key, model))

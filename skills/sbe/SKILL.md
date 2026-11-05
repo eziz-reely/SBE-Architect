@@ -19,7 +19,7 @@ Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jaut
 2. **Gabarīti** (jāieraksta): garums × platums × kores augstums, mm. Piemērs: 8570 × 3500 × 4000.
    Kores augstumu mēra no ±0,000 līdz jumta virsmai; "4m" nozīmē kori 4000 mm.
 3. **Modeļa nosaukums** (jāieraksta, piem. Freya). Rakstlaukumā zem tā raksta "MM <m²>", piem. "MM 30". Mapes id paliek MM-<m2>-NN.
-4. **Fasādes tonis** (tekstūras `sablons\tex`): [x] Grafīta pelēks   [ ] Norvēģu sarkans (automātiski balti logi, durvis, apmales un 90 mm stūru apdare)   [ ] Dabīgs koks
+4. **Fasādes tonis** (tekstūras `sablons\tex`): [x] Grafīta pelēks   [ ] Norvēģu sarkans (automātiski balti logi, durvis, apmales un 90 mm stūru apdare)   [ ] Dabīgs koks   [ ] Tumši zaļš (balti logi)   [ ] Balts (gaiši pelēks, tumši logi)
 5. **Mansards**: [x] Jā, mansarda stāvs ar guļvietu un logiem (`--mansards ja`)   [ ] Nē (`--mansards ne`)
 5a. **Plānojuma varianti**: [x] Nē, viens plāns (etalons MM 30 tips)   [ ] Jā, N varianti (`--varianti N`, plānotājs: II/L/T, ar mansardu tikai II; guļamistabu skaits pēc laukuma vai `--gulamistabas`)
 6. **Pamati**: [x] Stabveida, cokols metāla apdare RAL 9005   [ ] Stabveida, cokols metāla apdare RAL 7016 (`--cokols "RAL 7016"`)   [ ] Pamatu plātne, betona cokols
@@ -54,7 +54,7 @@ Bots ir `${CLAUDE_PLUGIN_ROOT}/bot/`. Tajā ir viss: skripti, `rules_check.py`, 
 6. **Plānojumus vispirms rāda lietotājam apstiprināšanai. Projekta threadā PĒC NOKLUSĒJUMA plānu rāda tieši čatā kā Artifact (publicē rasējumu HTML `rasejumi/<id>_LV.html` ar Artifact rīku un pievieno ziņai). Ne PDF, ne PNG, ne failu pielikumi. Ekrānuzņēmumu pievieno tikai, ja lietotājs to prasa. Vizualizācijas (`viz.py` vai `--viz`) netaisa, kamēr lietotājs nav apstiprinājis plānojumu UN pateicis, ka grib redzēt viz.** Tad: `python3 viz.py <id>` (Gemini, atslēga `GEMINI_API_KEY`).
 7. Pēc apstiprinājuma failus saglabā `/mnt/project-files/mm-system/MAJAS/<m2>/<id>/` un lietotāja datorā `MM System\MĀJAS\<m2>\<id>\` (device_commit_files): model.json, rasejumi/*.html, viz/*. Visi izveidotie faili tiks izmantoti mājaslapā, tāpēc nekā neizlaid.
 
-`--griesti 0` nozīmē, ka griestu piezīmi nerāda. Ja `model.json` ir labots ar roku, lapu pārbūvē ar `python3 build_model.py <model.json>`. Individuālie toņi (zaļš, zils) tiek taisīti tikai pēc pieprasījuma: `--tonis zals zils`.
+`--griesti 0` nozīmē, ka griestu piezīmi nerāda. Ja `model.json` ir labots ar roku, lapu pārbūvē ar `python3 build_model.py <model.json>`. Pieejami 5 fasādes toņi: `peleks` (grafīta pelēks, noklusējums), `koks` (dabīgs koks), `sarkans`, `zals` (tumši zaļš), `balts` (gaiši pelēks/balts). Visi tiek taisīti vizualizācijās (`viz.py`), `--tonis` izvēlas lapas toni.
 
 ## 3. KLIENTA PROJEKTS: noteikumi
 
