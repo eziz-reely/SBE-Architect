@@ -167,6 +167,7 @@ function modelSheet(v) {
   const PR = ARC.projekts || {}, plate = PR.pamati === "platne";
   ARC.materials = tx.mats.map(m => m[0] === "wood" && PR.tonis_lv ? ["wood", ...(L === "en" ? PR.tonis_en : PR.tonis_lv)]
     : m[0] === "#1d1d1d" && plate ? ["#9b9c98", ...(L === "en" ? ["Plinth: foundation slab,", "concrete"] : ["Cokols: pamatu plātne,", "betons"])]
+    : m[0] === "#383E42" && PR.logi ? [PR.logi_hex || m[0], m[1], PR.logi]
     : m[0] === "#1d1d1d" && PR.cokols ? [PR.cokols_hex || m[0], m[1], PR.cokols] : m);
   if (PR.sturi) ARC.materials.push(["#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, "white"] : [`Stūru dēļi ${PR.sturi} mm,`, "balti"])]);
   const mg = materials(svg, 26, row2 + 33, true);
