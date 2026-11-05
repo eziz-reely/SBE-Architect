@@ -91,6 +91,7 @@ def materials(tk, m=None):
          f"The entrance door leaf is flat in the frame colour, with one narrow vertical glass strip (about 16 cm wide, almost full door height) along the hinge side "
          f"and a long vertical stainless steel bar handle (about 110 cm) on the opening side, exactly as in the reference image. "
          f"Every window has a thin projecting metal window sill (drip sill) in the frame colour at its bottom edge. "
+         f"The sloped pentagon window in the gable has the same {frames} frame and casing as every other window (frame colour never differs between windows). "
          f"The flat casing boards (about 10 cm wide trim around every window and the entrance door on the facade) are in the same colour as the frames: {frames}. "
          f"Glass reflects the overcast sky. "
          f"{foundation}")
