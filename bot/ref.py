@@ -139,10 +139,11 @@ def render(m, tone_key):
         (redzamās virsmas ēnotas), metāla palodze loga tonī izvirzīta no sienas plaknes."""
         R = 150
         Q = lambda uu0, uu1, zz0, zz1, d=R: [at(face, uu0, d, zz0), at(face, uu1, d, zz0), at(face, uu1, d, zz1), at(face, uu0, d, zz1)]
-        cs = 100     # aploda (apmale) 100 mm ap atveri, plakana, sienas plaknē (kā rasējumā win.casing)
-        zc0 = z0 - cs if (not door and z0 > 0) else z0
-        o = [poly(cam, Q(u0 - cs, u1 + cs, zc0, z1 + cs, 0), fill=frame, stroke='#111', stroke_width=1),
-             poly(cam, Q(u0, u1, z0, z1), fill=shade(clad, .55), stroke='#111', stroke_width=1)]   # aploda + ailas aizmugure (ēna)
+        cs = 100     # aploda (apmale) 100 mm ap atveri, plakana gredzens sienas plaknē (kā rasējumā win.casing), zīmē pēdējā
+        zc0 = z0 if door else z0 - cs
+        ring = ('M ' + ' L '.join('%s,%s' % cam(p) for p in Q(u0 - cs, u1 + cs, zc0, z1 + cs, 0)) + ' Z '
+                'M ' + ' L '.join('%s,%s' % cam(p) for p in Q(u0, u1, z0, z1, 0)) + ' Z')
+        o = [poly(cam, Q(u0, u1, z0, z1), fill=shade(clad, .55), stroke='#111', stroke_width=1)]   # ailas aizmugure (ēna)
         f0, f1, fz0, fz1 = u0, u1, z0, z1
         o.append(poly(cam, Q(f0, f1, fz0, fz1), fill=frame, stroke='#111', stroke_width=1))
         o.append(poly(cam, Q(f0 + 60, f1 - 60, fz0 + (0 if door else 60), fz1 - 60), fill=frame if door else '#8fa3ad', stroke='#111', stroke_width=1))
@@ -166,13 +167,16 @@ def render(m, tone_key):
             # metāla palodze loga tonī: no rāmja līdz 40 mm ārpus sienas, augšējā virsma + priekšmala
             o.append(poly(cam, [at(face, u0 - 30, -40, z0), at(face, u1 + 30, -40, z0), at(face, u1, R, z0), at(face, u0, R, z0)], fill=shade(frame, 1.25), stroke='#111', stroke_width=.8))
             o.append(poly(cam, Q(u0 - 30, u1 + 30, z0 - 45, z0, -40), fill=frame, stroke='#111', stroke_width=1))
+        o.append(f'<path d="{ring}" fill="{frame}" fill-rule="evenodd" stroke="#111" stroke-width="1"/>')
         return o
 
     gable_top = lambda y: eave + min(y, D - y) * tan
+    eaveTop = ridge - (D / 2) * tan          # jumta virsmas mala pie sienas (25° slīpums); siena beidzas pie eave (zem jumta konstrukcijas)
+    dh = eaveTop - eave
     # austrumu gala fasāde (aiz dienvidu stūra)
-    east = [(W, 0, -floorT), (W, D, -floorT), (W, D, eave), (W, D / 2, ridge), (W, 0, eave)]
+    east = [(W, 0, -floorT), (W, D, -floorT), (W, D, eaveTop), (W, D / 2, ridge), (W, 0, eaveTop)]
     s.append(poly(cam, east, fill=clad, stroke='#111', stroke_width=1.5))
-    s += boards('east', 0, D, gable_top)
+    s += boards('east', 0, D, lambda y: gable_top(y) + dh)
     for w in m['windows']:
         if wside(m, w) == 'east':
             s += opening('east', w['y'], w['y'] + w['len'], w['sill'], w['head'])
@@ -186,9 +190,22 @@ def render(m, tone_key):
                     L0, R0 = u0 + i - o, u1 - i + o
                     return [(L0, zb + i), (R0, zb + i), (R0, zt(R0) - i * kk + o * kk), (mid, zt(mid) - i * kk + o * kk), (L0, zt(L0) - i * kk + o * kk)]
                 P = lambda pts, d=150: [at('east', u, d, z) for u, z in pts]
-                s.append(poly(cam, P(shp(0, 100), 0), fill=frame, stroke='#111', stroke_width=1))          # apmale sienas plaknē
                 s.append(poly(cam, P(shp(0)), fill=frame, stroke='#111', stroke_width=1))
+                outl = shp(0)
+                cu, cz = sum(p[0] for p in outl) / len(outl), sum(p[1] for p in outl) / len(outl)
+                s.append(poly(cam, P(outl), fill=shade(clad, .55), stroke='#111', stroke_width=1))           # ailas aizmugure
+                for a, b in zip(outl, outl[1:] + outl[:1]):                                                  # sarkanās ailas virsmas (redzamās)
+                    du, dz = b[0] - a[0], b[1] - a[1]
+                    n = (-dz, 0, du)
+                    if n[0] * (cu - a[0]) + n[2] * (cz - a[1]) < 0:
+                        n = (-n[0], 0, -n[2])
+                    mu, mz = (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+                    if seen('east', (mu, 0, mz), n):
+                        s.append(poly(cam, [at('east', a[0], 0, a[1]), at('east', b[0], 0, b[1]), at('east', b[0], 150, b[1]), at('east', a[0], 150, a[1])],
+                                      fill=shade(clad, 1.45 if n[0] else 1.6), stroke='#111', stroke_width=.8))
                 s.append(poly(cam, P(shp(95)), fill='#8fa3ad', stroke='#111', stroke_width=1))
+                ring = ('M ' + ' L '.join('%s,%s' % cam(p) for p in P(shp(0, 100), 0)) + ' Z M ' + ' L '.join('%s,%s' % cam(p) for p in P(shp(0), 0)) + ' Z')
+                s.append(f'<path d="{ring}" fill="{frame}" fill-rule="evenodd" stroke="#111" stroke-width="1"/>')
                 s.append(poly(cam, P([(u0 - 70, zb), (u1 + 70, zb), (u1 + 70, zb - 45), (u0 - 70, zb - 45)], -40), fill=shade(frame, 1.25), stroke='#111', stroke_width=.8))
                 continue
             z1 = min(gable_top(u0), gable_top(u1)) - 450
@@ -206,7 +223,7 @@ def render(m, tone_key):
     if cb:
         s.append(poly(cam, wall('south', W - cb, W, -floorT, eave), fill='#F2F0EA', stroke='#111', stroke_width=1))
         s.append(poly(cam, wall('south', 0, cb, -floorT, eave), fill='#F2F0EA', stroke='#111', stroke_width=1))
-        s.append(poly(cam, [(W, D - cb, -floorT), (W, D, -floorT), (W, D, eave), (W, D - cb, eave)], fill='#F2F0EA', stroke='#111', stroke_width=1))
+        s.append(poly(cam, [(W, D - cb, -floorT), (W, D, -floorT), (W, D, eaveTop), (W, D - cb, eaveTop)], fill='#F2F0EA', stroke='#111', stroke_width=1))
     # metāla cokols (stabveida pamati), tonis projekts.cokols, noklusējums RAL 9005
     if not slab:
         s.append(poly(cam, wall('south', 0, W, g0 + 40, -floorT), fill=plinth))
@@ -225,14 +242,15 @@ def render(m, tone_key):
         s.append(line(cam, (0, ED - 20, zt), (EW, ED - 20, zt), stroke='rgba(255,255,255,.12)', stroke_width=1))
     # jumts: dienvidu slīpne ar valcprofila šuvēm, austrumu vējmala
     rz = ridge
-    roof = [(0, D, eave), (W, D, eave), (W, D / 2, rz), (0, D / 2, rz)]
+    s.append(poly(cam, [(0, D, eave), (W, D, eave), (W, D, eaveTop), (0, D, eaveTop)], fill='#30363a', stroke='#111', stroke_width=1))   # dzega josla
+    roof = [(0, D, eaveTop), (W, D, eaveTop), (W, D / 2, rz), (0, D / 2, rz)]
     s.append(poly(cam, roof, fill='#40464b', stroke='#111', stroke_width=1.5))
     for x in range(265, int(W), 530):
-        s.append(line(cam, (x, D, eave), (x, D / 2, rz), stroke='#2a2f33', stroke_width=1.5))
+        s.append(line(cam, (x, D, eaveTop), (x, D / 2, rz), stroke='#2a2f33', stroke_width=1.5))
     # vējmala: sarkanajam balti koka dēļi (~200 mm), pārējiem tieva metāla vējmalas skārda RAL 7016
     vb, vh = ('#F2F0EA', 220) if tone.get('vejmala') == 'balta' else ('#30363a', 90)
-    s.append(poly(cam, [(W, D, eave), (W, D / 2, rz), (W, D / 2, rz - vh), (W, D, eave - vh)], fill=vb, stroke='#111', stroke_width=1))
-    s.append(poly(cam, [(W, 0, eave), (W, D / 2, rz), (W, D / 2, rz - vh), (W, 0, eave - vh)], fill=vb, stroke='#111', stroke_width=1))
+    s.append(poly(cam, [(W, D, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, D, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
+    s.append(poly(cam, [(W, 0, eaveTop), (W, D / 2, rz), (W, D / 2, rz - vh), (W, 0, eaveTop - vh)], fill=vb, stroke='#111', stroke_width=1))
     # notekas: gar dienvidu dzegu, caurule pie austrumu stūra līdz 50 mm virs zemes
     s.append(poly(cam, [(0, D + 120, eave - 60), (W, D + 120, eave - 60), (W, D + 120, eave - 180), (0, D + 120, eave - 180)], fill='#2f3438'))
     s.append(poly(cam, [(W - 230, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, g0 + 50 + (TER_H if slab else 0)), (W - 130, D + 120, eave - 180), (W - 230, D + 120, eave - 180)], fill='#2f3438'))
