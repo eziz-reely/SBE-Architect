@@ -538,7 +538,7 @@ function cadPlan(parent, v, opt = {}) {
     const hit = []; iv.forEach(c => { const l = hit.find(h => h[2] === c[2] && c[0] <= h[1] + 60 && c[1] >= h[0] - 60); if (l) { l[0] = Math.min(l[0], c[0]); l[1] = Math.max(l[1], c[1]); } else hit.push([...c]); });
     const pts = hit.flatMap(q => [q[0], q[1]]);
     const lo = Math.min(...pts), hi = Math.max(...pts);
-    return [...pts, lo - T, hi + T];
+    return (window.AR && AR.projekts && AR.projekts.piragi !== "ja") ? pts : [...pts, lo - T, hi + T];   // bez pīrāgu mēriem ķēde beidzas pie telpu virsmām (nav sienas biezuma atzīmju)
   };
   (v.innerDims || []).forEach(([axis, at], k) => chainCad(dg, cross(axis, at), axis, at, 0, true, k > 0));
   v.rooms.forEach((rm, i) => {
