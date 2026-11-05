@@ -307,6 +307,7 @@ if __name__ == '__main__':
     ap.add_argument('--rev-apraksts', help='revīzijas apraksts')
     ap.add_argument('--raditajs', action='append', default=[], help='papildu rādītājs rakstlaukumā "Nosaukums=Vērtība", var atkārtot')
     ap.add_argument('--nosaukums', help='modeļa nosaukums rakstlaukumā, piem. Freya')
+    ap.add_argument('--piragi', choices=['ja', 'ne'], default='ne', help='pīrāgu (sienu) biezumi ar mēriem lapā; noklusējums ne (nerādīt)')
     ap.add_argument('--tonis', choices=['peleks', 'koks', 'sarkans', 'zals', 'balts'], help='fasādes tonis (sablons/tex), noklusējums peleks')
     ap.add_argument('--pamati', choices=['stabveida', 'platne'], help='pamatu veids, noklusējums stabveida')
     ap.add_argument('--cokols', choices=['RAL 9005', 'RAL 7016'], help='stabveida pamatu metāla cokola tonis, noklusējums RAL 9005')
@@ -332,7 +333,7 @@ if __name__ == '__main__':
                             'cokols': a.cokols, 'atmosfera': a.atmosfera,
                             'raditaji': [r.split('=', 1) for r in a.raditajs] or None,
                             'piezimes': a.piezime or None, 'modela_nosaukums': a.nosaukums, 'tonis': a.tonis, 'pamati': a.pamati,
-                            'griesti': a.griesti}.items() if v is not None and (v != [] or k == 'adrese')}
+                            'griesti': a.griesti, 'piragi': a.piragi}.items() if v is not None and (v != [] or k == 'adrese')}
     import planlib   # zināšanu bibliotēka: tikai brīdinājumi, noformējumu nemaina
     for x in planlib.check_input(a.garums, a.platums, a.augstums):
         print('BRĪDINĀJUMS:', x)

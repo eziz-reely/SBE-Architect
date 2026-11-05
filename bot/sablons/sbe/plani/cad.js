@@ -245,6 +245,7 @@ function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
   for (let i = 0; i < pts.length - 1; i++) {
     const len = pts[i + 1] - pts[i], m = (pts[i] + pts[i + 1]) / 2;
     if (hideWall && len === T) continue;
+    if (!(window.AR && AR.projekts && AR.projekts.piragi === "ja") && (window.AR && AR.projekts) && Math.abs(len - T) <= 1) continue;   // [MM] pīrāgu (ārsienas) biezumus nerāda, ja nav prasīts (--piragi ja)
     // short end pieces (e.g. axis to the cladding face): text just outside the chain end
     let mm = m;
     if (len < 200) { if (i === 0) mm = pts[0] - 260; else if (i === pts.length - 2) mm = pts[i + 1] + 260; else continue; }

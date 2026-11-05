@@ -22,7 +22,7 @@ Lietotājam jāieraksta tikai mājas gabarīti, viss pārējais ir izvēle. Jaut
 4. **Fasādes tonis** (tekstūras `sablons\tex`): [x] Grafīta pelēks   [ ] Norvēģu sarkans (automātiski balti logi, durvis, apmales un 90 mm stūru apdare)   [ ] Dabīgs koks   [ ] Tumši zaļš (balti logi)   [ ] Balts (gaiši pelēks, tumši logi)
 5. **Mansards**: [x] Jā, mansarda stāvs ar guļvietu un logiem (`--mansards ja`)   [ ] Nē (`--mansards ne`)
 5a. **Plānojuma varianti**: [x] Nē, viens plāns (etalons MM 30 tips)   [ ] Jā, N varianti (`--varianti N`, plānotājs: II/L/T, ar mansardu tikai II; guļamistabu skaits pēc laukuma vai `--gulamistabas`)
-5b. **Pīrāgu biezumi** (sienu, grīdas un jumta pīrāgi ar mēriem): [x] Nerādīt (klienta lapā tikai gala biezumi plānā)   [ ] Rādīt ar mēriem (vēl nav uztaisīts: lapā nav vietas, pasaki lietotājam un jautā, kur to rādīt; `buildUp` zīmē ražošanas projekta lapai)
+5b. **Pīrāgu biezumi** (ārsienu pīrāga biezumi ar mēriem plānos): [x] Nerādīt (`--piragi ne`, noklusējums: sienu biezuma mēri 284/283 netiek zīmēti)   [ ] Rādīt (`--piragi ja`). Pīrāgu zīmējumi ar slāņiem (S1, S2, grīda, jumts) botā vēl nav uztaisīti klienta lapai, tos pasaki lietotājam, ja prasa.
 6. **Pamati**: [x] Stabveida, cokols metāla apdare RAL 9005   [ ] Stabveida, cokols metāla apdare RAL 7016 (`--cokols "RAL 7016"`)   [ ] Pamatu plātne, betona cokols
 7. **Piezīmes rakstlaukumā** (var atķeksēt vairākas):
    [x] Pamatu veids un cokols (no 6. jautājuma)
