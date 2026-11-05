@@ -708,7 +708,8 @@ function elevation(parent, v, side, opt = { levels: true }) {
     el("rect", { x: a0 - 40 - cas, y: -z0, width: a1 - a0 + 80 + 2 * cas, height: 45, fill: "#2b2f32" }, gg);
   });
   if (side === "south") v.doors.filter(d => d.entry).forEach(d => {
-    el("rect", { x: d.x - 45, y: -2145, width: d.w + 90, height: 2145, fill: colHex(WINC().cas, "#1f2326"), stroke: "#111", "stroke-width": 12 }, g);
+    const dc = (window.AR && window.AR.win && window.AR.win.casing) ?? 100;   // ārdurvju apmale tāda pati kā logiem (win.casing, mm)
+    el("rect", { x: d.x - dc, y: -2100 - dc, width: d.w + 2 * dc, height: 2100 + dc, fill: colHex(WINC().cas, "#1f2326"), stroke: "#111", "stroke-width": 8 }, g);
     el("rect", { x: d.x, y: -2100, width: d.w, height: 2100, fill: colHex(WINC().out, C.ral), stroke: "#111", "stroke-width": 10 }, g);
     const hl = hingeLeft(v, { o: d.o, x: d.x, y: d.y, hinge: d.hinge });
     el("rect", { x: hl ? d.x + d.w - 260 : d.x + 220, y: -1600, width: 40, height: 1100, fill: "#b9bcbe" }, g);
