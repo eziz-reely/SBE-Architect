@@ -160,3 +160,5 @@ Noteikumus pierakstīs, kad lietotājs sāks šo fāzi.
 
 - `SBE-ARHITEKTS` mapi nemaina. Bots izmanto savu kopiju `sablons/sbe`, un MM labojumi tiek ielikti būvējot (build_model.py).
 - Google API atslēgu neglabā bota failos: tikai mākoņa vides mainīgajā `GEMINI_API_KEY` vai `MM System\.env`.
+
+**Vizualizāciju pamats mājām līdz 60 m² [MM]:** vizualizācijā un 3D references bildē māja stāv uz plātnes (grīdas paneļa biezums 275,5 mm = plātne, bez stabiem un cokola) ar koka terasi RAL 7016, viens pakāpiens 250 mm virs zemes: 1100 mm dziļa gar ieejas garsienu un 3075 mm aiz austrumu gala (`ref.py` slab_mode, `projekts.terase` ja/ne). Lietotāja bildes kā vizuālu paraugu NEIZMANTO, tā ir tikai izmēriem. **Pirms vizualizācijām botam VIENMĒR jāpajautā lietotājam:** taisīt vai nē, kuri toņi, kura atmosfēra (mežs, fjords, krasts, plato, ziema, rudens), kuri skati. Balto toni logu rāmji un aplodas pēc noklusējuma ir melni (RAL 9005), sarkanajam balti (RAL 9016). Vizualizāciju prompts satur precīzu atveru skaitu (`viz.openings`), lai Gemini neizdomā logus.

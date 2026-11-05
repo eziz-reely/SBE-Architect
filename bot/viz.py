@@ -22,7 +22,8 @@ DEFAULT_MODEL = 'gemini-3-pro-image'
 # ---- viena konstante visiem skatiem un toņiem: apkārtne, gaisma, kamera ----
 # ---- kamera un stils: viena konstante visiem modeļiem; apkārtne + gaisma: modeļa atmosfēra (mm-config.json "atmosferas") ----
 CAMERA = ("Camera: eye-level photograph from 1.6 m above the ground, 3:2 frame, vertical lines perfectly straight "
-          "(architectural shift lens), the house fills about two thirds of the frame width, horizon in the lower third. "
+          "(architectural shift lens), the whole house together with its whole terrace is fully visible inside the frame with comfortable margins on all sides "
+          "(house and terrace fill about three quarters of the frame width), horizon in the lower third. "
           "Style: photorealistic architectural photography, real materials, sharp detail, natural lens, no illustration look, no CGI look.")
 ATMOS = list(CFG['atmosferas'])
 
@@ -39,11 +40,25 @@ def atmosphere(m):
     return k, CFG['atmosferas'][k]['en']
 
 
-FORBID = ("Do not add: terrace, deck, patio, steps other than one simple entrance step, furniture, people, animals, cars, fences, "
+FORBID = ("Do not add: any other terrace, deck, patio or steps than the one shown in the reference, railings, furniture, people, animals, cars, fences, "
           "lamps, signs, text, logos, plants or bushes against the walls, extra buildings.")
 KEEP = ("DO NOT CHANGE (the reference image is exact): camera position and angle, house outline and proportions, roof shape "
         "and pitch (no roof overhang), position, width, height and number of every window and door. "
         "Do not add, remove, merge, enlarge or divide any opening. Window and door frames keep the colour shown.")
+
+
+def openings(m):
+    """Atveru skaits redzamajās fasādēs (dienvidu ieejas garsiena un austrumu gals), lai Gemini neizdomā papildu logus."""
+    if not m:
+        return ''
+    from ref import wside
+    ns = sum(1 for w in m['windows'] if wside(m, w) == 'south')
+    ne = sum(1 for w in m['windows'] if wside(m, w) == 'east')
+    ng = sum(1 for g in m.get('gableWins', []) if g['side'] == 'east')
+    south = 'the entrance door and ' + (f'exactly {ns} window(s)' if ns else 'NO windows at all') 
+    return (f" OPENING COUNT (from the reference image, exact): the long entrance facade has {south}, nothing else, the rest of that wall is plain cladding. "
+            f"The east gable end has exactly {ne} large glazing and {ng} small window high in the gable, nothing else, the wall areas beside the glazing are plain cladding. "
+            "Do not invent any additional window, door, vent or shutter anywhere.")
 
 
 def materials(tk, m=None):
@@ -55,7 +70,17 @@ def materials(tk, m=None):
             'koks': 'natural oiled timber, warm honey-brown (close to RGB %s)' % t['sw'],
             'zals': 'painted dark forest green, deep and muted, matte Scandinavian paint (close to RGB %s)' % t['sw'],
             'balts': 'painted soft light grey-white, matte Scandinavian paint, clean and bright but not pure white (close to RGB %s)' % t['sw']}[tk]
-    frames = 'white (RAL 9016)' if t.get('logi') == 'RAL 9016' else 'anthracite grey (RAL 7016)'
+    from ref import slab_mode
+    if m and slab_mode(m):
+        foundation = ("The house stands on a concrete slab foundation: no posts and no plinth, the 27 cm thick floor slab edge sits right at the ground "
+                      "and is almost completely covered by a wooden terrace. The terrace is a single step 25 cm above the ground, "
+                      "made of horizontal anthracite grey (RAL 7016) wooden deck boards laid along the long side of the house, thin gaps between boards. "
+                      "It runs 1.1 m deep along the whole entrance wall (the long wall with the entrance door) and continues 3 m beyond the glazed gable end, "
+                      "exactly as in the reference image (L-shaped terrace, no railing, no furniture on it). The entrance door opens onto the terrace.")
+    else:
+        foundation = (f"The house stands on a hidden post foundation: a {plinth} about 30 cm high, "
+                      "with a thin shadow gap above the ground.")
+    frames = {'RAL 9016': 'white (RAL 9016)', 'RAL 9005': 'black (RAL 9005)'}.get(t.get('logi'), 'anthracite grey (RAL 7016)')
     s = (f"Materials: walls are vertical cladding boards {wall}. Roof: dark anthracite standing seam steel RAL 7016, no overhang, "
          f"thin anthracite gutter along the eave and a round anthracite downpipe ending 5 cm above the ground. "
          f"Windows and the entrance door: {frames} frames, set back (recessed) into the wall about 15 cm, NOT flush with the cladding: the reference image shows the visible reveal sides of every opening, keep that depth. "
@@ -63,9 +88,9 @@ def materials(tk, m=None):
          f"The entrance door leaf is flat in the frame colour, with one narrow vertical glass strip (about 16 cm wide, almost full door height) along the hinge side "
          f"and a long vertical stainless steel bar handle (about 110 cm) on the opening side, exactly as in the reference image. "
          f"Every window has a thin projecting metal window sill (drip sill) in the frame colour at its bottom edge. "
+         f"The flat casing boards (about 10 cm wide trim around every window and the entrance door on the facade) are in the same colour as the frames: {frames}. "
          f"Glass reflects the overcast sky. "
-         f"The house stands on a hidden post foundation: a {plinth} about 30 cm high, "
-         f"with a thin shadow gap above the ground.")
+         f"{foundation}")
     if t.get('vejmala') == 'balta':
         s += " Roof verge (sloping fascia board along the gable roof edge): white painted timber verge boards (classic Norwegian detail)."
     else:
@@ -122,7 +147,7 @@ def make_base(mid, viz, key, model):
     ak, scene = atmosphere(m)
     print('atmosfēra:', ak, '-', CFG['atmosferas'][ak]['lv'])
     text = ("Turn this technical reference image of a small modular house into a photorealistic photograph. " + KEEP + " " +
-            materials('peleks', m) + " " + scene + " Realistic Scandinavian colours. " + CAMERA + " " + FORBID)
+            materials('peleks', m) + openings(m) + " " + scene + " Realistic Scandinavian colours. " + CAMERA + " " + FORBID)
     open(base, 'wb').write(gemini(key, model, text, [ref]))
     open(base.replace('.png', '_prompt.txt'), 'w', encoding='utf-8').write(text)
     return base
@@ -137,7 +162,7 @@ def make_tones(mid, viz, key, model, tones):
         text = ("Edit the FIRST image, a photograph. Change ONLY the colours, trims and roof verge of the house so they match the SECOND image "
                 "(a technical reference with the target colours and the exact opening layout). " + materials(tk, m) + " "
                 "Keep everything else identical to the first image: camera, framing, sky, light, the whole landscape, path, "
-                "roof, plinth, gutters and every opening. " + KEEP)
+                "roof, plinth, gutters and every opening. " + KEEP + openings(m))
         out = os.path.join(viz, f'V1_{tk}.png')
         open(out, 'wb').write(gemini(key, model, text, [base, os.path.join(viz, f'ref_{tk}.png')]))
         open(out.replace('.png', '_prompt.txt'), 'w', encoding='utf-8').write(text)
