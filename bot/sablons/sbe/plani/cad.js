@@ -676,11 +676,11 @@ function elevation(parent, v, side, opt = { levels: true }) {
       // sill: plate wider than the casing, front edge line, drip shadow on the wall
       const s0 = u0 - (cas || 0) - 45, s1 = u1 + (cas || 0) + 45;
       el("polygon", { points: [P(s0, z0 - 40), P(s1, z0 - 40), P(s1 - 30, z0 - 110), P(s0 + 30, z0 - 110)].join(" "), fill: "rgba(0,0,0,.35)" }, gg);
-      R(s0, s1, z0 - 40, z0 + 10, { fill: "#2b2f32", ...ln });
+      R(s0, s1, z0 - 40, z0 + 10, { fill: cc, ...ln });   // palodze loga apmales tonī (sarkanajam/zaļajam balta)
       el("line", { x1: s0, y1: -(z0 - 22), x2: s1, y2: -(z0 - 22), ...thin }, gg);
     } else {
       // window down to the floor: threshold plate only, no casing below
-      R(u0 - 15, u1 + 15, z0, z0 + 30, { fill: "#2b2f32", ...ln });
+      R(u0 - 15, u1 + 15, z0, z0 + 30, { fill: cc, ...ln });
     }
   };
   v.windows.forEach(w => {
