@@ -1,0 +1,1647 @@
+{
+ "_info": "Arka-B (arka-b.lv) plānojumi, nokasīti 2026-11-05. 'tips': modulu = rūpnīcā gatavas moduļu mājas (to izmanto kā primāro references MM moduļu mājām); karkass = uz vietas būvēta koka karkasa māja (cits tips, NEMAISĪT ar moduļu normām). 'klase': lidz60 / virs60 pēc apbūves laukuma. planlib normas moduļu mājām ņem tikai tips=modulu un klase=lidz60.",
+ "_prices": {
+  "mezrozite30": {
+   "turnkey_full": 47040,
+   "note": "pilnais komplekts: pamati, ārdarbi, iekšdarbi; ar PVN"
+  },
+  "mezrozite34": {
+   "turnkey_full": 52760
+  },
+  "mezrozite38": {
+   "turnkey_full": 60745
+  },
+  "ive60": {
+   "from": 53785,
+   "to": 87965
+  },
+  "egle60": {
+   "from": 61323,
+   "to": 103342
+  },
+  "priede60": {
+   "from": 65860,
+   "to": 107880
+  },
+  "klava100": {
+   "from": 109021,
+   "to": 166370
+  },
+  "klava120": {
+   "from": 130680,
+   "to": 199040
+  },
+  "magnolija130": {
+   "from": 174119,
+   "to": 243447
+  },
+  "klava150": {
+   "from": 163108,
+   "to": 247682
+  },
+  "liepa165": {
+   "from": 179685,
+   "to": 273092
+  },
+  "liepa190": {
+   "from": 206668,
+   "to": 314232
+  },
+  "_note": "karkasa mājām diapazons = no mazākās līdz pilnai komplektācijai, ar PVN"
+ },
+ "mezrozite30": {
+  "family": "mezrozite30",
+  "tips": "modulu",
+  "klase": "lidz60",
+  "variant": "1 guļamistaba + loft",
+  "file": "mezrozite34_MM30_4_Planojums.jpg (jāuzmanās: Arka-B lapās plāna un eksplikācijas attēli ir sajaukti starp Mežrozīte 30 un 34; ģeometrija un platības saskaņotas)",
+  "outer_m": [
+   7.48,
+   4.0
+  ],
+  "living_area_m2": 24.3,
+  "loft": true,
+  "floors": "1 + loft",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "layout": "ieeja gala/sānu sienā caur mazu priekštelpu (1.56) uz dzīvojamo+virtuvi; virtuves rinda pie sienas, kas atdala guļamistabu; dīvāns pie garā loga sānu sienā, TV siena pretī; guļamistaba un sanitārais mezgls (duša, pods, izlietne) blakus, abi mājas tālākajā galā; skapis guļamistabā pie durvīm",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 11.8
+   },
+   {
+    "n": 2,
+    "name": "priekštelpa",
+    "m2": 1.56
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 7.64
+   },
+   {
+    "n": 4,
+    "name": "vannasistaba",
+    "m2": 3.27
+   }
+  ]
+ },
+ "mezrozite34": {
+  "family": "mezrozite34",
+  "tips": "modulu",
+  "klase": "lidz60",
+  "variant": "kā 30 + terase zem jumta",
+  "file": "mezrozite30_MM30_Planojums__1_.jpg (skat. piezīmi pie mezrozite30)",
+  "outer_m": [
+   8.48,
+   4.0
+  ],
+  "living_area_m2": 24.3,
+  "terrace_m2": 3.52,
+  "loft": true,
+  "floors": "1 + loft",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "layout": "tas pats izkārtojums kā Mežrozīte 30, bet gala pusē pievienota 1.0 m dziļa terase zem jumta, kurā var izkļūt no viesistabas",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 11.8
+   },
+   {
+    "n": 2,
+    "name": "priekštelpa",
+    "m2": 1.56
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 7.64
+   },
+   {
+    "n": 4,
+    "name": "vannasistaba",
+    "m2": 3.27
+   }
+  ]
+ },
+ "mezrozite38": {
+  "family": "mezrozite38",
+  "tips": "modulu",
+  "klase": "lidz60",
+  "variant": "dzīvojamā + 2 mazas telpas (saunai piemērota)",
+  "file": "mezrozite38_Screenshot_2024-07-18.png",
+  "outer_m": [
+   8.5,
+   4.5
+  ],
+  "living_area_m2": 31.3,
+  "loft": true,
+  "floors": "1 + loft",
+  "bedrooms": 0,
+  "bathrooms": 1,
+  "note": "Telpa 2 (5.4 m2) plānā nav nosaukta; mājas apraksts saka 'piemērota saunas ierīkošanai', tāpēc visticamāk saunas/lietošanas telpa. Kāpnes uz loftu 800 mm platas pie sienas starp lielo telpu un 2. telpu.",
+  "layout": "liela atvērta telpa (22.3, 5.78×3.2 m iekšā) ar divviru durvīm garajā fasādē un diviem logiem īsajā galā; mājas otrajā galā divas telpas pie vienas sienas: telpa 2 un vannasistaba (pods, duša) ar logu ārsienā; kāpnes uz loftu",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 22.3
+   },
+   {
+    "n": 2,
+    "name": "pirts/lietošanas telpa",
+    "m2": 5.4
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 3.6
+   }
+  ]
+ },
+ "ive60_V1": {
+  "family": "ive60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   9.34,
+   6.42
+  ],
+  "built_area_m2": 60,
+  "floors": "1 + mansards",
+  "shape": "II",
+  "file": "ive60_V1_Īve_page-0001.jpg",
+  "variant": "1 guļamistaba, liela dzīvojamā",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "living_area_m2": 48.73,
+  "layout": "ieeja garajā sienā tieši dzīvojamā+virtuvē (32.48); kāpnes uz mansardu iebūvētas telpas vidū pie sienas; virtuves rinda pie austrumu sienas, dīvāns+televizors rietumos, apaļš galds dienvidaustrumos; ziemeļu rindā vannasistaba un guļamistaba ar skapi",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve (ar priekšnamu)",
+    "m2": 32.48
+   },
+   {
+    "n": 2,
+    "name": "vannasistaba",
+    "m2": 5.81
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 10.44
+   }
+  ]
+ },
+ "ive60_V2": {
+  "family": "ive60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   9.34,
+   6.42
+  ],
+  "built_area_m2": 60,
+  "floors": "1 + mansards",
+  "shape": "II",
+  "file": "ive60_V2_Īve_page-0001.jpg",
+  "variant": "1 guļamistaba + tehniskā telpa",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "living_area_m2": 48.16,
+  "layout": "centrā priekštelpa (8.15) ar visām durvīm: uz guļamistabu (ziemeļrietumos), vannasistabu ar vannu (rietumos), tehnisko telpu (ziemeļaustrumos); dzīvojamā+virtuve dienvidos ar L virtuvi un dīvānu pie loga",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 8.15
+   },
+   {
+    "n": 2,
+    "name": "dzīvojamā+virtuve",
+    "m2": 19.47
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 4.71
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 10.95
+   },
+   {
+    "n": 5,
+    "name": "tehniskā telpa",
+    "m2": 4.88
+   }
+  ]
+ },
+ "ive60_V3": {
+  "family": "ive60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   9.34,
+   6.42
+  ],
+  "built_area_m2": 60,
+  "floors": "1 + mansards",
+  "shape": "II",
+  "file": "ive60_V3_Īve_page-0001.jpg",
+  "variant": "1 guļamistaba, liela vannasistaba",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "living_area_m2": 48.51,
+  "layout": "kā V1, bet vannasistaba palielināta (7.40, ar veļasmašīnu un žāvētāju) un priekšnams apvienots ar dzīvojamo (30.89)",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve (ar priekšnamu)",
+    "m2": 30.89
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 10.22
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 7.4
+   }
+  ]
+ },
+ "ive60_V4": {
+  "family": "ive60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   9.34,
+   6.42
+  ],
+  "built_area_m2": 60,
+  "floors": "1 + mansards",
+  "shape": "II",
+  "file": "ive60_V4_Īve_page-0001.jpg",
+  "variant": "1 guļamistaba, atsevišķa tehniskā telpa",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "living_area_m2": 47.88,
+  "layout": "dzīvojamā+virtuve (29.00) ar virtuves rindu pie rietumu sienas, stūra dīvāns austrumos; ziemeļos guļamistaba ar skapi, vannasistaba (ar vannu) un tehniskā telpa (3.03)",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve (ar priekšnamu)",
+    "m2": 29.0
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 10.74
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 5.11
+   },
+   {
+    "n": 4,
+    "name": "tehniskā telpa",
+    "m2": 3.03
+   }
+  ]
+ },
+ "ive60_V5": {
+  "family": "ive60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   9.34,
+   6.42
+  ],
+  "built_area_m2": 60,
+  "floors": "1 + mansards",
+  "shape": "II",
+  "file": "ive60_V5_Īve_page-0001.jpg",
+  "variant": "2 guļamistabas (bērnu)",
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "living_area_m2": 47.91,
+  "layout": "ziemeļu rindā divas vienādas guļamistabas pa 7.58 m2 ar gultu, rakstāmgaldu un skapi katra, durvis uz kopējo priekšnamu; vannasistaba rietumos; dzīvojamā+virtuve (27.92) dienvidos",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve (ar priekšnamu)",
+    "m2": 27.92
+   },
+   {
+    "n": 2,
+    "name": "vannasistaba",
+    "m2": 4.83
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 7.58
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 7.58
+   }
+  ]
+ },
+ "ive60_V6": {
+  "family": "ive60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   9.34,
+   6.42
+  ],
+  "built_area_m2": 60,
+  "floors": "1 + mansards",
+  "shape": "II",
+  "file": "ive60_V6_Īve_page-0001.jpg",
+  "variant": "2 guļamistabas (vecāku + bērnu)",
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "living_area_m2": 47.76,
+  "layout": "ziemeļu rindā bērnu istaba (6.35) un vecāku guļamistaba (9.76) ar skapi starp tām; vannasistaba (4.26) austrumos pie priekšnama; dzīvojamā+virtuve (27.39) ar virtuves rindu pie austrumu sienas",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 27.39
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba (bērnu)",
+    "m2": 6.35
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 9.76
+   },
+   {
+    "n": 4,
+    "name": "vannasistaba",
+    "m2": 4.26
+   }
+  ]
+ },
+ "klava100_V1": {
+  "family": "klava100",
+  "variant": "V1",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   13.567,
+   7.337
+  ],
+  "built_area_m2": 100,
+  "shape": "II",
+  "bedrooms": 2,
+  "bathrooms": 2,
+  "living_area_m2": 78.52,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 4.89
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 3.72
+   },
+   {
+    "n": 3,
+    "name": "dzīvojamā+virtuve",
+    "m2": 31.55
+   },
+   {
+    "n": 4,
+    "name": "tehniskā telpa",
+    "m2": 3.29
+   },
+   {
+    "n": 5,
+    "name": "vannasistaba",
+    "m2": 4.4
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba",
+    "m2": 10.64
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 12.59
+   },
+   {
+    "n": 8,
+    "name": "garderobe",
+    "m2": 4.0
+   },
+   {
+    "n": 9,
+    "name": "WC/sanmezgls",
+    "m2": 3.44
+   }
+  ],
+  "layout": "ieeja garajā ziemeļu sienā; virtuve NE stūrī, ēdamgalds un dīvāns austrumos-dienvidos; ziemeļrietumos garderobe+2 sanmezgli, guļamistabas dienvidu rindā rietumos",
+  "files": [
+   "klava100_Kļava_100_V1_labots.jpg"
+  ]
+ },
+ "klava100_V2": {
+  "family": "klava100",
+  "variant": "V2",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   13.567,
+   7.337
+  ],
+  "built_area_m2": 100,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "living_area_m2": 78.04,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 4.31
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 6.91
+   },
+   {
+    "n": 3,
+    "name": "dzīvojamā+virtuve",
+    "m2": 23.68
+   },
+   {
+    "n": 4,
+    "name": "sanmezgls",
+    "m2": 4.0
+   },
+   {
+    "n": 5,
+    "name": "tehniskā telpa",
+    "m2": 3.67
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba",
+    "m2": 9.19
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 13.77
+   },
+   {
+    "n": 8,
+    "name": "sanmezgls",
+    "m2": 3.16
+   },
+   {
+    "n": 9,
+    "name": "guļamistaba",
+    "m2": 9.35
+   }
+  ],
+  "layout": "centrālais gaitenis; trīs guļamistabas+2 sanmezgli rietumu pusē, dzīvojamā+virtuve austrumos ar logiem uz austrumiem",
+  "files": [
+   "klava100_Kļava_100_V2.jpg"
+  ]
+ },
+ "klava100_V3": {
+  "family": "klava100",
+  "variant": "V3",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   13.567,
+   7.337
+  ],
+  "built_area_m2": 100,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 1,
+  "living_area_m2": 79.13,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 4.26
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 5.66
+   },
+   {
+    "n": 3,
+    "name": "dzīvojamā+virtuve",
+    "m2": 28.74
+   },
+   {
+    "n": 4,
+    "name": "sanmezgls",
+    "m2": 4.0
+   },
+   {
+    "n": 5,
+    "name": "tehniskā telpa",
+    "m2": 3.67
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba",
+    "m2": 9.19
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 14.26
+   },
+   {
+    "n": 9,
+    "name": "guļamistaba",
+    "m2": 9.35
+   }
+  ],
+  "layout": "kā V2, bet bez otra sanmezgla; lielāka dzīvojamā (28.74) un vecāku istaba 14.26",
+  "files": [
+   "klava100_Kļava_100_V3.jpg"
+  ]
+ },
+ "klava100_V4": {
+  "family": "klava100",
+  "variant": "V4",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   13.567,
+   7.337
+  ],
+  "built_area_m2": 100,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 1,
+  "living_area_m2": 79.04,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 4.67
+   },
+   {
+    "n": 2,
+    "name": "tehniskā telpa",
+    "m2": 2.96
+   },
+   {
+    "n": 3,
+    "name": "sanmezgls",
+    "m2": 3.66
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 13.92
+   },
+   {
+    "n": 5,
+    "name": "dzīvojamā+virtuve",
+    "m2": 31.82
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba",
+    "m2": 9.27
+   },
+   {
+    "n": 7,
+    "name": "tehniskā telpa/WC",
+    "m2": 3.47
+   },
+   {
+    "n": 8,
+    "name": "guļamistaba",
+    "m2": 9.27
+   }
+  ],
+  "layout": "dzīvojamā+virtuve centrā; bērnu istabas rietumu pusē ar kopīgu WC starp tām; vecāku istaba austrumos ar ieeju no dzīvojamās",
+  "files": [
+   "klava100_Kļava_100_V4_labots.jpg"
+  ]
+ },
+ "klava120_V1": {
+  "family": "klava120",
+  "variant": "V1",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   14.82,
+   8.1
+  ],
+  "built_area_m2": 120,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "living_area_m2": 95.44,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 5.37
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 7.62
+   },
+   {
+    "n": 3,
+    "name": "dzīvojamā+virtuve",
+    "m2": 33.75
+   },
+   {
+    "n": 4,
+    "name": "tehniskā telpa",
+    "m2": 4.5
+   },
+   {
+    "n": 5,
+    "name": "guļamistaba",
+    "m2": 10.52
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba",
+    "m2": 10.52
+   },
+   {
+    "n": 7,
+    "name": "vannasistaba",
+    "m2": 6.3
+   },
+   {
+    "n": 8,
+    "name": "sanmezgls",
+    "m2": 4.65
+   },
+   {
+    "n": 9,
+    "name": "guļamistaba",
+    "m2": 10.14
+   },
+   {
+    "n": 10,
+    "name": "garderobe",
+    "m2": 2.07
+   }
+  ],
+  "layout": "platais centrālais gaitenis; dzīvojamā+virtuve austrumos 33.75; ziemeļos vannasistaba un WC, vecāku istaba ar atsevišķu sanmezglu; dienvidos 2 bērnu istabas ar rakstāmgaldiem",
+  "files": [
+   "klava120_Kļava_120_V1.jpg"
+  ]
+ },
+ "klava120_V2": {
+  "family": "klava120",
+  "variant": "V2",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   14.82,
+   8.1
+  ],
+  "built_area_m2": 120,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "living_area_m2": 95.79,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 4.99
+   },
+   {
+    "n": 2,
+    "name": "tehniskā telpa",
+    "m2": 4.1
+   },
+   {
+    "n": 3,
+    "name": "dzīvojamā+virtuve",
+    "m2": 33.71
+   },
+   {
+    "n": 4,
+    "name": "gaitenis",
+    "m2": 5.72
+   },
+   {
+    "n": 5,
+    "name": "vannasistaba",
+    "m2": 7.2
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba",
+    "m2": 10.12
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 15.09
+   },
+   {
+    "n": 8,
+    "name": "sanmezgls",
+    "m2": 4.75
+   },
+   {
+    "n": 9,
+    "name": "guļamistaba",
+    "m2": 10.11
+   }
+  ],
+  "layout": "dzīvojamā+virtuve austrumos, gaitenis rietumos; vecāku istaba 15.09 ar sanmezglu",
+  "files": [
+   "klava120_Kļava_120_V2.jpg"
+  ]
+ },
+ "klava120_V3": {
+  "family": "klava120",
+  "variant": "V3",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   14.82,
+   8.1
+  ],
+  "built_area_m2": 120,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "living_area_m2": 95.94,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 4.9
+   },
+   {
+    "n": 2,
+    "name": "tehniskā telpa",
+    "m2": 4.25
+   },
+   {
+    "n": 3,
+    "name": "dzīvojamā+virtuve",
+    "m2": 42.95
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 14.76
+   },
+   {
+    "n": 5,
+    "name": "sanmezgls",
+    "m2": 3.87
+   },
+   {
+    "n": 6,
+    "name": "gaitenis",
+    "m2": 1.78
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 9.6
+   },
+   {
+    "n": 8,
+    "name": "guļamistaba",
+    "m2": 9.6
+   },
+   {
+    "n": 9,
+    "name": "vannasistaba",
+    "m2": 4.23
+   }
+  ],
+  "layout": "ļoti liela dzīvojamā 42.95 ar salu virtuvi, gandrīz bez gaiteņa; vecāku istaba austrumos ar savu sanmezglu; 2 bērnu istabas rietumos ar vannasistabu starp tām",
+  "files": [
+   "klava120_Kļava_120_V3.jpg"
+  ]
+ },
+ "egle60_V2": {
+  "family": "egle60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "1 + antresolstāvs",
+  "note": "Egle 60 lapas attēli nosaukti PRIEDE; 1. stāva V2-V6, V1 ir antresolstāvs 32.38 m2 (atvērta telpa ar kāpnēm)",
+  "variant": "V2",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "living_area_m2": 47.91,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 11.13
+   },
+   {
+    "n": 2,
+    "name": "dzīvojamā+virtuve",
+    "m2": 17.98
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 4.65
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 9.79
+   },
+   {
+    "n": 5,
+    "name": "tehniskā telpa",
+    "m2": 4.36
+   }
+  ],
+  "layout": "ieeja īsajā rietumu sienā uz lielu priekštelpu ar kāpnēm; guļamistaba un tehniskā telpa ziemeļos, vannasistaba austrumos; dzīvojamā dienvidos, virtuves rinda austrumu sienā, dīvāns rietumos"
+ },
+ "egle60_V3": {
+  "family": "egle60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "1 + antresolstāvs",
+  "note": "Egle 60 lapas attēli nosaukti PRIEDE; 1. stāva V2-V6, V1 ir antresolstāvs 32.38 m2 (atvērta telpa ar kāpnēm)",
+  "variant": "V3",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "living_area_m2": 48.6,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve+priekšnams",
+    "m2": 32.83
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 9.85
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 5.85
+   }
+  ],
+  "layout": "ieeja tieši dzīvojamā; kāpnes pie rietumu sienas; vannasistaba (5.85) un guļamistaba ziemeļos; virtuve gar austrumu sienu; apaļš galds dienvidaustrumos"
+ },
+ "egle60_V4": {
+  "family": "egle60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "1 + antresolstāvs",
+  "note": "Egle 60 lapas attēli nosaukti PRIEDE; 1. stāva V2-V6, V1 ir antresolstāvs 32.38 m2 (atvērta telpa ar kāpnēm)",
+  "variant": "V4",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "living_area_m2": 47.9,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve+priekšnams",
+    "m2": 28.87
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 10.74
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 5.26
+   },
+   {
+    "n": 4,
+    "name": "tehniskā telpa",
+    "m2": 3.03
+   }
+  ],
+  "layout": "guļamistaba ziemeļrietumos ar skapi, tehniskā telpa un vannasistaba ziemeļaustrumos, virtuves rinda austrumos, dīvāns pie kāpnēm"
+ },
+ "egle60_V5": {
+  "family": "egle60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "1 + antresolstāvs",
+  "note": "Egle 60 lapas attēli nosaukti PRIEDE; 1. stāva V2-V6, V1 ir antresolstāvs 32.38 m2 (atvērta telpa ar kāpnēm)",
+  "variant": "V5",
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "living_area_m2": 48.0,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve+priekšnams",
+    "m2": 26.73
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 8.33
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 8.48
+   },
+   {
+    "n": 4,
+    "name": "sanmezgls",
+    "m2": 4.46
+   }
+  ],
+  "layout": "divas vienādas guļamistabas ziemeļos ar skapjiem, durvis uz priekšnamu; sanmezgls austrumos; dzīvojamā dienvidos"
+ },
+ "egle60_V6": {
+  "family": "egle60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "1 + antresolstāvs",
+  "note": "Egle 60 lapas attēli nosaukti PRIEDE; 1. stāva V2-V6, V1 ir antresolstāvs 32.38 m2 (atvērta telpa ar kāpnēm)",
+  "variant": "V6",
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "living_area_m2": 48.95,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve+priekšnams",
+    "m2": 28.23
+   },
+   {
+    "n": 2,
+    "name": "sanmezgls",
+    "m2": 4.5
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 9.89
+   },
+   {
+    "n": 4,
+    "name": "istaba (kabinets/bērnu)",
+    "m2": 6.33
+   }
+  ],
+  "layout": "guļamistaba + maza istaba 6.33 (rakstāmgalds) ziemeļos, sanmezgls austrumos"
+ },
+ "egle60_V1_loft": {
+  "family": "egle60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "1 + antresolstāvs",
+  "note": "Egle 60 lapas attēli nosaukti PRIEDE; 1. stāva V2-V6, V1 ir antresolstāvs 32.38 m2 (atvērta telpa ar kāpnēm)",
+  "variant": "V1 antresolstāvs",
+  "bedrooms": 0,
+  "bathrooms": 0,
+  "living_area_m2": 32.38,
+  "rooms": [
+   {
+    "n": "loft",
+    "name": "antresolstāvs",
+    "m2": 32.38
+   }
+  ],
+  "layout": "atvērts augšstāvs virs dzīvojamās, kāpnes pie rietumu sienas, logi abos galos"
+ },
+ "priede60_plans": {
+  "family": "priede60",
+  "variant": "2 guļamistabas (plans_1713270239)",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "living_area_m2": 49.2,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve+priekšnams",
+    "m2": 29.5
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 7.7
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 7.7
+   },
+   {
+    "n": 4,
+    "name": "vannasistaba (duša)",
+    "m2": 4.3
+   }
+  ],
+  "layout": "ieeja rietumu sienā tieši dzīvojamā; 2 guļamistabas ziemeļos blakus ar logu katrā; vannasistaba austrumos; virtuves rinda austrumu sienā",
+  "note": "Priede 60 un Egle 60 ir viens korpuss 6.42x9.34 ar kopīgiem plānu variantiem; 2.st. (V2 antresols 26.61 + WC 2.56 = guļamtelpa ar rakstāmgaldu, gultu, skapi) pārējie priede60_V3-V5 ir antresolstāvi, nav lasīti"
+ },
+ "klava150_V1": {
+  "family": "klava150",
+  "variant": "V1 (3 guļamistabas)",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   16.48,
+   9.1
+  ],
+  "built_area_m2": 150,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "living_area_m2": 121.19,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 7.74
+   },
+   {
+    "n": 2,
+    "name": "dzīvojamā+virtuve",
+    "m2": 45.4
+   },
+   {
+    "n": 3,
+    "name": "palīgtelpa",
+    "m2": 1.51
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 11.2
+   },
+   {
+    "n": 5,
+    "name": "palīgtelpa/garderobe",
+    "m2": 4.87
+   },
+   {
+    "n": 6,
+    "name": "sanmezgls",
+    "m2": 4.8
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 12.23
+   },
+   {
+    "n": 8,
+    "name": "guļamistaba",
+    "m2": 12.3
+   },
+   {
+    "n": 9,
+    "name": "palīgtelpa/garderobe",
+    "m2": 5.33
+   },
+   {
+    "n": 10,
+    "name": "sanmezgls",
+    "m2": 3.61
+   },
+   {
+    "n": 11,
+    "name": "tehniskā telpa",
+    "m2": 3.96
+   },
+   {
+    "n": 12,
+    "name": "gaitenis",
+    "m2": 8.24
+   }
+  ],
+  "layout": "garš taisnstūris: dzīvojamā 45 m2 austrumu galā, guļamistabas rietumu galā abās pusēs gaitenim; vecāku istaba ar garderobi un vannasistabu; ieeja garajā ziemeļu sienā"
+ },
+ "klava150_V2": {
+  "family": "klava150",
+  "variant": "V2 (3 guļamistabas + darbistaba)",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   16.48,
+   9.1
+  ],
+  "built_area_m2": 150,
+  "shape": "II",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "living_area_m2": 121.84,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 6.37
+   },
+   {
+    "n": 2,
+    "name": "dzīvojamā+virtuve",
+    "m2": 46.52
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 11.2
+   },
+   {
+    "n": 4,
+    "name": "palīgtelpa",
+    "m2": 4.79
+   },
+   {
+    "n": 5,
+    "name": "sanmezgls",
+    "m2": 4.72
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba",
+    "m2": 12.23
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 12.28
+   },
+   {
+    "n": 8,
+    "name": "darbistaba",
+    "m2": 7.21
+   },
+   {
+    "n": 9,
+    "name": "sanmezgls",
+    "m2": 3.96
+   },
+   {
+    "n": 10,
+    "name": "tehniskā telpa",
+    "m2": 4.36
+   },
+   {
+    "n": 11,
+    "name": "gaitenis",
+    "m2": 8.2
+   }
+  ],
+  "layout": "kā V1, bet ziemeļrietumos darbistaba 7.21 un sanmezgls pie priekšnama"
+ },
+ "magnolija130": {
+  "family": "magnolija130",
+  "variant": "Magnolija (stāva plāns, U/T forma)",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   16.17,
+   9.81
+  ],
+  "built_area_m2": 130,
+  "shape": "T",
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "living_area_m2": null,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekšnams",
+    "m2": 8.48
+   },
+   {
+    "n": 2,
+    "name": "saimniecības telpa",
+    "m2": 5.4
+   },
+   {
+    "n": 3,
+    "name": "dzīvojamā+virtuve",
+    "m2": 39.79
+   },
+   {
+    "n": 4,
+    "name": "palīgtelpa",
+    "m2": 3.29
+   },
+   {
+    "n": 5,
+    "name": "guļamistaba",
+    "m2": 10.87
+   },
+   {
+    "n": 6,
+    "name": "sanmezgls",
+    "m2": 4.34
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 10.3
+   },
+   {
+    "n": 8,
+    "name": "guļamistaba",
+    "m2": 12.17
+   },
+   {
+    "n": 9,
+    "name": "garderobe",
+    "m2": 4.01
+   },
+   {
+    "n": 10,
+    "name": "vannasistaba",
+    "m2": 7.1
+   }
+  ],
+  "layout": "dzīvojamā centrā ar terasi uz dienvidiem (68 m2) un segtu stāvvietu 44 m2; vecāku spārns rietumos (guļamistaba+garderobe+liela vannasistaba), bērnu spārns austrumos (2 istabas+kopīgs sanmezgls); priekšnams uz ziemeļiem aiz 13.5 m2 lievena"
+ },
+ "liepa165": {
+  "family": "liepa165",
+  "variant": "L tips 165",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   16.05,
+   12.34
+  ],
+  "built_area_m2": 165,
+  "shape": "L",
+  "bedrooms": 4,
+  "bathrooms": 3,
+  "living_area_m2": null,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 5.13
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 9.93
+   },
+   {
+    "n": 3,
+    "name": "garderobe",
+    "m2": 3.93
+   },
+   {
+    "n": 4,
+    "name": "pieliekamais",
+    "m2": 3.38
+   },
+   {
+    "n": 5,
+    "name": "dzīvojamā+virtuve",
+    "m2": 49.56
+   },
+   {
+    "n": 6,
+    "name": "tehniskā telpa",
+    "m2": 7.98
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 10.05
+   },
+   {
+    "n": 8,
+    "name": "guļamistaba",
+    "m2": 10.05
+   },
+   {
+    "n": 9,
+    "name": "guļamistaba",
+    "m2": 13.6
+   },
+   {
+    "n": 10,
+    "name": "sanmezgls",
+    "m2": 3.72
+   },
+   {
+    "n": 11,
+    "name": "palīgtelpa",
+    "m2": 3.23
+   },
+   {
+    "n": 12,
+    "name": "sanmezgls",
+    "m2": 8.56
+   },
+   {
+    "n": 14,
+    "name": "lievenis",
+    "m2": 3.35
+   }
+  ],
+  "layout": "L forma: dzīvojamā austrumu spārnā ar terasi dienvidos (24.86), guļamistabu spārns rietumos pa gaiteni; vecāku istaba dienvidrietumu stūrī ar savu WC; kopīgs liels sanmezgls"
+ },
+ "liepa190": {
+  "family": "liepa190",
+  "variant": "L tips 190",
+  "tips": "karkass",
+  "klase": "virs60",
+  "outer_m": [
+   16.05,
+   15.99
+  ],
+  "built_area_m2": 190,
+  "shape": "L",
+  "bedrooms": 4,
+  "bathrooms": 3,
+  "living_area_m2": 149.39,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 5.13
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 13.37
+   },
+   {
+    "n": 3,
+    "name": "garderobe",
+    "m2": 3.93
+   },
+   {
+    "n": 4,
+    "name": "pieliekamais",
+    "m2": 3.38
+   },
+   {
+    "n": 5,
+    "name": "dzīvojamā+virtuve",
+    "m2": 49.56
+   },
+   {
+    "n": 6,
+    "name": "tehniskā telpa",
+    "m2": 8.06
+   },
+   {
+    "n": 7,
+    "name": "guļamistaba",
+    "m2": 8.3
+   },
+   {
+    "n": 8,
+    "name": "guļamistaba",
+    "m2": 11.04
+   },
+   {
+    "n": 9,
+    "name": "guļamistaba",
+    "m2": 11.04
+   },
+   {
+    "n": 10,
+    "name": "guļamistaba",
+    "m2": 15.03
+   },
+   {
+    "n": 11,
+    "name": "palīgtelpa/garderobe",
+    "m2": 4.19
+   },
+   {
+    "n": 12,
+    "name": "sanmezgls",
+    "m2": 5.91
+   },
+   {
+    "n": 13,
+    "name": "sanmezgls",
+    "m2": 10.45
+   }
+  ],
+  "layout": "kā L 165, garāks guļamistabu spārns ar 4 guļamistabām, vecāku istaba ar garderobi; terase 24.95"
+ },
+ "priede60_loft_V2": {
+  "family": "priede60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "2 (1. stāvs un mansards)",
+  "variant": "mansards: atvērta guļamtelpa ar darba vietu",
+  "living_area_m2": 29.169999999999998,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "mansards guļamtelpa+darba vieta",
+    "m2": 26.61
+   },
+   {
+    "n": 2,
+    "name": "WC",
+    "m2": 2.56
+   }
+  ],
+  "loft": true,
+  "layout": "mansarda gala sienā divviru durvis-logs, kāpnes pie rietumu sienas, WC austrumos, ziemeļu pusē gulta un rakstāmgalds pie dažādām sienām, skapis garajā sienā, dienvidu pusē caurums virs dzīvojamās",
+  "bedrooms": 1,
+  "bathrooms": 1
+ },
+ "priede60_loft_V3": {
+  "family": "priede60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "2 (1. stāvs un mansards)",
+  "variant": "mansards: 2 guļamistabas + WC",
+  "living_area_m2": 26.7,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 4.82
+   },
+   {
+    "n": 2,
+    "name": "WC",
+    "m2": 2.68
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 9.56
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 9.56
+   }
+  ],
+  "loft": true,
+  "layout": "ziemeļu pusē divas simetriskas guļamistabas ar skapjiem, priekštelpa ar kāpnēm un WC dienvidos",
+  "bedrooms": 2,
+  "bathrooms": 1
+ },
+ "priede60_loft_V4": {
+  "family": "priede60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "2 (1. stāvs un mansards)",
+  "variant": "mansards: 2 guļamistabas + darba stūris",
+  "living_area_m2": 29.5,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa+darba vieta",
+    "m2": 7.02
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 11.24
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 11.24
+   }
+  ],
+  "loft": true,
+  "layout": "divas guļamistabas ziemeļos, priekštelpa ar rakstāmgaldu dienvidos pie kāpnēm",
+  "bedrooms": 2,
+  "bathrooms": 0
+ },
+ "priede60_loft_V5": {
+  "family": "priede60",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "outer_m": [
+   6.42,
+   9.34
+  ],
+  "built_area_m2": 60,
+  "shape": "II",
+  "floors": "2 (1. stāvs un mansards)",
+  "variant": "mansards: vecāku istaba ar vannasistabu",
+  "living_area_m2": 30.5,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekštelpa",
+    "m2": 7.3
+   },
+   {
+    "n": 2,
+    "name": "sanmezgls",
+    "m2": 5.3
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 17.9
+   }
+  ],
+  "loft": true,
+  "layout": "liela guļamistaba 17.9 ziemeļos (pieeja balkonam), vannasistaba un priekštelpa dienvidos; vannasistaba augšā, tāpēc apakšā WC nav obligāts",
+  "bedrooms": 1,
+  "bathrooms": 1
+ }
+}

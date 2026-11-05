@@ -1,0 +1,11 @@
+{
+  "name": "sbe-architect",
+  "owner": { "name": "EZIZ" },
+  "plugins": [
+    {
+      "name": "sbe-architect",
+      "source": "./",
+      "description": "MM Homes modeļu bots: plānojumi, fasādes, A3 lapas, vizualizācijas."
+    }
+  ]
+}

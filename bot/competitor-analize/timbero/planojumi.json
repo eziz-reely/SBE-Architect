@@ -1,0 +1,730 @@
+{
+ "austra": {
+  "tips": "karkass",
+  "klase": "lidz60",
+  "living_area_m2": 58,
+  "bedrooms": 2,
+  "built_area_m2": 59,
+  "price_eur": 95400,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "austra_timbero-austra-planojums-1-stavs.jpg",
+   "austra_timbero-austra-planojums-2-stavs.jpg"
+  ],
+  "outer_m": [
+   9.627,
+   6.222
+  ],
+  "shape": "II",
+  "floors": "1 + guļamstāvs",
+  "bathrooms": 1,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 23.8
+   },
+   {
+    "n": 2,
+    "name": "priekšnams/gaitenis",
+    "m2": 5.2
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 5.3
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 12.2
+   },
+   {
+    "n": "loft",
+    "name": "guļamistaba 2. stāvā (atvērta uz dzīvojamo)",
+    "m2": 11.4
+   }
+  ],
+  "layout": "ieeja garajā ziemeļu sienā; kāpnes starp virtuvi un guļamistabu; virtuves rinda ēkas vidū, dzīvojamā rietumos ar gala stiklojumu; 2. stāvā pusē atvērts caurums virs dzīvojamās (dubultaugstums)"
+ },
+ "birzs-kompakta-maja": {
+  "tips": "karkass",
+  "klase": "lidz60",
+  "living_area_m2": 44,
+  "bedrooms": 1,
+  "built_area_m2": 60,
+  "price_eur": 68320,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "birzs-kompakta-maja_Timbero-Classic-44-plans.jpg"
+  ],
+  "outer_m": [
+   8.52,
+   5.78
+  ],
+  "shape": "II",
+  "bathrooms": 1,
+  "variant": "Classic 44",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 25.1
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 10.8
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 4.3
+   },
+   {
+    "n": 4,
+    "name": "priekšnams",
+    "m2": 3.8
+   },
+   {
+    "n": 5,
+    "name": "terase",
+    "m2": 5.0
+   }
+  ],
+  "layout": "kvadrātveida korpuss 8.52x5.78 (+terase 1.25 m); virtuves rinda pie ziemeļu sienas, stūra dīvāns dienvidrietumos; guļamistaba ar skapi ziemeļaustrumos, vannasistaba ar dušu un priekšnams dienvidaustrumos, ieeja caur terasi",
+  "note": "apbūve 60 m2 ieskaita terasi; atvieglota saskaņošana kā 1. grupas ēkai"
+ },
+ "gaisma": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 64,
+  "bedrooms": 2,
+  "built_area_m2": 90,
+  "price_eur": 91540,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "gaisma_timbero-gaisma-planojums.jpg"
+  ],
+  "outer_m": [
+   11.62,
+   6.32
+  ],
+  "shape": "II",
+  "bathrooms": 1,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 17.8
+   },
+   {
+    "n": 2,
+    "name": "guļamistaba",
+    "m2": 11.2
+   },
+   {
+    "n": 3,
+    "name": "sanmezgls",
+    "m2": 4.5
+   },
+   {
+    "n": 4,
+    "name": "gaitenis/priekšnams",
+    "m2": 2.2
+   },
+   {
+    "n": 5,
+    "name": "guļamistaba",
+    "m2": 11.7
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba/kabinets",
+    "m2": 9.0
+   },
+   {
+    "n": 7,
+    "name": "gaitenis",
+    "m2": 4.5
+   },
+   {
+    "n": 8,
+    "name": "ieejas priekštelpa/garderobe",
+    "m2": 3.4
+   },
+   {
+    "n": 9,
+    "name": "terase",
+    "m2": 6.5
+   }
+  ],
+  "layout": "centrāls gaitenis ar ieeju dienvidos, 3 istabas ziemeļu pusē (2 guļamistabas pa malām + sanmezgls), dzīvojamā+virtuve rietumos; klase virs60 pēc korpusa 73 m2"
+ },
+ "kapa": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 146,
+  "bedrooms": 3,
+  "built_area_m2": 120,
+  "price_eur": 180240,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "kapa_timbero-kapa-planojums-1-stavs.jpg",
+   "kapa_timbero-kapa-planojums-2-stavs.jpg"
+  ],
+  "outer_m": [
+   12.44,
+   7.84
+  ],
+  "shape": "II",
+  "floors": "2",
+  "bathrooms": 2,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā",
+    "m2": 25.9
+   },
+   {
+    "n": 2,
+    "name": "virtuve/ēdamzona",
+    "m2": 12.9
+   },
+   {
+    "n": 3,
+    "name": "priekšnams+kāpnes",
+    "m2": 13.2
+   },
+   {
+    "n": 4,
+    "name": "WC",
+    "m2": 1.7
+   },
+   {
+    "n": 5,
+    "name": "tehniskā telpa",
+    "m2": 6.9
+   },
+   {
+    "n": 6,
+    "name": "darbistaba/viesu istaba",
+    "m2": 12.5
+   },
+   {
+    "n": "2.1",
+    "name": "guļamistaba",
+    "m2": 12.5
+   },
+   {
+    "n": "2.2",
+    "name": "guļamistaba",
+    "m2": 12.5
+   },
+   {
+    "n": "2.3",
+    "name": "guļamistaba (vecāku)",
+    "m2": 19.0
+   },
+   {
+    "n": "2.4",
+    "name": "garderobe",
+    "m2": 7.8
+   },
+   {
+    "n": "2.5",
+    "name": "vannasistaba",
+    "m2": 5.8
+   },
+   {
+    "n": "2.6",
+    "name": "vannasistaba",
+    "m2": 6.0
+   },
+   {
+    "n": "2.7",
+    "name": "gaitenis",
+    "m2": 10.1
+   }
+  ],
+  "layout": "1. stāvs: atvērta dzīvojamā+virtuve, kabinets austrumos, kāpnes centrā; 2. stāvs: vecāku istaba 19 ar garderobi 7.8 un vannasistabu, divas bērnu istabas rietumos, otra vannasistaba"
+ },
+ "lejas": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 71,
+  "bedrooms": 2,
+  "built_area_m2": 121,
+  "price_eur": 95800,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "lejas_timbero-lejas-planojums.jpg"
+  ],
+  "outer_m": [
+   11.872,
+   7.842
+  ],
+  "shape": "II",
+  "bathrooms": 2,
+  "rooms": [
+   {
+    "n": "terase",
+    "name": "terase",
+    "m2": 23.7
+   }
+  ],
+  "layout": "dzīvojamā+virtuve (ap 40 m2) ziemeļu pusē ar terasi 23.7; austrumos 2 guļamistabas ar skapjiem, divi sanmezgli (vannasistaba + dušas WC) un priekšnams ar divām garderobēm dienvidos; atsevišķa ieeja austrumu pusē; m2 plānā nav marķēti"
+ },
+ "priede": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 107,
+  "bedrooms": 3,
+  "built_area_m2": 102,
+  "price_eur": 149200,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "priede_Timbero_Classic_107_Plans_1st.jpg",
+   "priede_Timbero_Classic_107_Plans_2st.jpg"
+  ],
+  "outer_m": [
+   9.292,
+   7.825
+  ],
+  "shape": "II",
+  "floors": "2",
+  "bathrooms": 2,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "priekšnams+kāpņu zona",
+    "m2": 13.4
+   },
+   {
+    "n": 2,
+    "name": "WC",
+    "m2": 3.8
+   },
+   {
+    "n": 3,
+    "name": "pieliekamais",
+    "m2": 2.5
+   },
+   {
+    "n": 4,
+    "name": "dzīvojamā+virtuve",
+    "m2": 29.4
+   },
+   {
+    "n": 5,
+    "name": "tehniskā telpa",
+    "m2": 4.3
+   },
+   {
+    "n": 6,
+    "name": "garderobe",
+    "m2": 3.1
+   },
+   {
+    "n": "2.1",
+    "name": "gaitenis (2. stāvs)",
+    "m2": 7.0
+   },
+   {
+    "n": "2.2",
+    "name": "vannasistaba",
+    "m2": 5.8
+   },
+   {
+    "n": "2.3",
+    "name": "sanmezgls",
+    "m2": 3.3
+   },
+   {
+    "n": "2.4",
+    "name": "guļamistaba (maza)",
+    "m2": 7.2
+   },
+   {
+    "n": "2.5",
+    "name": "guļamistaba",
+    "m2": 14.0
+   },
+   {
+    "n": "2.6",
+    "name": "guļamistaba",
+    "m2": 13.6
+   }
+  ],
+  "layout": "1. stāvā: dzīvojamā+virtuve ar terasi (23.3) uz rietumiem, sanitārais bloks un ieeja austrumos; 2. stāvā 3 guļamistabas ap centrālo kāpņu gaiteni, 2 vannasistabas; stāvu plāns 1.-2. stāvs sakrīt pēc ārējā kontūra"
+ },
+ "rasa-100": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 100,
+  "bedrooms": 3,
+  "built_area_m2": 134,
+  "price_eur": 139500,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "rasa-100_timbero-100-plans-A-trim.jpg",
+   "rasa-100_timbero-100-plans-B-trim.jpg"
+  ],
+  "outer_m": [
+   14.39,
+   9.53
+  ],
+  "shape": "II",
+  "bathrooms": 2,
+  "variant": "A un B (virtuve citā vietā)",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve (A)",
+    "m2": 38.6
+   },
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve (B)",
+    "m2": 36.8
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 7.4
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 10.8
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 10.8
+   },
+   {
+    "n": 5,
+    "name": "guļamistaba",
+    "m2": 13.9
+   },
+   {
+    "n": 6,
+    "name": "vannasistaba",
+    "m2": 4.9
+   },
+   {
+    "n": 7,
+    "name": "sanmezgls",
+    "m2": 3.6
+   },
+   {
+    "n": 8,
+    "name": "tehniskā telpa",
+    "m2": 4.5
+   },
+   {
+    "n": 9,
+    "name": "priekšnams",
+    "m2": 6.2
+   },
+   {
+    "n": 10,
+    "name": "ieejas lievenis",
+    "m2": 4.1
+   }
+  ],
+  "layout": "A: virtuve ziemeļrietumu stūrī pie terases; B: virtuves rinda austrumu sienā, ēdamzona dienvidos, viesistaba ziemeļrietumos. Abos: 2 bērnu istabas ziemeļos blakus vannasistabai, vecāku istaba dienvidaustrumos ar sanmezglu, gaitenis 7.4 pa vidu"
+ },
+ "rasa-60": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 61,
+  "bedrooms": 2,
+  "built_area_m2": 90,
+  "price_eur": 87250,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "rasa-60_timbero-60-plans.jpg"
+  ],
+  "outer_m": [
+   11.69,
+   6.29
+  ],
+  "shape": "II",
+  "bathrooms": 1,
+  "variant": "Rasa 60",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 23.4
+   },
+   {
+    "n": 2,
+    "name": "priekšnams/gaitenis",
+    "m2": 8.4
+   },
+   {
+    "n": 3,
+    "name": "guļamistaba",
+    "m2": 10.7
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 11.7
+   },
+   {
+    "n": 5,
+    "name": "vannasistaba",
+    "m2": 4.2
+   },
+   {
+    "n": 6,
+    "name": "tehniskā telpa",
+    "m2": 2.8
+   },
+   {
+    "n": 7,
+    "name": "terase",
+    "m2": 10.2
+   }
+  ],
+  "layout": "ieeja no terases uz centrālo priekšnamu; 2 guļamistabas rietumos, vannasistaba un tehniskā telpa ziemeļos, dzīvojamā+virtuve austrumos; korpuss 11.69x6.29",
+  "note": "apbūve 90 m2 ar terasi; korpuss ~73 m2 => klase virs60"
+ },
+ "strazdi": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 128,
+  "bedrooms": 4,
+  "built_area_m2": 212,
+  "price_eur": 224850,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "strazdi_timbero-strazdi-planojums-v3.jpg"
+  ],
+  "outer_m": [
+   19.4,
+   7.6
+  ],
+  "shape": "II",
+  "bathrooms": 2,
+  "note": "korpuss ~19 m garš (+ nojume un noliktava līdz 27.9 m), apbūve 212 m2",
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 48.8
+   },
+   {
+    "n": 2,
+    "name": "gaitenis",
+    "m2": 7.5
+   },
+   {
+    "n": 3,
+    "name": "priekšnams",
+    "m2": 5.8
+   },
+   {
+    "n": 4,
+    "name": "guļamistaba",
+    "m2": 10.4
+   },
+   {
+    "n": 5,
+    "name": "guļamistaba",
+    "m2": 10.4
+   },
+   {
+    "n": 6,
+    "name": "guļamistaba (vecāku)",
+    "m2": 10.5
+   },
+   {
+    "n": 7,
+    "name": "garderobe",
+    "m2": 8.0
+   },
+   {
+    "n": 8,
+    "name": "sanmezgls",
+    "m2": 6.3
+   },
+   {
+    "n": 9,
+    "name": "sanmezgls",
+    "m2": 6.5
+   },
+   {
+    "n": 10,
+    "name": "kabinets",
+    "m2": 8.6
+   },
+   {
+    "n": 11,
+    "name": "tehniskā telpa",
+    "m2": 6.2
+   }
+  ],
+  "layout": "ļoti garš taisnstūris: dzīvojamā 48.8 austrumos, vecāku istaba ar garderobi un vannu rietumu galā, bērnu istabas ar kopīgu sanmezglu otrā pusē gaitenim, kabinets un tehniskā telpa pie ieejas, garāža/noliktava piebūvēta"
+ },
+ "taka-ar-pirti": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 158,
+  "bedrooms": 3,
+  "built_area_m2": 257,
+  "price_eur": 216300,
+  "read": false,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": []
+ },
+ "taka": {
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 129,
+  "bedrooms": 3,
+  "built_area_m2": 198,
+  "price_eur": 174150,
+  "read": false,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "taka_timbero-taka-planojums.jpg"
+  ]
+ },
+ "ziemeli": {
+  "tips": "karkass",
+  "klase": "lidz60",
+  "living_area_m2": 31,
+  "bedrooms": 0,
+  "built_area_m2": 29,
+  "price_eur": 59490,
+  "read": true,
+  "cena_apraksts": "pelēkā apdare (rūpnīcas komplekts bez iekšējās apdares), ar PVN",
+  "files": [
+   "ziemeli_timbero-ziemeli-planojums-1-stavs.jpg",
+   "ziemeli_timbero-ziemeli-planojums-2-stavs.jpg"
+  ],
+  "outer_m": [
+   7.125,
+   4.2
+  ],
+  "shape": "II",
+  "floors": "1 + loft",
+  "bathrooms": 1,
+  "rooms": [
+   {
+    "n": 1,
+    "name": "dzīvojamā+virtuve",
+    "m2": 18.3
+   },
+   {
+    "n": 2,
+    "name": "priekšnams",
+    "m2": 1.7
+   },
+   {
+    "n": 3,
+    "name": "vannasistaba",
+    "m2": 3.3
+   },
+   {
+    "n": 4,
+    "name": "kāpņu zona",
+    "m2": 0.9
+   },
+   {
+    "n": "loft",
+    "name": "guļamistaba lofts",
+    "m2": 4.9
+   }
+  ],
+  "layout": "ieeja garajā ziemeļu sienā, divviru logs-durvis dienvidos; virtuves bloks pie vannasistabas; loft ar gultu austrumu galā, atvērts virs dzīvojamās; 31.2 m2 kopā (23.7 + 7.5 guļamstāvs)"
+ },
+ "maja-alma_alma-S": {
+  "family": "alma",
+  "variant": "Alma S 45",
+  "tips": "karkass",
+  "klase": "lidz60",
+  "living_area_m2": 45,
+  "bedrooms": 2,
+  "read": true,
+  "layout": "maza: 2 guļamistabas rietumu pusē (viena dubultgulta, otra viengulta ar rakstāmgaldu), sanmezgls starp tām ar garderobēm; dzīvojamā+virtuve austrumu pusē ar virtuves rindu dienvidu sienā un terasi ziemeļos",
+  "note": "plānā m2 nav marķēti, shēma bez izmēriem",
+  "files": [
+   "maja-alma_timbero-alma-l-planojums.jpg",
+   "maja-alma_timbero-alma-m-planojums-1-variants.jpg",
+   "maja-alma_timbero-alma-m-planojums-2-variants.jpg",
+   "maja-alma_timbero-alma-s-planojums.jpg",
+   "maja-alma_timbero-alma-xl-planojums.jpg"
+  ]
+ },
+ "maja-alma_alma-M1": {
+  "family": "alma",
+  "variant": "Alma M 68 variants 1",
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 68,
+  "bedrooms": 3,
+  "read": true,
+  "layout": "2 guļamistabas rietumos (kā S), dzīvojamā vidū, vecāku istaba ar garderobi austrumos + kabinets/gulta + sanmezgls",
+  "note": "plānā m2 nav marķēti, shēma bez izmēriem",
+  "files": []
+ },
+ "maja-alma_alma-M2": {
+  "family": "alma",
+  "variant": "Alma M 68 variants 2",
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 68,
+  "bedrooms": 2,
+  "read": true,
+  "layout": "2 vecāku-lieluma guļamistabas pa malām katra ar savu sanmezglu, dzīvojamā+virtuve centrā",
+  "note": "plānā m2 nav marķēti, shēma bez izmēriem",
+  "files": []
+ },
+ "maja-alma_alma-L": {
+  "family": "alma",
+  "variant": "Alma L 80",
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 80,
+  "bedrooms": 3,
+  "read": true,
+  "layout": "kā M2 + trešā guļamistaba rietumu galā un vēl viens sanmezgls; garāks korpuss, ēdamgalds salas veidā pie virtuves",
+  "note": "plānā m2 nav marķēti, shēma bez izmēriem",
+  "files": [
+   "maja-alma_timbero-alma-l-planojums.jpg",
+   "maja-alma_timbero-alma-m-planojums-1-variants.jpg",
+   "maja-alma_timbero-alma-m-planojums-2-variants.jpg",
+   "maja-alma_timbero-alma-s-planojums.jpg",
+   "maja-alma_timbero-alma-xl-planojums.jpg"
+  ]
+ },
+ "maja-alma_alma-XL": {
+  "family": "alma",
+  "variant": "Alma XL 112",
+  "tips": "karkass",
+  "klase": "virs60",
+  "living_area_m2": 112,
+  "bedrooms": 4,
+  "read": true,
+  "layout": "garš korpuss ~ 24 m: guļamistabas abos galos, dzīvojamā+virtuve centrā, 2 sanmezgli, plašs gaitenis",
+  "note": "plānā m2 nav marķēti, shēma bez izmēriem",
+  "files": [
+   "maja-alma_timbero-alma-xl-planojums.jpg"
+  ]
+ }
+}

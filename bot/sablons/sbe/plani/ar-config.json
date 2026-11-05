@@ -1,0 +1,97 @@
+{
+ "code": "",
+ "parts": [
+  "visp",
+  "plan",
+  "mebel",
+  "jumts",
+  "griez",
+  "fas1",
+  "fas2",
+  "sienas",
+  "logi",
+  "mezgli"
+ ],
+ "tb": {
+  "firm": [
+   "",
+   "",
+   "",
+   ""
+  ],
+  "logo": "",
+  "object": [
+   "",
+   "",
+   ""
+  ],
+  "people": [
+   [
+    "BPDV",
+    ""
+   ],
+   [
+    "Izstrādāja",
+    ""
+   ],
+   [
+    "",
+    ""
+   ]
+  ],
+  "archive": "",
+  "stage": "",
+  "date": ""
+ },
+ "data": {
+  "adrese": "",
+  "kadastrs": "",
+  "pasutitajs": "",
+  "veids": "",
+  "lietosana": "",
+  "stavi": 1,
+  "ugunsnoturiba": ""
+ },
+ "roof": {
+  "type": "valc",
+  "color": "",
+  "gutter": "",
+  "tekne": 0,
+  "noteka": 0
+ },
+ "floor": {
+  "foundation": "",
+  "above": 0
+ },
+ "layers": {
+  "S1": {
+   "name": "Ārsiena",
+   "layers": []
+  },
+  "S2": {
+   "name": "Starpsiena",
+   "layers": []
+  },
+  "G1": {
+   "name": "Grīda",
+   "layers": []
+  },
+  "J1": {
+   "name": "Jumts",
+   "layers": []
+  }
+ },
+ "asis": "",
+ "win": {
+  "colorOut": "",
+  "colorIn": "",
+  "casingColor": "",
+  "casing": 0,
+  "mat": "",
+  "color": "",
+  "uw": "",
+  "ud": "",
+  "doorMat": ""
+ },
+ "general": []
+}

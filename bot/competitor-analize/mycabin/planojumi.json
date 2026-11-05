@@ -1,0 +1,71 @@
+{
+  "_info": "MyCabin plānojumi, nolasīti no planojumi/*.jpg|png (2026-11-05). Izmēri m, platības m2. Ārējie izmēri = apbūves platība. 'layout' = telpu izvietojums no kreisās uz labo pa garāko malu.",
+  "living-100": {
+    "file": "living-100_L100-Plan-prod-1024x644.jpg",
+    "outer_m": [13.0, 7.8], "living_area_m2": 81.3, "floors": 1, "bedrooms": 3, "bathrooms": 2,
+    "layout": "centrālais koridors (2) sadala māju; dienvidu pusē dzīvojamā+virtuve (3) ar ieeju-halli (1); ziemeļu pusē istaba (4), divas vannasistabas (5,6), guļamistaba (7); austrumos otra guļamistaba (8)",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 4.9},
+      {"n": 2, "name": "koridors", "m2": 7.4},
+      {"n": 3, "name": "dzīvojamā+virtuve", "m2": 21.9},
+      {"n": 4, "name": "istaba/guļamistaba", "m2": 12.9, "dim": [3.83, 3.38]},
+      {"n": 5, "name": "vannasistaba (duša)", "m2": 5.3, "dim": [2.3, 2.3]},
+      {"n": 6, "name": "vannasistaba (vanna)", "m2": 5.3, "dim": [2.3, 2.3]},
+      {"n": 7, "name": "guļamistaba", "m2": 11.8, "dim": [3.48, 3.38]},
+      {"n": 8, "name": "guļamistaba", "m2": 11.8, "dim": [3.48, 3.38]}
+    ]
+  },
+  "living-80": {
+    "file": "living-80_living-80-clean-plan-gf-1-1024x785.jpg",
+    "outer_m": [10.5, 7.8], "living_area_m2": 66.1, "floors": 1, "bedrooms": 2, "bathrooms": 1,
+    "layout": "kreisajā pusē atvērta dzīvojamā+virtuve (2); centrā halle (1); labajā pusē augšā vannasistaba (3) un guļamistaba (4), apakšā guļamistaba (5)",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 8.9},
+      {"n": 2, "name": "dzīvojamā+virtuve", "m2": 27.9, "dim": [7.21, 3.6]},
+      {"n": 3, "name": "vannasistaba", "m2": 5.7, "dim": [2.5, 2.3]},
+      {"n": 4, "name": "guļamistaba", "m2": 11.8, "dim": [3.48, 3.38]},
+      {"n": 5, "name": "guļamistaba", "m2": 11.8, "dim": [3.48, 3.38]}
+    ]
+  },
+  "milla-25": {
+    "file": "milla-25_m25-PLAN-01.jpg + PLAN-LOFT.jpg",
+    "outer_m": [7.09, 3.57], "living_area_m2": 27.3, "floors": "1 + loft", "bedrooms": 0, "bathrooms": 1,
+    "layout": "viena atvērta telpa ar virtuvi (kreisi, 4.84 m) + vannasistaba labajā galā (1.60 m); ieeja garajā sienā; loft pār vannasistabu",
+    "rooms": [
+      {"n": "01", "name": "dzīvojamā+virtuve", "m2": 15, "dim": [4.84, 3.09]},
+      {"n": "02", "name": "vannasistaba", "m2": 5, "dim": [1.6, 3.09]},
+      {"n": "loft", "name": "guļamantresola", "m2": 7, "dim": [2.36, 3.09]}
+    ]
+  },
+  "milla-40": {
+    "file": "milla-40_L40-Plan-1floor.png + L40-Plan-loft.png",
+    "outer_m": [10.42, 3.57], "living_area_m2": 37.7, "floors": "1 + loft", "bedrooms": 1, "bathrooms": 1,
+    "layout": "no kreisās: dzīvojamā+virtuve (4.82 m), vannasistaba (05) + priekštelpa (02) centrā, guļamistaba labajā galā; loft virs centrālās daļas",
+    "rooms": [
+      {"n": "01", "name": "dzīvojamā+virtuve", "m2": 15, "dim": [4.82, 2.7]},
+      {"n": "05", "name": "vannasistaba", "m2": 3, "dim": [2.03, 1.59]},
+      {"n": "02", "name": "priekštelpa", "m2": 3, "dim": [2.03, 1.33]},
+      {"n": "04", "name": "guļamistaba", "m2": 9, "dim": [2.76, 3.09]},
+      {"n": "loft", "name": "mezonīns/guļvieta", "m2": 8, "dim": [2.86, 3.09]}
+    ]
+  },
+  "milla-47": {
+    "file": "milla-47_milla-47-clean-plan-loft.jpg",
+    "outer_m": [13.52, 3.57], "living_area_m2": 36.8, "floors": "1 + loft",
+    "note": "Pieejams TIKAI loft plāns (iekšējais garums 13.02). Pirmā stāva plāns nav lapā – skatīt PDF specifikāciju.",
+    "rooms": [
+      {"n": "loft", "name": "mezonīns", "dim": [2.86, 3.09], "note": "pelēkā zona labajā pusē"}
+    ]
+  },
+  "sauna-30": {
+    "file": "sauna-30_s30-plan-01.jpg + s30-plan-loft.jpg",
+    "outer_m": [8.41, 3.57], "living_area_m2": 35.3, "floors": "1 + loft", "bedrooms": 0, "bathrooms": 1,
+    "layout": "kreisi dzīvojamā+virtuve (4.67 m), labajā pusē augšā pirts, apakšā vannasistaba; loft virs pirts/vannas daļas",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 15.6},
+      {"n": 2, "name": "pirts", "m2": 5.2, "dim": [3.09, 1.68]},
+      {"n": 3, "name": "vannasistaba", "m2": 2.6, "dim": [2.09, 1.24]},
+      {"n": "loft", "name": "mezonīns", "dim": [3.86, 3.09]}
+    ]
+  }
+}

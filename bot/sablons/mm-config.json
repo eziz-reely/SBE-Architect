@@ -1,0 +1,349 @@
+{
+  "code": "",
+  "parts": [
+    "mebel",
+    "fas1",
+    "fas2"
+  ],
+  "rakstlaukums": "dizains",
+  "tb": {
+    "firm": [
+      "MM Homes"
+    ],
+    "logo": "",
+    "object": [],
+    "people": [],
+    "archive": "",
+    "stage": "",
+    "date": ""
+  },
+  "data": {
+    "stavi": 1
+  },
+  "roof": {
+    "type": "valc",
+    "color": "RAL 7016",
+    "pitch": 25,
+    "ov": 0
+  },
+  "floor": {
+    "foundation": "plate",
+    "above": 180,
+    "posts_ground": 600
+  },
+  "layers": {
+    "S1": {
+      "name": "S-04 Ārsiena",
+      "layers": [
+        [
+          "Smalki zāģēts apdares dēlis",
+          21,
+          "h"
+        ],
+        [
+          "Pretgrauzēju barjera",
+          0,
+          "m"
+        ],
+        [
+          "Latojums 25x100",
+          25,
+          "a"
+        ],
+        [
+          "Latojums 25x45",
+          25,
+          "a"
+        ],
+        [
+          "Difūzijas membrāna",
+          0,
+          "m"
+        ],
+        [
+          "C24 karkass 45x145, minerālvate Isover STANDART 35",
+          145,
+          "i"
+        ],
+        [
+          "Tvaika izolācijas membrāna",
+          0,
+          "m"
+        ],
+        [
+          "C24 45x45 instalācijas slānis",
+          45,
+          "a"
+        ],
+        [
+          "OSB",
+          10,
+          "o"
+        ],
+        [
+          "Ģipsis",
+          12.5,
+          "k"
+        ]
+      ]
+    },
+    "S2": {
+      "name": "Starpsiena 195",
+      "layers": [
+        [
+          "Ģipškartons 2 kārtas",
+          25,
+          "k"
+        ],
+        [
+          "Karkass 45x145, minerālvate",
+          145,
+          "i"
+        ],
+        [
+          "Ģipškartons 2 kārtas",
+          25,
+          "k"
+        ]
+      ]
+    },
+    "G1": {
+      "name": "S-01 Grīda",
+      "layers": [
+        [
+          "OSB 22",
+          22,
+          "o"
+        ],
+        [
+          "Amortizācijas lenta",
+          2,
+          ""
+        ],
+        [
+          "C24 karkass, minerālvate Isover STANDART 35",
+          195,
+          "i"
+        ],
+        [
+          "Durelis",
+          11,
+          "o"
+        ],
+        [
+          "Vainags C24 45x195",
+          45,
+          ""
+        ],
+        [
+          "Pretgrauzēju siets",
+          0.5,
+          "m"
+        ]
+      ]
+    },
+    "J1": {
+      "name": "S-03 Jumts",
+      "layers": [
+        [
+          "Jumta segums",
+          0.5,
+          ""
+        ],
+        [
+          "Amortizācijas lenta",
+          2,
+          ""
+        ],
+        [
+          "Hor. latojums 25x100",
+          25,
+          "a"
+        ],
+        [
+          "Vert. latojums 25x50",
+          25,
+          "a"
+        ],
+        [
+          "Difūzijas membrāna",
+          0,
+          "m"
+        ],
+        [
+          "C24 karkass, minerālvate",
+          195,
+          "i"
+        ],
+        [
+          "Tvaika izolācija",
+          0,
+          "m"
+        ],
+        [
+          "Latojums 25x100",
+          25,
+          "a"
+        ],
+        [
+          "OSB",
+          10,
+          "o"
+        ],
+        [
+          "Ģipsis",
+          12.5,
+          "k"
+        ]
+      ]
+    }
+  },
+  "asis": "fasade",
+  "win": {
+    "colorOut": "RAL 7016",
+    "colorIn": "balta",
+    "casingColor": "RAL 7016",
+    "casing": 100,
+    "mat": "PVC",
+    "uw": "",
+    "ud": "",
+    "doorMat": ""
+  },
+  "general": [],
+  "projekts": {
+    "faze": "klients",
+    "adrese": [
+      "Tukuma nov., Kandavas pag.",
+      "\"Melnupes\", Kandava",
+      "Latvia, LV-3120"
+    ],
+    "revizija": "00",
+    "datums": "",
+    "rev_apraksts": "Pirmais izdevums",
+    "rev_apraksts_en": "First issue",
+    "lapa": "1/1",
+    "tonis": "peleks",
+    "pamati": "stabveida",
+    "griesti": 2200,
+    "atmosfera": ""
+  },
+  "toni": {
+    "peleks": {
+      "tex": "tex/peleks.jpg",
+      "lv": [
+        "Fasāde: vertikāls apdares dēlis,",
+        "krāsota grafīta pelēka"
+      ],
+      "en": [
+        "Facade: vertical cladding board,",
+        "painted graphite grey"
+      ],
+      "sw": "#3B3C40",
+      "logi": "RAL 7016"
+    },
+    "sarkans": {
+      "tex": "tex/sarkans.jpg",
+      "lv": [
+        "Fasāde: vertikāls apdares dēlis,",
+        "krāsota norvēģu sarkana"
+      ],
+      "en": [
+        "Facade: vertical cladding board,",
+        "painted Norwegian red"
+      ],
+      "sw": "#7A382A",
+      "sturi": 90,
+      "vejmala": "balta",
+      "logi": "RAL 9016"
+    },
+    "koks": {
+      "tex": "tex/koks.jpg",
+      "lv": [
+        "Fasāde: vertikāls apdares dēlis,",
+        "dabīgs koks, eļļots"
+      ],
+      "en": [
+        "Facade: vertical cladding board,",
+        "natural wood, oiled"
+      ],
+      "sw": "#A56D37",
+      "logi": "RAL 7016"
+    },
+    "zals": {
+      "tex": "tex/zals.jpg",
+      "lv": [
+        "Fasāde: vertikāls apdares dēlis,",
+        "krāsota putekļaini zaļa"
+      ],
+      "en": [
+        "Facade: vertical cladding board,",
+        "painted dusty green"
+      ],
+      "sw": "#7C8A72",
+      "logi": "RAL 9016",
+      "individuals": true
+    },
+    "zils": {
+      "tex": "tex/zils.jpg",
+      "lv": [
+        "Fasāde: vertikāls apdares dēlis,",
+        "krāsota putekļaini zila"
+      ],
+      "en": [
+        "Facade: vertical cladding board,",
+        "painted dusty blue"
+      ],
+      "sw": "#6F8296",
+      "logi": "RAL 9016",
+      "individuals": true
+    }
+  },
+  "pamati": {
+    "stabveida": {
+      "lv": [
+        "Pamati: stabveida pamati.",
+        "Cokols: metāla apdare RAL 9005."
+      ],
+      "en": [
+        "Foundation: post foundation.",
+        "Plinth: metal cladding RAL 9005."
+      ]
+    },
+    "platne": {
+      "lv": [
+        "Pamati: pamatu plātne.",
+        "Cokols: betons."
+      ],
+      "en": [
+        "Foundation: slab foundation.",
+        "Plinth: concrete."
+      ]
+    }
+  },
+  "atmosferas": {
+    "mezs": {
+      "lv": "Priežu mežs un granīta klintis",
+      "en": "Setting: Norwegian forest edge. A natural meadow with low wild grass and a few small rocks in the foreground, a simple gravel path leading from the entrance door towards the viewer, pine and birch forest and grey granite rocks behind, soft hills in the distance. Light: overcast sky, soft diffuse daylight, gentle soft shadows."
+    },
+    "fjords": {
+      "lv": "Fjords un kalni",
+      "en": "Setting: a grassy slope above a Norwegian fjord. Short green grass and heather around the house, a narrow gravel path to the entrance, behind the house the calm dark water of the fjord and steep mountains on the far shore with low clouds on the peaks. Light: overcast sky, soft diffuse daylight, slightly misty air."
+    },
+    "krasts": {
+      "lv": "Jūras krasts",
+      "en": "Setting: the Norwegian coast. The house stands on low smooth granite rocks and coastal grass, a few flat stepping stones lead to the entrance, the open grey-blue sea and small rocky islands behind. Light: bright overcast sky, soft diffuse daylight, fresh clear air."
+    },
+    "plato": {
+      "lv": "Kalnu plato",
+      "en": "Setting: a Norwegian mountain plateau (fjell). Low heather, moss, blueberry shrubs and scattered grey boulders around the house, a few small mountain birches, wide open view to distant rounded mountains with patches of old snow. A trodden path leads to the entrance. Light: overcast sky, soft diffuse daylight, calm and quiet."
+    },
+    "ziema": {
+      "lv": "Ziema, sniegs",
+      "en": "Setting: Norwegian winter. Fresh soft snow covers the ground and the trees, snow-laden spruce and pine forest behind the house, a shovelled path through the snow leads to the entrance, the roof has a thin even layer of snow. Light: overcast winter sky, soft diffuse daylight, warm light glowing in the windows."
+    },
+    "rudens": {
+      "lv": "Rudens bērzu birzs",
+      "en": "Setting: Norwegian autumn. A birch grove with golden-yellow leaves around the house, orange and red low shrubs, a carpet of fallen leaves on the grass, a gravel path to the entrance, dark spruce trees behind. Light: overcast sky, soft diffuse daylight, rich autumn colours."
+    }
+  }
+}

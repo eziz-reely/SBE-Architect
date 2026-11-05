@@ -1,0 +1,269 @@
+{
+  "_info": "Ecospace.lv plānojumi, nolasīti no planojumi/*.jpg|png (2026-11-05). Avots: ecospace.lv/modulu-majas-visas. Izmēri m, platības m2. 'family' = mājas tips, 'variant' = plānojuma variants tam pašam tipam (Duo mājām L / T / II formas). outer_m = ierobežojošais taisnstūris [garākā, īsākā mala]. Plānos norādītā platība summējas ar nelielu atšķirību pret lapas 'dzīvojamo platību' (sienu un noapaļošanas dēļ).",
+  "_prices": {
+    "furu25":  {"factory": 24900,  "basic": 31750,  "standard": 47200,  "turnkey": 54250},
+    "barn30":  {"factory": 29900,  "basic": 38115,  "standard": 56600,  "turnkey": 64000},
+    "barn35":  {"basic": 45700, "standard": 67900, "turnkey": 78500, "note": "cenu līmeņu nosaukumi lapā nav skaidri; trīs summas no Barn 35 lapas"},
+    "barn60":  {"factory": 55900,  "basic": 78500,  "standard": 115000, "turnkey": 135000},
+    "cube35":  {"factory": 32900,  "basic": 41400,  "standard": 63500,  "turnkey": 73900},
+    "uno35":   {"factory": 27999,  "basic": 34950,  "standard": 43150,  "turnkey": 49999},
+    "furu45":  {"factory": 42900,  "basic": 58000,  "standard": 85900,  "turnkey": 97800},
+    "ecospace45": {"factory": 42900, "basic": 57150, "standard": 84900, "turnkey": 96600},
+    "ecospace52": {"factory": 49900, "basic": 65580, "standard": 96315, "turnkey": 111200},
+    "duo30":   {"factory": 32900,  "basic": 43500,  "standard": 66400,  "turnkey": 75100},
+    "duo60":   {"factory": 54900,  "basic": 76200,  "standard": 113000, "turnkey": 128000},
+    "duo80":   {"factory": 74900,  "basic": 99000,  "standard": 149000, "turnkey": 169000},
+    "duo100":  {"factory": 92500,  "basic": 127000, "standard": 188000, "turnkey": 213000},
+    "_levels": "factory = rūpnīcas komplekts, basic = pamata (pabeigta no ārpuses), standard = ar iekštelpu apdari, turnkey = līdz atslēgai. Visas cenas EUR ar PVN."
+  },
+
+  "furu25": {
+    "family": "furu25", "variant": "1 guļamistaba", "file": "furu25_Furu_25.jpg",
+    "outer_m": [7.0, 3.7], "living_area_m2": 20, "loft_m2": 10, "floors": "1 + loft", "bedrooms": 1, "bathrooms": 1,
+    "layout": "viena garā telpa: kreisajā galā guļvieta (3) un WC (2) mazā blokā, labajā pusē dzīvojamā+virtuve (1) ar divām gala logu zonām; ieeja garajā sienā. Alternatīva: studio (dzīvojamā apvienota ar guļamistabu).",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 12.0},
+      {"n": 2, "name": "vannasistaba", "m2": 2.6},
+      {"n": 3, "name": "guļamistaba", "m2": 5.1}
+    ]
+  },
+
+  "furu45_A": {
+    "family": "furu45", "variant": "1 guļamistaba", "file": "furu45_Black_OAK_3.jpg",
+    "outer_m": [12.5, 3.4], "living_area_m2": 37, "floors": 1, "bedrooms": 1, "bathrooms": 1,
+    "note": "Attēlam nav mērogu un telpu platību; izkārtojums no zīmējuma.",
+    "layout": "kreisais gals: guļamistaba ar divvietīgu gultu un skapi pie sienas, blakus vannasistaba (pods, izlietne, duša/vanna); tālāk dzīvojamā istaba ar stūra dīvānu pie loga, labajā galā virtuves rinda gar sienu un ēdamgalds; garā fasāde ar stiklotām durvīm uz terasi",
+    "rooms": [
+      {"name": "guļamistaba"}, {"name": "vannasistaba"}, {"name": "dzīvojamā+virtuve"}
+    ]
+  },
+  "furu45_B": {
+    "family": "furu45", "variant": "2 guļamistabas", "file": "furu45_Black_OAK_2.jpg",
+    "outer_m": [12.5, 3.4], "living_area_m2": 37, "floors": 1, "bedrooms": 2, "bathrooms": 1,
+    "note": "Attēlam nav mērogu un telpu platību.",
+    "layout": "guļamistaba kreisajā galā (divvietīga gulta), vannasistaba un virtuves rinda centrā ap dzīvojamo zonu ar ēdamgaldu, otra guļamistaba labajā galā ar divām atsevišķām gultām un skapi",
+    "rooms": [
+      {"name": "guļamistaba"}, {"name": "vannasistaba"}, {"name": "dzīvojamā+virtuve"}, {"name": "guļamistaba (2 gultas)"}
+    ]
+  },
+
+  "barn30_studio": {
+    "family": "barn30", "variant": "studio", "file": "barn30_30m2_studio_1.jpg + _second_floor.jpg",
+    "outer_m": [7.0, 4.0], "living_area_m2": 23, "loft_m2": 10, "floors": "1 + 2. stāvs", "bedrooms": 0, "bathrooms": 1,
+    "layout": "1. stāvs: ieejas halle ar skapi (3) un kāpnēm augšā pie sāna; vannasistaba (2) ar stūra dušu pie kreisās sienas; dzīvojamā+virtuve (1) ar virtuves rindu pie vannasistabas sienas, dīvānu un ēdamgaldu pie gala stiklojuma. 2. stāvs: guļvieta pie gala loga (2.67 m) + atvērta dzīvojamā zona (3.83 m).",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 15.2},
+      {"n": 2, "name": "vannasistaba", "m2": 4.0, "dim": [2.0, 2.0]},
+      {"n": 3, "name": "halle", "m2": 2.9},
+      {"n": "2.st.", "name": "guļvieta", "dim": [2.67, 3.5]}
+    ]
+  },
+  "barn30_bedroom": {
+    "family": "barn30", "variant": "ar guļamistabu", "file": "barn30_30m2_bedroom_1st_floor.png + _2nd_floor.jpg",
+    "outer_m": [8.5, 3.5], "living_area_m2": 23, "loft_m2": 10, "floors": "1 + 2. stāvs", "bedrooms": 1, "bathrooms": 1,
+    "layout": "no kreisās: guļamistaba ar ieeju (1, gulta pie gala sienas), vannasistaba (2) blakus, tad virtuves rinda gar sienu un dzīvojamā+ēdamzona (3) ar dīvānu pie gala stiklojuma; ieejas durvis garajā fasādē ar kāpnēm; 2. stāvā otra guļamistaba (4.04 m) un atvērta zona (3.96 m)",
+    "rooms": [
+      {"n": 1, "name": "guļamistaba (ar ieeju)", "m2": 6.6},
+      {"n": 2, "name": "vannasistaba", "m2": 2.4, "dim": [1.5, 1.6]},
+      {"n": 3, "name": "dzīvojamā+virtuve", "m2": 13.9},
+      {"n": "2.st.", "name": "guļvieta", "dim": [4.04, 3.0]}
+    ]
+  },
+
+  "barn35": {
+    "family": "barn35", "variant": "kā Barn 30 ar guļamistabu, garāks", "file": "(izmanto barn30_bedroom attēlus)",
+    "outer_m": [8.75, 4.0], "living_area_m2": 29, "loft_m2": 12, "floors": "1 + 2. stāvs",
+    "note": "Barn 35 lapā ir tie paši attēli kā Barn 30 (8.5×3.5 m); atsevišķa 8.75×4 m plāna nav."
+  },
+  "barn60": {
+    "family": "barn60", "outer_m": [10.0, 6.0], "living_area_m2": 53, "floors": 1,
+    "note": "Plānojuma attēls lapā nav atrasts."
+  },
+
+  "cube35": {
+    "family": "cube35", "variant": "1 guļamistaba", "file": "cube35_Cube_st.jpg",
+    "outer_m": [9.0, 4.0], "living_area_m2": 30, "floors": 1, "bedrooms": 1, "bathrooms": 1,
+    "layout": "no kreisās: guļamistaba (gulta pie gala loga), vannasistaba pie sienas centrā (apakšā izlietne, pods un stūra duša), virtuves rinda pie vannasistabas sienas, dzīvojamā zona ar dīvānu labajā galā; ieeja kreisajā garajā sienā ar gaiteni gar visu māju; terase 14.1 m2",
+    "rooms": [
+      {"n": 1, "name": "guļamistaba", "m2": 10.5},
+      {"n": 2, "name": "vannasistaba", "m2": 4.4},
+      {"n": 3, "name": "dzīvojamā+virtuve", "m2": 13.5}
+    ]
+  },
+
+  "uno35": {
+    "family": "uno35", "variant": "1 guļamistaba + loft", "file": "uno35_3d_Plānojums_1st.jpeg + UNO_planojums_2st.jpeg",
+    "outer_m": [8.75, 4.0], "living_area_m2": 30, "loft_m2": 10, "floors": "1 + loft", "bedrooms": 1, "bathrooms": 1,
+    "note": "Attēli ir 3D skati no augšas, nav izmēru. Izkārtojums: guļamistaba ar skapi kreisajā galā, vannasistaba (stūra duša, pods, izlietne) centrā, dzīvojamā+virtuve ar ēdamgaldu un dīvānu pie gala stiklojuma; loft: gulta virs guļamistabas, atvērts uz dzīvojamo.",
+    "rooms": [
+      {"name": "guļamistaba"}, {"name": "vannasistaba"}, {"name": "dzīvojamā+virtuve"}
+    ]
+  },
+
+  "ecospace45": {
+    "family": "ecospace45", "variant": "1 guļamistaba", "file": "ecospace45_Plānojums_2.jpg",
+    "outer_m": [11.0, 4.0], "living_area_m2": 37, "floors": 1, "bedrooms": 1, "bathrooms": 1,
+    "layout": "dzīvojamā+virtuve (2) kreisajā galā ar gala stiklojumu, centrā virtuves rinda + vannasistaba (3) un skapis halles pusē, labajā galā guļamistaba (4) ar rakstāmgaldu pie loga; ieeja garajā fasādē ar halli (1); terase",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 3.4},
+      {"n": 2, "name": "dzīvojamā+virtuve", "m2": 17.4},
+      {"n": 3, "name": "vannasistaba", "m2": 3.7},
+      {"n": 4, "name": "guļamistaba", "m2": 10.8}
+    ]
+  },
+  "ecospace52": {
+    "family": "ecospace52", "variant": "2 guļamistabas", "file": "ecospace52_Plānojums_56m2.jpg",
+    "outer_m": [13.0, 4.0], "living_area_m2": 46, "floors": 1, "bedrooms": 2, "bathrooms": 1,
+    "layout": "kā Ecospace 45, bet kreisajā galā pievienota otra guļamistaba (2); centrā dzīvojamā+virtuve (3), vannasistaba (4), labajā galā guļamistaba (5) ar rakstāmgaldu; ieeja ar halli (1) garajā fasādē",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 3.4},
+      {"n": 2, "name": "guļamistaba", "m2": 10.5},
+      {"n": 3, "name": "dzīvojamā+virtuve", "m2": 17.4},
+      {"n": 4, "name": "vannasistaba", "m2": 3.7},
+      {"n": 5, "name": "guļamistaba", "m2": 10.8}
+    ]
+  },
+
+  "duo30_A": {
+    "family": "duo30", "variant": "1 guļamistaba", "file": "duo30_styled_image1.png",
+    "outer_m": [6.4, 5.4], "living_area_m2": 28, "floors": 1, "bedrooms": 1, "bathrooms": 1,
+    "note": "2 moduļi 5.0×3.5 m (kopējais plāna ietvars ~5.4×6.4 m).",
+    "layout": "augšējā modulī guļamistaba (3) ar gultu pie sienas un vannasistaba (2) labajā pusē; apakšējā modulī dzīvojamā+virtuve (1) ar virtuves rindu pie labās sienas, kāpnes starp moduļiem",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 16.8},
+      {"n": 2, "name": "vannasistaba", "m2": 2.9},
+      {"n": 3, "name": "guļamistaba", "m2": 9.1}
+    ]
+  },
+  "duo30_B": {
+    "family": "duo30", "variant": "2 telpas + guļamistaba", "file": "duo30_styled_image2.png",
+    "outer_m": [6.4, 5.4], "living_area_m2": 28, "floors": 1, "bedrooms": 2, "bathrooms": 1,
+    "layout": "augšējā modulī divas blakus istabas (dīvāns+skapis un guļamistaba), apakšējā modulī vannasistaba ar vannu kreisajā pusē un dzīvojamā+virtuve; ieeja caur halli moduļu savienojumā",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 11.5},
+      {"n": 2, "name": "vannasistaba", "m2": 3.1},
+      {"n": 3, "name": "istaba (dīvāns)", "m2": 6.2},
+      {"n": 4, "name": "guļamistaba", "m2": 8.0}
+    ]
+  },
+
+  "duo60_L": {
+    "family": "duo60", "variant": "L forma", "file": "duo60_60m2_L_veida.jpg",
+    "outer_m": [9.2, 6.0], "living_area_m2": 48.5, "floors": 1, "bedrooms": 2, "bathrooms": 1, "shape": "L",
+    "layout": "garais spārns (dzīvojamā+virtuve 19.1 ar stūra dīvānu un virtuves rindu pie ārsienas); īsais spārns ar divām guļamistabām abās pusēs halles (3) un vannasistabu starp tām pie ārsienas; ieeja stūrī pie terases",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 19.1},
+      {"n": 2, "name": "guļamistaba", "m2": 10.2},
+      {"n": 3, "name": "halle", "m2": 5.1},
+      {"n": 4, "name": "guļamistaba", "m2": 10.9},
+      {"n": 5, "name": "vannasistaba", "m2": 3.2}
+    ]
+  },
+  "duo60_T": {
+    "family": "duo60", "variant": "T forma", "file": "duo60_60m2_T_veida.jpg",
+    "outer_m": [9.8, 9.4], "living_area_m2": 48, "floors": 1, "bedrooms": 2, "bathrooms": 2, "shape": "T",
+    "layout": "šķērsspārnā gar augšu: guļamistaba (3), divas vannasistabas (4,5), istaba ar rakstāmgaldu (6) ap halli (2); stublājs uz leju: dzīvojamā+virtuve (1) 4.0 m plata ar stūra dīvānu, virtuve pie halles; ieeja augšējā galā",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 17.4},
+      {"n": 2, "name": "halle", "m2": 6.1},
+      {"n": 3, "name": "guļamistaba", "m2": 10.3},
+      {"n": 4, "name": "vannasistaba", "m2": 3.1},
+      {"n": 5, "name": "vannasistaba", "m2": 3.1},
+      {"n": 6, "name": "guļamistaba (darbistaba)", "m2": 8.3}
+    ]
+  },
+  "duo60_II": {
+    "family": "duo60", "variant": "II forma (taisnstūris)", "file": "duo60_60m2_II_veida.jpg",
+    "outer_m": [9.5, 6.3], "living_area_m2": 48.5, "floors": 1, "bedrooms": 2, "bathrooms": 1, "shape": "II",
+    "layout": "kreisā puse: dzīvojamā+virtuve (5) ar virtuves rindu pie augšējās sienas un stūra dīvānu; labā puse: vannasistaba (4) un guļamistaba (3) augšā, istaba (2) un halle (1) ar skapi apakšā; ieeja garajā fasādē apakšā",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 5.1},
+      {"n": 2, "name": "guļamistaba (bērnu)", "m2": 6.4},
+      {"n": 3, "name": "guļamistaba", "m2": 9.4},
+      {"n": 4, "name": "vannasistaba", "m2": 5.8},
+      {"n": 5, "name": "dzīvojamā+virtuve", "m2": 22.6}
+    ]
+  },
+
+  "duo80_L": {
+    "family": "duo80", "variant": "L forma", "file": "duo80_80m2_L_veida.jpg",
+    "outer_m": [10.8, 8.6], "living_area_m2": 68, "floors": 1, "bedrooms": 2, "bathrooms": 1, "shape": "L",
+    "layout": "garais spārns gar augšu: vannasistaba (4) kreisajā stūrī, dzīvojamā+virtuve (5) ar garu virtuves rindu un 6 vietu galdu; ieeja kreisajā galā halle (3); īsais spārns uz leju: istaba (2) un guļamistaba (1) ar loga pret terasi",
+    "rooms": [
+      {"n": 1, "name": "guļamistaba", "m2": 11.8},
+      {"n": 2, "name": "guļamistaba (bērnu)", "m2": 6.8},
+      {"n": 3, "name": "halle", "m2": 10.5},
+      {"n": 4, "name": "vannasistaba", "m2": 7.2},
+      {"n": 5, "name": "dzīvojamā+virtuve", "m2": 29.3}
+    ]
+  },
+  "duo80_T": {
+    "family": "duo80", "variant": "T forma", "file": "duo80_80m2_T_veida.jpg",
+    "outer_m": [14.3, 8.6], "living_area_m2": 68, "floors": 1, "bedrooms": 2, "bathrooms": 1, "shape": "T",
+    "layout": "šķērsspārnā augšā: guļamistaba (3), vannasistaba (4), istaba (5) ap halli (2); stublājā uz leju: dzīvojamā+virtuve (1) 4.2 m plata, 30 m2, virtuves rinda pie labās sienas, ēdamgalds un dīvāns",
+    "rooms": [
+      {"n": 1, "name": "dzīvojamā+virtuve", "m2": 30.0},
+      {"n": 2, "name": "halle", "m2": 6.7},
+      {"n": 3, "name": "guļamistaba", "m2": 12.5},
+      {"n": 4, "name": "vannasistaba", "m2": 5.6},
+      {"n": 5, "name": "guļamistaba (bērnu)", "m2": 10.3}
+    ]
+  },
+  "duo80_II": {
+    "family": "duo80", "variant": "II forma (taisnstūris)", "file": "duo80_80m2_II_veida.jpg",
+    "outer_m": [12.0, 6.8], "living_area_m2": 68, "floors": 1, "bedrooms": 3, "bathrooms": 1, "shape": "II",
+    "layout": "kreisā puse atvērta dzīvojamā+virtuve (2) 30 m2; labā puse augšā trīs istabas (3 bērnu, 4 guļamistaba) ar skapjiem; apakšā halle (1), vannasistaba (6) ar veļasmašīnu un istaba (5); ieeja garajā fasādē apakšā",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 8.4},
+      {"n": 2, "name": "dzīvojamā+virtuve", "m2": 30.1},
+      {"n": 3, "name": "guļamistaba (bērnu)", "m2": 6.8},
+      {"n": 4, "name": "guļamistaba", "m2": 11.9},
+      {"n": 5, "name": "guļamistaba (bērnu)", "m2": 6.7},
+      {"n": 6, "name": "vannasistaba", "m2": 4.1}
+    ]
+  },
+
+  "duo100_L": {
+    "family": "duo100", "variant": "L forma", "file": "duo100_100m2_L_veida.jpg",
+    "outer_m": [16.7, 12.5], "living_area_m2": 85, "floors": 1, "bedrooms": 4, "bathrooms": 1, "shape": "L",
+    "layout": "garais spārns: vannasistaba (5), dzīvojamā+virtuve (6, 30 m2), galvenā guļamistaba (7) labajā galā; halle (1) kreisajā stūrī ar ieeju; īsais spārns uz leju: trīs mazākas guļamistabas (2, 3, 4) gar ārsienu",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 13.7},
+      {"n": 2, "name": "guļamistaba (bērnu)", "m2": 5.9},
+      {"n": 3, "name": "guļamistaba (bērnu)", "m2": 5.8},
+      {"n": 4, "name": "guļamistaba (bērnu)", "m2": 9.3},
+      {"n": 5, "name": "vannasistaba", "m2": 7.2},
+      {"n": 6, "name": "dzīvojamā+virtuve", "m2": 30.2},
+      {"n": 7, "name": "guļamistaba", "m2": 14.4}
+    ]
+  },
+  "duo100_T": {
+    "family": "duo100", "variant": "T forma", "file": "duo100_100m2_T_veida.jpg",
+    "outer_m": [16.7, 12.5], "living_area_m2": 85, "floors": 1, "bedrooms": 4, "bathrooms": 1, "shape": "T",
+    "layout": "šķērsspārnā augšā: guļamistaba (3), istaba (4), vannasistaba (5), istaba (6) ap koridoru (2); stublājs uz leju: halle (1), dzīvojamā+virtuve (7, 30 m2) ar virtuves rindu pie labās sienas, otra istaba (8) galā",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 3.7},
+      {"n": 2, "name": "koridors", "m2": 7.9},
+      {"n": 3, "name": "guļamistaba", "m2": 11.7},
+      {"n": 4, "name": "guļamistaba (bērnu)", "m2": 6.3},
+      {"n": 5, "name": "vannasistaba", "m2": 5.6},
+      {"n": 6, "name": "guļamistaba (bērnu)", "m2": 10.3},
+      {"n": 7, "name": "dzīvojamā+virtuve", "m2": 30.0},
+      {"n": 8, "name": "guļamistaba (bērnu)", "m2": 8.3}
+    ]
+  },
+  "duo100_II": {
+    "family": "duo100", "variant": "II forma (taisnstūris)", "file": "duo100_100m2_II_veida_-_2.jpg",
+    "outer_m": [15.5, 8.0], "living_area_m2": 85, "floors": 1, "bedrooms": 3, "bathrooms": 1, "shape": "II",
+    "layout": "apakšā plaša dzīvojamā+virtuve (3, 42 m2) ar salu, galdu un dīvānu; augšā: guļamistaba (5) un istaba (6) kreisajā pusē, koridors (4), istaba (7), vannasistaba (2) un halle (1) ar ieeju labajā pusē",
+    "rooms": [
+      {"n": 1, "name": "halle", "m2": 5.1},
+      {"n": 2, "name": "vannasistaba", "m2": 6.2},
+      {"n": 3, "name": "dzīvojamā+virtuve", "m2": 42.0},
+      {"n": 4, "name": "koridors", "m2": 4.9},
+      {"n": 5, "name": "guļamistaba", "m2": 11.2},
+      {"n": 6, "name": "guļamistaba (bērnu)", "m2": 5.5},
+      {"n": 7, "name": "guļamistaba (bērnu)", "m2": 8.9}
+    ]
+  }
+}
