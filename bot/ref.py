@@ -176,6 +176,17 @@ def render(m, tone_key):
     for gw in m.get('gableWins', []):
         if gw['side'] == 'east':
             u0, u1 = D - gw['u1'], D - gw['u0']
+            if gw.get('shape') == 'pent':      # slīpais (piecstūra) logs: sāni vertikāli, augša seko jumta slīpumam
+                uc, zb = (u0 + u1) / 2, gw['z0']
+                zs, za = gable_top(u0) - 450, gable_top((u0 + u1) / 2) - 450
+                P = lambda pts, d=150: [at('east', u, d, z) for u, z in pts]
+                outer = [(u0, zb), (u1, zb), (u1, zs), (uc, za), (u0, zs)]
+                k = 60
+                inner = [(u0 + k, zb + k), (u1 - k, zb + k), (u1 - k, zs - k * .3), (uc, za - k * 1.6), (u0 + k, zs - k * .3)]
+                s.append(poly(cam, P(outer), fill=frame, stroke='#111', stroke_width=1))
+                s.append(poly(cam, P(inner), fill='#8fa3ad', stroke='#111', stroke_width=1))
+                s.append(poly(cam, P([(u0, zb), (u1, zb), (u1, zb + 50), (u0, zb + 50)], -40), fill=shade(frame, 1.25), stroke='#111', stroke_width=.8))
+                continue
             z1 = min(gable_top(u0), gable_top(u1)) - 450
             s += opening('east', u0, u1, gw['z0'], z1)
     # dienvidu (ieejas) fasāde

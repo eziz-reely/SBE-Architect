@@ -57,7 +57,7 @@ def openings(m):
     ng = sum(1 for g in m.get('gableWins', []) if g['side'] == 'east')
     south = 'the entrance door and ' + (f'exactly {ns} window(s)' if ns else 'NO windows at all') 
     return (f" OPENING COUNT (from the reference image, exact): the long entrance facade has {south}, nothing else, the rest of that wall is plain cladding. "
-            f"The east gable end has exactly {ne} large glazing and {ng} small window high in the gable, nothing else, the wall areas beside the glazing are plain cladding. "
+            f"The east gable end has exactly {ne} large glazing and {ng} sloped pentagon (house-shaped) window above it: vertical sides and a pointed top whose two upper edges run parallel to the roof slopes, as drawn in the reference image. It must be clearly pentagonal, NOT a rectangle and NOT a thin strip. Nothing else, the wall areas beside the glazing are plain cladding. "
             "Do not invent any additional window, door, vent or shutter anywhere.")
 
 
@@ -72,9 +72,11 @@ def materials(tk, m=None):
             'balts': 'painted soft light grey-white, matte Scandinavian paint, clean and bright but not pure white (close to RGB %s)' % t['sw']}[tk]
     from ref import slab_mode
     if m and slab_mode(m):
-        foundation = ("The house stands on a concrete slab foundation: no posts and no plinth, the 27 cm thick floor slab edge sits right at the ground "
-                      "and is almost completely covered by a wooden terrace. The terrace is a single step 25 cm above the ground, "
-                      "made of horizontal anthracite grey (RAL 7016) wooden deck boards laid along the long side of the house, thin gaps between boards. "
+        foundation = ("The house stands directly on the ground. NO concrete, NO foundation, NO plinth, NO posts and NO slab edge are visible anywhere: "
+                      "only a wooden terrace (single step, 25 cm above the ground) touches the ground and the house. The vertical cladding boards of the house walls "
+                      "go down to the terrace deck surface and stop there. The terrace edge (a dark anthracite grey RAL 7016 deck-board fascia, about 25 cm high) meets the grass directly, "
+                      "with a thin shadow gap and NO concrete strip under or beside it. "
+                      "The terrace is made of horizontal anthracite grey (RAL 7016) wooden deck boards laid along the long side of the house, thin gaps between boards. "
                       "It runs 1.1 m deep along the whole entrance wall (the long wall with the entrance door) and continues 3 m beyond the glazed gable end, "
                       "exactly as in the reference image (L-shaped terrace, no railing, no furniture on it). The entrance door opens onto the terrace.")
     else:
