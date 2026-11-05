@@ -32,6 +32,6 @@ Python 3, Node.js ar Playwright (pārbaudei un ekrānuzņēmumiem). Vizualizāci
 ## Lai komandas nesajūk
 
 - `/sbe`: tikai jauns modelis. Neko nemaina botā.
-- `/editbot`: tikai bota noteikumu maiņa. Jaunu modeli neveido (tikai testam).
+- `/editbot`: tikai bota plānošanas prasmju uzlabošana (noteikumi, logi, mēbeļu izkārtojums). Modeli neveido, tikai pārbauda uz pēdējā.
 - Vecie konta skill (`modelu-bots`, `sbe-arhitekts`, `gemini-arch-foto`, `lwdc-plani-fasades`) ir citi rīki un šo plugin neaizstāj. Ja tie traucē, izslēdz tos Settings > Skills.
 - Vienīgā galvenā bota versija ir šis repo. Neviena cita kopija (dators, projekta faili) vairs nav jālabo.
