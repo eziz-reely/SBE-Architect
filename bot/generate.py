@@ -326,7 +326,6 @@ if __name__ == '__main__':
     ap.add_argument('--vannas', type=int, help='variantiem: vannasistabu skaits (noklusējums pēc laukuma)')
     ap.add_argument('--forma', default='II,L,T', help='variantiem: formas II, L, T (komatiem)')
     a = ap.parse_args()
-    import planner as _pl; _pl.R['liv_skapis'] = a.viesistaba_skapis != 'ne'
     if a.atmosfera and a.atmosfera not in CFG['atmosferas']:
         raise SystemExit('Nezināma atmosfēra: %s. Ir: %s' % (a.atmosfera, ', '.join(CFG['atmosferas'])))
     if a.faze != 'klients':
@@ -354,6 +353,11 @@ if __name__ == '__main__':
     for p in ps:   # model.json: ievade.augstums = klienta kores augstums (no paneļa apakšas), augstums_0 = kore virs ±0,000
         mj = json.load(open(p, encoding='utf-8'))
         mj['ievade'] = {**mj.get('ievade', {}), 'augstums': a.augstums, 'augstums_0': H0}
+        if a.viesistaba_skapis == 'ne':   # tikai izņem skapi dzīvojamajā, pārējais plānojums paliek tāds pats
+            def _liv(f):
+                return any(r['n'].startswith('Dzīvojam') and any(x <= f[1] + 1 and f[1] + f[3] <= x + w + 1 and y <= f[2] + 1 and f[2] + f[4] <= y + h + 1
+                                                                 for x, y, w, h in r['r']) for r in mj['rooms'])
+            mj['furniture'] = [f for f in mj['furniture'] if not (f[0] == 'wardrobe' and _liv(f))]
         json.dump(mj, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     if a.skp:
         from skp import main as skp_main
