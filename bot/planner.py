@@ -1628,6 +1628,7 @@ def _loft_west(L, eave, griesti, x0, rx, vx1):
             g2, y2 = big['len'], big['y']
         while g2 >= 600 and eave + ((D - g2) / 2) * tn < 2900 + 150:
             g2 -= 200
+        y2 = r1(big['y'] + (big['len'] - g2) / 2) if big else r1((D - g2) / 2)   # pēc samazināšanas centrē virs lielā stiklojuma (piecstūra virsotne uz kores ass)
         if g2 >= 600:
             pent = {'len': r1(g2), 'sill': 2300, 'head': 2900, 'kind': 'fixed', 'shape': 'gable', 'x': r1(W - T) if lside == 'east' else 0,
                     'y': y2, 'o': 'v', 'out': 1 if lside == 'east' else -1, 'side': lside}
