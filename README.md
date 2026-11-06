@@ -15,7 +15,7 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 ## Struktūra
 
 - `bot/`: kods (`planner.py`, `rules_check.py`, `generate.py`, `build_model.py`, `ref.py`, `viz.py`), `sablons/` (SBE šablons, toņu tekstūras) un noteikumi `bot/zinasanas_mebeles_logi.md`.
-- `bot/redaktors.py` un `bot/sablons/redaktors/`: rasējuma redaktors (viena HTML lapa). `python3 bot/redaktors.py <model.json>` uztaisa `rasejumi/<id>_LV_redaktors.html`.
+- `bot/redaktors.py` un `bot/sablons/redaktors/`: rasējuma redaktors (viena HTML lapa). `python3 bot/redaktors.py <model.json>` uztaisa `rasejumi/<id>_LV_redaktors.html`. Taustiņi: Shift+klikšķis atlasa vairākus logus/durvis/mēbeles, Ctrl+vilkšana kopē atlasīto, Ctrl+C / Ctrl+V kopē un iekopē, Delete dzēš visu atlasīto.
 - `bot/sketchup/`: SketchUp paplašinājums, kas importē redaktora eksportēto 3D modeli (.rb). Lai to uzinstalētu, abus failus saarhivē kā .rbz.
 - `skills/sbe-arhitekts`, `skills/editbot`: komandu instrukcijas.
 

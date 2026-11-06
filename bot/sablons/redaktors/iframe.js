@@ -8,7 +8,7 @@
   const r10 = v => Math.round(v / 10) * 10;
   const T = Math.min(...M.rooms.flatMap(r => r.r.map(q => q[0])));   // ārsienas biezums
   const SNAP = 150, MINR = 600, GWB = ED.gwBase || 0;                                       // mēbele pielīp sienai tuvāk par 150 mm; telpa ne šaurāka par 600 mm
-  let sel = ED.sel || null, drag = null;
+  let sel = ED.sel || null, drag = null, clip = ED.clip || null;
   { const st = document.createElement("style"); st.textContent = "body{-webkit-user-select:none;user-select:none;touch-action:none}"; document.head.appendChild(st); }
 
   const sheet = () => document.querySelector("svg.a3");
@@ -313,6 +313,8 @@
       const t = sizeText(it);
       if (t) { const at = selPt && selPt.g === bl.g ? [selPt.p[0] + 4 / k, selPt.p[1] - 4 / k] : [it.b[0] + 7 / k, it.b[1] - 2.5 / k]; label(o, at[0], at[1], t, k); }
     }));
+    // grupa (Shift+klikšķis): pārējie atlasītie elementi
+    (sel.more || []).forEach(m => blocks().forEach(bl => { if (bl.type !== "plan") return; items(bl).forEach(it => { if (same(it, m)) rect(overlay(bl.g), it.b, false, ek(bl), it.k === "furn" ? 0 : undefined); }); }));
   }
   // izvēlētā loga / durvju izmēri pie kursora, kontrolei
   let selPt = null;
@@ -651,7 +653,40 @@
     gw.u0 = lw.y; gw.u1 = lw.y + lw.len;
   }
   // Ctrl (vai Cmd) + vilkšana: kopija; oriģināls paliek vietā
+  // atlasīta grupa (Shift+klikšķis): pārvieto vai (ar Ctrl) nokopē visus kopā; logi un durvis pa savu sienu, mēbeles brīvi
+  const GRP = ["furn", "win", "door"];
+  function applyGrp(d, dx, dy) {
+    const N = clone(M), q = { x: r10(dx), y: r10(dy) }, out = [];
+    d.grp.forEach(s => {
+      const L = lv(s.lv, N), arr = L[s.k === "furn" ? "furniture" : s.k === "win" ? "windows" : "doors"];
+      let o = arr[s.i], idx = s.i;
+      if (d.copy) { o = clone(o); arr.push(o); idx = arr.length - 1; }
+      if (s.k === "furn") shiftF(o, q.x, q.y);
+      else { const ax = o.o === "h" ? "x" : "y", len = s.k === "win" ? o.len : o.w, lim = o.o === "h" ? M.W : M.D; o[ax] = +Math.max(T, Math.min(lim - T - len, o[ax] + (o.o === "h" ? q.x : q.y))).toFixed(1); }
+      out.push({ k: s.k, i: idx, lv: s.lv });
+    });
+    d.ghost = out; d.fdx = q.x; d.fdy = q.y; return N;
+  }
+  function pasteGrp(list) {   // Ctrl+V: iekopē nokopētos elementus ar nobīdi
+    const N = clone(M), out = [];
+    list.forEach(c => {
+      const L = lv(c.lv, N), arr = L[c.k === "furn" ? "furniture" : c.k === "win" ? "windows" : "doors"], o = clone(c.o);
+      if (c.k === "furn") shiftF(o, 200, 200);
+      else { const ax = o.o === "h" ? "x" : "y", len = c.k === "win" ? o.len : o.w, lim = o.o === "h" ? M.W : M.D; o[ax] = +Math.max(T, Math.min(lim - T - len, o[ax] + 300)).toFixed(1); }
+      arr.push(o); out.push({ k: c.k, i: arr.length - 1, lv: c.lv });
+    });
+    return { N, sel: Object.assign({}, out[0], { more: out.slice(1) }) };
+  }
+  function delGrp() {
+    const N = clone(M), all = [sel, ...(sel.more || [])];
+    ["furn", "win", "door"].forEach(k => {
+      const idx = all.filter(s => s.k === k).map(s => s.i).sort((a, b) => b - a), L = lv(sel.lv, N), arr = L[k === "furn" ? "furniture" : k === "win" ? "windows" : "doors"];
+      idx.forEach(i => arr.splice(i, 1));
+    });
+    sel = null; post({ t: "edit", model: N, sel: null });
+  }
   function applyC(d, dx, dy) {
+    if (d.grp && d.zone === "move") return applyGrp(d, dx, dy);
     if (!d.copy || d.zone !== "move") return apply(d, dx, dy);
     if (!d.it0) { d.it0 = d.h.it; d.b0 = d.boxes; }
     const it = d.it0, key = it.k === "furn" ? "furniture" : it.k === "win" ? "windows" : "doors", L = lv(it.lv), arr = L[key];
@@ -758,6 +793,14 @@
       return;
     }
     if (!N) return;
+    if (d.grp && d.ghost) {
+      d.ghost.forEach((m, j) => { const so = d.grp[j]; let gb;
+        if (m.k === "furn") { const fb = d.boxes[so.i]; gb = fb && [fb[0] + d.fdx, fb[1] + d.fdy, fb[2] + d.fdx, fb[3] + d.fdy]; }
+        else { const f = items(bl, N).find(x => same(x, m)); gb = f && f.b; }
+        if (gb) rect(g, gb, true, k, m.k === "furn" ? 0 : undefined); });
+      label(g, d.h.it.b[0], d.h.it.b[1] - 2.2 / k, (d.copy ? "Kopija " : "") + d.ghost.length + " gab.  ·  Δx " + d.fdx + "  Δy " + d.fdy, k);
+      return;
+    }
     let b;
     if (d.snapLine) { const [ax, at] = d.snapLine; mk(g, "line", Object.assign(ax === "x" ? { x1: -1500, y1: at, x2: M.W + 1500, y2: at } : { x1: at, y1: -1500, x2: at, y2: M.D + 1500 }, { stroke: ACC, "stroke-width": 0.3 / k, "stroke-dasharray": `${1.2 / k} ${0.8 / k}` })); }
     if (it.k === "dim" || it.k === "idim") b = (items(bl, N).find(x => same(x, it)) || it).b;
@@ -807,8 +850,15 @@
       drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: "rot", c, a0: Math.atan2(h.p[1] - c[1], h.p[0] - c[0]), ang: 0, boxes: furnBoxes(h.bl), moved: false };
       document.body.style.cursor = "grabbing"; return true;
     }
-    if (!h.wall) { sel = { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
-    drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door"].includes(h.it.k) };
+    const grpOk = h.bl.type === "plan" && !h.wall && GRP.includes(h.it.k) && h.it.lv !== "loft";
+    if (e.shiftKey && grpOk && sel && GRP.includes(sel.k) && sel.lv === h.it.lv && !same(h.it, sel)) {   // Shift+klikšķis: pievieno / noņem no atlasītās grupas
+      const more = (sel.more || []).slice(), ix = more.findIndex(m => same(m, h.it));
+      if (ix >= 0) more.splice(ix, 1); else more.push({ k: h.it.k, i: h.it.i, lv: h.it.lv });
+      sel = Object.assign({}, sel, { more }); drawSel(); post({ t: "sel", sel }); return true;
+    }
+    const inGrp = grpOk && sel && sel.more && sel.more.length && (same(h.it, sel) || sel.more.some(m => same(m, h.it)));
+    if (!h.wall && !inGrp) { sel = { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
+    drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
     document.body.style.cursor = cur(drag.zone);
     return true;
   };
@@ -849,6 +899,7 @@
     if (d.zone === "rot") { const deg = d.moved ? d.ang : 90; if (deg) post({ t: "edit", model: rotate(clone(M), d.h.it.lv, d.h.it.i, d.boxes, deg), sel }); else drawSel(); return; }
     if (!d.moved) return;
     const N = applyC(d, d.dx, d.dy);
+    if (N && d.grp && d.ghost) { if (d.copy) sel = Object.assign({}, d.ghost[0], { more: d.ghost.slice(1) }); post({ t: "edit", model: N, sel }); return; }
     if (N && d.cpI != null) { sel = { k: d.h.it.k, i: d.cpI, lv: d.h.it.lv }; post({ t: "edit", model: N, sel }); return; }
     if (N && (d.zone === "wx" || d.zone === "wy") && bathFix(N)) { post({ t: "hint", text: BATHMSG }); document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); return; }
     if (N) post({ t: "edit", model: N, sel });
@@ -863,8 +914,14 @@
     if (e.key === "Escape" && place) { place = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); drawGuides(); post({ t: "placed" }); return; }
     if ((e.key === "d" || e.key === "D") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); post({ t: "key", k: "dim" }); return; }
     if ((e.key === "g" || e.key === "G") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); post({ t: "key", k: "guide", o: e.shiftKey ? "h" : "v" }); return; }
+    if ((e.ctrlKey || e.metaKey) && /^[cC]$/.test(e.key) && sel && GRP.includes(sel.k)) {   // Ctrl+C: nokopē atlasītos logus, durvis, mēbeles
+      e.preventDefault(); const L = lv(sel.lv), list = [sel, ...(sel.more || [])].map(s => ({ k: s.k, lv: s.lv, o: clone(L[s.k === "furn" ? "furniture" : s.k === "win" ? "windows" : "doors"][s.i]) }));
+      clip = list; post({ t: "clip", clip: list, n: list.length }); return;
+    }
+    if ((e.ctrlKey || e.metaKey) && /^[vV]$/.test(e.key) && clip && clip.length) { e.preventDefault(); const r = pasteGrp(clip); sel = r.sel; post({ t: "edit", model: r.N, sel }); return; }
     if (!sel) return;
     if (e.key === "Escape") { sel = null; drawSel(); post({ t: "sel", sel: null }); return; }
+    if ((e.key === "Delete" || e.key === "Backspace") && sel.more && sel.more.length) { e.preventDefault(); delGrp(); return; }
     if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); post({ t: "delete" }); return; }
     const bl = blocks().find(x => (sel.k === "gw" ? x.type === "elev" && x.side === M.gableWins[sel.i].side : x.type === "plan" && x.lv === sel.lv));
     const it = bl && items(bl).find(x => same(x, sel));
