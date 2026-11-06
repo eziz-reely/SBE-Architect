@@ -15,6 +15,8 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 ## Struktūra
 
 - `bot/`: kods (`planner.py`, `rules_check.py`, `generate.py`, `build_model.py`, `ref.py`, `viz.py`), `sablons/` (SBE šablons, toņu tekstūras) un noteikumi `bot/zinasanas_mebeles_logi.md`.
+- `bot/redaktors.py` un `bot/sablons/redaktors/`: rasējuma redaktors (viena HTML lapa). `python3 bot/redaktors.py <model.json>` uztaisa `rasejumi/<id>_LV_redaktors.html`.
+- `bot/sketchup/`: SketchUp paplašinājums, kas importē redaktora eksportēto 3D modeli (.rb). Lai to uzinstalētu, abus failus saarhivē kā .rbz.
 - `skills/sbe-arhitekts`, `skills/editbot`: komandu instrukcijas.
 
 ## Vides prasības
@@ -28,6 +30,17 @@ Python 3, Node.js ar Playwright (pārbaudei un ekrānuzņēmumiem). Vizualizāci
 3. **Tu apstiprini vai labo.** Ja kaut kas nav labi, raksti `/editbot` ar numurētiem punktiem un bildi. Bots to ieraksta noteikumos un nākamie modeļi to ievēro.
 4. **Tikai pēc apstiprinājuma** raksti, ka gribi vizualizācijas. Tām vajag `GEMINI_API_KEY` (iestatīts projekta vidē `gemini`).
 5. Faili ir `MM System\MĀJAS\<m2>\<id>\`: `model.json`, `rasejumi/*.html`, `viz/*.png`. Tos vēlāk izmanto mājaslapai.
+
+## Redaktors
+
+Redaktorā plānu un fasādes labo ar peli, un lapa pārzīmējas uzreiz.
+- **Plāns:** logi, durvis, mēbeles, kāpnes, mēri un palīglīnijas. Ctrl + vilkšana uztaisa kopiju.
+- **Mājas izmēri un jumts:** garums, platums, kores augstums, jumta slīpums, pārkare, vēja kaste un notekas.
+- **Rakstlaukums:** modeļa nosaukums un logo.
+- **AR projekts:** visas SBE AR lapas. Lapas var izslēgt, numerācija pārkārtojas pati, rakstlaukumu aizpilda vienā vietā.
+- **Eksports:** PDF (150, 300 vai 600 dpi), SVG, DXF un SketchUp (.rb).
+
+Redaktors nemaina `sablons/sbe`. Visi MM labojumi tiek ielikti būvējot (`build_model.py`).
 
 ## Lai komandas nesajūk
 

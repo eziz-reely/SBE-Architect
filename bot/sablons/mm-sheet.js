@@ -51,8 +51,12 @@ function mmTitleBlock(svg, v, lf, L) {
   const tx = MM_TXT[L], P = (window.AR && window.AR.projekts) || {}, X = 247, W = 40, cx = X + W / 2;
   const g = el("g", { "data-block": "title" }, svg);
   const lab = (y, t) => { T_(g, X + 3, y, t, { fs: 1.8, fw: 700, ls: .35, fill: MM_ACC }); el("line", { x1: X + 3, y1: y + 1.2, x2: X + W - 3, y2: y + 1.2, stroke: "#d6d0c4", "stroke-width": .2 }, g); };
-  // brand
-  if (window.MM_LOGO) {   // īstais MM logo (modelu-bots/LOGO.png): tumši brūns fons, bēšs M
+  // brand: projekts.logo = savs attēls (data URL) vai "none" (bez logo, tumšais lauks paliek)
+  const OWN = P.logo && P.logo !== "none" ? P.logo : null, NOLOGO = P.logo === "none";
+  if (OWN || NOLOGO) {
+    el("rect", { x: X, y: 10, width: W, height: 58, fill: MM_DARK }, g);
+    if (OWN) el("image", { href: OWN, x: X + 4, y: 14, width: W - 8, height: 50, preserveAspectRatio: "xMidYMid meet" }, g);
+  } else if (window.MM_LOGO) {   // īstais MM logo (modelu-bots/LOGO.png): tumši brūns fons, bēšs M
     el("rect", { x: X, y: 10, width: W, height: 58, fill: MM_DARK }, g);
     el("image", { href: window.MM_LOGO, x: X + 2, y: 11, width: W - 4, height: (W - 4) * 433 / 486, preserveAspectRatio: "xMidYMid slice" }, g);
     T_(g, cx, 54.5, "HOMES", { fs: 4.2, fw: 600, a: "middle", fill: MM_BEIGE, ls: 2.2 });
@@ -68,18 +72,19 @@ function mmTitleBlock(svg, v, lf, L) {
   el("rect", { x: X + 3, y: 73, width: W - 6, height: 7, rx: 3.5, fill: "none", stroke: MM_ACC, "stroke-width": .45 }, g);
   T_(g, cx, 77.8, tx.phase, { fs: 2.3, fw: 700, a: "middle", ls: .5, fill: MM_DARK });
   // model
-  lab(88, tx.model);
-  if (P.modela_nosaukums) {   // modeļa vārds (piem. Freya) un zem tā MM + m²
+  const NONAME = P.modela_nosaukums === "", SH = NONAME ? -20 : 0;   // nosaukums izdzēsts: nav ne "MODELIS", ne vārda
+  if (!NONAME) lab(88, tx.model);
+  if (!NONAME && P.modela_nosaukums) {   // modeļa vārds (piem. Freya) un zem tā MM + m²
     T_(g, X + 3, 97, P.modela_nosaukums, { fs: P.modela_nosaukums.length > 9 ? 4.6 : 6.2, fw: 700, fill: MM_DARK });
     T_(g, X + 3, 102.5, P.modelis || "", { fs: 2.6, fw: 600, fill: MM_ACC, ls: .4 });
-  } else T_(g, X + 3, 98, P.modelis || v.short || "", { fs: 6.2, fw: 700, fill: MM_DARK });
+  } else if (!NONAME) T_(g, X + 3, 98, P.modelis || v.short || "", { fs: 6.2, fw: 700, fill: MM_DARK });
   // key figures
   const I = P.ievade || {}, foot = polyArea(v.poly), net = [...mmRooms(v), ...mmRooms(lf)].reduce((a, rm) => a + area(rm), 0);
-  lab(108, tx.key);
+  lab(108 + SH, tx.key);
   const kv = [[tx.kFoot, mmNum(foot) + " m²"], [tx.kNet, mmNum(net) + " m²"], [tx.kSize, `${Math.round(v.W)} × ${Math.round(v.D)}`],
     [tx.kRidge, I.augstums ? mmNum(I.augstums / 1000) + " m" : "–"], [tx.kCeil, mmNum((v.ceiling || 2200) / 1000) + " m"], [tx.kPitch, (P.pitch || 25) + "°"],
     ...(P.raditaji || []).map(r => L === "en" && r.length > 2 ? [r[2], r[3] || r[1]] : r)];   // papildu rādītāji: [nosaukums, vērtība, EN nosaukums, EN vērtība]
-  let ky = 114;
+  let ky = 114 + SH;
   kv.forEach(([k, val]) => {
     T_(g, X + 3, ky, k, { fs: 1.9, fill: MM_GREY });
     T_(g, X + 3, ky + 4, val, { fs: 3, fw: 600, fill: MM_DARK });
@@ -104,7 +109,7 @@ function mmTitleBlock(svg, v, lf, L) {
 
   // vertical watermark in the free space between the notes and the info note (left out when it does not fit)
   { const wm = (P.modela_nosaukums || P.modelis || v.short || "") + "  ·  " + tx.phase, top = ny + 4, bot = 326, fs = Math.min(5.5, (bot - top) / (wm.length * 0.95));
-    if (fs >= 3) T_(g, 0, 0, wm, { fs, fw: 700, ls: fs * .22, fill: "#e9e5dc", tr: `translate(${cx + fs * .35} ${(top + bot) / 2}) rotate(-90)`, a: "middle" }); }
+    if (fs >= 3 && !NONAME) T_(g, 0, 0, wm, { fs, fw: 700, ls: fs * .22, fill: "#e9e5dc", tr: `translate(${cx + fs * .35} ${(top + bot) / 2}) rotate(-90)`, a: "middle" }); }
   // info note
   const info = wrap(tx.info, 27);
   info.forEach((l, i) => T_(g, X + 3, 344 - (info.length - 1 - i) * 2.8, l, { fs: 1.75, fill: MM_GREY }));
@@ -117,14 +122,15 @@ function mmTitleBlock(svg, v, lf, L) {
   wrap(L === "en" ? (P.rev_apraksts_en || P.rev_apraksts || "") : (P.rev_apraksts || ""), 10).forEach((l, i) => T_(g, X + 23, ry + 4 + i * 2.8, l, { fs: 1.9 }));
   // bottom cells: scale / size / sheet
   el("line", { x1: X, y1: 372, x2: X + W, y2: 372, stroke: C.ink, "stroke-width": .35 }, g);
-  [[tx.scale, "1:100"], [tx.fmt, "A3"], [tx.sheet, P.lapa || "1/1"]].forEach(([k, val], i) => {
+  [[tx.scale, "1:" + (window.MM_SCALE || 100)], [tx.fmt, "A3"], [tx.sheet, P.lapa || "1/1"]].forEach(([k, val], i) => {
     const x = X + i * W / 3;
     if (i) el("line", { x1: x, y1: 372, x2: x, y2: 386, stroke: C.ink, "stroke-width": .2 }, g);
     T_(g, x + W / 6, 377, k, { fs: 1.6, a: "middle", fill: MM_GREY, ls: .2 });
     T_(g, x + W / 6, 383, val, { fs: 2.8, fw: 700, a: "middle" });
   });
   el("rect", { x: X, y: 386, width: W, height: 24, fill: MM_DARK }, g);
-  if (window.MM_LOGO) el("image", { href: window.MM_LOGO, x: X + W - 15, y: 389, width: 13, height: 13 * 433 / 486 }, g);
+  if (OWN) el("image", { href: OWN, x: X + W - 17, y: 388, width: 15, height: 15, preserveAspectRatio: "xMidYMid meet" }, g);
+  else if (window.MM_LOGO && !NOLOGO) el("image", { href: window.MM_LOGO, x: X + W - 15, y: 389, width: 13, height: 13 * 433 / 486 }, g);
   T_(g, X + 3, 393, "REV. " + (P.revizija || "00"), { fs: 2.6, fw: 700, fill: MM_ACC, ls: .4 });
   T_(g, X + 3, 398.5, P.datums || "", { fs: 2.2, fill: "#fff" });
   T_(g, X + 3, 405, "MM Homes", { fs: 2.2, fw: 600, fill: MM_BEIGE, ls: .3 });
@@ -137,7 +143,9 @@ function modelSheet(v) {
   el("rect", { width: 297, height: 420, fill: "#fff" }, svg);
   el("rect", { x: 20, y: 10, width: 267, height: 400, fill: "none", stroke: C.ink, "stroke-width": .5 }, svg);
   el("line", { x1: 247, y1: 10, x2: 247, y2: 410, stroke: C.ink, "stroke-width": .35, "data-block": "title-strip" }, svg);
-  const k = .01, w = v.W * k, d = v.D * k;
+  // platām/lielām mājām mērogs 1:150, citādi 1:100
+  const SC = (v.D > 4500 || v.W > 12000) ? 150 : 100, k = 1 / SC, w = v.W * k, d = v.D * k;
+  window.MM_SCALE = SC;
   const PX = 49, TX = Math.max(168, PX + w + 26), TW = 241 - TX;   // plan origin x, room tables column (moves right for long houses)
 
   // 1) ground floor: furniture, inner and outer dimensions, axes close to the outer chain; client mode = no element marks
@@ -169,7 +177,16 @@ function modelSheet(v) {
     : m[0] === "#1d1d1d" && plate ? ["#9b9c98", ...(L === "en" ? ["Plinth: foundation slab,", "concrete"] : ["Cokols: pamatu plātne,", "betons"])]
     : m[0] === "#383E42" && PR.logi ? [PR.logi_hex || m[0], m[1], PR.logi]
     : m[0] === "#1d1d1d" && PR.cokols ? [PR.cokols_hex || m[0], m[1], PR.cokols] : m);
-  if (PR.sturi) ARC.materials.push(["#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, "white"] : [`Stūru dēļi ${PR.sturi} mm,`, "balti"])]);
+  { // logu aplodas un palodzes, ja to tonis atšķiras no rāmjiem ('tonis' = fasādes tonī)
+    const lg = PR.logi || "RAL 7016", ca = PR.aplodas || lg, pa = PR.palodzes || ca, hx = c => (c === "tonis" ? (PR.tonis_sw || "#888") : colHex(c)), nm = c => (c === "tonis" ? (L === "en" ? "facade colour" : "fasādes tonī") : c);
+    if (ca === pa) { if (ca !== lg) ARC.materials.push([hx(ca), ...(L === "en" ? ["Window casings, sills", nm(ca)] : ["Logu aplodas, palodzes", nm(ca)])]); }
+    else {
+      if (ca !== lg) ARC.materials.push([hx(ca), ...(L === "en" ? ["Window casings", nm(ca)] : ["Logu aplodas", nm(ca)])]);
+      ARC.materials.push([hx(pa), ...(L === "en" ? ["Window sills", nm(pa)] : ["Palodzes", nm(pa)])]);
+    }
+  }
+  if (PR.sturi) { const o = PR.sturi_opc || "balts", t = { balts: ["white", "balti"], melns: ["black", "melni"], tonis: ["facade colour", "fasādes tonī"] }[o] || ["white", "balti"];
+    ARC.materials.push([PR.sturi_hex || "#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, t[0]] : [`Stūru dēļi ${PR.sturi} mm,`, t[1]])]); }
   const mg = materials(svg, 26, row2 + 31, true);
   ARC.materials = keep;
   mg.querySelector("text").textContent = tx.matT;
