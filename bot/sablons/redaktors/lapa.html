@@ -238,6 +238,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <li>Pievienot: izvēlies elementu, tad uzklikšķini vietā, kur to likt (logu uz ārsienas plānā vai fasādē, slīpo logu gala fasādē virs dzegas). <kbd>Esc</kbd> atceļ.</li>
         <li>Fasādē loga sānu malas maina platumu, augšējā un apakšējā mala augstumu. Rāmja profils paliek tas pats.</li>
         <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> pārvieto par 10 mm, ar <kbd>Shift</kbd> par 100 mm. <kbd>Delete</kbd> dzēš, <kbd>Ctrl</kbd>+<kbd>Z</kbd> atsauc.</li>
+        <li>Vairākus elementus atlasa ar <kbd>Shift</kbd>+klikšķi (logus, durvis, mēbeles vienā stāvā); vilkšana pārvieto visus kopā. Ar <kbd>Ctrl</kbd> turot vilkšanu elements (vai visa atlasītā grupa) tiek nokopēts. <kbd>Ctrl</kbd>+<kbd>C</kbd> un <kbd>Ctrl</kbd>+<kbd>V</kbd> kopē un iekopē, <kbd>Delete</kbd> dzēš visu grupu.</li>
         <li>Mēri, atzīmes un eksplikācija pārrēķinās pēc katra labojuma.</li>
       </ul>
       </section>
@@ -273,7 +274,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     const b = gwBase(n);
     (n.gableWins || []).forEach(g => { if (g.z0 < b) { const lw = n.loft && (n.loft.windows || []).find(w => gwMatch(g, w)); if (g.z1) g.z1 = +(g.z1 + b - g.z0).toFixed(1); g.z0 = b; if (lw) { lw.head = +((lw.head || b) + b - (lw.sill || 0)).toFixed(1); lw.sill = b; } } });
   }
-  let model = clone(BASE), undo = [], redo = [], sel = null, view = null, dirty = false, placeNext = false;
+  let model = clone(BASE), undo = [], redo = [], clip = null, sel = null, view = null, dirty = false, placeNext = false;
 
   // ---- the same model block build_model.py writes, plus a map from each furniture entry to its drawn shapes ----
   const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "entryInChain"];
@@ -319,7 +320,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         "@page{size:420mm 297mm;margin:0} svg.a3{width:420mm!important;height:297mm!important;display:inline-block;vertical-align:top;margin:0 14mm 14mm 0} body{width:870mm}");
     }
     if (edit) {
-      const ed = JSON.stringify({ model: m, sel, place: placeNext, gwBase: gwBase(m) }).split("</").join("<\\/");
+      const ed = JSON.stringify({ model: m, sel, place: placeNext, gwBase: gwBase(m), clip }).split("</").join("<\\/");
       placeNext = false;
       const inj = `<script>window.MM_ED=${ed};window.MMZ_INIT=${JSON.stringify(view)};<\/script><script>${FRAME_JS.split("</").join("<\\/")}<\/script>`;
       const i = h.lastIndexOf("</body>");
@@ -357,7 +358,8 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       return;
     }
     if (!fromLive) return;
-    if (d.t === "sel") { sel = d.sel; panel(); }
+    if (d.t === "clip") { clip = d.clip; $("hint").textContent = "Nokopēts: " + d.n + " gab. Ctrl+V iekopē."; }
+    else if (d.t === "sel") { sel = d.sel; panel(); }
     else if (d.t === "view") view = d.view;
     else if (d.t === "edit") { if (d.resized) roofFix(d.model); sel = d.sel || sel; if (d.placed) endPlace(); if (d.place) placeNext = true; commit(d.model); }
     else if (d.t === "undo") doUndo();
