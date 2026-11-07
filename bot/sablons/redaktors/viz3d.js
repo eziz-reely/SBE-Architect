@@ -1,13 +1,13 @@
   // ---- 3D skats + Gemini prompts: references PNG ar fotogrāfa kadru un gatavs prompts (tāds pats kā viz.py) ----
   (function () {
-    const V = { open: false, inited: false, view: "SE", free: false, tone: null, atm: "auto", az: 45, el: 0, dist: 30000 };
+    const V = { open: false, inited: false, view: "SE", free: false, lens: 85, tone: null, atm: "auto", az: 45, el: 0, dist: 30000 };
     const SIDES = { south: "south", north: "north", east: "east", west: "west" };
     const SIDE_LV = { south: "Dienvidi (ieeja)", north: "Ziemeļi", east: "Austrumi", west: "Rietumi" };
     const VIEWS = [["S", "Fasāde S", 0], ["E", "Fasāde A", 90], ["N", "Fasāde Z", 180], ["W", "Fasāde R", 270],
       ["SE", "3/4 DA", 45], ["NE", "3/4 ZA", 135], ["NW", "3/4 ZR", 225], ["SW", "3/4 DR", 315]];
     const ATM = __MM_ATMOS__;
     const ATM_KEYS = Object.keys(ATM);
-    const CAM_H = 1600, FOV = 22, ASPECT = 1.5;
+    const CAM_H = 1600, ASPECT = 1.5, fovOf = mm => 2 * Math.atan(12 / mm) * 180 / Math.PI;
     const hexOf = ral => { const r = RAL[ral]; return r ? r[1] : "#383E42"; };
     const lv0 = () => { const P = model.projekts || {}; return TONES[P.tonis] ? P.tonis : "peleks"; };
     const terr = () => model.terase && model.terase.side ? model.terase : null;
@@ -108,7 +108,7 @@
     }
     function camFor(az, bb) {   // fotogrāfa kadrs: līmenis horizonts, 1,6 m augstumā, kameras nobīde (shift)
       const cx = (bb.x0 + bb.x1) / 2, cz = (bb.y0 + bb.y1) / 2, a = az * Math.PI / 180, dirv = [Math.sin(a), Math.cos(a)];
-      const cam = new THREE.PerspectiveCamera(FOV, ASPECT, 100, 400000), corners = [];
+      const cam = new THREE.PerspectiveCamera(fovOf(V.lens), ASPECT, 100, 400000), corners = [];
       [bb.x0, bb.x1].forEach(x => [bb.y0, bb.y1].forEach(y => [bb.z0, bb.z1].forEach(z => corners.push(new THREE.Vector3(x, z, y)))));
       let dist = 8000;
       for (; dist < 120000; dist += 400) {
@@ -128,7 +128,7 @@
       cam.lookAt(cx, ty, cz);
       const W = V.w, H = V.h;
       if (V.free) cam.clearViewOffset(); else cam.setViewOffset(W, H, 0, -H / 6, W, H);   // horizonts apakšējā trešdaļā
-      cam.aspect = W / H; cam.updateProjectionMatrix();
+      cam.fov = fovOf(V.lens); cam.aspect = W / H; cam.updateProjectionMatrix();
     }
     function resize() {
       const st = $("v3stage"), r = st.getBoundingClientRect(); let w = r.width - 20, h = w / ASPECT; if (h > r.height - 20) { h = r.height - 20; w = h * ASPECT; }
@@ -151,7 +151,7 @@
     }
     function visibleSides(id) { return id.length === 1 ? [{ S: "south", N: "north", E: "east", W: "west" }[id]] : [{ S: "south", N: "north" }[id[0]], { E: "east", W: "west" }[id[1]]]; }
     function cameraText(id) {
-      const base = "eye-level photograph from 1.6 m above the ground, 3:2 frame, vertical lines perfectly straight (architectural shift lens), the whole house together with its whole terrace is fully visible inside the frame with comfortable margins on all sides (house and terrace fill about three quarters of the frame width), horizon in the lower third.";
+      const base = `eye-level photograph from 1.6 m above the ground, ${V.lens} mm lens (35 mm equivalent), `+" 3:2 frame, vertical lines perfectly straight (architectural shift lens), the whole house together with its whole terrace is fully visible inside the frame with comfortable margins on all sides (house and terrace fill about three quarters of the frame width), horizon in the lower third.";
       const vs = visibleSides(id), nm = s => ({ south: "south", north: "north", east: "east", west: "west" })[s];
       const v = id.length === 1 ? `Straight-on view of the ${nm(vs[0])} facade, camera exactly perpendicular to that wall and centred on the house.` : `Classic three-quarter view from the ${nm(vs[0])}-${nm(vs[1])} corner: the ${nm(vs[0])} and the ${nm(vs[1])} facades are both visible at the angle shown in the reference.`;
       return `Camera: ${v} ${base} Style: photorealistic professional architectural photography, real materials, sharp detail, natural lens, no illustration look, no CGI look.`;
@@ -217,13 +217,14 @@
       V.canvas = $("v3canvas"); V.renderer = new THREE.WebGLRenderer({ canvas: V.canvas, antialias: true, preserveDrawingBuffer: true });
       V.renderer.setClearColor(0xe8ecef, 1); V.scene = new THREE.Scene(); V.scene.background = new THREE.Color(0xe8ecef);
       V.scene.add(new THREE.HemisphereLight(0xffffff, 0x99a090, .8)); V.light = new THREE.DirectionalLight(0xffffff, .6); V.scene.add(V.light);
-      V.cam = new THREE.PerspectiveCamera(FOV, ASPECT, 100, 400000);
+      V.cam = new THREE.PerspectiveCamera(fovOf(V.lens), ASPECT, 100, 400000);
       $("v3views").innerHTML = VIEWS.map(v => `<button type="button" data-v="${v[0]}" aria-pressed="false">${v[1]}</button>`).join("");
       $("v3views").onclick = e => { const b = e.target.closest("button"); if (b) setView(b.dataset.v); };
       $("v3tone").innerHTML = Object.keys(TONES).map(k => `<option value="${k}">${TONE_N[k] || k}</option>`).join("");
       $("v3atm").innerHTML = `<option value="auto">Automātiski (pēc modeļa nr.)</option>` + ATM_KEYS.map(k => `<option value="${k}">${(ATM[k].lv || k)}</option>`).join("");
       $("v3tone").onchange = e => { V.tone = e.target.value; rebuild(); };
       $("v3atm").onchange = e => { V.atm = e.target.value; promptUpdate(); };
+      $("v3lens").onchange = e => { V.lens = +e.target.value; V.dist0 = null; draw(); promptUpdate(); };
       $("v3free").onchange = e => { V.free = e.target.checked; if (V.free) { V.el = 12; V.dist0 = null; } draw(); };
       $("v3tOn").onchange = e => saveTerrace(e.target.checked ? {} : null);
       $("v3tSide").onchange = e => saveTerrace({ side: e.target.value });
@@ -254,7 +255,7 @@
     }
     function openV() {
       V.open = true; $("v3").hidden = false; init(); if (!V.renderer) return;
-      V.tone = V.tone || lv0(); $("v3tone").value = V.tone; $("v3atm").value = V.atm; terraceUI(); rebuild(); resize(); setView(V.view);
+      V.tone = V.tone || lv0(); $("v3lens").value = V.lens; $("v3tone").value = V.tone; $("v3atm").value = V.atm; terraceUI(); rebuild(); resize(); setView(V.view);
     }
     function close() { V.open = false; $("v3").hidden = true; }
     $("b3d").onclick = openV;
