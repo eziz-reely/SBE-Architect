@@ -144,6 +144,26 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   aside { border-left: 0; border-top: 1px solid var(--line); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+#v3 { position: fixed; inset: 0; z-index: 60; display: grid; grid-template-columns: 1fr 340px; background: #2a2622; }
+#v3[hidden] { display: none; }
+#v3stage { display: grid; place-items: center; min-width: 0; min-height: 0; overflow: hidden; }
+#v3canvas { display: block; box-shadow: 0 6px 30px rgba(0,0,0,.45); cursor: grab; touch-action: none; background: #e8ecef; }
+#v3side { background: var(--paper, #f4efe6); color: var(--ink); padding: 12px 14px 18px; overflow: auto; display: grid; gap: 7px; align-content: start; font: 13px/1.35 var(--f-ui); }
+#v3side .v3h { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+#v3side .v3h button { border: 0; background: transparent; font-size: 18px; cursor: pointer; }
+#v3views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+#v3views button, #v3side .v3b { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 6px 4px; cursor: pointer; font: inherit; font-size: 12px; }
+#v3views button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: #1f1b17; font-weight: 600; }
+#v3side .v3b.pri { background: var(--gold); border-color: var(--gold); font-weight: 600; }
+#v3side label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+#v3side label.v3chk { display: flex; flex-direction: row; gap: 6px; align-items: center; color: var(--ink); }
+#v3side select, #v3side input[type=number] { padding: 6px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font: inherit; }
+#v3prompt { width: 100%; box-sizing: border-box; font: 12px/1.4 ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 7px; resize: vertical; }
+#v3side .v3row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#v3side .v3chk input { width: auto; flex: none; margin: 0; }
+#v3side .pnote, #v3side .pcap { margin: 4px 0 0; }
+#v3stage .v3msg { color: #fff; }
+@media (max-width: 800px) { #v3 { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; } }
 </style>
 
 <header>
@@ -188,6 +208,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
         <button type="button" class="it" id="bJson"><b>model.json</b><small>Modeļa dati botam</small></button>
       </div></span>
+    <button id="b3d" type="button" title="3D skats, references PNG un Gemini prompts">3D un Gemini</button>
     <button id="bSave" class="pri" type="button">Saglabāt</button>
   </div>
 </header>
@@ -249,6 +270,33 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   </aside>
 </main>
 
+<div id="v3" hidden role="dialog" aria-label="3D skats un Gemini">
+  <div id="v3stage"><canvas id="v3canvas" width="900" height="600"></canvas></div>
+  <aside id="v3side">
+    <div class="v3h"><b>3D un Gemini</b><button id="v3close" type="button" aria-label="Aizvērt">✕</button></div>
+    <p class="pcap">Skats (fotogrāfa kadrs)</p>
+    <div id="v3views"></div>
+    <label class="v3chk"><input type="checkbox" id="v3free"> Brīvā kamera (virzienu un augstumu var mainīt)</label>
+    <button id="v3reset" type="button" class="v3b">Atiestatīt kadru</button>
+    <p class="pnote">Velc ar peli, lai pagrieztu. Ritenis tuvina un tālina.</p>
+    <p class="pcap">Terase</p>
+    <label class="v3chk"><input type="checkbox" id="v3tOn"> Rādīt terasi</label>
+    <div id="v3tBox" hidden>
+      <label>Fasāde<select id="v3tSide"><option value="south">Dienvidi (ieeja)</option><option value="north">Ziemeļi</option><option value="east">Austrumi</option><option value="west">Rietumi</option></select></label>
+      <label>Dziļums, mm<input id="v3tDepth" type="number" step="50" min="300"></label>
+      <label>Pagarinājums sākumā, mm<input id="v3tA" type="number" step="50" min="0"></label>
+      <label>Pagarinājums beigās, mm<input id="v3tB" type="number" step="50" min="0"></label>
+      <p class="pnote">Klikšķis uz fasādes 3D skatā piesprauž terasi pie tās.</p>
+    </div>
+    <p class="pcap">Prompts Gemini</p>
+    <label>Fasādes tonis<select id="v3tone"></select></label>
+    <label>Apkārtne<select id="v3atm"></select></label>
+    <textarea id="v3prompt" rows="9" spellcheck="false"></textarea>
+    <div class="v3row"><button id="v3copy" type="button" class="v3b pri">Kopēt promptu</button><button id="v3png" type="button" class="v3b">Lejupielādēt PNG</button></div>
+    <p class="pnote">Gemini: pievieno lejupielādēto PNG kā bildi un ielīmē promptu. PNG ir 2400×1600, 3:2.</p>
+  </aside>
+</div>
+<script>__MM_THREE__</script>
 <script>
 (function () {
   const TONES = __MM_TONES__, TPL = __MM_TEMPLATE__, BASE = __MM_MODEL__, FRAME_JS = __MM_FRAME_JS__, MARK = "/*@@MM_BLOCKS@@*/";
@@ -946,7 +994,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   };
 
   // ---- SketchUp: lapa pati uzraksta Ruby skriptu (.rb), kas SketchUp uzbūvē 3D modeli; iepakots .zip ----
-  function skpRb(m) {
+  function skpRb(m, geo) {
     const W = m.W, D = m.D, J = m.jumts || {}, pitch = J.pitch || 30, tan = Math.tan(pitch * Math.PI / 180), eave = J.eave || 2600, ov = +J.ov || 0;
     const TT = (TPL.match(/const T = ([\d.]+), t = ([\d.]+);/) || [0, 283.5, 195]).map(Number), T = TT[1], t = TT[2];
     let th = 300; try { const j = TPL.match(/"J1":\s*\{[^[]*"layers":\s*(\[\[[^\]]*\](?:,\s*\[[^\]]*\])*\])/); if (j) th = JSON.parse(j[1]).reduce((s, l) => s + (+l[1] || 0), 0) || 300; } catch (e) {}
@@ -955,8 +1003,8 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     const f1 = v => +(+v).toFixed(1), SU = ([x, y, z]) => `[${f1(x)},${f1(D - y)},${f1(z)}]`, L = a => "[" + a.map(SU).join(",") + "]";
     const out = [], put = s => out.push(s);
     const dd = a => a.filter((p, i) => { const q = a[(i + a.length - 1) % a.length]; return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) > 0.5; });
-    const solid = (name, mat, outer, holes, d, dir) => (outer = dd(outer)).length > 2 && put(`solid(ents, ${JSON.stringify(name)}, ${mat}, ${L(outer)}, [${holes.map(L).join(",")}], ${f1(d)}, [${f1(dir[0])},${f1(-dir[1])},${f1(dir[2])}])`);
-    const glass = pts => put(`glass(ents, ${L(pts)})`);
+    const solid = (name, mat, outer, holes, d, dir) => (outer = dd(outer)).length > 2 && (geo && geo.push({ k: "s", name, mat, outer, holes, d, dir }), put(`solid(ents, ${JSON.stringify(name)}, ${mat}, ${L(outer)}, [${holes.map(L).join(",")}], ${f1(d)}, [${f1(dir[0])},${f1(-dir[1])},${f1(dir[2])}])`));
+    const glass = pts => (geo && geo.push({ k: "g", pts }), put(`glass(ents, ${L(pts)})`));
     // ārsienas pa plāna kontūru (arī L un T): katra mala ir vertikāla siena līdz jumta apakšai, ar logu un durvju ailām
     const hipDeg = +J.hip || (/^(cetr|četr)/i.test(J.forma || "") ? pitch : 0) || +((TPL.match(/"roof":\s*\{[^}]*?"hip":\s*([\d.]+)/) || [])[1] || 0), tanH = hipDeg ? Math.tan(hipDeg * Math.PI / 180) : 0;
     const ridgeU = eave + D / 2 * tan, roofZ = (x, y) => eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity), roofAt = y => roofZ(W / 2, y);
@@ -979,17 +1027,18 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       const [ax, ay] = e.a, [bx, by] = e.b, N = Math.max(2, Math.ceil(e.L / 100));
       let top = []; for (let k = N; k >= 0; k--) { const x = ax + (bx - ax) * k / N, y = ay + (by - ay) * k / N; top.push([x, y, roofZ(x, y)]); }
       top = top.filter((p, i) => { if (i === 0 || i === top.length - 1) return true; const q = top[i - 1], r = top[i + 1]; return Math.abs((p[2] - q[2]) - (r[2] - p[2])) > 0.5; });
-      const holes = [], glz = [], at = (u, z) => (e.o === "h" ? [u, ay, z] : [ax, u, z]);
+      const holes = [], glz = [], drs = [], at = (u, z) => (e.o === "h" ? [u, ay, z] : [ax, u, z]);
       if (e.o !== "d") {
         (m.windows || []).filter(w => w.o === e.o && !w.shape && onEdge(e.o, e.o === "h" ? w.y : w.x, e.o === "h" ? w.x : w.y, (e.o === "h" ? w.x : w.y) + w.len) === e).forEach(w => {
           const u = e.o === "h" ? w.x : w.y, h = [at(u, w.sill), at(u + w.len, w.sill), at(u + w.len, w.head), at(u, w.head)]; holes.push(h); glz.push(h); });
         exDoors.filter(d => d.o === e.o && onEdge(d.o, d.o === "h" ? d.y : d.x, d.o === "h" ? d.x : d.y, (d.o === "h" ? d.x : d.y) + d.w) === e).forEach(d => {
-          const u = e.o === "h" ? d.x : d.y; holes.push([at(u, 0), at(u + d.w, 0), at(u + d.w, 2100), at(u, 2100)]); });
+          const u = e.o === "h" ? d.x : d.y; const dh = [at(u, 0), at(u + d.w, 0), at(u + d.w, 2100), at(u, 2100)]; holes.push(dh); drs.push({ h: dh, d }); });
         if (e.o === "v" && (Math.abs(ax) < 1 || Math.abs(ax - W) < 1)) (m.gableWins || []).filter(g => g.side === (Math.abs(ax) < 1 ? "west" : "east")).forEach(g => {
           const pp = gwPts(g); if (pp.every(([y]) => y >= e.lo - 1 && y <= e.hi + 1)) { const h = pp.map(([y, z]) => [ax, y, z]); holes.push(h); glz.push(h); } });
       }
       solid("Ārsiena " + (ei + 1), "M_WALL", [[ax, ay, 0], [bx, by, 0], ...top], holes, T, [e.n[0], e.n[1], 0]);
       glz.forEach(h => glass(h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z])));
+      if (geo) drs.forEach(({ h, d }) => geo.push({ k: "d", pts: h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z]), hinge: d.hinge }));
     });
     // starpsienas starp telpām (sprauga 100..200 mm), pagarinātas caur mezgliem; durvju ailas 2100
     const R = (m.rooms || []).flatMap(r => r.r), walls = [];
@@ -1287,5 +1336,6 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       model = m; status("Atvērta saglabātā versija (" + new Date(v.saved).toLocaleString("lv-LV") + ")."); panel(); render();
     } catch (_) { clearTimeout(tm); }
   })();
+/*@@VIZ3D@@*/
 })();
 </script>
