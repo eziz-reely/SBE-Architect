@@ -7,7 +7,7 @@
   const clone = o => JSON.parse(JSON.stringify(o));
   const r10 = v => Math.round(v / 10) * 10;
   const T = Math.min(...M.rooms.flatMap(r => r.r.map(q => q[0])));   // ārsienas biezums
-  const SNAP = 150, MINR = 600, GWB = ED.gwBase || 0;                                       // mēbele pielīp sienai tuvāk par 150 mm; telpa ne šaurāka par 600 mm
+  const SNAP = 60, MINR = 600, GWB = ED.gwBase || 0;                                       // mēbele pielīp sienai tuvāk par 150 mm; telpa ne šaurāka par 600 mm
   let sel = ED.sel || null, drag = null, clip = ED.clip || null;
   { const st = document.createElement("style"); st.textContent = "body{-webkit-user-select:none;user-select:none;touch-action:none}"; document.head.appendChild(st); }
 
@@ -70,6 +70,15 @@
   }
   const contained = (boxes, i) => { const b = boxes[i]; return b ? Object.keys(boxes).map(Number).filter(j => j !== i && boxes[j][0] >= b[0] - 5 && boxes[j][1] >= b[1] - 5 && boxes[j][2] <= b[2] + 5 && boxes[j][3] <= b[3] + 5) : []; };
   // the walls drawn between rooms: a wall is the gap between two room rectangles (or an outer wall)
+  // telpu sienas vidus punkti gar loga / durvju sienu (garuma virzienā), uz kuriem logs pielīp
+  function wallCenters(l, o, th) {
+    const H = o.o === "h", out = [];
+    rects(l).forEach(r => {
+      if (H) { if (Math.abs(r[1] - (o.y + th)) < 3 || Math.abs(r[3] - o.y) < 3) out.push((r[0] + r[2]) / 2); }
+      else if (Math.abs(r[0] - (o.x + th)) < 3 || Math.abs(r[2] - o.x) < 3) out.push((r[1] + r[3]) / 2);
+    });
+    return out;
+  }
   function wallAt(l, p) {
     const W = M.W, D = M.D, [x, y] = p;
     if (x < -50 || y < -50 || x > W + 50 || y > D + 50) return null;
@@ -400,7 +409,7 @@
     return DIRS[(DIRS.indexOf(s) + deg) % 4];
   }
   // bīdot mēbeli ar aizmuguri: kursors pie telpas sienas -> mēbele pagriežas ar aizmuguri pret to un pielīp
-  const WALLR = 800;
+  const WALLR = 300;   // pagriešana pie sienas tikai tuvu sienai; Alt vilkšanas laikā to izslēdz, bultiņas pārvieto bez pielipšanas
   function wallSnap(N, l, it, d, dx, dy, grp) {
     if (!d.h.p || d.alt) return null;
     const L = lv(l, N), f = L.furniture[it.i], cur = backOf(f); if (!cur) return null;
@@ -556,7 +565,7 @@
     return best != null ? best : r10(v);
   }
   // keep a box inside the room it stands in, and pull it flush to a wall that is closer than SNAP
-  function fit(l, b, dx, dy) {
+  function fit(l, b, dx, dy, free) {
     const nb = [b[0] + dx, b[1] + dy, b[2] + dx, b[3] + dy], c = [(nb[0] + nb[2]) / 2, (nb[1] + nb[3]) / 2];
     const R = rects(l);
     let r = R.find(q => c[0] >= q[0] && c[0] <= q[2] && c[1] >= q[1] && c[1] <= q[3]);
@@ -567,8 +576,8 @@
     const ext = R.filter(q => q !== r && ((Math.abs(q[0] - r[0]) < 2 && Math.abs(q[2] - r[2]) < 2) || (Math.abs(q[1] - r[1]) < 2 && Math.abs(q[3] - r[3]) < 2)));
     void ext;
     let x0 = nb[0], y0 = nb[1];
-    if (w <= r[2] - r[0]) { x0 = Math.max(r[0], Math.min(r[2] - w, x0)); if (x0 - r[0] < SNAP) x0 = r[0]; else if (r[2] - (x0 + w) < SNAP) x0 = r[2] - w; }
-    if (h <= r[3] - r[1]) { y0 = Math.max(r[1], Math.min(r[3] - h, y0)); if (y0 - r[1] < SNAP) y0 = r[1]; else if (r[3] - (y0 + h) < SNAP) y0 = r[3] - h; }
+    if (w <= r[2] - r[0]) { x0 = Math.max(r[0], Math.min(r[2] - w, x0)); if (!free) { if (x0 - r[0] < SNAP) x0 = r[0]; else if (r[2] - (x0 + w) < SNAP) x0 = r[2] - w; } }
+    if (h <= r[3] - r[1]) { y0 = Math.max(r[1], Math.min(r[3] - h, y0)); if (!free) { if (y0 - r[1] < SNAP) y0 = r[1]; else if (r[3] - (y0 + h) < SNAP) y0 = r[3] - h; } }
     return [x0 - b[0], y0 - b[1], r];
   }
   // pagriež mēbeli (un to, kas uz tās) ap tās centru par deg grādiem; pēc tam atpakaļ telpā
@@ -726,6 +735,10 @@
           const r = resizeFurn(N, it.lv, it.i, it.b, z, z === "l" || z === "r" ? dx : dy);
           if (!r) return null; d.nb = r.nb; return r.N;
         }
+        if (d.nudge) {   // bultiņas: tieši pa 10 / 100 mm, bez pielipšanas un atgrūšanas, tikai paliek telpā
+          const [nx, ny] = fit(it.lv, it.b, dx, dy, true);
+          grp.forEach(j => shiftF(L.furniture[j], nx, ny)); d.fdx = nx; d.fdy = ny; return N;
+        }
         const ws = wallSnap(N, it.lv, it, d, dx, dy, grp);
         if (ws) { d.nb = ws.nb; d.back = ws.side; return N; }
         d.nb = null; d.back = null;
@@ -739,7 +752,15 @@
       const key = o.o === "h" ? "x" : "y", lim = o.o === "h" ? M.W : M.D, dd = o.o === "h" ? dx : dy, q = r10(dd), mn = it.k === "win" ? 300 : 600;
       if (z === "l" || z === "t") { const a = Math.max(T, Math.min(o[key] + len - mn, o[key] + q)); o[lk] = +(o[key] + len - a).toFixed(1); o[key] = a; }
       else if (z === "r" || z === "b") o[lk] = Math.max(mn, Math.min(lim - T - o[key], len + q));
-      else { let v = o[key] + q; v = Math.max(T, Math.min(lim - T - len, v)); o[key] = v; }
+      else {
+        let v = o[key] + q; v = Math.max(T, Math.min(lim - T - len, v));
+        d.snapLine = null;
+        if (!d.alt && !d.nudge) {   // logs / durvis pielīp telpas sienas vidum (ar Alt neliek)
+          const c = v + len / 2, cs = wallCenters(it.lv, o, it.k === "win" ? T : o.th), best = cs.sort((a, b2) => Math.abs(a - c) - Math.abs(b2 - c))[0];
+          if (best != null && Math.abs(best - c) < 220) { v = Math.max(T, Math.min(lim - T - len, +(best - len / 2).toFixed(1))); d.snapLine = [o.o === "h" ? "y" : "x", best]; }
+        }
+        o[key] = v;
+      }
       if (o.parts && o.parts.length === 2) o.parts[1].len = Math.max(200, o.len - o.parts[0].len);
       if (it.k === "win" && it.lv === "loft") syncLoftWin(N, it.i);
       return N;
@@ -864,6 +885,7 @@
   };
   addEventListener("pointermove", e => {
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
+    if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideAt(place.o, e.clientX, e.clientY, place.P || (place.P = guidePts()))); return; }
     if (drag && drag.gi != null) {
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
@@ -931,7 +953,7 @@
     const st = e.shiftKey ? 100 : 10, dir = { ArrowLeft: [-st, 0], ArrowRight: [st, 0], ArrowUp: [0, -st], ArrowDown: [0, st] }[e.key];
     if (!dir) return;
     e.preventDefault();
-    const d = { h: { it, bl }, dx: dir[0], dy: dir[1], zone: "move", boxes: bl.type === "plan" ? furnBoxes(bl) : null };
+    const d = { h: { it, bl }, dx: dir[0], dy: dir[1], zone: "move", nudge: true, boxes: bl.type === "plan" ? furnBoxes(bl) : null };
     post({ t: "edit", model: apply(d, d.dx, d.dy), sel });
   });
 
@@ -952,6 +974,7 @@
     const m = e.data;
     if (m && m.mmFlip && sel && sel.k === "door") { post({ t: "edit", model: flipDoor(clone(M), sel, m.mmFlip), sel }); return; }
     if (m && m.mmRotate && sel && sel.k === "furn") { const bl = blocks().find(x => x.type === "plan" && x.lv === sel.lv); if (bl) post({ t: "edit", model: rotate(clone(M), sel.lv, sel.i, furnBoxes(bl)), sel }); return; }
+    if (m && m.mmKey) { dispatchEvent(new KeyboardEvent("keydown", { key: m.mmKey.key, shiftKey: !!m.mmKey.shiftKey })); return; }
     if (m && m.mmDesel) { sel = null; drawSel(); return; }
     if (m && m.mmSize) {   // ievadīts garums / platums: pārvieto austrumu un dienvidu ārsienu, telpas stiepjas līdzi
       let N = M; const { W, D } = m.mmSize;
@@ -1009,6 +1032,91 @@
     snapMark(g, s0, s0i.hit, k); snapMark(g, s1, s1i.hit, k);
     label(g, (s0[0] + s1[0]) / 2, (s0[1] + s1[1]) / 2 - 2 / k, `${Math.round(Math.abs(u1 - u0))} mm` + (ai.hit ? "  · vienā ķēdē" : ""), k);
   }
+
+  // ---- starpsienas: telpas taisnstūris tiek sadalīts ar 195 mm sienu; sienas posmu var izgriezt (atvere bez durvīm) ----
+  const PT = 195;
+  function partC(l, axis, v) {   // sienas ass pielīp tā, lai viena virsma sakristu ar citas sienas virsmu
+    const h = PT / 2; let best = null;
+    snapPts(l, axis).forEach(t => [t + h, t - h].forEach(cc => { if (Math.abs(cc - v) < 150 && (best == null || Math.abs(cc - v) < Math.abs(best - v))) best = cc; }));
+    return best != null ? { v: best, hit: true } : { v: r10(v), hit: false };
+  }
+  function roomRects(X) { return (X.rooms || []).flatMap((rm, ri) => rm.r.map((q, qi) => ({ ri, qi, b: [q[0], q[1], q[0] + q[2], q[1] + q[3]] }))); }
+  // kādā taisnstūrī ies starpsiena (centrs c, no a līdz b) un kā to sadalīt
+  function partitionSpec(X, vertical, c, a, b) {
+    if (b < a) [a, b] = [b, a];
+    const h = PT / 2, mid = (a + b) / 2;
+    for (const e of roomRects(X)) {
+      const [x0, y0, x1, y1] = e.b, U0 = vertical ? x0 : y0, U1 = vertical ? x1 : y1, V0 = vertical ? y0 : x0, V1 = vertical ? y1 : x1;
+      if (c < U0 || c > U1 || mid < V0 || mid > V1) continue;
+      if (c - h < U0 + MINR || c + h > U1 - MINR) return { err: "Starpsiena par tuvu sienai: telpa kļūtu šaurāka par 600 mm." };
+      const a2 = a <= V0 + 300 ? V0 : a, b2 = b >= V1 - 300 ? V1 : b, tA = a2 <= V0 + 1, tB = b2 >= V1 - 1;
+      if (b2 - a2 < 600) return { err: "Siena par īsu." };
+      if (!tA && !tB) return { err: "Siena jāsāk pie telpas malas (ārsienas vai citas sienas)." };
+      const P = (u0, v0, u1, v1) => (vertical ? [u0, v0, u1 - u0, v1 - v0] : [v0, u0, v1 - v0, u1 - u0]);
+      let parts;
+      if (tA && tB) parts = [P(U0, V0, c - h, V1), P(c + h, V0, U1, V1)];
+      else if (tA) parts = [P(U0, V0, c - h, b2), P(c + h, V0, U1, b2), P(U0, b2, U1, V1)];
+      else parts = [P(U0, V0, U1, a2), P(U0, a2, c - h, V1), P(c + h, a2, U1, V1)];
+      return { e, parts, full: tA && tB, a: a2, b: b2 };
+    }
+    return { err: "Uzklikšķini telpas iekšpusē." };
+  }
+  function addPartition(N, vertical, c, a, b) {
+    const sp = partitionSpec(N, vertical, c, a, b); if (sp.err) return sp;
+    const rm = N.rooms[sp.e.ri], q = rm.r[sp.e.qi], cen = r => [r[0] + r[2] / 2, r[1] + r[3] / 2];
+    rm.r[sp.e.qi] = sp.parts[0];
+    if (sp.full && rm.r.length === 1) {   // pilna siena vienā taisnstūrī: otra puse kļūst par jaunu telpu
+      N.rooms.push({ n: "Telpa", en: "Room", r: [sp.parts[1]] });
+      N.stampAt = N.stampAt || {}; N.stampScale = N.stampScale || {};
+      const ni = N.rooms.length - 1, cn = cen(sp.parts[1]); N.stampAt[ni] = [+cn[0].toFixed(1), +cn[1].toFixed(1)]; N.stampScale[ni] = 0.4;
+      const s0 = N.stampAt[sp.e.ri], f = sp.parts[0];
+      if (s0 && !(s0[0] >= f[0] && s0[0] <= f[0] + f[2] && s0[1] >= f[1] && s0[1] <= f[1] + f[3])) { const cf = cen(f); N.stampAt[sp.e.ri] = [+cf[0].toFixed(1), +cf[1].toFixed(1)]; }
+    } else sp.parts.slice(1).forEach(r => rm.r.push(r));
+    void q; return { N };
+  }
+  // sienas posms starp divām telpām: [ass, lo, hi, v0, v1, istaba]
+  function wallPair(p) {
+    const R = roomRects(M), [x, y] = p;
+    for (const a of R) for (const b of R) {
+      const A = a.b, B = b.b;
+      if (B[0] - A[2] > 0 && B[0] - A[2] <= 300 && x >= A[2] - 20 && x <= B[0] + 20) { const v0 = Math.max(A[1], B[1]), v1 = Math.min(A[3], B[3]); if (y >= v0 && y <= v1) return { axis: "x", lo: A[2], hi: B[0], v0, v1, ri: a.ri }; }
+      if (B[1] - A[3] > 0 && B[1] - A[3] <= 300 && y >= A[3] - 20 && y <= B[1] + 20) { const v0 = Math.max(A[0], B[0]), v1 = Math.min(A[2], B[2]); if (x >= v0 && x <= v1) return { axis: "y", lo: A[3], hi: B[1], v0, v1, ri: a.ri }; }
+    }
+    return null;
+  }
+  function cutWall(N, w, u0, u1) {
+    if (u1 < u0) [u0, u1] = [u1, u0];
+    u0 = Math.max(w.v0, u0); u1 = Math.min(w.v1, u1);
+    if (u1 - u0 < 100) return { err: "Posms par īsu." };
+    const X = w.axis === "x";
+    N.rooms[w.ri].r.push(X ? [w.lo, u0, +(w.hi - w.lo).toFixed(1), +(u1 - u0).toFixed(1)] : [u0, w.lo, +(u1 - u0).toFixed(1), +(w.hi - w.lo).toFixed(1)]);
+    N.doors = (N.doors || []).filter(d => { const dx = X ? d.o === "v" && Math.abs(d.x - w.lo) < 2 : d.o === "h" && Math.abs(d.y - w.lo) < 2, a = X ? d.y : d.x; return !(dx && a < u1 && a + d.w > u0); });
+    return { N };
+  }
+  function toolPoint(l, axis, v) { const t = snapI(l, axis, v, 250); return t; }
+  function wallPreview(cx, cy) {
+    for (const bl of blocks()) {
+      if (bl.type !== "plan" || bl.lv !== "main") continue;
+      const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
+      if (p[0] < -300 || p[1] < -300 || p[0] > M.W + 300 || p[1] > M.D + 300) continue;
+      const k = ek(bl), g = mk(o, "g", { class: "gh" });
+      if (place.t === "cut") {
+        const w = place.w || wallPair(p); if (!w) { label(g, p[0], p[1] - 2 / k, "Uzvelc uz iekšējās sienas", k); return; }
+        const X = w.axis === "x"; let a = w.v0, b = w.v1;
+        if (place.w) { const u1 = snapAx("main", X ? "y" : "x", X ? p[1] : p[0], 150); if (Math.abs(u1 - place.u0) >= 150) { a = Math.max(w.v0, Math.min(place.u0, u1)); b = Math.min(w.v1, Math.max(place.u0, u1)); } }
+        const bb = X ? [w.lo, a, w.hi, b] : [a, w.lo, b, w.hi];
+        rect(g, bb, true, k, 0); label(g, bb[0], bb[1] - 2.2 / k, place.w ? `${Math.round(b - a)} mm` : "klikšķis: sākums · otrs klikšķis tajā pašā vietā: visa siena", k); return;
+      }
+      const sx = place.p0 ? null : partC(bl.lv, "x", p[0]), sy = place.p0 ? null : partC(bl.lv, "y", p[1]);
+      if (!place.p0) { snapMark(g, [sx.hit ? sx.v : p[0], sy.hit ? sy.v : p[1]], sx.hit || sy.hit, k); label(g, p[0], p[1] - 2.2 / k, "Starpsiena: uzklikšķini sākumu (pie sienas)", k); return; }
+      const a = place.p0, vertical = Math.abs(p[1] - a[1]) >= Math.abs(p[0] - a[0]), h = PT / 2;
+      const c = partC(bl.lv, vertical ? "x" : "y", vertical ? a[0] : a[1]).v, v0 = snapAx(bl.lv, vertical ? "y" : "x", vertical ? a[1] : a[0], 300), v1 = snapAx(bl.lv, vertical ? "y" : "x", vertical ? p[1] : p[0], 300);
+      const sp = partitionSpec(M, vertical, c, v0, v1), A = sp.err ? Math.min(v0, v1) : sp.a, B = sp.err ? Math.max(v0, v1) : sp.b;
+      const bb = vertical ? [c - h, A, c + h, B] : [A, c - h, B, c + h];
+      rect(g, bb, true, k, 0); label(g, bb[0], bb[1] - 2.2 / k, sp.err ? sp.err : `${Math.round(B - A)} mm`, k); return;
+    }
+  }
+
   function placeAt(cx, cy) {
     const P = place, N = clone(M), eave = (M.jumts && M.jumts.eave) || 2600;
     for (const bl of blocks()) {
@@ -1022,6 +1130,22 @@
           if (Math.abs(u1 - u0) < 100) return { miss: "Mērs par īsu. Uzklikšķini tālāk." };
           const L = lv(P.lv, N); L.userDims = L.userDims || []; L.userDims.push([ax, snapAt(P.lv, ax, X ? a[1] : a[0]).v, Math.min(u0, u1), Math.max(u0, u1)]);
           return { N, sel: { k: "dim", i: L.userDims.length - 1, lv: P.lv } };
+        }
+        if (P.t === "wall" || P.t === "cut") {
+          if (bl.lv !== "main") return { miss: "Sienas var likt 1. stāva plānā." };
+          if (P.t === "cut") {
+            if (!P.w) { const w = wallPair(p); if (!w) return { miss: "Uzklikšķini uz iekšējās sienas (starp divām telpām)." }; P.w = w; P.u0 = snapAx("main", w.axis === "x" ? "y" : "x", w.axis === "x" ? p[1] : p[0], 150); return { pending: "Tagad uzklikšķini posma otru galu. Klikšķis tajā pašā vietā izgriež visu sienas posmu." }; }
+            const X = P.w.axis === "x", u1 = snapAx("main", X ? "y" : "x", X ? p[1] : p[0], 150);
+            const r = Math.abs(u1 - P.u0) < 150 ? cutWall(N, P.w, P.w.v0, P.w.v1) : cutWall(N, P.w, P.u0, u1);
+            if (r.err) { P.w = null; return { miss: r.err }; }
+            return { N, sel: null };
+          }
+          if (!P.p0) { P.p0 = [p[0], p[1]]; P.lv = bl.lv; return { pending: "Tagad uzklikšķini sienas otru galu (pie ārsienas vai citas sienas)." }; }
+          const a = P.p0, vertical = Math.abs(p[1] - a[1]) >= Math.abs(p[0] - a[0]);
+          const c = partC("main", vertical ? "x" : "y", vertical ? a[0] : a[1]).v, v0 = snapAx("main", vertical ? "y" : "x", vertical ? a[1] : a[0], 300), v1 = snapAx("main", vertical ? "y" : "x", vertical ? p[1] : p[0], 300);
+          const r = addPartition(N, vertical, c, v0, v1);
+          if (r.err) { P.p0 = null; return { miss: r.err }; }
+          return { N, sel: null };
         }
         if (P.t === "furn") {
           const e = clone(P.entry);
