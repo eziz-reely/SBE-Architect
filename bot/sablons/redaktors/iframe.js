@@ -1181,6 +1181,7 @@
 
   // view (zoom) is kept between rebuilds
   let vt = 0;
+  window.MMZ_CANCEL = () => { drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); drawSel(); };   // otrs pirksts: atceļ vilkšanu, sāk tuvināšanu
   window.MMZ_ON = () => { if (!drag) drawSel(); clearTimeout(vt); vt = setTimeout(() => window.MMZ && post({ t: "view", view: window.MMZ.get() }), 120); };
 
   addEventListener("load", () => setTimeout(() => {
