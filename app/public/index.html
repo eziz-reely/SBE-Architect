@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="lv"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MM Homes</title>
+<link rel="manifest" href="/manifest.webmanifest"><meta name="theme-color" content="#d9480f"><link rel="icon" href="/icon-192.png"><link rel="apple-touch-icon" href="/icon-192.png">
+<style>
+:root{--bg:#faf8f4;--fg:#2a2622;--mut:#6b645b;--card:#fff;--line:#d8d2c8;--acc:#d9480f}
+@media(prefers-color-scheme:dark){:root{--bg:#1d1a17;--fg:#ece7df;--mut:#a39b90;--card:#2a2622;--line:#443d36;--acc:#ff7a3d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.45 system-ui,sans-serif}
+main{max-width:640px;margin:0 auto;padding:20px 16px 48px}h1{font-size:22px;margin:0 0 4px}h2{font-size:15px;color:var(--mut);margin:24px 0 8px;font-weight:600}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:8px 0;display:flex;gap:10px;align-items:center}.card .t{flex:1;min-width:0}.card small{color:var(--mut)}
+a.btn,button{font:inherit;padding:9px 14px;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--fg);text-decoration:none;cursor:pointer;min-height:40px}
+.pri{background:var(--acc);border-color:var(--acc);color:#fff}input{font:inherit;width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--fg);margin:4px 0}
+#msg{color:#b3261e;min-height:22px}.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+</style></head><body><main>
+<h1>MM Homes</h1><div id="who" style="color:var(--mut);font-size:14px"></div>
+<section id="auth" hidden>
+  <h2>Pieteikšanās</h2>
+  <input id="em" type="email" autocomplete="username" placeholder="E-pasts"><input id="pw" type="password" autocomplete="current-password" placeholder="Parole (vismaz 8 simboli)">
+  <div id="msg" role="alert"></div>
+  <div class="row"><button class="pri" id="login">Pieteikties</button><button id="reg">Izveidot kontu</button></div>
+</section>
+<section id="app" hidden>
+  <h2>Manas mājas</h2><div id="mine"></div>
+  <h2>Visas mājas</h2><div id="all"></div>
+  <div class="row"><button id="out">Iziet</button></div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const api=async(p,o)=>{const r=await fetch(p,{credentials:"same-origin",...(o||{}),headers:{"content-type":"application/json"}});let j={};try{j=await r.json()}catch(e){}return{ok:r.ok,s:r.status,j}};
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function show(){
+  const me=await api("/api/me");
+  if(!me.ok){$("auth").hidden=false;$("app").hidden=true;$("who").textContent="";return}
+  $("auth").hidden=true;$("app").hidden=false;$("who").textContent=me.j.email;
+  let H=[];try{H=(await (await fetch("/houses.json")).json()).houses}catch(e){}
+  const P=(await api("/api/projects")).j.projects||[];const byId=Object.fromEntries(H.map(h=>[h.id,h]));
+  $("all").innerHTML=H.map(h=>`<div class="card"><div class="t"><b>${esc(h.name)}</b><br><small>${esc(h.id)} · ${h.W&&h.D?(h.W/1000).toFixed(1)+" × "+(h.D/1000).toFixed(1)+" m":""}</small></div><a class="btn" href="/redaktors/${encodeURIComponent(h.id)}.html">Atvērt</a></div>`).join("")||"<small>Nav māju.</small>";
+  $("mine").innerHTML=P.map(p=>`<div class="card"><div class="t"><b>${esc((byId[p.id]||{}).name||p.id)}</b><br><small>Saglabāts ${new Date(p.saved).toLocaleString("lv-LV")}</small></div><a class="btn pri" href="/redaktors/${encodeURIComponent(p.id)}.html">Atvērt</a><button data-d="${esc(p.id)}" aria-label="Dzēst">✕</button></div>`).join("")||"<small>Vēl nav saglabātu. Atver māju zemāk, labo un spied Saglabāt.</small>";
+  $("mine").querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{if(confirm("Dzēst saglabāto versiju profilā?")){await api("/api/projects/"+encodeURIComponent(b.dataset.d),{method:"DELETE"});show()}});
+}
+async function go(kind){$("msg").textContent="";const r=await api("/api/"+kind,{method:"POST",body:JSON.stringify({email:$("em").value,password:$("pw").value})});if(!r.ok){$("msg").textContent=r.j.error||"Kļūda "+r.s;return}$("pw").value="";show()}
+$("login").onclick=()=>go("login");$("reg").onclick=()=>go("register");
+$("pw").onkeydown=e=>{if(e.key==="Enter")go("login")};
+$("out").onclick=async()=>{await api("/api/logout",{method:"POST"});show()};
+if("serviceWorker" in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
+show();
+</script></body></html>

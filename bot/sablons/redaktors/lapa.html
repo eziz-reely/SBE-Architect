@@ -1070,13 +1070,13 @@ Nelieto fetch, localStorage, eval un ārējus skriptus. Ja vēlme nav iespējama
 
   // ---- saving: the edited model is kept with the page, so Claude can read it and rebuild the bot's files ----
   const DOC = "redaktors/" + "__MM_ID__";
-  let db = null, dl = null;
+  let db = null, dl = null, CLOUD = null;
   $("bSave").onclick = async () => {
-    if (!db) { status("Saglabāšana šeit nav pieejama. Lejupielādē model.json."); return; }
+    if (!db) { status("Saglabāšana profilā nav pieejama (neesi pieteicies). Lejupielādē model.json vai atver lietotni."); return; }
     $("bSave").disabled = true; status("Saglabā…");
     try {
       await db.doc(DOC).set({ id: model.id, json: JSON.stringify(model), saved: new Date().toISOString() });
-      dirty = false; status("Saglabāts " + new Date().toLocaleString("lv-LV") + ". Pasaki Claude, lai pārbūvē failus.");
+      dirty = false; status("Saglabāts " + new Date().toLocaleString("lv-LV") + (CLOUD ? " profilā " + CLOUD + "." : ". Pasaki Claude, lai pārbūvē failus."));
     } catch (e) { status("Neizdevās saglabāt: " + (e.message || e.code || e)); }
     $("bSave").disabled = false;
   };
@@ -1555,8 +1555,17 @@ Nelieto fetch, localStorage, eval un ārējus skriptus. Ja vēlme nav iespējama
 
   panel(); render();
   (async () => {
-    if (!window.claude || !window.claude.use) return;
-    const [d, l] = await Promise.all([claude.use("db").catch(() => null), claude.use("downloads").catch(() => null)]);
+    let d = null, l = null;
+    if (window.claude && window.claude.use) [d, l] = await Promise.all([claude.use("db").catch(() => null), claude.use("downloads").catch(() => null)]);
+    if (!l) l = { save: async ({ filename, data }) => { const a = document.createElement("a"), u = URL.createObjectURL(new Blob([data])); a.href = u; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); } };   // parastais lejupielādes variants
+    if (!d && /^https?:/.test(location.protocol)) {   // MM lietotne: projekti profilā (Cloudflare)
+      try {
+        const me = await fetch("/api/me", { credentials: "same-origin" });
+        if (me.ok) { CLOUD = (await me.json()).email; d = { doc: id => ({
+          get: async () => { const r = await fetch("/api/projects/" + encodeURIComponent(id.split("/").pop()), { credentials: "same-origin" }); if (!r.ok) return { exists: false }; const j = await r.json(); return { exists: true, data: () => j }; },
+          set: async v => { const r = await fetch("/api/projects/" + encodeURIComponent(id.split("/").pop()), { method: "PUT", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify(v) }); if (!r.ok) throw new Error("Serveris: " + r.status); } }) }; }
+      } catch (_) {}
+    }
     db = d; dl = l; $("bExp").hidden = !dl;
     if (!db) return;
     let done = false; const tm = setTimeout(() => { done = true; }, 10000);

@@ -1,0 +1,19 @@
+name = "mm-homes"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+# D1 datubāze: pēc "wrangler d1 create mm-homes" ieliec šeit database_id
+# (vai Cloudflare panelī: Workers & Pages -> mm-homes -> Settings -> Bindings -> D1, nosaukums DB)
+[[d1_databases]]
+binding = "DB"
+database_name = "mm-homes"
+database_id = "ZAMENI-AR-DATUBAZES-ID"
+
+[vars]
+# Komatiem atdalīti e-pasti, kam atļauts reģistrēties. Tukšs = jebkurš. IESAKU aizpildīt.
+ALLOWED_EMAILS = ""
