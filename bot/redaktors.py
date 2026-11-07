@@ -56,7 +56,7 @@ def main():
     viz3d = open(os.path.join(d, 'viz3d.js'), encoding='utf-8').read().replace('__MM_ATMOS__', jsstr(cfg['atmosferas']))
     three = open(os.path.join(d, 'three.min.js'), encoding='utf-8').read().replace('</script', '<\\/script')
     page = page.replace('/*@@VIZ3D@@*/', viz3d).replace('__MM_THREE__', three)
-    for k, v in {'__MM_TONES__': jsstr(tones), '__MM_TEMPLATE__': jsstr(tpl), '__MM_MODEL__': jsstr(m), '__MM_FRAME_JS__': jsstr(checker() + '\n' + frame),
+    for k, v in {'__MM_TONES__': jsstr(tones), '__MM_LAYERS__': jsstr(cfg['layers']), '__MM_TEMPLATE__': jsstr(tpl), '__MM_MODEL__': jsstr(m), '__MM_FRAME_JS__': jsstr(checker() + '\n' + frame),
                  '__MM_NAME__': (m.get('projekts') or {}).get('modela_nosaukums') or m['nosaukums'], '__MM_ID__': m['id']}.items():
         page = page.replace(k, v)
     out = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(os.path.abspath(mp)), 'rasejumi', f"{m['id']}_LV_redaktors.html")

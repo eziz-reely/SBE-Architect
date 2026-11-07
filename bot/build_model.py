@@ -78,6 +78,9 @@ def build(model_path, langs=None):
     cfg.setdefault('win', {}).update(colorOut=pr['logi'], casingColor=tc(pr.get('aplodas')) or pr['logi'], sillColor=tc(pr.get('palodzes')))   # aplodu tonis var atšķirties (projekts.aplodas)   # logu rāmji un apmales pēc toņa (sarkanajam balti RAL 9016)
     pr['vejkaste'] = m.get('jumts', {}).get('vejkaste', True) is not False   # jumta pārkare ar vēja kasti (slēgta)
     cfg['projekts'] = pr
+    for k_, v_ in (pr.get('piragi_layers') or {}).items():   # redaktorā labotie pīrāgu slāņi (projekts.piragi_layers)
+        if k_ in cfg['layers']:
+            cfg['layers'][k_]['layers'] = v_
     T = sum(l[1] for l in cfg['layers']['S1']['layers'])
     t = sum(l[1] for l in cfg['layers']['S2']['layers'])
 
@@ -251,6 +254,51 @@ def build(model_path, langs=None):
     sh = '    { // shadow of the head and the left jamb on the glass (as on the other windows)'
     assert sh in cad, 'SBE cad.js: nav atrasta gala loga ēna'
     cad = cad.replace(sh, '    if (mid > a0 + 1 && mid < a1 - 1) { // shadow of the head and the left jamb on the glass (as on the other windows)', 1)
+    # [MM] AR lapas: mazām mājām fasādes (un plāni) lielākā mērogā 1:75 vai 1:50; līnijas un teksts paliek tāda paša lieluma
+    ARFIX = (
+        'function arFix(g, k) {\n'
+        '  if (!g || k === 1) return;\n'
+        '  g.querySelectorAll("*").forEach(e => {\n'
+        '    ["stroke-width", "font-size", "letter-spacing"].forEach(a => { const x = e.getAttribute(a); if (x != null && x !== "" && !isNaN(+x)) e.setAttribute(a, (+x * k).toFixed(3)); });\n'
+        '    const d = e.getAttribute("stroke-dasharray"); if (d && d !== "none") e.setAttribute("stroke-dasharray", d.split(/[ ,]+/).map(x => (+x * k).toFixed(2)).join(" "));\n'
+        '  });\n'
+        '}\n'
+        'function arScaleFas(v, H) {   // [s, d] lielākais standarta mērogs, kurā abas fasādes ietilpst lapā\n'
+        '  const L = v.W + 2 * ROOF.ov, D = v.D + 2 * ROOF.ov;\n'
+        '  for (const d of [50, 75]) { const s = 1 / d; if ((L + D) * s <= 315 && H * s <= 120) return [s, d]; }\n'
+        '  return [0.01, 100];\n'
+        '}\n'
+        'function arScalePlan(v) {\n'
+        '  for (const d of [50, 75]) { const s = 1 / d; if ((v.W + 6900) * s <= 222 && (v.D + 6900) * s <= 148) return [s, d]; }\n'
+        '  return [0.01, 100];\n'
+        '}\n')
+    n0 = ar.index('function wrap(t, n) {')
+    ar = ar[:n0] + ARFIX + ar[n0:]
+    for a_, b_ in [
+        ('      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:100"),',
+         '      const [ps_, pd_] = arScalePlan(v); window.AR_PK = ps_ === 0.01 ? null : ps_; window.AR_PD = pd_; window.MM_SCALE = pd_;\n      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:" + pd_),'),
+        ('      out.push(svg); return;\n    }\n    const svg = sheet(k, title, k === "mezgli"',
+         '      window.AR_PK = null; window.AR_PD = 100; window.MM_SCALE = 100;\n      out.push(svg); return;\n    }\n    const [fs_, fd_] = (k === "fas1" || k === "fas2") ? arScaleFas(v, H) : [0.01, 100];\n    const svg = sheet(k, title, k === "fas1" || k === "fas2" ? "1:" + fd_ : k === "mezgli"'),
+        ('      elevation(el("g", { "data-block": "elev-" + a, transform: `translate(52 150) scale(0.01)` }, svg), v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` });\n'
+         '      elevation(el("g", { "data-block": "elev-" + b, transform: `translate(266 150) scale(0.01)` }, svg), v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` });\n',
+         '      { const La = v.W + 2 * ROOF.ov, Lb = v.D + 2 * ROOF.ov, wa = (k === "fas1" ? v.D : v.D) , xa = 40 + ROOF.ov * fs_, xb = Math.min(266, xa + La * fs_ + 60 + ROOF.ov * fs_);\n'
+         '        const aLen = (a === "south" || a === "north") ? La : Lb, bLen = (b === "south" || b === "north") ? La : Lb; void wa; void bLen;\n'
+         '        const x1 = fs_ === 0.01 ? 52 : 40 + ROOF.ov * fs_, x2 = fs_ === 0.01 ? 266 : Math.min(266, x1 + aLen * fs_ + 70);\n'
+         '        const gy_ = fs_ === 0.01 ? 150 : Math.min(150, 174.5 - 2450 * fs_);   // nosaukums paliek tajā pašā vietā lapā\n        window.AR_K = 0.01 / fs_; window.MM_SCALE = fd_;\n'
+         '        const ga = el("g", { "data-block": "elev-" + a, transform: `translate(${x1} ${gy_}) scale(${fs_})` }, svg); elevation(ga, v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` }); arFix(ga, 0.01 / fs_);\n'
+         '        const gb = el("g", { "data-block": "elev-" + b, transform: `translate(${x2} ${gy_}) scale(${fs_})` }, svg); elevation(gb, v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` }); arFix(gb, 0.01 / fs_);\n'
+         '        window.AR_K = 1; window.MM_SCALE = 100; void xa; void xb; }\n'),
+    ]:
+        assert a_ in ar, 'SBE ar.js: nav atrasts ' + a_[:50]
+        ar = ar.replace(a_, b_, 1)
+    for a_, b_ in [
+        ('  const g = el("g", { transform: "translate(61 50) scale(0.01)" }, svg);\n  cadPlan(g, v, { furniture: o.furniture ?? true, axes: true, levels: true, tag: o.tag || "-a3", tags: o.tags ?? !!v.marks, wallTags: o.wallTags, sections: o.sections });',
+         '  const g = el("g", { transform: window.AR_PK ? `translate(${27 + 3450 * window.AR_PK} ${22 + 3450 * window.AR_PK}) scale(${window.AR_PK})` : "translate(61 50) scale(0.01)" }, svg);\n  cadPlan(g, v, { furniture: o.furniture ?? true, axes: true, levels: true, tag: o.tag || "-a3", tags: o.tags ?? !!v.marks, wallTags: o.wallTags, sections: o.sections });\n  if (window.AR_PK) arFix(g, 0.01 / window.AR_PK);'),
+        ('  T_(svg, 26 + hd.length * 2.75 + 6, 197, "M 1:100", { fs: 3.4, fill: "#444" });\n  el("line", { x1: 26, y1: 199,', '  T_(svg, 26 + hd.length * 2.75 + 6, 197, "M 1:" + (window.AR_PD || 100), { fs: 3.4, fill: "#444" });\n  el("line", { x1: 26, y1: 199,'),
+        ('ttl.length * 262 + 350', '(ttl.length * 262 + 350) * (window.AR_K || 1)'),
+    ]:
+        if a_ in cad: cad = cad.replace(a_, b_, 1)
+        else: print('BRĪDINĀJUMS: cad.js neatrasts:', a_[:50])
     cad = cad.replace('/*AR*/', ar + '\n' + sheet, 1)
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
