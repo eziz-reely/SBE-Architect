@@ -16,6 +16,7 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 
 - `bot/`: kods (`planner.py`, `rules_check.py`, `generate.py`, `build_model.py`, `ref.py`, `viz.py`), `sablons/` (SBE šablons, toņu tekstūras) un noteikumi `bot/zinasanas_mebeles_logi.md`.
 - `bot/redaktors.py` un `bot/sablons/redaktors/`: rasējuma redaktors (viena HTML lapa). `python3 bot/redaktors.py <model.json>` uztaisa `rasejumi/<id>_LV_redaktors.html`. Taustiņi: Shift+klikšķis atlasa vairākus logus/durvis/mēbeles, Ctrl+vilkšana kopē atlasīto, Ctrl+C / Ctrl+V kopē un iekopē, Delete dzēš visu atlasīto. Poga „3D un Gemini”: 3D skats (8 fotogrāfa kadri: 4 fasādes un 4 stūri), terase pie izvēlētās fasādes, references PNG 2400×1600 un gatavs Gemini prompts kopēšanai (`bot/sablons/redaktors/viz3d.js`, three.js r128 MIT).
+- `bot/ingetrazo/`: spraudnis IngeTrazo (bezmaksas 3D modelētājs), kas no `model.json` pats uzbūvē mājas 3D modeli ar BIM atzīmēm. Skat. `bot/ingetrazo/README.md`.
 - `bot/sketchup/`: SketchUp paplašinājums, kas importē redaktora eksportēto 3D modeli (.rb). Lai to uzinstalētu, abus failus saarhivē kā .rbz.
 - `skills/sbe-arhitekts`, `skills/editbot`: komandu instrukcijas.
 

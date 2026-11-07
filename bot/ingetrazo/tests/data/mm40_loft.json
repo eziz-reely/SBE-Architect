@@ -1,0 +1,622 @@
+{
+ "id": "MM-40-03-V01",
+ "nosaukums": "MM 40-03-V01",
+ "platiba_grupa": "40m2",
+ "ievade": {
+  "garums": 11425.0,
+  "platums": 3500.0,
+  "augstums": 4000.0,
+  "augstums_0": 3725
+ },
+ "W": 11425.0,
+ "D": 3500.0,
+ "jumts": {
+  "forma": "divslipju",
+  "pitch": 25,
+  "ov": 0,
+  "eave": 2583
+ },
+ "rooms": [
+  {
+   "n": "Guļamistaba",
+   "en": "Bedroom",
+   "r": [
+    [
+     283.5,
+     283.5,
+     2800.0,
+     2933.0
+    ]
+   ]
+  },
+  {
+   "n": "WC",
+   "en": "WC",
+   "r": [
+    [
+     3278.5,
+     283.5,
+     2300.0,
+     1700.0
+    ]
+   ]
+  },
+  {
+   "n": "Dzīvojamā istaba ar virtuvi",
+   "en": "Living room with kitchen",
+   "r": [
+    [
+     5773.5,
+     283.5,
+     5368.0,
+     2933.0
+    ]
+   ]
+  },
+  {
+   "n": "Priekšnams",
+   "en": "Entrance hall",
+   "r": [
+    [
+     3278.5,
+     2178.5,
+     2495.0,
+     1038.0
+    ]
+   ]
+  }
+ ],
+ "doors": [
+  {
+   "x": 4026.0,
+   "y": 3216.5,
+   "o": "h",
+   "hinge": "s",
+   "side": 1,
+   "w": 1000,
+   "th": 283.5,
+   "entry": true
+  },
+  {
+   "x": 3083.5,
+   "y": 2253.5,
+   "o": "v",
+   "hinge": "s",
+   "side": -1,
+   "w": 800,
+   "th": 195
+  },
+  {
+   "x": 3353.5,
+   "y": 1983.5,
+   "o": "h",
+   "hinge": "s",
+   "side": -1,
+   "w": 800,
+   "th": 195
+  }
+ ],
+ "windows": [
+  {
+   "len": 900,
+   "sill": 900,
+   "head": 2100,
+   "kind": "tilt",
+   "x": 1234.0,
+   "y": 3216.5,
+   "o": "h",
+   "side": "south"
+  },
+  {
+   "len": 600,
+   "sill": 900,
+   "head": 2100,
+   "kind": "tilt",
+   "x": 4128.0,
+   "y": 0,
+   "o": "h",
+   "side": "north"
+  },
+  {
+   "len": 2100,
+   "sill": 0,
+   "head": 2100,
+   "kind": "fixed",
+   "x": 11141.5,
+   "y": 700.0,
+   "o": "v",
+   "out": 1,
+   "side": "east"
+  },
+  {
+   "len": 900,
+   "sill": 0,
+   "head": 2100,
+   "kind": "fixed",
+   "x": 6474.0,
+   "y": 0,
+   "o": "h",
+   "side": "north"
+  }
+ ],
+ "furniture": [
+  [
+   "bed",
+   283.5,
+   783.5,
+   2000,
+   1400,
+   "w"
+  ],
+  [
+   "nightstand",
+   283.5,
+   333.5
+  ],
+  [
+   "toilet",
+   5578.5,
+   683.5,
+   1,
+   "e"
+  ],
+  [
+   "shower",
+   3278.5,
+   283.5,
+   800,
+   [
+    "e",
+    "s"
+   ]
+  ],
+  [
+   "basin",
+   5078.5,
+   1133.5,
+   450,
+   500,
+   "e"
+  ],
+  [
+   "R",
+   5773.5,
+   283.5,
+   600,
+   1800.0
+  ],
+  [
+   "Ln",
+   6343.5,
+   283.5,
+   6343.5,
+   2083.5,
+   {
+    "dash": 1
+   }
+  ],
+  [
+   "R",
+   5793.5,
+   303.5,
+   560,
+   560
+  ],
+  [
+   "Ln",
+   5793.5,
+   303.5,
+   6353.5,
+   863.5,
+   {
+    "sw": 3
+   }
+  ],
+  [
+   "Ln",
+   6353.5,
+   303.5,
+   5793.5,
+   863.5,
+   {
+    "sw": 3
+   }
+  ],
+  [
+   "R",
+   5863.5,
+   1000.0,
+   420,
+   560,
+   {
+    "rx": 30
+   }
+  ],
+  [
+   "Ci",
+   6073.5,
+   1280.0,
+   22,
+   {
+    "sw": 3
+   }
+  ],
+  [
+   "R",
+   5813.5,
+   1600.0,
+   520,
+   460,
+   {
+    "rx": 15,
+    "sw": 4
+   }
+  ],
+  [
+   "Ci",
+   5943.5,
+   1710.0,
+   75,
+   {
+    "sw": 3
+   }
+  ],
+  [
+   "Ci",
+   5943.5,
+   1950.0,
+   75,
+   {
+    "sw": 3
+   }
+  ],
+  [
+   "Ci",
+   6203.5,
+   1710.0,
+   75,
+   {
+    "sw": 3
+   }
+  ],
+  [
+   "Ci",
+   6203.5,
+   1950.0,
+   75,
+   {
+    "sw": 3
+   }
+  ],
+  [
+   "wardrobe",
+   6773.5,
+   2616.5,
+   1200,
+   600,
+   "n"
+  ],
+  [
+   "sofa",
+   7473.5,
+   283.5,
+   2400,
+   900,
+   "n"
+  ]
+ ],
+ "axes": {
+  "x": [
+   [
+    0,
+    "1"
+   ],
+   [
+    11425.0,
+    "2"
+   ]
+  ],
+  "y": [
+   [
+    0,
+    "A"
+   ],
+   [
+    3500.0,
+    "B"
+   ]
+  ]
+ },
+ "stampAt": {
+  "0": [
+   1383.5,
+   2663.5
+  ],
+  "1": [
+   4428.5,
+   1133.5
+  ],
+  "2": [
+   8444.0,
+   1763.5
+  ],
+  "3": [
+   4478.5,
+   2658.5
+  ]
+ },
+ "stampScale": {
+  "0": 0.6,
+  "1": 0.45,
+  "2": 0.6,
+  "3": 0.6
+ },
+ "levelAt": [
+  3578.5,
+  2916.5
+ ],
+ "innerDims": [
+  [
+   "x",
+   683.5
+  ],
+  [
+   "y",
+   683.5
+  ],
+  [
+   "y",
+   3678.5
+  ],
+  [
+   "y",
+   6173.5
+  ]
+ ],
+ "wallTags": [],
+ "sections": [],
+ "gableWins": [
+  {
+   "side": "west",
+   "u0": 1250.0,
+   "u1": 2250.0,
+   "z0": 2400,
+   "win": 1,
+   "z1": 2950,
+   "kind": "hopper"
+  },
+  {
+   "side": "east",
+   "u0": 700.0,
+   "u1": 2800.0,
+   "z0": 2300,
+   "shape": "pent"
+  }
+ ],
+ "ceiling": 2200,
+ "planNotes": [],
+ "projekts": {
+  "faze": "klients",
+  "modela_nosaukums": "Test2",
+  "tonis": "peleks",
+  "piragi": "ne"
+ },
+ "ceilingNote": "Griestu augstums zem mansarda 2200 mm, dzīvojamā istaba atvērta līdz jumtam.",
+ "winOk": [],
+ "loft": {
+  "level": 2364.5,
+  "rooms": [
+   {
+    "n": "Mansarda guļvieta",
+    "en": "Loft",
+    "r": [
+     [
+      283.5,
+      283.5,
+      5295.0,
+      1895.0
+     ],
+     [
+      283.5,
+      2178.5,
+      4295.0,
+      1038.0
+     ]
+    ]
+   },
+   {
+    "n": "Atvērts uz 1. stāvu",
+    "en": "Open to below",
+    "void": true,
+    "r": [
+     [
+      5578.5,
+      283.5,
+      5563.0,
+      2933.0
+     ],
+     [
+      4578.5,
+      2178.5,
+      1000.0,
+      1038.0
+     ]
+    ]
+   }
+  ],
+  "doors": [],
+  "windows": [
+   {
+    "len": 1000,
+    "sill": 2400,
+    "head": 2950,
+    "kind": "hopper",
+    "x": 0,
+    "y": 1250.0,
+    "o": "v",
+    "out": -1,
+    "side": "west"
+   },
+   {
+    "len": 2100.0,
+    "sill": 2300,
+    "head": 2900,
+    "kind": "fixed",
+    "shape": "gable",
+    "x": 11141.5,
+    "y": 700.0,
+    "o": "v",
+    "out": 1,
+    "side": "east"
+   }
+  ],
+  "furniture": [
+   [
+    "bed",
+    283.5,
+    1050.0,
+    2000,
+    1400,
+    "w"
+   ],
+   [
+    "Ln",
+    5578.5,
+    283.5,
+    5578.5,
+    2178.5,
+    {
+     "sw": 30
+    }
+   ],
+   [
+    "Ln",
+    4578.5,
+    2178.5,
+    5578.5,
+    2178.5,
+    {
+     "sw": 30
+    }
+   ],
+   [
+    "R",
+    4828.5,
+    2238.5,
+    500,
+    918.0
+   ],
+   [
+    "Ln",
+    4828.5,
+    2448.5,
+    5328.5,
+    2448.5,
+    {
+     "sw": 4
+    }
+   ],
+   [
+    "Ln",
+    4828.5,
+    2658.5,
+    5328.5,
+    2658.5,
+    {
+     "sw": 4
+    }
+   ],
+   [
+    "Ln",
+    4828.5,
+    2868.5,
+    5328.5,
+    2868.5,
+    {
+     "sw": 4
+    }
+   ],
+   [
+    "Ln",
+    5578.5,
+    283.5,
+    11141.5,
+    3216.5,
+    {
+     "dash": 1
+    }
+   ],
+   [
+    "Ln",
+    11141.5,
+    283.5,
+    5578.5,
+    3216.5,
+    {
+     "dash": 1
+    }
+   ]
+  ],
+  "stampAt": {
+   "0": [
+    2931.0,
+    700.0
+   ]
+  },
+  "stampScale": {
+   "0": 0.55
+  },
+  "levelAt": [
+   883.5,
+   683.5
+  ],
+  "ceilingNote": ""
+ },
+ "_planner": {
+  "forma": "II",
+  "tips": "guļamistaba galā, sanmezgls vidū",
+  "klase": "lidz60",
+  "apbuve_m2": 40.0,
+  "telpas": [
+   {
+    "n": "Guļamistaba",
+    "m2": 8.2
+   },
+   {
+    "n": "WC",
+    "m2": 3.9
+   },
+   {
+    "n": "Dzīvojamā istaba ar virtuvi",
+    "m2": 15.7
+   },
+   {
+    "n": "Priekšnams",
+    "m2": 2.6
+   }
+  ],
+  "mansards": true,
+  "rules_check": {
+   "kludas": 0,
+   "bridinajumi": 0,
+   "info": [
+    "[loft] loft ir guļvieta: maksimālais augstums 1035 mm (< 1800), var tikai gulēt/rāpot. Konkurentu loftiem 1.8+ m."
+   ]
+  },
+  "piezimes": [],
+  "vertejums": 2.48,
+  "plusi": [
+   "guļamistabas atdalītas no dzīvojamās",
+   "sanmezgls pie virtuves sienas"
+  ],
+  "vajas_vietas": [
+   "gaiteņi 2.6 m² (9%)",
+   "dzīvojamā šaura (2.9 m)"
+  ],
+  "nr": 1,
+  "loma": "optimālais",
+  "pamatojums": "Izvēlēts, jo guļamistabas atdalītas no dzīvojamās; sanmezgls pie virtuves sienas. Vājā vieta: gaiteņi 2.6 m² (9%).",
+  "nosaukums": "V01 II guļamistaba galā, sanmezgls vidū + mansards"
+ },
+ "entryInChain": true
+}
