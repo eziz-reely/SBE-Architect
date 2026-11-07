@@ -167,12 +167,77 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
 #v3side .v3b.pri, #v3views button[aria-pressed="true"] { color: #1f1b17; }
 #v3stage .v3msg { color: #fff; }
 @media (max-width: 800px) { #v3 { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; } }
+
+/* === Noformējuma pārskatīšana: plakans, blīvs, CAD līdzīgs izskats ===
+   Princips: viena akcenta krāsa tikai primārajai darbībai un izvēlei; 1px līnijas
+   nevis ēnas un apaļi stūri; mazi stūru rādiusi (3 px); ciparu tabulārā līdzināšana. */
+:root {
+  --r: 3px;
+  --gold: #8f7a54;           /* tumšāks, lai teksts uz tā un uz papīra ir lasāms */
+  --accent: #36312D;
+  --paper: #f5f4f1; --desk: #d9d6d0; --line: #d6d2ca; --field: #fff;
+}
+body { font-size: 13px; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+header { gap: 0; padding-block: 0; min-height: 44px; border-bottom: 1px solid #1f1c19; flex-wrap: nowrap; }
+header .mark { font-size: 12px; letter-spacing: .24em; color: #b9a67f; padding-right: 14px; margin-right: 14px; border-right: 1px solid #5a524a; line-height: 44px; }
+header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0; }
+header .tag { border: 0; border-radius: 0; padding: 0 0 0 12px; margin-left: 12px; border-left: 1px solid #5a524a; color: #a89d8c; font-size: 12px; }
+.tb { gap: 0; flex-wrap: nowrap; align-items: center; }
+button { border-radius: var(--r); padding: 7px 10px; font-size: 12.5px; }
+header .tb > button, header .tb > .expw > button { background: transparent; border-color: transparent; color: #e6dfd2; border-radius: var(--r); margin-right: 2px; }
+header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: #4a433d; }
+header .tb > #bFit { margin-left: 8px; padding-left: 12px; border-left: 1px solid #5a524a; border-radius: 0 var(--r) var(--r) 0; }
+header .tb > #b3d { margin-left: 8px; padding-left: 12px; border-left: 1px solid #5a524a; border-radius: 0 var(--r) var(--r) 0; }
+header button.pri { background: #e6dfd2; color: #1f1b17; border-color: #e6dfd2; margin-left: 10px; padding: 7px 16px; }
+header button.pri:hover:not(:disabled) { background: #fff; }
+.pop { border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.18); border-color: #bdb7ab; }
+.pop input[type=text], .pop .fg input { border-radius: var(--r); }
+.pop .seg { border-radius: var(--r); padding: 2px; }
+.pop .seg button { border-radius: 2px; }
+.pop .seg button[aria-checked="true"], .pop button.wide { background: var(--accent); color: #f4efe6; border-color: var(--accent); }
+.pop .seg button[aria-checked="true"] small { color: #c9bfae; }
+.pop button.it { border-radius: var(--r); }
+.pick input[type=color] { border-radius: var(--r); }
+main { grid-template-columns: 1fr 320px; }
+aside { border-left: 1px solid #bdb7ab; }
+.cap, .pop .pcap { font: 600 11px/1 var(--f-ui); letter-spacing: .08em; color: var(--muted); }
+.cap { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+input, select { border-radius: var(--r); padding: 5px 7px; font-size: 13px; }
+input:hover, select:hover { border-color: #b3ad9f; }
+.selcard { background: var(--paper); border-bottom: 1px solid #bdb7ab; }
+.selcard .sel-name { font-size: 15px; }
+.selcard .sel-name::before { border-radius: 0; width: 6px; height: 6px; }
+.selcard .empty::before { content: none; }
+.selcard .empty { font-size: 12.5px; }
+.tabs { padding-top: 0; gap: 0; border-bottom: 1px solid #bdb7ab; }
+.tabs button { font-size: 12.5px; padding: 11px 4px 10px; border-bottom-width: 2px; }
+.tabs button[aria-selected="true"] { border-bottom-color: var(--accent); }
+.badge { border-radius: 2px; min-width: 16px; line-height: 15px; padding: 0 4px; }
+.lib { gap: 4px; }
+.lib button { border-radius: var(--r); padding: 6px 8px; grid-template-columns: 30px 1fr; column-gap: 8px; background: var(--field); }
+.lib button svg { width: 30px; height: 24px; }
+.lib button:hover { border-color: var(--accent); background: #faf9f6; }
+.lib button.on { border-color: var(--mark); box-shadow: inset 2px 0 0 var(--mark); background: #fff7f2; }
+.row button { border-radius: var(--r); }
+.seg { border-radius: var(--r); }
+.seg button[aria-pressed="true"] { background: var(--accent); }
+.group { border-radius: var(--r); background: transparent; }
+.savebar { background: var(--paper); border-top: 1px solid #bdb7ab; }
+#check li { border-left-width: 2px; }
+kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
+#busy { border-radius: var(--r); }
+#v3side .v3b, #v3views button, #v3side select, #v3side input[type=number], #v3prompt { border-radius: var(--r); }
+#v3views button[aria-pressed="true"], #v3side .v3b.pri { background: var(--accent); border-color: var(--accent); color: #f4efe6; }
+#v3canvas { box-shadow: none; outline: 1px solid #4a433d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #d8cdb8; --paper: #242220; --desk: #161412; --line: #3a3631; --field: #2c2926; --gold: #b9a67f; }
+  :root:not([data-theme="light"]) .pop .seg button[aria-checked="true"], :root:not([data-theme="light"]) .pop button.wide, :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #1f1b17 } }
+@media (max-width: 760px) { main { grid-template-columns: 1fr; } header { flex-wrap: wrap; } .tb { flex-wrap: wrap; } }
 </style>
 
 <header>
   <span class="mark">MM HOMES</span>
   <h1 id="hName">Saule</h1>
-  <span class="tag" id="hTag">Skices labošana · tests</span>
+  <span class="tag" id="hTag">Skices labošana</span>
   <span class="sp"></span>
   <div class="tb">
     <button id="bUndo" type="button" title="Ctrl+Z" disabled>Atsaukt</button>
@@ -180,7 +245,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     <button id="bFit" type="button">Visa lapa</button>
     <button id="bReset" type="button">Atiestatīt</button>
     <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
-    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false">Rakstlaukums ▾</button>
+    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false">Rakstlaukums</button>
       <div id="tbp" class="pop" hidden role="dialog" aria-label="Rakstlaukums">
         <p class="pcap">Lapas</p>
         <div class="seg seg2" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
@@ -197,7 +262,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <input id="tbFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden>
         <p class="pnote" id="tbNote">PNG, JPG vai SVG. Rakstlaukuma tumšais lauks paliek arī bez logo.</p>
       </div></span>
-    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false">Eksportēt ▾</button>
+    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false">Eksportēt</button>
       <div id="exp" class="pop" hidden role="dialog" aria-label="Eksports">
         <p class="pcap">PDF rasējums · A3</p>
         <div class="seg" role="radiogroup" aria-label="Kvalitāte">
@@ -438,7 +503,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   function doUndo() { if (!undo.length) return; redo.push(model); model = undo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function doRedo() { if (!redo.length) return; undo.push(model); model = redo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function check() { if (sel && !itemOf(model, sel)) sel = null; }
-  function buttons() { $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana · tests"; }
+  function buttons() { $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
   $("bFit").onclick = () => { view = null; try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
