@@ -211,6 +211,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
         <button type="button" class="it" id="bJson"><b>model.json</b><small>Modeļa dati botam</small></button>
       </div></span>
+    <button id="bImp" type="button" title="Ielīmē AI (Gemini) uzģenerētu kodu, un māja tiek uzzīmēta">Importēt</button>
     <button id="b3d" type="button" title="3D skats, references PNG un Gemini prompts">3D un Gemini</button>
     <button id="bSave" class="pri" type="button">Saglabāt</button>
   </div>
@@ -433,6 +434,195 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   function doRedo() { if (!redo.length) return; undo.push(model); model = redo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function check() { if (sel && !itemOf(model, sel)) sel = null; }
   function buttons() { $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana · tests"; }
+
+  // ---- Importēt: ielīmē AI (piem. Gemini) no plāna ekrānšāviņa uzģenerētu kodu, un māja tiek uzbūvēta ----
+  const IMPORT_RULES = `Tu esi arhitektūras asistents. Es pievienošu viena stāva mājas plāna ekrānšāviņu. Atbildi TIKAI ar vienu JSON objektu (bez paskaidrojumiem), kurā ir mājas plāns manā formātā.
+
+KOORDINĀTAS UN VIENĪBAS
+- Visi izmēri milimetros. Sākumpunkts (0,0) ir mājas ārējais ziemeļrietumu stūris, x aug uz austrumiem (pa labi), y aug uz dienvidiem (uz leju).
+- "W" ir mājas garums pa x (ārējais), "D" platums pa y (ārējais). Ja plānā ir ārējie izmēri, izmanto tos.
+- Ārsienas biezums ir 283.5, starpsienas 195. Telpu taisnstūri [x, y, platums, augstums] ir TELPU IEKŠĒJIE izmēri. Ārsienas iekšpuse ir 283.5 no mājas malas, tātad telpas atrodas laukumā no 283.5 līdz W-283.5 un no 283.5 līdz D-283.5.
+- Starpsiena starp divām telpām NAV jāzīmē: tā ir 195 mm sprauga starp blakus telpu taisnstūriem (piem., viena telpa beidzas pie x=3228.9, nākamā sākas pie x=3423.9). Telpu daļas bez sienas starp tām (virtuve un dzīvojamā) ir viena telpa vai taisnstūri bez spraugas.
+- Ieejai jābūt dienvidu pusē (y = D). Ja plānā tā ir citur, plānu spoguļo, lai ieeja ir dienvidos.
+
+JSON LAUKI
+- "W", "D": skaitļi.
+- "rooms": saraksts [{"n": "Telpas nosaukums latviski", "en": "Room name in English", "r": [[x, y, w, h], ...]}]. L formas telpai vairāki taisnstūri bez spraugas starp tiem.
+- "doors": [{"x":..,"y":..,"o":"h" vai "v","w":platums,"th":sienas biezums,"hinge":"s" vai "e","side":1 vai -1,"entry":true tikai ārdurvīm}]. "o":"h" ir siena, kas iet pa x (horizontāla): x ir durvju sākums pa x, y ir sienas augšējā mala. "o":"v" ir vertikāla siena: y ir durvju sākums pa y, x ir sienas kreisā mala. Iekšdurvis w=800, th=195; ārdurvis w=1000, th=283.5 (y=D-283.5 dienvidu sienai).
+- "windows": [{"x":..,"y":..,"o":"h"|"v","len":platums,"sill":900,"head":2100,"kind":"tilt"|"hopper"|"fixed","side":"north"|"south"|"east"|"west"}]. Logi tikai ārsienās: ziemeļu siena y=0 (o="h"), dienvidu y=D-283.5 (o="h"), rietumu x=0 (o="v","out":-1), austrumu x=W-283.5 (o="v","out":1).
+- "furniture": nav obligāti (var atstāt []).
+Atbildi tikai ar JSON, bez markdown.`;
+  function importPrompt() {
+    const ex = { W: model.W, D: model.D, rooms: model.rooms.map(r => ({ n: r.n, en: r.en, r: r.r })), doors: model.doors, windows: model.windows.map(w => ({ x: w.x, y: w.y, o: w.o, len: w.len, sill: w.sill, head: w.head, kind: w.kind, side: w.side, ...(w.out ? { out: w.out } : {}) })), furniture: [] };
+    return IMPORT_RULES + "\n\nPIEMĒRS (cita māja šajā formātā):\n" + JSON.stringify(ex);
+  }
+  function importModel(txt) {
+    const errs = [], a = txt.indexOf("{"), z = txt.lastIndexOf("}");
+    let p; try { p = JSON.parse(txt.slice(a, z + 1)); } catch (e) { return { errs: ["Kods nav derīgs JSON: " + e.message] }; }
+    const T0 = Math.min(...BASE.rooms.flatMap(r => r.r.map(q => q[0]))), W = +p.W, D = +p.D;
+    if (!(W >= 3000 && W <= 30000) || !(D >= 2500 && D <= 20000)) errs.push("W un D jābūt skaitļiem milimetros (garums un platums).");
+    if (!Array.isArray(p.rooms) || !p.rooms.length) errs.push("Trūkst telpu saraksta \"rooms\".");
+    if (errs.length) return { errs };
+    const num = v => typeof v === "number" && isFinite(v);
+    const rooms = p.rooms.map((rm, i) => ({ n: rm.n || "Telpa " + (i + 1), en: rm.en || rm.n || "Room " + (i + 1), r: (rm.r || []).map(q => q.map(Number)) }));
+    rooms.forEach(rm => { if (!rm.r.length) errs.push(`Telpai "${rm.n}" nav taisnstūra.`); rm.r.forEach(q => {
+      if (q.length !== 4 || !q.every(num) || q[2] < 300 || q[3] < 300) errs.push(`Telpa "${rm.n}": nederīgs taisnstūris [${q}].`);
+      else if (q[0] < T0 - 5 || q[1] < T0 - 5 || q[0] + q[2] > W - T0 + 5 || q[1] + q[3] > D - T0 + 5) errs.push(`Telpa "${rm.n}" iziet ārpus mājas iekšpuses (${T0}–${W - T0} × ${T0}–${D - T0}).`); }); });
+    if (errs.length) return { errs };
+    const th = (o, ent) => o.th || (ent ? T0 : 195);
+    const doors = (p.doors || []).map(d => ({ hinge: "s", side: 1, ...d, o: d.o === "v" ? "v" : "h", w: +d.w || (d.entry ? 1000 : 800), th: th(d, d.entry), x: +d.x, y: +d.y }));
+    doors.forEach((d, i) => { if (!num(d.x) || !num(d.y)) errs.push(`Durvis ${i + 1}: trūkst x vai y.`); });
+    const windows = (p.windows || []).map(w => { const o = w.o === "v" ? "v" : "h", side = w.side || (o === "h" ? ((+w.y || 0) < D / 2 ? "north" : "south") : ((+w.x || 0) < W / 2 ? "west" : "east"));
+      const q = { kind: "tilt", sill: 900, head: 2100, ...w, o, side, len: +w.len || 1000, x: +w.x, y: +w.y }; if (o === "v" && q.out == null) q.out = side === "west" ? -1 : 1; return q; });
+    windows.forEach((w, i) => { if (!num(w.x) || !num(w.y)) errs.push(`Logs ${i + 1}: trūkst x vai y.`); });
+    if (errs.length) return { errs };
+    const big = rm => rm.r.slice().sort((x, y) => y[2] * y[3] - x[2] * x[3])[0], stampAt = {}, stampScale = {};
+    rooms.forEach((rm, i) => { const q = big(rm); stampAt[i] = [+(q[0] + q[2] / 2).toFixed(1), +(q[1] + q[3] / 2).toFixed(1)]; stampScale[i] = 0.4; });
+    const n = { id: model.id, nosaukums: model.nosaukums, platiba_grupa: model.platiba_grupa, ievade: { garums: W, platums: D, augstums: +p.augstums || (model.ievade || {}).augstums || 5000 }, W, D,
+      jumts: { forma: "divslipju", pitch: (model.jumts || {}).pitch || 30, ov: (model.jumts || {}).ov || 0 }, rooms, doors, windows, furniture: Array.isArray(p.furniture) ? p.furniture : [],
+      axes: { x: [[0, "1"], [W, "2"]], y: [[0, "A"], [D, "B"]] }, stampAt, stampScale, levelAt: [T0 + 1700, T0 + 1700], innerDims: [], wallTags: [], sections: [], gableWins: Array.isArray(p.gableWins) ? p.gableWins : [],
+      ceiling: model.ceiling, ceilingNote: model.ceilingNote || "", planNotes: [], projekts: clone(model.projekts || {}), winOk: [], entryInChain: true };
+    roofFix(n);
+    return { n, errs, notes: [`${rooms.length} telpas, ${doors.length} durvis, ${windows.length} logi.`] };
+  }
+  function openImport() {
+    if (document.getElementById("impBox")) return;
+    const ov = document.createElement("div"); ov.id = "impBox"; ov.style.cssText = "position:fixed;inset:0;background:rgba(30,26,22,.55);z-index:99;display:flex;align-items:center;justify-content:center;padding:12px";
+    const bx = document.createElement("div"); bx.style.cssText = "background:#faf8f4;max-width:720px;width:100%;max-height:92vh;overflow:auto;border-radius:10px;padding:16px;font:14px/1.4 Barlow,sans-serif;color:#2a2622";
+    bx.innerHTML = `<b style="font-size:16px">Importēt māju no koda</b><ol style="margin:8px 0 8px 18px;padding:0"><li>Nospied "Kopēt Gemini promptu".</li><li>Gemini (vai citā AI) pievieno plāna ekrānšāviņu un ielīmē promptu.</li><li>Atbildi (JSON kodu) ielīmē zemāk un nospied "Importēt".</li></ol>
+      <fieldset style="margin:8px 0;padding:8px;border:1px solid #d8d2c8;border-radius:6px"><legend style="font-size:13px">Vai ļaut AI pašam uzģenerēt (ar savu API atslēgu)</legend>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <label style="font-size:12px">Pakalpojums<select id="aiProv" style="width:100%"><option value="claude">Claude (Anthropic)</option><option value="gemini">Gemini (Google)</option><option value="grok">Grok (xAI)</option><option value="openai">OpenAI</option><option value="custom">Cits (OpenAI saderīgs)</option></select></label>
+          <label style="font-size:12px">Modelis<input id="aiModel" type="text" style="width:100%;box-sizing:border-box"></label>
+          <label style="font-size:12px;grid-column:1/3" id="aiBaseW" hidden>Adrese (base URL)<input id="aiBase" type="text" placeholder="https://.../v1" style="width:100%;box-sizing:border-box"></label>
+          <label style="font-size:12px;grid-column:1/3">API atslēga<input id="aiKey" type="password" autocomplete="off" style="width:100%;box-sizing:border-box"></label>
+        </div>
+        <label style="font-size:12px;display:block;margin-top:4px"><input id="aiRem" type="checkbox"> Atcerēties atslēgu šajā ierīcē (glabājas tikai šajā pārlūkā, uz nekurieni citur netiek sūtīta)</label>
+        <label style="font-size:12px;display:block;margin-top:4px">Plāna attēls (ekrānšāviņš)<input id="aiImg" type="file" accept="image/*" style="width:100%"></label>
+        <div style="margin-top:6px"><button type="button" id="aiGo" class="pri">Ģenerēt ar AI un importēt</button> <span id="aiBusy" style="font-size:12px"></span></div>
+      </fieldset>
+      <textarea id="impTxt" spellcheck="false" placeholder="Vai ielīmē JSON kodu šeit" style="width:100%;height:180px;box-sizing:border-box;font:12px monospace;padding:6px"></textarea>
+      <div id="impMsg" style="margin:6px 0;min-height:18px;font-size:13px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="impCopy">Kopēt Gemini promptu</button><button type="button" id="impGo" class="pri">Importēt</button><button type="button" id="impClose">Aizvērt</button></div>
+      <p style="font-size:12px;color:#665">Importējot pašreizējais zīmējums tiek aizstāts (Atsaukt to atgriež). Mēbeles pievieno pēc tam no bibliotēkas. API atslēgu neglabā ne modelī, ne eksportos.</p>`;
+    ov.appendChild(bx); document.body.appendChild(ov);
+    const msg = (t, bad) => { const m = $("impMsg"); m.textContent = t; m.style.color = bad ? "#b3261e" : "#2b7a3d"; };
+    // ---- AI pieslēgums: atslēga paliek pārlūkā (localStorage), pieprasījums iet tieši uz izvēlēto pakalpojumu ----
+    const AI = { claude: { m: "claude-sonnet-5-5" }, gemini: { m: "gemini-2.5-pro" }, grok: { m: "grok-4", b: "https://api.x.ai/v1" }, openai: { m: "gpt-4.1", b: "https://api.openai.com/v1" }, custom: { m: "", b: "" } };
+    let cfg = {}; try { cfg = JSON.parse(localStorage.getItem("mmAiCfg") || "{}"); } catch (e) {}
+    const prov = () => $("aiProv").value;
+    const fillAi = () => { const p = prov(), c = (cfg[p] || {}); $("aiModel").value = c.model || AI[p].m; $("aiKey").value = c.key || ""; $("aiBase").value = c.base || AI[p].b || ""; $("aiBaseW").hidden = p !== "custom"; $("aiRem").checked = !!c.key; };
+    $("aiProv").value = cfg.last || "claude"; fillAi(); $("aiProv").onchange = fillAi;
+    const saveAi = () => { const p = prov(); cfg.last = p; if ($("aiRem").checked) cfg[p] = { model: $("aiModel").value.trim(), key: $("aiKey").value.trim(), base: $("aiBase").value.trim() }; else delete cfg[p]; try { localStorage.setItem("mmAiCfg", JSON.stringify(cfg)); } catch (e) {} };
+    const readImg = file => new Promise((res, rej) => {   // samazina līdz 2000 px garākajā malā
+      const fr = new FileReader(); fr.onerror = () => rej(new Error("Attēlu neizdevās nolasīt.")); fr.onload = () => { const im = new Image(); im.onerror = () => rej(new Error("Nederīgs attēls.")); im.onload = () => {
+        const k = Math.min(1, 2000 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+        res(c.toDataURL("image/jpeg", 0.9)); }; im.src = fr.result; }; fr.readAsDataURL(file); });
+    $("aiGo").onclick = async () => {
+      const p = prov(), model = $("aiModel").value.trim(), key = $("aiKey").value.trim(), base = $("aiBase").value.trim(), f = $("aiImg").files[0], busy = $("aiBusy");
+      if (!key) { msg("Ievadi API atslēgu.", true); return; } if (!model) { msg("Ievadi modeli.", true); return; } if (p === "custom" && !base) { msg("Ievadi adresi (base URL).", true); return; } if (!f) { msg("Pievieno plāna attēlu.", true); return; }
+      const go = $("aiGo"); saveAi(); go.disabled = true; busy.textContent = "AI strādā…"; msg("");
+      try {
+        const data = await readImg(f), out = await callAi(p, model, key, base, data, importPrompt());
+        $("impTxt").value = out; const r = importModel(out);
+        if (!r.n) { msg("AI atbilde nederēja: " + r.errs.join(" ") + " Vari to izlabot laukā vai mēģināt vēlreiz.", true); }
+        else { sel = null; ov.remove(); commit(r.n); status("Importēts no AI: " + r.notes[0] + " Salīdzini ar oriģinālu."); }
+      } catch (e) { msg("Neizdevās: " + e.message + (/fetch|network|Failed/i.test(e.message) ? " (iespējams, šī lapa neļauj savienoties ar pakalpojumu; atver failu datorā vai izmanto kopēšanu)" : ""), true); }
+      go.disabled = false; busy.textContent = "";
+    };
+    $("impClose").onclick = () => ov.remove();
+    $("impCopy").onclick = async () => { try { await navigator.clipboard.writeText(importPrompt()); msg("Prompts nokopēts."); } catch (e) { $("impTxt").value = importPrompt(); $("impTxt").select(); msg("Nokopē promptu no lauka (Ctrl+C) un ievieto AI.", false); } };
+    $("impGo").onclick = () => {
+      const t = $("impTxt").value.trim(); if (!t) { msg("Ielīmē kodu.", true); return; }
+      const r = importModel(t); if (!r.n) { msg(r.errs.join(" "), true); return; }
+      sel = null; ov.remove(); commit(r.n); status("Importēts: " + r.notes[0] + " Pārbaudi cilni Pārbaude.");
+    };
+  }
+  $("bImp").onclick = openImport;
+  async function callAi(p, model, key, base, dataUrl, prompt) {
+    const b64 = dataUrl ? dataUrl.split(",")[1] : null, j = r => r.json().catch(() => ({}));
+    if (p === "claude") {
+      const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
+        body: JSON.stringify({ model, max_tokens: 16000, messages: [{ role: "user", content: [...(b64 ? [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } }] : []), { type: "text", text: prompt }] }] }) });
+      const d = await j(r); if (!r.ok) throw new Error((d.error && d.error.message) || "Kļūda " + r.status); return (d.content || []).map(x => x.text || "").join("");
+    }
+    if (p === "gemini") {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, { method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": key },
+        body: JSON.stringify({ contents: [{ parts: [...(b64 ? [{ inline_data: { mime_type: "image/jpeg", data: b64 } }] : []), { text: prompt }] }] }) });
+      const d = await j(r); if (!r.ok) throw new Error((d.error && d.error.message) || "Kļūda " + r.status); return ((((d.candidates || [])[0] || {}).content || {}).parts || []).map(x => x.text || "").join("");
+    }
+    const url = (base || "").replace(/\/+$/, "") + "/chat/completions";
+    const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + key },
+      body: JSON.stringify({ model, messages: [{ role: "user", content: [...(dataUrl ? [{ type: "image_url", image_url: { url: dataUrl } }] : []), { type: "text", text: prompt }] }] }) });
+    const d = await j(r); if (!r.ok) throw new Error((d.error && (d.error.message || d.error)) || "Kļūda " + r.status); return (((d.choices || [])[0] || {}).message || {}).content || "";
+  }
+
+  // ---------- Spraudņi: AI uzrakstīti redaktora uzlabojumi (glabājas pārlūkā) ----------
+  const PL_KEY = "mmPlugins", AI_DEF = { claude: "claude-sonnet-5-5", gemini: "gemini-2.5-pro", grok: "grok-4", openai: "gpt-4.1", custom: "" }, AI_BASE = { grok: "https://api.x.ai/v1", openai: "https://api.openai.com/v1" };
+  const plLoad = () => { try { return JSON.parse(localStorage.getItem(PL_KEY) || "[]"); } catch (e) { return []; } };
+  const plSave = l => { try { localStorage.setItem(PL_KEY, JSON.stringify(l)); } catch (e) {} };
+  const SAFE = /[#&?]safe\b/.test(location.href);
+  const MMAPI = {
+    get model() { return model; }, clone, commit: n => commit(n), status: t => status(t), toFrame,
+    addButton(label, fn, title) { const b = document.createElement("button"); b.type = "button"; b.textContent = label; if (title) b.title = title; b.onclick = () => { try { fn(); } catch (e) { status("Spraudņa kļūda: " + e.message); } }; $("bImp").after(b); return b; },
+    onKey(fn) { document.addEventListener("keydown", e => { if (/INPUT|TEXTAREA|SELECT/.test((e.target || {}).tagName || "")) return; try { fn(e); } catch (er) { status("Spraudņa kļūda: " + er.message); } }); }
+  };
+  function plRun(pl) { try { new Function("MM", pl.code)(MMAPI); return null; } catch (e) { return e.message; } }
+  function plStart() { if (SAFE) { status("Drošais režīms: spraudņi izslēgti."); return; } plLoad().filter(x => x.on).forEach(x => { const er = plRun(x); if (er) status("Spraudnis \"" + x.name + "\" neizdevās: " + er); }); }
+  const PL_RULES = `Tu raksti mazu JavaScript spraudni MM Homes mājas zīmējumu redaktoram. Spraudnis ir funkcijas ķermenis ar vienu argumentu MM. Atbildi TIKAI ar JavaScript kodu, bez markdown un bez paskaidrojumiem.
+
+MM API:
+- MM.model: pašreizējais modelis (tikai lasīšanai): {W, D, rooms:[{n,en,r:[[x,y,w,h]]}], doors:[{x,y,o:"h"|"v",w,th,hinge,side,entry}], windows:[{x,y,o,len,sill,head,kind,side}], furniture:[...], jumts, projekts}. Izmēri milimetros, sākumpunkts ziemeļrietumu stūris.
+- MM.clone(obj): dziļa kopija. Izmaiņas veic uz kopijas: const m = MM.clone(MM.model); ...; MM.commit(m); commit vienā solī pievieno atsaukšanas vēsturei un pārzīmē.
+- MM.status(teksts): ziņa statusa joslā.
+- MM.addButton(nosaukums, funkcija, paskaidrojums): pievieno pogu rīkjoslai.
+- MM.onKey(funkcija(e)): reaģē uz taustiņiem (nevis tad, ja fokuss ir ievades laukā).
+Nelieto fetch, localStorage, eval un ārējus skriptus. Ja vēlme nav iespējama ar šo API, atbildi ar vienu rindu: // NEIESPĒJAMS: iemesls`;
+  function openPlugins() {
+    if (document.getElementById("plBox")) return;
+    let cfg = {}; try { cfg = JSON.parse(localStorage.getItem("mmAiCfg") || "{}"); } catch (e) {}
+    const lp = cfg.last || "claude", c0 = cfg[lp] || {};
+    const ov = document.createElement("div"); ov.id = "plBox"; ov.style.cssText = "position:fixed;inset:0;background:rgba(30,26,22,.55);z-index:99;display:flex;align-items:center;justify-content:center;padding:12px";
+    const bx = document.createElement("div"); bx.style.cssText = "background:#faf8f4;max-width:720px;width:100%;max-height:92vh;overflow:auto;border-radius:10px;padding:16px;font:14px/1.4 Barlow,sans-serif;color:#2a2622";
+    bx.innerHTML = `<b style="font-size:16px">Uzlabot redaktoru ar AI</b>
+      <p style="font-size:13px;margin:6px 0">Apraksti, ko redaktoram pievienot vai mainīt. AI uzraksta spraudni, tu to apskati un pieņem. Izmanto to pašu atslēgu, ko ievadīji importā${c0.key ? " (" + lp + ")" : ""}.</p>
+      <textarea id="plReq" placeholder="Piem.: pievieno pogu, kas visas mēbeles pabīda 100 mm uz ziemeļiem" style="width:100%;height:80px;box-sizing:border-box;padding:6px"></textarea>
+      ${c0.key ? "" : '<label style="font-size:12px">API atslēga (' + lp + ')<input id="plKey" type="password" autocomplete="off" style="width:100%;box-sizing:border-box"></label>'}
+      <div style="margin:6px 0"><button type="button" id="plGen" class="pri">Uzrakstīt spraudni</button> <span id="plBusy" style="font-size:12px"></span></div>
+      <textarea id="plCode" spellcheck="false" placeholder="Šeit parādīsies kods. Vari to arī ielīmēt pats (piem., no Claude vai cita AI)." style="width:100%;height:170px;box-sizing:border-box;font:12px monospace;padding:6px"></textarea>
+      <input id="plName" type="text" placeholder="Spraudņa nosaukums" style="width:100%;box-sizing:border-box;margin:4px 0">
+      <div id="plMsg" style="min-height:18px;font-size:13px"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="plAdd" class="pri">Pievienot un ieslēgt</button><button type="button" id="plClose">Aizvērt</button></div>
+      <p style="margin:10px 0 4px"><b>Mani spraudņi</b></p><div id="plList" style="font-size:13px"></div>
+      <p style="font-size:12px;color:#665">Spraudņi darbojas ar pilnām lapas tiesībām, tāpēc pārbaudi kodu pirms pievienošanas un neieliec svešu kodu, ko nesaproti. Ja kaut kas salūzt, atver redaktoru ar #safe adreses beigās.</p>`;
+    ov.appendChild(bx); document.body.appendChild(ov);
+    const msg = (t, bad) => { const m = $("plMsg"); m.textContent = t; m.style.color = bad ? "#b3261e" : "#2b7a3d"; };
+    const list = () => { const L = plLoad(), el = $("plList"); el.innerHTML = L.length ? "" : "Vēl nav."; L.forEach((x, i) => { const r = document.createElement("div"); r.style.cssText = "display:flex;gap:6px;align-items:center;margin:3px 0";
+      const lb = document.createElement("label"); lb.style.flex = "1"; const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = x.on; cb.onchange = () => { const l = plLoad(); l[i].on = cb.checked; plSave(l); msg("Izmaiņa stāsies spēkā pēc lapas pārlādes."); };
+      lb.append(cb, " " + x.name); const sh = document.createElement("button"); sh.type = "button"; sh.textContent = "Kods"; sh.onclick = () => { $("plCode").value = x.code; $("plName").value = x.name; };
+      const dl = document.createElement("button"); dl.type = "button"; dl.textContent = "Dzēst"; dl.onclick = () => { const l = plLoad(); l.splice(i, 1); plSave(l); list(); msg("Dzēsts. Pārlādē lapu, lai pazūd pogas."); }; r.append(lb, sh, dl); el.appendChild(r); }); };
+    list();
+    $("plClose").onclick = () => ov.remove();
+    $("plGen").onclick = async () => {
+      const req = $("plReq").value.trim(), key = c0.key || ($("plKey") || {}).value; if (!req) { msg("Apraksti vēlmi.", true); return; } if (!key) { msg("Trūkst API atslēgas.", true); return; }
+      const go = $("plGen"); go.disabled = true; $("plBusy").textContent = "AI strādā…"; msg("");
+      try {
+        const ex = JSON.stringify({ W: model.W, D: model.D, rooms: model.rooms.length, doors: model.doors.length, windows: model.windows.length, furniture: (model.furniture || []).slice(0, 2) });
+        let out = await callAi(lp, c0.model || AI_DEF[lp], key, c0.base || AI_BASE[lp] || "", null, PL_RULES + "\n\nModeļa piemērs (saīsināts): " + ex + "\n\nVĒLME: " + req);
+        out = out.replace(/^```[a-z]*\n?/i, "").replace(/```\s*$/, "").trim(); $("plCode").value = out; if (!$("plName").value) $("plName").value = req.slice(0, 40);
+        const no = /^\/\/ NEIESPĒJAMS/.test(out); msg(no ? "AI saka, ka tas nav iespējams ar šo API." : "Kods gatavs. Pārskati un nospied \"Pievienot un ieslēgt\".", no);
+      } catch (e) { msg("Neizdevās: " + e.message, true); }
+      go.disabled = false; $("plBusy").textContent = "";
+    };
+    $("plAdd").onclick = () => {
+      const code = $("plCode").value.trim(), name = $("plName").value.trim() || "Spraudnis"; if (!code) { msg("Nav koda.", true); return; }
+      try { new Function("MM", code); } catch (e) { msg("Kodā ir kļūda: " + e.message, true); return; }
+      const pl = { id: Date.now(), name, code, on: true }, er = plRun(pl); if (er) { msg("Spraudnis neizdevās: " + er, true); return; }
+      const l = plLoad(); l.push(pl); plSave(l); list(); msg("Pievienots un darbojas."); $("plCode").value = ""; $("plName").value = "";
+    };
+  }
+  const bPl = document.createElement("button"); bPl.type = "button"; bPl.id = "bPl"; bPl.textContent = "AI uzlabojumi"; bPl.title = "Lūdz AI pievienot redaktoram jaunu funkciju"; $("bImp").after(bPl); bPl.onclick = openPlugins;
+  plStart();
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
   $("bFit").onclick = () => { view = null; try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
