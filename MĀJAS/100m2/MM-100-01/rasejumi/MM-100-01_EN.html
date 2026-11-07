@@ -3444,7 +3444,7 @@ if (window.PRINT_MODE && rp) {
 }
 })();
 </script>
-<style>@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}</style><style>html{overflow:hidden;background:#e9e7e2}body{transform-origin:0 0;margin:0;cursor:grab}body.mmdrag{cursor:grabbing}
+<style>@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}</style><style>html{overflow:hidden;background:#e9e7e2;touch-action:none}body{touch-action:none;transform-origin:0 0;margin:0;cursor:grab}body.mmdrag{cursor:grabbing}
 @media print{html{overflow:visible!important;background:none}body{transform:none!important;cursor:auto}}</style>
 <script>(function(){var b=document.body,s=1,x=0,y=0,d=null,fit=1;
 function ap(){b.style.transform='translate('+x+'px,'+y+'px) scale('+s+')';if(window.MMZ_ON)MMZ_ON()}
@@ -3456,7 +3456,14 @@ window.MMZ.reset=function(){MMZ_INIT=null;reset()};
 addEventListener('load',function(){setTimeout(reset,50)});addEventListener('resize',function(){if(!window.MM_ED)reset()});
 addEventListener('wheel',function(e){e.preventDefault();var k=Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),n=Math.min(Math.max(s*k,fit*.5),fit*12);k=n/s;
 x=e.clientX-(e.clientX-x)*k;y=e.clientY-(e.clientY-y)*k;s=n;ap()},{passive:false});
-addEventListener('pointerdown',function(e){if(window.MMZ_HOOK&&MMZ_HOOK(e))return;d=[e.clientX-x,e.clientY-y];b.classList.add('mmdrag')});
-addEventListener('pointermove',function(e){if(d){x=e.clientX-d[0];y=e.clientY-d[1];ap()}});
-addEventListener('pointerup',function(){d=null;b.classList.remove('mmdrag')});
+var P={},pc=null;   /* [MM] telefons: divu pirkstu tuvināšana un bīdīšana */
+function two(){var k=Object.keys(P);return k.length>=2?[P[k[0]],P[k[1]]]:null}
+function mid(t){return{x:(t[0][0]+t[1][0])/2,y:(t[0][1]+t[1][1])/2,r:Math.hypot(t[0][0]-t[1][0],t[0][1]-t[1][1])||1}}
+addEventListener('pointerdown',function(e){P[e.pointerId]=[e.clientX,e.clientY];var t=two();if(t){d=null;b.classList.remove('mmdrag');if(window.MMZ_CANCEL)MMZ_CANCEL();pc=mid(t);return}
+if(window.MMZ_HOOK&&MMZ_HOOK(e))return;d=[e.clientX-x,e.clientY-y];b.classList.add('mmdrag')});
+addEventListener('pointermove',function(e){if(P[e.pointerId])P[e.pointerId]=[e.clientX,e.clientY];var t=two();
+if(t&&pc){var m=mid(t),n=Math.min(Math.max(s*m.r/pc.r,fit*.5),fit*12),k=n/s;x=m.x-(pc.x-x)*k;y=m.y-(pc.y-y)*k;s=n;pc=m;ap();return}
+if(d){x=e.clientX-d[0];y=e.clientY-d[1];ap()}});
+function up(e){delete P[e.pointerId];if(Object.keys(P).length<2)pc=null;d=null;b.classList.remove('mmdrag')}
+addEventListener('pointerup',up);addEventListener('pointercancel',up);
 addEventListener('dblclick',function(e){if(window.MM_ED)return;reset()})})()</script></body></html>
