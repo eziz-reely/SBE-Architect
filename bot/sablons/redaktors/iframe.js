@@ -927,7 +927,9 @@
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
       drag.u = Math.max(0, Math.min(X ? M.D : M.W, snapAx("main", X ? "y" : "x", X ? p[1] : p[0], 150)));
       o.querySelectorAll(".gh").forEach(q => q.remove()); const g = mk(o, "g", { class: "gh" }), a = Math.min(drag.fixed, drag.u), b = Math.max(drag.fixed, drag.u);
-      rect(g, X ? [hw.w.lo, a, hw.w.hi, b] : [a, hw.w.lo, b, hw.w.hi], true, k, 0); label(g, X ? hw.w.hi : a, X ? a : hw.w.lo - 2.2 / k, `${Math.round(b - a)} mm`, k); return;
+      rect(g, X ? [hw.w.lo, a, hw.w.hi, b] : [a, hw.w.lo, b, hw.w.hi], true, k, 0); let msg = `${Math.round(b - a)} mm`;
+      if (Math.abs(drag.u - drag.e0) >= 10) { const rr = moveWallEnd(clone(M), Object.assign({}, hw.w, { endIdx: drag.ix }), drag.e0, drag.u, (drag.e0 + drag.fixed) / 2); if (rr.err) msg += "  ✕ " + rr.err; }
+      label(g, X ? hw.w.hi : a, X ? a : hw.w.lo - 2.2 / k, msg, k); return;
     }
     if (drag && drag.gi != null) {
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
@@ -994,6 +996,11 @@
       clip = list; post({ t: "clip", clip: list, n: list.length }); return;
     }
     if ((e.ctrlKey || e.metaKey) && /^[vV]$/.test(e.key) && clip && clip.length) { e.preventDefault(); const r = pasteGrp(clip); sel = r.sel; post({ t: "edit", model: r.N, sel }); return; }
+    if (!sel && (e.key === "Delete" || e.key === "Backspace") && hovWall) {   // starpsienas posms zem kursora: Delete to izgriež
+      e.preventDefault(); const hw = hovWall, N = clone(M), wp = wallPair([(hw.w.lo + hw.w.hi) / 2, (hw.seg[0] + hw.seg[1]) / 2]);
+      const r = wp ? cutWall(N, wp, hw.seg[0], hw.seg[1]) : { err: "Siena nav atrasta." };
+      if (r.err) post({ t: "hint", text: r.err }); else post({ t: "edit", model: r.N || N, sel: null }); return;
+    }
     if (!sel) return;
     if (e.key === "Escape") { sel = null; drawSel(); post({ t: "sel", sel: null }); return; }
     if ((e.key === "Delete" || e.key === "Backspace") && sel.more && sel.more.length) { e.preventDefault(); delGrp(); return; }

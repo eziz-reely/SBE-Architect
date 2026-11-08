@@ -565,7 +565,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "undo") doUndo();
     else if (d.t === "redo") doRedo();
     else if (d.t === "delete") del();
-    else if (d.t === "hint") $("hint").textContent = d.text;
+    else if (d.t === "hint") { $("hint").textContent = d.text; if (d.text) status(d.text); }
     else if (d.t === "placed") endPlace();
     else if (d.t === "key" && d.k === "combo") { const a = ACTIONS.find(x => keyMap[x.id] === d.c); if (a) a.run(); }
     else if (d.t === "key" && d.k === "dim") startDim();
@@ -590,6 +590,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (e.key === "Escape" && placing) { endPlace(); toFrame({ mmPlace: null }); }
     else if (e.key === "Escape" && sel) { sel = null; panel(); toFrame({ mmDesel: 1 }); }
     if (keyCap) return;
+    if ((e.key === "Delete" || e.key === "Backspace") && sel && !e.ctrlKey && !e.metaKey) { e.preventDefault(); del(); return; }
     if (!e.ctrlKey && !e.metaKey && !e.altKey) { const a = ACTIONS.find(x => keyMap[x.id] === comboOf(e)); if (a) { e.preventDefault(); a.run(); } }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); doRedo(); }
