@@ -848,11 +848,14 @@ function elevation(parent, v, side, opt = { levels: true }) {
       el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: dc, "stroke-width": 10 }, g);
       const t = T_(g, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", dc);
     } else if (d.k === "lin") {
-      const h = d.o === "h", pa = (d.p || [0, 0]);
-      const ex = (c, pv) => el("line", { x1: h ? c : pv, y1: h ? -pv : c, x2: h ? c : d.at, y2: h ? d.at : c, stroke: dc, "stroke-width": 5 }, g);
+      const h = d.o === "h", pa = (d.p || [0, 0]), at = d.at;
+      // izvadlīnijas: īsas, no 100 mm atstarpes pie fasādes līdz 150 mm aiz mēra līnijas (neiet cauri fasādei un citiem mēriem)
+      const startOf = pv => { if (h) return at < Math.min(pv, 0) ? -100 : pv + (at > pv ? 100 : -100); return at > span ? span + 100 : at < 0 ? -100 : pv + (at > pv ? 100 : -100); };
+      const endOf = (st) => at + (st < at ? 150 : -150);
+      const ex = (c, pv) => { const st = startOf(pv), en = endOf(st); el("line", h ? { x1: c, y1: -st, x2: c, y2: -en, stroke: dc, "stroke-width": 5 } : { x1: st, y1: -c, x2: en, y2: -c, stroke: dc, "stroke-width": 5 }, g); };
+      ex(d.a, pa[0]); ex(d.b, pa[1]);
       window.__dimC = d.c || null;
-      if (h) { ex(d.a, pa[0]); ex(d.b, pa[1]); chainCad(g, [d.a, d.b], "x", -d.at); }
-      else { el("line", { x1: pa[0], y1: -d.a, x2: d.at, y2: -d.a, stroke: dc, "stroke-width": 5 }, g); el("line", { x1: pa[1], y1: -d.b, x2: d.at, y2: -d.b, stroke: dc, "stroke-width": 5 }, g); chainCad(g, [-d.b, -d.a], "y", d.at); }
+      if (h) chainCad(g, [d.a, d.b], "x", -at); else chainCad(g, [-d.b, -d.a], "y", at);
       window.__dimC = null;
     }
   });

@@ -1439,10 +1439,11 @@
         const H = Math.abs(q.u - a.u) >= Math.abs(q.z - a.z), x2 = H ? q.u : a.u, y2 = H ? -a.z : -q.z;
         mk(g, "line", { x1: a.u, y1: -a.z, x2, y2, stroke: ACC, "stroke-width": 0.5 / k });
         label(g, (a.u + x2) / 2, (-a.z + y2) / 2 - 2 / k, `${Math.round(H ? Math.abs(q.u - a.u) : Math.abs(q.z - a.z))} mm`, k);
+        label(g, q.u + 6 / k, -q.z - 3 / k, "±0 → " + zTxt(q.z), k);
       } else if (!a || !place.fm) {   // augstuma atzīme no ±0,000 redzama jau pie kursora
-        const x0 = sp + ov + 150, lx = sp + ov + 1300;
-        mk(g, "line", Object.assign({ x1: -300, y1: -q.z, x2: x0 + 1150, y2: -q.z }, st, { "stroke-dasharray": `${1.2 / k} ${0.9 / k}`, opacity: 0.55 }));
-        label(g, lx + 200, -q.z - 1.2 / k, zTxt(q.z), k);
+        const lx = sp + ov + 1300;
+        mk(g, "line", Object.assign({ x1: -300, y1: -q.z, x2: lx, y2: -q.z }, st, { "stroke-dasharray": `${1.2 / k} ${0.9 / k}`, opacity: 0.55 }));
+        label(g, q.u + 6 / k, -q.z - 3 / k, "±0 → " + zTxt(q.z), k);
       }
       return true;
     }
