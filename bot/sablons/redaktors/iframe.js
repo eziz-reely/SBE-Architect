@@ -209,12 +209,19 @@
   // elements zem kursora: gaiši zils, lai redz, ko paņems klikšķis
   let hovKey = "";
   function hover(h) {
-    const key = h ? [h.it.k, h.it.i, h.it.lv, h.bl.type, h.it.w ? h.it.w.lo : ""].join("|") : "";
+    const key = h ? [h.it.k, h.it.i, h.it.lv, h.bl.type, h.it.w ? h.it.w.lo : "", h.it.w && h.it.w.v0 != null ? Math.round(h.it.w.axis === "x" ? h.p[1] / 200 : h.p[0] / 200) : ""].join("|") : "";
+    if (!h) hovWall = null;
     if (key === hovKey) return; hovKey = key;
     document.querySelectorAll("g.mm-ov .hv").forEach(x => x.remove());
     if (!h || !h.it || !h.it.b || same(h.it, sel)) return;
     const k = ek(h.bl), b = h.it.b.slice();
     if (h.it.k === "wall") { b[0] = Math.max(b[0], 0); b[2] = Math.min(b[2], M.W); b[1] = Math.max(b[1], 0); b[3] = Math.min(b[3], M.D); }
+    if (h.it.k === "wall" && !h.it.w.ext && h.it.w.v0 != null) {
+      const w = h.it.w, X = w.axis === "x", u = X ? h.p[1] : h.p[0], segs = wallSegs(w); let best = -1, bd = 1e9;
+      segs.forEach((q, i) => { const d = u < q[0] ? q[0] - u : u > q[1] ? u - q[1] : 0; if (d < bd) { bd = d; best = i; } });
+      if (best >= 0) { hovWall = { bl: h.bl, w, seg: segs[best] }; const c = (w.lo + w.hi) / 2, r = 1.6 / k;
+        segs[best].forEach(e => mk(overlay(h.bl.g), "rect", { class: "hv", x: (X ? c : e) - r, y: (X ? e : c) - r, width: 2 * r, height: 2 * r, fill: "#fff", stroke: "#3d8fe0", "stroke-width": 0.4 / k })); }
+    }
     const pd = h.it.k === "furn" ? 0 : 0.8 / k;
     mk(overlay(h.bl.g), "rect", { class: "hv", x: b[0] - pd, y: b[1] - pd, width: b[2] - b[0] + 2 * pd, height: b[3] - b[1] + 2 * pd, rx: 0.6 / k, fill: "#5aa9ff", "fill-opacity": 0.2, stroke: "#3d8fe0", "stroke-width": 0.35 / k, "pointer-events": "none" });
   }
@@ -885,6 +892,11 @@
       post({ t: "edit", model: r.N, sel: r.sel, place: !!r.fit, placed: true });
       return true;
     }
+    if (hovWall) {   // sienas posma gala rokturis
+      const hw = hovWall, X = hw.w.axis === "x", p = toLocal(hw.bl.g, e.clientX, e.clientY), c = (hw.w.lo + hw.w.hi) / 2, kk = ek(hw.bl);
+      const ix = hw.seg.findIndex(v => Math.hypot((X ? c : v) - p[0], (X ? v : c) - p[1]) < 3.4 / kk);
+      if (ix >= 0) { drag = { wend: true, hw, ix, e0: hw.seg[ix], fixed: hw.seg[1 - ix], u: hw.seg[ix], x0: e.clientX, y0: e.clientY, moved: false }; document.body.style.cursor = X ? "ns-resize" : "ew-resize"; return true; }
+    }
     const h = hit(e.clientX, e.clientY); hover(null);
     if (!h) { if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false; }
     if (h.del) { post({ t: "delete" }); return true; }
@@ -909,6 +921,13 @@
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
+    if (drag && drag.wend) {
+      const hw = drag.hw, X = hw.w.axis === "x", p = toLocal(hw.bl.g, e.clientX, e.clientY), o = overlay(hw.bl.g), k = ek(hw.bl);
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
+      drag.u = Math.max(hw.w.v0, Math.min(hw.w.v1, snapAx("main", X ? "y" : "x", X ? p[1] : p[0], 150)));
+      o.querySelectorAll(".gh").forEach(q => q.remove()); const g = mk(o, "g", { class: "gh" }), a = Math.min(drag.fixed, drag.u), b = Math.max(drag.fixed, drag.u);
+      rect(g, X ? [hw.w.lo, a, hw.w.hi, b] : [a, hw.w.lo, b, hw.w.hi], true, k, 0); label(g, X ? hw.w.hi : a, X ? a : hw.w.lo - 2.2 / k, `${Math.round(b - a)} mm`, k); return;
+    }
     if (drag && drag.gi != null) {
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
       if (drag.moved) { drag.ng = guideAt(drag.gd.o, e.clientX, e.clientY, drag.P); if (drag.gd.o === "s") drag.ng.a = drag.gd.a; drag.over = drag.gd.o === "v" ? e.clientX < RUL : drag.gd.o === "h" ? e.clientY < RUL : false; drawGuides(drag.over ? null : drag.ng); }
@@ -933,6 +952,13 @@
   });
   addEventListener("pointerup", () => {
     if (!drag) return;
+    if (drag.wend) {
+      const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+      if (!d.moved) return;
+      const N = clone(M), w = Object.assign({}, d.hw.w, { endIdx: d.ix }), r = moveWallEnd(N, w, d.e0, d.u, (d.e0 + d.fixed) / 2);
+      if (r.err) { post({ t: "hint", text: r.err }); return; }
+      post({ t: "edit", model: r.N || N, sel: null }); return;
+    }
     if (drag.gi != null) {
       const d = drag; drag = null; document.body.style.cursor = "";
       if (d.isNew) {   // jauna palīglīnija, izvilkta no lineāla: tukšums = atcelts
@@ -1100,6 +1126,27 @@
     } else sp.parts.slice(1).forEach(r => rm.r.push(r));
     void q; return { N };
   }
+
+  // starpsiena drīkst šķērsot esošas sienas un telpas: tā tiek automātiski sadalīta pa telpām un savienota ar sienām
+  function acrossPlan(X, vertical, c, a, b) {
+    if (b < a) [a, b] = [b, a];
+    const segs = [];
+    roomRects(X).forEach(e => {
+      const [x0, y0, x1, y1] = e.b, U0 = vertical ? x0 : y0, U1 = vertical ? x1 : y1, V0 = vertical ? y0 : x0, V1 = vertical ? y1 : x1;
+      if (c < U0 || c > U1) return;
+      const sa = Math.max(a, V0), sb = Math.min(b, V1); if (sb - sa < 1) return;
+      segs.push([a <= V0 + 300 ? V0 : sa, b >= V1 - 300 ? V1 : sb]);
+    });
+    segs.sort((p, q) => p[0] - q[0]);
+    const ok = segs.filter(sg => !partitionSpec(X, vertical, c, sg[0], sg[1]).err);
+    if (!ok.length) { const e = partitionSpec(X, vertical, c, a, b); return { err: e.err || "Šeit starpsienu likt nevar." }; }
+    return { segs: ok, a: ok[0][0], b: ok[ok.length - 1][1] };
+  }
+  function addPartitionAcross(N, vertical, c, a, b) {
+    const pl = acrossPlan(N, vertical, c, a, b); if (pl.err) return pl;
+    for (const sg of pl.segs) { const r = addPartition(N, vertical, c, sg[0], sg[1]); if (r.err) return r; }
+    return { N };
+  }
   // sienas posms starp divām telpām: [ass, lo, hi, v0, v1, istaba]
   function wallPair(p) {
     const R = roomRects(M), [x, y] = p;
@@ -1120,6 +1167,40 @@
     return { N };
   }
   function toolPoint(l, axis, v) { const t = snapI(l, axis, v, 250); return t; }
+
+  // ---- sienas posmu gali: velc rokturi, lai posmu pagarinātu (aizpilda izgriezto atveri) vai saīsinātu ----
+  function wallSegs(w) {   // redzamie sienas posmi: v0..v1 mīnus izgrieztie laukumi (taisnstūri, kas pilnībā aizpilda sienas joslu)
+    const X = w.axis === "x", cov = roomRects(M).map(r => r.b).filter(b => X ? b[0] <= w.lo + 1 && b[2] >= w.hi - 1 : b[1] <= w.lo + 1 && b[3] >= w.hi - 1).map(b => X ? [b[1], b[3]] : [b[0], b[2]]).sort((a, c) => a[0] - c[0]);
+    const out = []; let cur = w.v0;
+    cov.forEach(([a, b]) => { if (a > cur + 1) out.push([cur, Math.min(a, w.v1)]); cur = Math.max(cur, b); });
+    if (cur < w.v1 - 1) out.push([cur, w.v1]);
+    return out.filter(q => q[1] - q[0] > 1);
+  }
+  function moveWallEnd(N, w, e0, u, mid) {
+    const X = w.axis === "x";
+    u = Math.max(w.v0, Math.min(w.v1, r10(u))); if (Math.abs(u - e0) < 10) return { err: "Nav ko mainīt." };
+    const shrink = (w.endIdx === 1 && u < e0) || (w.endIdx === 0 && u > e0);
+    const a = Math.min(e0, u), b = Math.max(e0, u);
+    if (shrink) {
+      const wp = wallPair(X ? [(w.lo + w.hi) / 2, mid] : [mid, (w.lo + w.hi) / 2]); if (!wp) return { err: "Siena nav atrasta." };
+      return cutWall(N, wp, a, b);
+    }
+    let ch = 0;
+    for (const rm of N.rooms || []) {
+      const out = [];
+      rm.r.forEach(q => {
+        const y0 = X ? q[1] : q[0], y1 = y0 + (X ? q[3] : q[2]), x0 = X ? q[0] : q[1], x1 = x0 + (X ? q[2] : q[3]);
+        if (Math.abs(x0 - w.lo) > 1 || Math.abs(x1 - w.hi) > 1 || y1 <= a + 1 || y0 >= b - 1) { out.push(q); return; }
+        ch++;
+        const mkq = (ya, yb) => X ? [q[0], ya, q[2], +(yb - ya).toFixed(1)] : [ya, q[1], +(yb - ya).toFixed(1), q[3]];
+        if (a - y0 > 1) out.push(mkq(y0, a)); if (y1 - b > 1) out.push(mkq(b, y1));
+      });
+      if (!out.length && rm.r.length) return { err: "Telpa pazustu." };
+      rm.r = out;
+    }
+    return ch ? { N } : { err: "Šeit nav ko aizpildīt ar sienu." };
+  }
+  let hovWall = null;
   function wallPreview(cx, cy) {
     for (const bl of blocks()) {
       if (bl.type !== "plan" || bl.lv !== "main") continue;
@@ -1137,7 +1218,7 @@
       if (!place.p0) { snapMark(g, [sx.hit ? sx.v : p[0], sy.hit ? sy.v : p[1]], sx.hit || sy.hit, k); label(g, p[0], p[1] - 2.2 / k, "Starpsiena: uzklikšķini sākumu (pie sienas)", k); return; }
       const a = place.p0, vertical = Math.abs(p[1] - a[1]) >= Math.abs(p[0] - a[0]), h = PT / 2;
       const c = partC(bl.lv, vertical ? "x" : "y", vertical ? a[0] : a[1]).v, v0 = snapAx(bl.lv, vertical ? "y" : "x", vertical ? a[1] : a[0], 300), v1 = snapAx(bl.lv, vertical ? "y" : "x", vertical ? p[1] : p[0], 300);
-      const sp = partitionSpec(M, vertical, c, v0, v1), A = sp.err ? Math.min(v0, v1) : sp.a, B = sp.err ? Math.max(v0, v1) : sp.b;
+      const sp = acrossPlan(M, vertical, c, v0, v1), A = sp.err ? Math.min(v0, v1) : sp.a, B = sp.err ? Math.max(v0, v1) : sp.b;
       const bb = vertical ? [c - h, A, c + h, B] : [A, c - h, B, c + h];
       rect(g, bb, true, k, 0); label(g, bb[0], bb[1] - 2.2 / k, sp.err ? sp.err : `${Math.round(B - A)} mm`, k); return;
     }
@@ -1169,7 +1250,7 @@
           if (!P.p0) { P.p0 = [p[0], p[1]]; P.lv = bl.lv; return { pending: "Tagad uzklikšķini sienas otru galu (pie ārsienas vai citas sienas)." }; }
           const a = P.p0, vertical = Math.abs(p[1] - a[1]) >= Math.abs(p[0] - a[0]);
           const c = partC("main", vertical ? "x" : "y", vertical ? a[0] : a[1]).v, v0 = snapAx("main", vertical ? "y" : "x", vertical ? a[1] : a[0], 300), v1 = snapAx("main", vertical ? "y" : "x", vertical ? p[1] : p[0], 300);
-          const r = addPartition(N, vertical, c, v0, v1);
+          const r = addPartitionAcross(N, vertical, c, v0, v1);
           if (r.err) { P.p0 = null; return { miss: r.err }; }
           return { N, sel: null };
         }
