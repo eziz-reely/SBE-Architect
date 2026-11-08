@@ -161,7 +161,8 @@
     if (best) return best;
     for (const bl of bls) {
       if (bl.type !== "plan") continue;
-      const p = toLocal(bl.g, cx, cy), w = wallAt(bl.lv, p);
+      const p = toLocal(bl.g, cx, cy), m0 = bl.g.getScreenCTM(), pad = m0 && m0.a ? 9 / Math.abs(m0.a) : 0;   // plānas sienas: 9 px uztveršanas josla
+      const w = [[0, 0], [pad, 0], [-pad, 0], [0, pad], [0, -pad]].map(([dx, dy]) => wallAt(bl.lv, [p[0] + dx, p[1] + dy])).find(Boolean);
       if (w) { const e0 = w.v0 != null ? w.v0 : T, e1 = w.v1 != null ? w.v1 : (w.axis === "x" ? M.D : M.W) - T;   // tikai pati sienas posma garums, nevis visa lapa
       return { it: { k: "wall", lv: bl.lv, b: w.axis === "x" ? [w.lo, e0, w.hi, e1] : [e0, w.lo, e1, w.hi], w }, bl, p, wall: true }; }
     }
@@ -219,7 +220,7 @@
     if (h.it.k === "wall" && !h.it.w.ext && h.it.w.v0 != null) {
       const w = h.it.w, X = w.axis === "x", u = X ? h.p[1] : h.p[0], segs = wallSegs(w); let best = -1, bd = 1e9;
       segs.forEach((q, i) => { const d = u < q[0] ? q[0] - u : u > q[1] ? u - q[1] : 0; if (d < bd) { bd = d; best = i; } });
-      if (best >= 0) { hovWall = { bl: h.bl, w, seg: segs[best] }; const c = (w.lo + w.hi) / 2, r = 1.6 / k;
+      if (best >= 0) { hovWall = { bl: h.bl, w, seg: segs[best] }; const c = (w.lo + w.hi) / 2, r = 2.4 / k;
         segs[best].forEach(e => mk(overlay(h.bl.g), "rect", { class: "hv", x: (X ? c : e) - r, y: (X ? e : c) - r, width: 2 * r, height: 2 * r, fill: "#fff", stroke: "#3d8fe0", "stroke-width": 0.4 / k })); }
     }
     const pd = h.it.k === "furn" ? 0 : 0.8 / k;
@@ -894,8 +895,7 @@
       return true;
     }
     if (hovWall) {   // sienas posma gala rokturis
-      const hw = hovWall, X = hw.w.axis === "x", p = toLocal(hw.bl.g, e.clientX, e.clientY), c = (hw.w.lo + hw.w.hi) / 2, kk = ek(hw.bl);
-      const ix = hw.seg.findIndex(v => Math.hypot((X ? c : v) - p[0], (X ? v : c) - p[1]) < 3.4 / kk);
+      const hw = hovWall, X = hw.w.axis === "x", ix = nearHandle(e);
       if (ix >= 0) { drag = { wend: true, hw, ix, e0: hw.seg[ix], fixed: hw.seg[1 - ix], u: hw.seg[ix], x0: e.clientX, y0: e.clientY, moved: false }; document.body.style.cursor = X ? "ns-resize" : "ew-resize"; return true; }
     }
     const h = hit(e.clientX, e.clientY); hover(null);
@@ -934,6 +934,7 @@
       if (drag.moved) { drag.ng = guideAt(drag.gd.o, e.clientX, e.clientY, drag.P); if (drag.gd.o === "s") drag.ng.a = drag.gd.a; drag.over = drag.gd.o === "v" ? e.clientX < RUL : drag.gd.o === "h" ? e.clientY < RUL : false; drawGuides(drag.over ? null : drag.ng); }
       return;
     }
+    if (!drag && !place && hovWall && nearHandle(e) >= 0) { document.body.style.cursor = hovWall.w.axis === "x" ? "ns-resize" : "ew-resize"; return; }
     if (!drag && !place) { const gi = guideHit(e.clientX, e.clientY); if (gi >= 0) { document.body.style.cursor = GUIDES()[gi].o === "h" ? "ns-resize" : "ew-resize"; hover(null); return; } }
     if (place) { hover(null); return; }
     if (!drag) {
@@ -1208,8 +1209,16 @@
     return ch ? { N } : { err: "Šeit nav ko aizpildīt ar sienu." };
   }
   let hovWall = null;
+  function nearHandle(e) {   // tuvākais sienas gala rokturis ekrāna pikseļos (liels uztveršanas laukums)
+    if (!hovWall) return -1;
+    const hw = hovWall, X = hw.w.axis === "x", c = (hw.w.lo + hw.w.hi) / 2, m = hw.bl.g.getScreenCTM(); if (!m) return -1;
+    let best = -1, bd = 18;
+    hw.seg.forEach((v, i) => { const q = new DOMPoint(X ? c : v, X ? v : c).matrixTransform(m), d = Math.hypot(q.x - e.clientX, q.y - e.clientY); if (d < bd) { bd = d; best = i; } });
+    return best;
+  }
   function commitWend() {
     const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+    post({ t: "hint", text: "" });
     if (!d || Math.abs(d.u - d.e0) < 10) return;
     const N = clone(M), w = Object.assign({}, d.hw.w, { endIdx: d.ix }), r = moveWallEnd(N, w, d.e0, d.u, (d.e0 + d.fixed) / 2);
     if (r.err) { post({ t: "hint", text: r.err }); return; }
