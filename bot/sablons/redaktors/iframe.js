@@ -88,8 +88,8 @@
     if (l === "loft") return null;
     const R = rects("main");
     for (const a of R) for (const b of R) {
-      if (b[0] - a[2] > 0 && b[0] - a[2] <= 300 && x >= a[2] - 20 && x <= b[0] + 20 && y >= Math.max(a[1], b[1]) && y <= Math.min(a[3], b[3])) return { axis: "x", lo: a[2], hi: b[0] };
-      if (b[1] - a[3] > 0 && b[1] - a[3] <= 300 && y >= a[3] - 20 && y <= b[1] + 20 && x >= Math.max(a[0], b[0]) && x <= Math.min(a[2], b[2])) return { axis: "y", lo: a[3], hi: b[1] };
+      if (b[0] - a[2] > 0 && b[0] - a[2] <= 300 && x >= a[2] - 20 && x <= b[0] + 20 && y >= Math.max(a[1], b[1]) && y <= Math.min(a[3], b[3])) return { axis: "x", lo: a[2], hi: b[0], v0: Math.max(a[1], b[1]), v1: Math.min(a[3], b[3]) };
+      if (b[1] - a[3] > 0 && b[1] - a[3] <= 300 && y >= a[3] - 20 && y <= b[1] + 20 && x >= Math.max(a[0], b[0]) && x <= Math.min(a[2], b[2])) return { axis: "y", lo: a[3], hi: b[1], v0: Math.max(a[0], b[0]), v1: Math.min(a[2], b[2]) };
     }
     return null;
   }
@@ -162,7 +162,8 @@
     for (const bl of bls) {
       if (bl.type !== "plan") continue;
       const p = toLocal(bl.g, cx, cy), w = wallAt(bl.lv, p);
-      if (w) return { it: { k: "wall", lv: bl.lv, b: w.axis === "x" ? [w.lo, -1e9, w.hi, 1e9] : [-1e9, w.lo, 1e9, w.hi], w }, bl, p, wall: true };
+      if (w) { const e0 = w.v0 != null ? w.v0 : T, e1 = w.v1 != null ? w.v1 : (w.axis === "x" ? M.D : M.W) - T;   // tikai pati sienas posma garums, nevis visa lapa
+      return { it: { k: "wall", lv: bl.lv, b: w.axis === "x" ? [w.lo, e0, w.hi, e1] : [e0, w.lo, e1, w.hi], w }, bl, p, wall: true }; }
     }
     return null;
   }
