@@ -213,15 +213,21 @@ function drawWalls(g, v, cid) {
   R.forEach(([x, y, w, h]) => el("rect", { x, y, width: w, height: h, fill: "none", stroke: C.line, "stroke-width": 2 * (8 + 14 * WL("inner")) }, g));
   // fills overlap by 8 mm: no anti-aliased hairline where two rectangles meet
   R.forEach(([x, y, w, h]) => el("rect", { x: x - 8, y: y - 8, width: w + 16, height: h + 16, fill: "#fff" }, g));
-  // a partition meeting the outer wall merges with it: no contour line across the joint
-  { const pf = (typeof SOLID !== "undefined" && SOLID) || "#fff";
+  // a partition meeting the outer wall merges with it: no contour line across the joint, the hatching runs on
+  { const pf = (typeof SOLID !== "undefined" && SOLID) || "#fff", SK = typeof SOLID !== "undefined" && SOLID;
     walls.forEach(wl => {
-      const [x, y, w, h, o] = wl, v = o === "v", c = 14, k = 13;
-      [[-1], [1]].forEach(([dr]) => {
-        const e = v ? (dr < 0 ? y : y + h) : (dr < 0 ? x : x + w), mx = v ? x + w / 2 : x, my = v ? y : y + h / 2;
-        if (inPoly(v ? mx : e + dr * 4, v ? e + dr * 4 : y + h / 2)) return;
-        if (v) el("rect", { x: x + k, y: dr < 0 ? e - c : e - 1, width: w - 2 * k, height: c + 1, fill: pf }, g);
-        else el("rect", { x: dr < 0 ? e - c : e - 1, y: y + k, width: c + 1, height: h - 2 * k, fill: pf }, g);
+      const [x, y, w, h, o] = wl, v = o === "v", c = 14, [cx, cy, cw, ch] = core(wl);
+      [-1, 1].forEach(dr => {
+        const e = v ? (dr < 0 ? y : y + h) : (dr < 0 ? x : x + w);
+        if (inPoly(v ? x + w / 2 : e + dr * 4, v ? e + dr * 4 : y + h / 2)) return;
+        const rx = v ? cx : (dr < 0 ? e - c : e - 1), ry = v ? (dr < 0 ? e - c : e - 1) : cy, rw = v ? cw : c + 1, rh = v ? c + 1 : ch;
+        el("rect", { x: rx, y: ry, width: rw, height: rh, fill: pf }, g);
+        if (SK) return;
+        const id = `${cid}-j${wl[4]}${wl[0]}-${wl[1]}-${dr}`;
+        el("rect", { x: rx, y: ry, width: rw, height: rh }, el("clipPath", { id }, g));
+        const L = (v ? ch : cw) + c, a0 = dr < 0 ? (v ? cy - c : cx - c) : (v ? cy : cx);
+        const d = v ? loops(cx, a0, 0, 1, 1, 0, L, cw) : loops(a0, cy, 1, 0, 0, 1, L, ch);
+        el("path", { d, ...INS, "clip-path": `url(#${id})` }, g);
       });
     }); }
 }
@@ -421,7 +427,7 @@ function cadPlan(parent, v, opt = {}) {
   const gap = (x, y, w, h) => el("rect", { x, y, width: w, height: h, fill: "#fff" }, g);
   const jamb = (x1, y1, x2, y2) => {   // ailas gala līnija: īsāka par sienas biezumu, lai neizvirzās pāri sienas kontūrai
     const dx = Math.sign(x2 - x1), dy = Math.sign(y2 - y1), c = 4;
-    el("line", { x1: x1 + dx * c, y1: y1 + dy * c, x2: x2 - dx * c, y2: y2 - dy * c, stroke: C.line, "stroke-width": 8 }, g); };
+    el("line", { x1: x1 + dx * c, y1: y1 + dy * c, x2: x2 - dx * c, y2: y2 - dy * c, stroke: C.line, "stroke-width": 5 }, g); };
   v.openings.forEach(o => {
     if (o.o === "h") { gap(o.x, o.y - 14, o.w, o.th + 28); jamb(o.x, o.y, o.x, o.y + o.th); jamb(o.x + o.w, o.y, o.x + o.w, o.y + o.th); }
     else { gap(o.x - 14, o.y, o.th + 28, o.w); jamb(o.x, o.y, o.x + o.th, o.y); jamb(o.x, o.y + o.w, o.x + o.th, o.y + o.w); }

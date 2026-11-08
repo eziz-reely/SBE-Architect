@@ -34,6 +34,9 @@ header .mark { font: 600 13px/1 var(--f-cap); letter-spacing: .22em; color: var(
 header h1 { font: 600 17px/1.1 var(--f-ui); margin: 0; letter-spacing: .02em; }
 header .tag { font-size: 12px; color: #cdbf9f; border: 1px solid #6b5f50; border-radius: 99px; padding: 2px 9px; }
 header .sp { flex: 1; }
+header .tseg { display: inline-flex; background: #2f2a26; border: 1px solid #5d554d; border-radius: 9px; padding: 2px; gap: 2px; }
+header .tseg button { background: transparent; border: 0; padding: 5px 10px; border-radius: 7px; font-weight: 600; }
+header .tseg button[aria-checked="true"] { background: var(--gold); color: #1f1b17; }
 .tb { display: flex; gap: 6px; flex-wrap: wrap; }
 button { font: 500 13px/1 var(--f-ui); border-radius: 6px; padding: 8px 11px; cursor: pointer; border: 1px solid transparent; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -336,10 +339,12 @@ aside #hint, aside .savebar #status { display: none; }
     <button id="bFit" type="button">Visa lapa</button>
     <button id="bReset" type="button">Atiestatīt</button>
     <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
+    <span class="tseg modeseg" id="topMode" role="radiogroup" aria-label="Režīms"><button type="button" data-m="skice" role="radio">Skice</button><button type="button" data-m="ar" role="radio">AR</button></span>
+    <span class="tseg" id="topLang" role="radiogroup" aria-label="Valoda"><button type="button" data-lg="lv" role="radio">LV</button><button type="button" data-lg="en" role="radio">EN</button></span>
     <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false">Rakstlaukums</button>
       <div id="tbp" class="pop" hidden role="dialog" aria-label="Rakstlaukums">
         <p class="pcap">Lapas</p>
-        <div class="seg seg2" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
+        <div class="seg seg2 modeseg" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
         <div id="arBox" class="arbox" hidden>
           <p class="pcap">AR lapas · numurē pēc kārtas</p>
           <div id="arParts" class="chk"></div>
@@ -525,6 +530,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (arOn(m) && !(m.sections && m.sections.length >= 2)) m = Object.assign({}, m, { sections: autoSections(m) });
     const blocks = revBlock(m, 100) + (m.loft ? revBlock(Object.assign({}, m, m.loft, { id: m.id + " mansards" }), 101) : "");
     let h = TPL.split(MARK).join(blocks);
+    h = h.replace("window.MM_LANG='lv'", "window.MM_LANG='" + ((m.projekts || {}).lang === "en" ? "en" : "lv") + "'");
     // roof eave and footprint can change when an outer wall moves
     if (m.jumts && m.jumts.eave) h = h.replace(/("roof":\s*\{[^}]*?"eave":\s*)[-\d.]+/, "$1" + m.jumts.eave);
     if (m.jumts && m.jumts.pitch) h = h.replace(/("roof":\s*\{[^}]*?"pitch":\s*)[-\d.]+/, "$1" + m.jumts.pitch);
@@ -619,7 +625,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     sel.value = P.fonts || ""; sel.onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; if (sel.value) n.projekts.fonts = sel.value; else delete n.projekts.fonts; commit(n); };
     grp("Teksta fonts", sel);
   }
-  function buttons() { ribbon(); { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
+  function buttons() { ribbon(); try { topSync(); } catch (e) {} { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
   $("bFit").onclick = () => { view = null; try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
@@ -1293,10 +1299,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   // ---- rakstlaukums: modeļa nosaukums un logo vienā vietā ----
   const tbp = $("tbp"), openTb = o => { tbp.hidden = !o; $("bTb").setAttribute("aria-expanded", String(o)); if (o) syncTb(); };
   const tbName = m => { const P = m.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (m.nosaukums || ""); };
+  function topSync() {
+    const P = model.projekts || {}, ar = !!(P.ar && P.ar.on), lg = P.lang === "en" ? "en" : "lv";
+    document.querySelectorAll(".modeseg button").forEach(b => b.setAttribute("aria-checked", String((b.dataset.m === "ar") === ar)));
+    document.querySelectorAll("#topLang button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.lg === lg)));
+  }
   function syncTb() {
     $("tbName").value = tbName(model);
     const L = (model.projekts || {}).logo, k = !L ? "mm" : L === "none" ? "none" : "own";
     document.querySelectorAll("#tbLogo button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.l === k)));
+    document.querySelectorAll("#topLang button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.lg === ((model.projekts || {}).lang === "en" ? "en" : "lv"))));
     syncAr();
   }
   $("bTb").onclick = e => { e.stopPropagation(); openPop(false); openTb(tbp.hidden); };
@@ -1312,7 +1324,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   function syncAr() {
     const A = (model.projekts || {}).ar, on = !!(A && A.on);
-    document.querySelectorAll("#tbMode button").forEach(b => b.setAttribute("aria-checked", String((b.dataset.m === "ar") === on)));
+    document.querySelectorAll(".modeseg button").forEach(b => b.setAttribute("aria-checked", String((b.dataset.m === "ar") === on)));
     $("arBox").hidden = !on; if (!on) return;
     const off = A.off || []; let no = 0;
     $("arParts").innerHTML = "";
@@ -1330,11 +1342,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       l.append(i); $("arForm").append(l);
     });
   }
-  document.querySelectorAll("#tbMode button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".modeseg button").forEach(b => b.onclick = () => {
     const n = clone(model); n.projekts = n.projekts || {};
     if (b.dataset.m === "ar") n.projekts.ar = Object.assign(n.projekts.ar || arDefaults(n), { on: true }); else if (n.projekts.ar) n.projekts.ar.on = false;
     view = null; commit(n); syncTb();
   });
+  document.querySelectorAll("#topLang button").forEach(b => b.onclick = () => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.lang = b.dataset.lg; view = null; commit(n); syncTb(); });
   $("tbName").onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.modela_nosaukums = $("tbName").value.trim(); commit(n); syncTb(); };
   const setLogo = v => { const n = clone(model); n.projekts = n.projekts || {}; if (v) n.projekts.logo = v; else delete n.projekts.logo; commit(n); syncTb(); };
   document.querySelectorAll("#tbLogo button").forEach(b => b.onclick = () => { if (b.dataset.l === "own") $("tbFile").click(); else setLogo(b.dataset.l === "none" ? "none" : null); });
