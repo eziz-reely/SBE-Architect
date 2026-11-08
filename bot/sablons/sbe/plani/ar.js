@@ -471,7 +471,7 @@ function openingView(g, x, y, w, h, kind, door, sc, hl = true, PN = null, cas = 
   const W = w * sc, H = h * sc, f = 60 * sc;
   const R = (x0, y0, ww, hh, o = {}) => el("rect", { x: x0, y: y0, width: ww, height: hh, fill: "none", stroke: C.ink, "stroke-width": .2, ...o }, g);
   const dsh = { fill: "none", stroke: C.ink, "stroke-width": .15, "stroke-dasharray": "1 .6" };
-  R(x - W / 2, y - H, W, H, { "stroke-width": .3 });
+  if (door) R(x - W / 2, y - H, W, H, { "stroke-width": .3 });
   if (door) {
     const x0 = x - W / 2 + f, lw = W - 2 * f, top = y - H + f, left = door === "ĀD" ? hl : door !== "DL";
     if (door === "ĀD") {
@@ -495,7 +495,7 @@ function openingView(g, x, y, w, h, kind, door, sc, hl = true, PN = null, cas = 
   // window: same ArchiCAD style as on the facade (frame, sash, glass contours), without casing and sill
   PN = PN || PANES(kind, hl, false);
   const fw = 70 * sc, sw = 55 * sc, r = 18 * sc, x0 = x - W / 2, top = y - H, fc = colHex(WINC().inn);
-  const ln = { stroke: C.ink, "stroke-width": .25 }, thin = { stroke: C.ink, "stroke-width": .12 };
+  const ln = { stroke: C.ink, "stroke-width": .1 }, thin = { stroke: C.ink, "stroke-width": .06 };
   R(x0, top, W, H, { fill: fc, ...ln });
   R(x0 + r, top + r, W - 2 * r, H - 2 * r, { fill: "none", ...thin });
   const panes = PN.length, avail = W - fw * (panes + 1), gy = top + fw, gh = H - 2 * fw;
