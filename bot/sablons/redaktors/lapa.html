@@ -561,6 +561,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "delete") del();
     else if (d.t === "hint") $("hint").textContent = d.text;
     else if (d.t === "placed") endPlace();
+    else if (d.t === "key" && d.k === "combo") { const a = ACTIONS.find(x => keyMap[x.id] === d.c); if (a) a.run(); }
     else if (d.t === "key" && d.k === "dim") startDim();
     else if (d.t === "key" && d.k === "guide") startGuide(d.o);
   });
@@ -593,9 +594,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Logs", s: "1000 × 1200, ārsienā", p: { t: "win" } },
     { n: "Slīpais logs", s: "gala fasādē, seko jumtam", p: { t: "gwin" } },
     { n: "Durvis", s: "800 iekšā, 1000 ārsienā", p: { t: "door" } },
-    { n: "Starpsiena", s: "divi klikšķi, pielīp sienām", p: { t: "wall" }, ic: "dim" },
-    { n: "Izgriezt sienu", s: "divi klikšķi uz sienas", p: { t: "cut" }, ic: "dim" },
+    { n: "Starpsiena", s: "divi klikšķi, pielīp sienām", p: { t: "wall" }, ic: "wall" },
+    { n: "Izgriezt sienu", s: "divi klikšķi uz sienas", p: { t: "cut" }, ic: "cut" },
     { n: "Mērs", s: "divi klikšķi plānā", p: { t: "dim" }, ic: "dim" },
+    { n: "Palīglīnija", s: "G · pati izvēlas vert./horiz.", p: { t: "guide", o: "a" }, ic: "ga" },
     { n: "Vert. palīglīnija", s: "G · pielīp elementiem", p: { t: "guide", o: "v" }, ic: "gv" },
     { n: "Horiz. palīglīnija", s: "Shift+G", p: { t: "guide", o: "h" }, ic: "gh" },
     { n: "Slīpa palīglīnija", s: "jumta slīpumā", p: { t: "guide", o: "s" }, ic: "gs" },
@@ -626,6 +628,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     win: '<rect x="3" y="11" width="34" height="6"/><path d="M3 14h34"/>',
     gwin: '<path d="M6 24V14l14-10 14 10v10z"/><path d="M6 19h28"/>',
     dim: '<path d="M4 14h32M4 9v10M36 9v10M1 17l6-6M33 17l6-6"/>',
+    wall: '<path d="M3 9h34M3 19h34"/><path d="M8 9l-3 10M15 9l-3 10M22 9l-3 10M29 9l-3 10M36 9l-3 10"/>',
+    cut: '<path d="M3 9h11M3 19h11M26 9h11M26 19h11"/><path d="M14 5l12 18M26 5L14 23" stroke-dasharray="2 2"/>',
+    ga: '<path d="M20 2v24M2 14h36" stroke-dasharray="3 2"/><circle cx="20" cy="14" r="3"/>',
     gv: '<path d="M20 2v24" stroke-dasharray="3 2"/><rect x="8" y="8" width="8" height="12"/>',
     gh: '<path d="M2 14h36" stroke-dasharray="3 2"/><rect x="10" y="4" width="12" height="7"/>',
     gs: '<path d="M4 24L36 6" stroke-dasharray="3 2"/><path d="M6 24h28"/>',
