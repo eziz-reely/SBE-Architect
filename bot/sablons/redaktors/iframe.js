@@ -656,8 +656,19 @@
       });
     });
   }
+  function bandList(X) {   // visas iekšējās sienas josla: [ass, biezums, no, līdz]
+    const R = roomRects(X), out = [];
+    for (const a of R) for (const b of R) for (const ax of ["x", "y"]) {
+      const A = a.b, B = b.b, g0 = ax === "x" ? A[2] : A[3], g1 = ax === "x" ? B[0] : B[1];
+      if (g1 - g0 < 100 || g1 - g0 > 300) continue;
+      const v0 = ax === "x" ? Math.max(A[1], B[1]) : Math.max(A[0], B[0]), v1 = ax === "x" ? Math.min(A[3], B[3]) : Math.min(A[2], B[2]); if (v1 - v0 < 50) continue;
+      out.push(Math.round(g1 - g0) + ax);
+    }
+    return out.sort();
+  }
+  function sameBands(A, B) { const a = bandList(A).join(), b = bandList(B).join(); return a === b; }
   function moveWall(w, d) {
-    d = r10(d); if (!d) return null;
+    d = +(+d).toFixed(1); if (!d) return null;   // izsaucēji jau noapaļo; pielipinot citai sienai jāpaliek precīzi
     const N = clone(M), X = w.axis === "x", inW = v => v >= w.lo - 1 && v <= w.hi + 1, origin = w.lo <= 0;
     const f = origin ? (v => (inW(v) ? v : v - d)) : (v => (inW(v) ? v + d : v));
     mapModel(N, w.axis, f);
@@ -673,6 +684,7 @@
     // par šauru kļūst tikai tas, kas pirms pārbīdes nebija šaurs (izgrieztas atveres ir 195 mm joslas, tās neskaita)
     const bad = [[N, M], [N.loft, M.loft]].some(([A, B]) => A && B && (A.rooms || []).some((rm, ri) => rm.r.some((q, qi) => { const o = (((B.rooms || [])[ri] || {}).r || [])[qi] || q; return (q[2] < MINR && o[2] >= MINR) || (q[3] < MINR && o[3] >= MINR); })));
     if (bad) return null;
+    if (!w.ext && !sameBands(M, N)) return null;   // citu sienu biezums nedrīkst mainīties
     stamps(M, N);
     return N;
   }
