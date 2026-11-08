@@ -142,14 +142,23 @@ function sectionLines(g, v, ext = 2300) {
     const P = (a, b = s.at) => s.o === "v" ? [b, a] : [a, b];
     const line = (p, q, sw, dash) => el("line", { x1: p[0], y1: p[1], x2: q[0], y2: q[1], stroke: C.ink, "stroke-width": sw, ...(dash ? { "stroke-dasharray": dash } : {}) }, sg);
     const SV = +(((window.AR && window.AR.projekts && window.AR.projekts.wall_style) || {}).section) || 1;   // griezuma līnijas veids 1-3
-    line(P(a0), P(a1), SV === 2 ? 12 : 10, SV === 2 ? null : "380 110 50 110");
-    [[a0, a0 + 550], [a1 - 550, a1]].forEach(([p, q]) => line(P(p), P(q), 38));
-    if (SV === 3) {   // ArchiCAD veida zīme: trijstūris skata virzienā un aplis ar numuru
+    if (SV === 1) {
+      line(P(a0), P(a1), 10, "380 110 50 110");
+      [[a0, a0 + 550], [a1 - 550, a1]].forEach(([p, q]) => line(P(p), P(q), 38));
+    } else {
+      // zīme galā: trijstūris skata virzienā (pamats uz griezuma līnijas) un aplis ar burtu / numuru
+      line(P(a0), P(a1), 10, "380 110 50 110");
+      const r = 420, ar = 1.414 * r, d = s.look, sheet = arNo("griez");
       [a0, a1].forEach(a => {
-        const d = s.look, B = (u, w) => P(a + u, s.at + d * w), tri = [B(-380, 150), B(380, 150), B(0, 900)];
-        el("polygon", { points: tri.map(t => t.join(",")).join(" "), fill: "#bdbdbd", stroke: C.ink, "stroke-width": 10 }, sg);
-        const c = B(0, 1250); el("circle", { cx: c[0], cy: c[1], r: 340, fill: "#fff", stroke: C.ink, "stroke-width": 14 }, sg);
-        T_(sg, c[0], c[1] + 95, s.n, { fs: 300, fw: 700, a: "middle" });
+        const B = (u, w) => P(a + u, s.at + d * w), c = P(a), tri = [B(-ar, 0), B(ar, 0), B(0, ar)];
+        el("polygon", { points: tri.map(t => t.join(",")).join(" "), fill: SV === 2 ? C.ink : "#c4c4c4", stroke: C.ink, "stroke-width": 10, "stroke-linejoin": "miter" }, sg);
+        el("circle", { cx: c[0], cy: c[1], r, fill: "#fff", stroke: C.ink, "stroke-width": 12 }, sg);
+        if (SV === 2) T_(sg, c[0], c[1] + 190, s.n, { fs: 540, fw: 500, a: "middle" });
+        else {
+          el("line", { x1: c[0] - r, y1: c[1], x2: c[0] + r, y2: c[1], stroke: C.ink, "stroke-width": 10 }, sg);
+          T_(sg, c[0], c[1] - 55, s.n, { fs: 360, fw: 500, a: "middle" });
+          if (sheet) T_(sg, c[0], c[1] + 250, sheet, { fs: 170, fw: 600, a: "middle" });
+        }
       });
       return;
     }

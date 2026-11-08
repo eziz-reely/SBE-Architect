@@ -81,15 +81,24 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; 
 #gClr { position: absolute; right: 14px; top: 24px; z-index: 6; display: flex; align-items: center; gap: 6px; padding: 5px 9px 5px 7px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
 #gClr svg { width: 26px; height: 18px; } #gClr:hover { border-color: var(--mark); color: var(--mark); }
 #ribbon[hidden] { display: none; }
-#ribbon { display: flex; align-items: stretch; gap: 0; background: var(--paper); border-bottom: 1px solid var(--line); overflow-x: auto; min-height: 40px; }
-#ribbon .rg { display: flex; flex-direction: column; justify-content: space-between; gap: 3px; padding: 4px 12px 3px; border-right: 1px solid var(--line); }
-#ribbon .rg > .rl { font: 600 9.5px/1 var(--f-cap); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-#ribbon .rc { display: flex; align-items: center; gap: 2px; }
-#ribbon .rc button { min-width: 30px; height: 22px; padding: 0 7px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 2px; font: 600 11.5px/1 var(--f-ui); display: grid; place-items: center; }
-#ribbon .rc button.sv { background: var(--gold); border-color: var(--gold); color: #1f1b17; padding: 0 14px; }
-#ribbon .rc button.on { background: var(--brand); color: #f4efe6; border-color: var(--brand); }
-#ribbon .rc button svg { width: 22px; height: 12px; }
-#ribbon select, #ribbon input[type=color] { height: 22px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 2px; font: 600 11.5px/1 var(--f-ui); padding: 0 4px; }
+#ribbon { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, max-content)); gap: 18px 34px; align-items: start; background: var(--paper); border-bottom: 1px solid var(--line); box-shadow: 0 6px 14px -10px rgba(0,0,0,.35); padding: 16px 24px 12px; max-height: 46vh; overflow-y: auto; }
+#ribbon .rg { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 8px; padding: 0; border: 0; }
+#ribbon .rg > .rl { font: 600 10.5px/1 var(--f-cap); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#ribbon .rc { display: inline-flex; align-items: stretch; gap: 0; }
+#ribbon .rc button { min-width: 38px; height: 32px; padding: 0 12px; background: var(--field); color: var(--ink); border: 1px solid var(--line); margin-left: -1px; border-radius: 0; font: 600 12.5px/1 var(--f-ui); display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+#ribbon .rc button:first-child { border-radius: 7px 0 0 7px; margin-left: 0; }
+#ribbon .rc button:last-child { border-radius: 0 7px 7px 0; }
+#ribbon .rc button:only-child { border-radius: 7px; }
+#ribbon .rc button:hover { background: #fff; }
+#ribbon .rc button.on { background: var(--brand); color: #f4efe6; border-color: var(--brand); z-index: 1; position: relative; }
+#ribbon .rc button svg { width: 34px; height: 16px; flex: none; }
+#ribbon .rc button.sv { background: var(--gold); border-color: var(--gold); color: #1f1b17; padding: 0 20px; border-radius: 7px; }
+#ribbon .rc button.ca { margin-left: 8px; border-radius: 7px; }
+#ribbon .rfoot { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 2px; }
+#ribbon .rfoot button { height: 34px; padding: 0 22px; border-radius: 7px; font: 600 13px/1 var(--f-ui); border: 1px solid var(--line); background: var(--field); color: var(--ink); }
+#ribbon .rfoot button.sv { background: var(--gold); border-color: var(--gold); color: #1f1b17; }
+#ribbon select, #ribbon input[type=color] { height: 32px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 7px; font: 600 12.5px/1 var(--f-ui); padding: 0 8px; }
+#ribbon input[type=color] { width: 40px; padding: 2px; margin-left: 8px; }
 #ribbon input[type=color] { width: 30px; padding: 1px; }
 @media (max-width: 760px) { #ribbon { display: none; } }
 #stage iframe.wait { visibility: hidden; }
@@ -639,8 +648,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     grp("Teksta fonts", sel);
     { const sv = +(WS.section) || 1, sk = n => `<svg viewBox="0 0 30 14"><path d="M1 7h28" stroke="currentColor" stroke-width="1.2"${n === 2 ? "" : ' stroke-dasharray="5 1.5 1 1.5"'}/>${n === 3 ? '<path d="M15 3 L11 -0 H19Z" fill="#aaa" stroke="currentColor" stroke-width=".8" transform="translate(0 4)"/>' : '<path d="M1 3v8M29 3v8" stroke="currentColor" stroke-width="2.4"/>'}</svg>`;
       const setS = v => { const n = clone(model); wsSet(n, "section", v === 1 ? null : v); commit(n); };
-      grp("Griezuma līnija", ...[1, 2, 3].map(v => btn(sk(v) + " " + v, ["Raustīta ar bultiņām", "Pilna ar bultiņām", "Zīme ar trijstūri un apli"][v - 1], sv === v, () => setS(v)))); }
-    { const sv = btn("Saglabāt", "Saglabāt noformējumu un aizvērt paneli", false, () => ribToggle(false)); sv.className = "sv"; const ca = btn("Atcelt", "Atcelt izmaiņas, kas veiktas šajā panelī", false, ribCancel); grp("Noformējums", sv, ca); }
+      grp("Griezuma līnija", ...[1, 2, 3].map(v => btn(["Bultiņas", "Melna zīme", "Pelēka zīme"][v - 1], ["Raustīta ar bultiņām", "Melns trijstūris ar apli", "Pelēks trijstūris ar apli un lapas numuru"][v - 1], sv === v, () => setS(v)))); }
+    { const ft = document.createElement("div"); ft.className = "rfoot"; const ca = document.createElement("button"); ca.type = "button"; ca.textContent = "Atcelt"; ca.title = "Atcelt izmaiņas, kas veiktas šajā panelī"; ca.onclick = ribCancel; const sv = document.createElement("button"); sv.type = "button"; sv.className = "sv"; sv.textContent = "Saglabāt noformējumu"; sv.onclick = () => ribToggle(false); ft.append(ca, sv); R.appendChild(ft); }
   }
   function buttons() { ribbon(); try { topSync(); } catch (e) {} { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
   $("bRib").onclick = e => { e.stopPropagation(); ribToggle(!ribOpen); };
