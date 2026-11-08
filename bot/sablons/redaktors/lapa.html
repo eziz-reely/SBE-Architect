@@ -232,6 +232,8 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #d8cdb8; --paper: #242220; --desk: #161412; --line: #3a3631; --field: #2c2926; --gold: #b9a67f; }
   :root:not([data-theme="light"]) .pop .seg button[aria-checked="true"], :root:not([data-theme="light"]) .pop button.wide, :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #1f1b17 } }
 @media (max-width: 760px) { main { grid-template-columns: 1fr; } header { flex-wrap: wrap; } .tb { flex-wrap: wrap; } }
+.hconf { display: grid; gap: 6px; margin-top: 4px; }
+.hconf button { background: var(--field); color: var(--ink); border-color: var(--line); text-align: left; }
 </style>
 
 <header>
@@ -637,6 +639,19 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
   const sLeft = w => w.side === "north" || w.side === "east" || (!w.side && (w.o === "h" ? w.y < 1 : w.x > 1));
 
   let fid = 0;
+  // viena loga augšmalu parasti maina kopīgajā laukā (Māja); atsevišķu logu atslēdz pēc apstiprinājuma
+  let headUnlock = null;
+  function headField(it, sel, set) {
+    const key = sel.lv + ":" + sel.i, cur = it.head ?? 2100, glob = +((model.projekts || {}).logu_augsa) || 2100;
+    const f = field("Augša, mm", cur, set, null, "full"), inp = f.querySelector("input");
+    if (headUnlock === key || cur !== glob || sel.lv === "loft") return f;
+    inp.disabled = true;
+    const box = document.createElement("div"); box.className = "hconf";
+    const t = document.createElement("small"); t.textContent = "Augšmala seko kopīgajam laukam (" + glob + " mm, sadaļa Māja). Mainīt tikai šo logu?";
+    const y = document.createElement("button"); y.type = "button"; y.textContent = "Jā, mainīt šo logu";
+    y.onclick = () => { headUnlock = key; inp.disabled = false; box.remove(); inp.focus(); };
+    box.append(t, y); f.appendChild(box); return f;
+  }
   function field(lab, val, set, opts, cls) {
     const id = "fld-" + (++fid);
     const l = document.createElement("label"); l.htmlFor = id; l.textContent = lab; if (cls) l.className = cls;
@@ -732,6 +747,16 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
     const g2 = group("Visi logi", host);
     const all = [...(model.windows || []), ...(model.gableWins || [])], vals = [...new Set(all.map(casOf))];
     const co = vals.length === 1 ? vals[0] : "mix", copts = Object.assign(co === "mix" ? { mix: "Dažādas" } : {}, CAS);
+    { // logu augšmala visiem logiem vienā laukā; logi ar savu augstumu paliek, kā ir
+      const H0 = +((model.projekts || {}).logu_augsa) || 2100;
+      const hf = field("Logu augšmala visiem, mm", H0, (n, v) => {
+        v = Math.max(1800, Math.min(3000, Math.round(v / 10) * 10));
+        n.projekts = n.projekts || {}; const old = +n.projekts.logu_augsa || 2100; n.projekts.logu_augsa = v;
+        (n.windows || []).forEach(w => { if ((w.head ?? 2100) === old && (w.sill ?? 0) + 300 <= v) w.head = v; });
+      }, null, "full");
+      const nt = document.createElement("small"); nt.textContent = "Visiem logiem, kuriem augšmala nav mainīta atsevišķi, tā mainās līdzi. Jaunie logi arī sāk ar šo augstumu."; hf.appendChild(nt);
+      g2.appendChild(hf);
+    }
     g2.appendChild(field("Aplodas visiem logiem", co, (n, v) => { if (v === "mix") return; [...(n.windows || []), ...(n.gableWins || [])].forEach(w => setCas(w, v)); }, copts, "full"));
     { // mājas izmēri: garums, platums, kores augstums, jumta slīpums
       const I = model.ievade || {}, J = model.jumts || {}, gs = group("Mājas izmēri", host);
@@ -825,7 +850,7 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
       g.append(field("Platums, mm", it.len, (n, v) => { const w = S(n), c = w[key] + w.len / 2, old = w.len; w.len = Math.max(300, v); w[key] = Math.round(c - w.len / 2); if (w.parts && w.parts.length === 2) { w.parts[1].len = Math.max(200, w.parts[1].len + (w.len - old)); } fix(n); }),
         field("No stūra, mm", it[key], (n, v) => { S(n)[key] = v; fix(n); }),
         field("Palodze, mm", it.sill ?? 0, (n, v) => { S(n).sill = Math.max(sel.lv === "loft" ? gwBase(n) : 0, v); fix(n); }),
-        field("Augša, mm", it.head ?? 2100, (n, v) => { S(n).head = v; fix(n); }),
+        headField(it, sel, (n, v) => { S(n).head = v; fix(n); }),
         field("Daļas", two ? "2" : "1", (n, v) => {
           const w = S(n);
           if (v === "2") { const a = Math.round(w.len * .4 / 10) * 10; w.parts = [{ len: a, kind: "tilt", hinge: "l" }, { len: w.len - a, kind: "fixed", hinge: "l" }]; w.kind = "parts"; }

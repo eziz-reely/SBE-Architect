@@ -992,9 +992,9 @@
   const sideOfWall = w => (w.axis === "x" ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south"));
   function newWin(N, side, a, z) {   // ordinary window in an outer wall, centred on a
     const len = 1000, sp = side === "east" || side === "west" ? N.D : N.W, at = Math.max(T, Math.min(sp - T - len, r10(a - len / 2)));
-    const w = { len, sill: 900, head: 2100, kind: "tilt", o: side === "north" || side === "south" ? "h" : "v", side };
+    const GH = +((N.projekts || {}).logu_augsa) || 2100, w = { len, sill: 900, head: GH, kind: "tilt", o: side === "north" || side === "south" ? "h" : "v", side };
     if (w.o === "h") { w.x = at; w.y = side === "north" ? 0 : N.D - T; } else { w.y = at; w.x = side === "west" ? 0 : N.W - T; w.out = side === "west" ? -1 : 1; }
-    if (z != null && z > 0 && z < 2000) { w.sill = r10(z - 600); w.head = w.sill + 1200; if (w.sill < 0) { w.sill = 0; w.head = 2100; } }
+    if (z != null && z > 0 && z < 2000) { w.sill = r10(z - 600); w.head = w.sill + 1200; if (w.sill < 0) { w.sill = 0; w.head = GH; } }
     N.windows.push(w); return { k: "win", i: N.windows.length - 1, lv: "main" };
   }
   function newGableWin(N, side, a, z, slope) {   // window in the gable above the eave; a sloped one follows the roof
