@@ -118,6 +118,7 @@ function inset(poly, d) {
 // sienu kontūru biezuma reizinātājs no redaktora joslas (projekts.wall_style.outer / inner: 0 tieva … 3 bieza, 2 = parasts)
 const SWD = dflt => { const q = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).swing; return q === "dash" || (!q && dflt) ? { "stroke-dasharray": dflt ? "40 30" : "70 45" } : {}; };   // durvju un logu vēršanās loks: pilns vai raustīts
 const DIMC = () => ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim || null;   // vienota mēru krāsa
+const FDIMC = () => ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).fdim || C.ink;   // fasāžu lineāro mēru krāsa
 const WL = k => { const s = (window.AR && AR.projekts && AR.projekts.wall_style) || {}, i = s[k] == null ? 3 : s[k]; return [0.25, 0.55, 1, 1.8][i] || 1; };
 function drawWalls(g, v, cid) {
   const poly = v.poly, n = poly.length, ps = p => p.map(q => q.join(",")).join(" ");
@@ -279,7 +280,7 @@ function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
     const t = axis === "x" ? T_(g, mm, at - 70 + off, txt, { a: "middle", fs: 190 }) : T_(g, at - 70 + off, mm, txt, { a: "middle", fs: 190, tr: `rotate(-90 ${at - 70 + off} ${mm})` });
     if (inner) { t.setAttribute("stroke", "#fff"); t.setAttribute("stroke-width", 60); t.setAttribute("paint-order", "stroke"); t.setAttribute("stroke-linejoin", "round"); }
   }
-  const dc = DIMC();   // dimensiju ķēžu krāsa (noformējuma panelis)
+  const dc = window.__dimC || DIMC();   // dimensiju ķēžu krāsa (noformējuma panelis)
   if (dc) for (let k = dn0; k < g.childNodes.length; k++) { const q = g.childNodes[k]; if (q.tagName === "text") q.setAttribute("fill", dc); else q.setAttribute("stroke", dc); }
 }
 
@@ -841,7 +842,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
 
   // lietotāja fasādes mēri (projekts.fdims): augstuma atzīmes labajā pusē un lineārie mēri
   ((window.AR && AR.projekts && AR.projekts.fdims) || []).filter(d => d.s === side).forEach(d => {
-    const dc = DIMC() || C.ink;
+    const dc = FDIMC();
     if (d.k === "lvl") {
       const x0 = span + ROOF.ov + 150, lx = span + ROOF.ov + 1300, ty = -d.z - 210, lab = lv(Math.round(d.z)), tw = lab.length * 152;
       el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: dc, "stroke-width": 7 }, g);
@@ -855,7 +856,9 @@ function elevation(parent, v, side, opt = { levels: true }) {
       const endOf = (st) => at + (st < at ? 150 : -150);
       const ex = (c, pv) => { const st = startOf(pv), en = endOf(st); el("line", h ? { x1: c, y1: -st, x2: c, y2: -en, stroke: dc, "stroke-width": 5 } : { x1: st, y1: -c, x2: en, y2: -c, stroke: dc, "stroke-width": 5 }, g); };
       ex(d.a, pa[0]); ex(d.b, pa[1]);
+      window.__dimC = dc;
       if (h) chainCad(g, [d.a, d.b], "x", -at); else chainCad(g, [-d.b, -d.a], "y", at);
+      window.__dimC = null;
     }
   });
 
