@@ -173,7 +173,7 @@ def build(model_path, langs=None):
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)
         ('      R(s0, s1, z0 - 40, z0 + 10, { fill: cc, ...ln });', '      R(s0, s1, z0 - 40, z0 + 10, { fill: colHex((window.AR && AR.win && AR.win.sillColor) || WINC().cas, "#24282b"), ...ln });'),
         # [MM] logu vēršanās loks plānā raustīts
-        ('A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG)', 'A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5, "stroke-dasharray": "40 30" }, sashG)'),
+        ('A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG)', 'A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5, ...SWD(1) }, sashG)'),
         # [MM] durvju kārbas paliek sienā: baltais izgriezums tikai brīvajā ailā, sienas līnijas iet pāri kārbām
         ('gap(x - KB, y - 14, w + 2 * KB, th + 28);', 'gap(x, y - 14, w, th + 28);'),
         ('gap(x - 14, y - KB, th + 28, w + 2 * KB);', 'gap(x - 14, y, th + 28, w);'),

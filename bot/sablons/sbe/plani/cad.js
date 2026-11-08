@@ -116,6 +116,7 @@ function inset(poly, d) {
   return poly.map((p, i) => { const a = nrm((i - 1 + n) % n), b = nrm(i); return [p[0] + d * (a[0] + b[0]), p[1] + d * (a[1] + b[1])]; });
 }
 // sienu kontūru biezuma reizinātājs no redaktora joslas (projekts.wall_style.outer / inner: 0 tieva … 3 bieza, 2 = parasts)
+const SWD = dflt => { const q = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).swing; return q === "dash" || (!q && dflt) ? { "stroke-dasharray": dflt ? "40 30" : "70 45" } : {}; };   // durvju un logu vēršanās loks: pilns vai raustīts
 const WL = k => { const s = (window.AR && AR.projekts && AR.projekts.wall_style) || {}, i = s[k] == null ? 2 : s[k]; return [0.25, 0.55, 1, 1.8][i] || 1; };
 function drawWalls(g, v, cid) {
   const poly = v.poly, n = poly.length, ps = p => p.map(q => q.join(",")).join(" ");
@@ -466,7 +467,7 @@ function cadPlan(parent, v, opt = {}) {
       });
       leaves.forEach(([h, dir, lw]) => {
         const p = Pt(h, 0), tip = Pt(h + dir * lw * Math.cos(A), n * lw * Math.sin(A)), cl = Pt(h + dir * lw, 0);
-        el("line", { x1: p[0], y1: p[1], x2: tip[0], y2: tip[1], stroke: C.line, "stroke-width": 10 }, sashG);
+        el("line", { x1: p[0], y1: p[1], x2: tip[0], y2: tip[1], stroke: C.line, "stroke-width": 5 }, sashG);
         const cw = (w.o === "h") === (dir * n > 0) ? 1 : 0;
         el("path", { d: `M ${cl[0]} ${cl[1]} A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG);
       });
@@ -483,13 +484,13 @@ function cadPlan(parent, v, opt = {}) {
       const py = side > 0 ? y + th : y, px = hinge === "s" ? x : x + w, ox = hinge === "s" ? x + w : x, ly = py + side * w;
       el("rect", { x: hinge === "s" ? px : px - lt, y: Math.min(py, ly), width: lt, height: w, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       const sweep = (hinge === "s") === (side > 0) ? 0 : 1;
-      el("path", { d: `M ${px} ${ly} A ${w} ${w} 0 0 ${sweep} ${ox} ${py}`, fill: "none", stroke: C.thin, "stroke-width": 6 }, g);
+      el("path", { d: `M ${px} ${ly} A ${w} ${w} 0 0 ${sweep} ${ox} ${py}`, fill: "none", stroke: C.thin, "stroke-width": 6, ...SWD() }, g);
     } else {
       gap(x - 14, y, th + 28, w); jamb(x, y, x + th, y); jamb(x, y + w, x + th, y + w);
       const px = side > 0 ? x + th : x, py = hinge === "s" ? y : y + w, oy = hinge === "s" ? y + w : y, lx = px + side * w;
       el("rect", { x: Math.min(px, lx), y: hinge === "s" ? py : py - lt, width: w, height: lt, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       const sweep = (hinge === "s") === (side > 0) ? 1 : 0;
-      el("path", { d: `M ${lx} ${py} A ${w} ${w} 0 0 ${sweep} ${px} ${oy}`, fill: "none", stroke: C.thin, "stroke-width": 6 }, g);
+      el("path", { d: `M ${lx} ${py} A ${w} ${w} 0 0 ${sweep} ${px} ${oy}`, fill: "none", stroke: C.thin, "stroke-width": 6, ...SWD() }, g);
     }
   });
 

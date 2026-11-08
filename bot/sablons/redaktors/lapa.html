@@ -621,6 +621,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     grp("Sienu aizpildījums", ...els);
     const W = [[0, 1], [1, 2], [2, 3.5], [3, 6]], wb = k => W.map(([v, w]) => btn(`<svg viewBox="0 0 22 12"><path d="M1 6h20" stroke="currentColor" stroke-width="${w}"/></svg>`, ["Tieva", "Plāna", "Vidēja", "Bieza"][v], (WS[k] == null ? 2 : WS[k]) === v, () => { const n = clone(model); wsSet(n, k, v === 2 ? null : v); commit(n); }));
     grp("Ārsienu kontūra", ...wb("outer")); grp("Starpsienu kontūra", ...wb("inner"));
+    { const sw = WS.swing || "", dsh = d => `<svg viewBox="0 0 28 14"><path d="M2 12 A10 10 0 0 1 12 2" fill="none" stroke="currentColor" stroke-width="1.6"${d ? ' stroke-dasharray="2.6 1.8"' : ""}/><path d="M12 2 V12 H2" fill="none" stroke="currentColor" stroke-width="1"/></svg>`;
+      const set = v => { const n = clone(model); wsSet(n, "swing", v); commit(n); };
+      grp("Durvju un logu vēršanās", btn(dsh(false) + " Pilna", "Vēršanās loks ar pilnu līniju", sw === "solid", () => set("solid")), btn(dsh(true) + " Raustīta", "Vēršanās loks ar raustītu līniju", sw === "dash", () => set("dash"))); }
     const sel = document.createElement("select"); [["", "Barlow (parasts)"], ["Arial", "Arial"], ["Calibri", "Calibri"], ["Segoe UI", "Segoe UI"], ["Verdana", "Verdana"], ["Times New Roman", "Times New Roman"], ["Courier New", "Courier New"], ["ISOCPEUR", "ISOCPEUR"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); });
     sel.value = P.fonts || ""; sel.onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; if (sel.value) n.projekts.fonts = sel.value; else delete n.projekts.fonts; commit(n); };
     grp("Teksta fonts", sel);
