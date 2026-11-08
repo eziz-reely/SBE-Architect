@@ -844,11 +844,12 @@ function elevation(parent, v, side, opt = { levels: true }) {
   ((window.AR && AR.projekts && AR.projekts.fdims) || []).filter(d => d.s === side).forEach(d => {
     const dc = FDIMC();
     if (d.k === "lvl") {
+      const lc = DIMC() || C.ink;   // augstuma atzīmes: mēru ķēžu krāsa
       const x0 = span + ROOF.ov + 150, lx = span + ROOF.ov + 1300, ty = -d.z - 210, lab = lv(Math.round(d.z)), tw = lab.length * 152;
-      el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: dc, "stroke-width": 7 }, g);
-      el("path", { d: `M ${lx} ${-d.z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: dc }, g);
-      el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: dc, "stroke-width": 10 }, g);
-      const t = T_(g, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", dc);
+      el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: lc, "stroke-width": 7 }, g);
+      el("path", { d: `M ${lx} ${-d.z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: lc }, g);
+      el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: lc, "stroke-width": 10 }, g);
+      const t = T_(g, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", lc);
     } else if (d.k === "lin") {
       const h = d.o === "h", pa = (d.p || [0, 0]), at = d.at;
       // izvadlīnijas: īsas, no 100 mm atstarpes pie fasādes līdz 150 mm aiz mēra līnijas (neiet cauri fasādei un citiem mēriem)

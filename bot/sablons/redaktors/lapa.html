@@ -653,7 +653,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { const c = document.createElement("input"); c.type = "color"; c.value = WS.dim || "#000000"; c.title = "Mēru ķēžu krāsa";
       c.onchange = () => { const n = clone(model); wsSet(n, "dim", c.value); commit(n); };
       const rs = btn("Melna", "Atgriezt standarta krāsu", !WS.dim, () => { const n = clone(model); wsSet(n, "dim", null); commit(n); });
-      grp("Mēru ķēžu krāsa", rs, c);
+      grp("Mēru ķēžu un atzīmju krāsa", rs, c);
       const fc = document.createElement("input"); fc.type = "color"; fc.value = WS.fdim || "#000000"; fc.title = "Fasāžu lineāro mēru krāsa";
       fc.onchange = () => { const n = clone(model); wsSet(n, "fdim", fc.value); commit(n); };
       const fr = btn("Melna", "Atgriezt standarta krāsu", !WS.fdim, () => { const n = clone(model); wsSet(n, "fdim", null); commit(n); });
