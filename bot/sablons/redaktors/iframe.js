@@ -669,7 +669,8 @@
       (N.gableWins || []).forEach(g => { if (!g.win && g.u0 < old / 2 && g.u1 > old / 2) { const h = (g.u1 - g.u0) / 2; g.u0 = +(N.D / 2 - h).toFixed(1); g.u1 = +(N.D / 2 + h).toFixed(1); const lw = (N.loft && N.loft.windows || []).find(q => q.side === g.side && q.shape === "gable" && q.y < old / 2 && q.y + q.len > old / 2); if (lw) { lw.y = g.u0; } } });
     }
     if (N.ievade) { if (X) N.ievade.garums = N.W; else N.ievade.platums = N.D; }
-    const bad = [N, N.loft].filter(Boolean).some(L => (L.rooms || []).some(rm => rm.r.some(q => q[2] < MINR || q[3] < MINR)));
+    // par šauru kļūst tikai tas, kas pirms pārbīdes nebija šaurs (izgrieztas atveres ir 195 mm joslas, tās neskaita)
+    const bad = [[N, M], [N.loft, M.loft]].some(([A, B]) => A && B && (A.rooms || []).some((rm, ri) => rm.r.some((q, qi) => { const o = (((B.rooms || [])[ri] || {}).r || [])[qi] || q; return (q[2] < MINR && o[2] >= MINR) || (q[3] < MINR && o[3] >= MINR); })));
     if (bad) return null;
     stamps(M, N);
     return N;
