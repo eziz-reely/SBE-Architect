@@ -846,6 +846,20 @@
   }
 
   const cur = z => (z === "l" || z === "r" || z === "wx" ? "ew-resize" : z === "t" || z === "b" || z === "wy" ? "ns-resize" : z === "rot" ? "grab" : z === "del" ? "pointer" : "move");
+
+  // lineāli kā ArchiCAD: izvelc palīglīniju no kreisās vai augšējās malas, atpakaļ uz lineālu to dzēš
+  const RUL = 16;
+  (function () {
+    const css = document.createElement("style"); css.textContent = ".mm-rul{position:fixed;z-index:5;background:rgba(243,241,236,.92);border:0 solid #c9c2b5}.mm-rul.v{left:0;top:0;bottom:0;width:" + RUL + "px;border-right-width:1px;cursor:col-resize}.mm-rul.h{left:0;top:0;right:0;height:" + RUL + "px;border-bottom-width:1px;cursor:row-resize}.mm-rul:hover{background:rgba(26,155,215,.18)}";
+    document.head.appendChild(css);
+    [["v", "v"], ["h", "h"]].forEach(([o]) => {
+      const el = document.createElement("div"); el.className = "mm-rul " + o; el.title = o === "v" ? "Velc, lai ievilktu vertikālu palīglīniju" : "Velc, lai ievilktu horizontālu palīglīniju"; document.documentElement.appendChild(el);
+      el.addEventListener("pointerdown", e => {
+        if (e.button !== 0 || place) return; e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+        drag = { gi: -1, isNew: true, gd: { o }, x0: e.clientX, y0: e.clientY, moved: false, P: guidePts(), h: null };
+      });
+    });
+  })();
   window.MMZ_HOOK = e => {
     if (e.button !== 0) return false;
     if (place && place.t === "guide") {
@@ -889,7 +903,7 @@
     if (place && place.t === "guide") { drawGuides(guideAt(place.o, e.clientX, e.clientY, place.P || (place.P = guidePts()))); return; }
     if (drag && drag.gi != null) {
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
-      if (drag.moved) { drag.ng = guideAt(drag.gd.o, e.clientX, e.clientY, drag.P); if (drag.gd.o === "s") drag.ng.a = drag.gd.a; drawGuides(drag.ng); }
+      if (drag.moved) { drag.ng = guideAt(drag.gd.o, e.clientX, e.clientY, drag.P); if (drag.gd.o === "s") drag.ng.a = drag.gd.a; drag.over = drag.gd.o === "v" ? e.clientX < RUL : drag.gd.o === "h" ? e.clientY < RUL : false; drawGuides(drag.over ? null : drag.ng); }
       return;
     }
     if (!drag && !place) { const gi = guideHit(e.clientX, e.clientY); if (gi >= 0) { document.body.style.cursor = GUIDES()[gi].o === "h" ? "ns-resize" : "ew-resize"; hover(null); return; } }
@@ -913,6 +927,11 @@
     if (!drag) return;
     if (drag.gi != null) {
       const d = drag; drag = null; document.body.style.cursor = "";
+      if (d.isNew) {   // jauna palīglīnija, izvilkta no lineāla: tukšums = atcelts
+        if (d.moved && d.ng && d.over !== true) { const gd = Object.assign({}, d.ng); delete gd.hit; delete gd.hp; const N = clone(M); N.projekts = N.projekts || {}; N.projekts.guides = (N.projekts.guides || []).concat([gd]); post({ t: "edit", model: N, sel }); } else drawGuides();
+        return;
+      }
+      if (d.moved && d.over === true) { const N = clone(M); N.projekts.guides.splice(d.gi, 1); sel = null; post({ t: "edit", model: N, sel: null }); return; }   // vilkta atpakaļ uz lineālu: dzēš
       if (d.moved && d.ng) { const N = clone(M), g = N.projekts.guides[d.gi]; if (g.o === "s") { g.x = d.ng.x; g.y = d.ng.y; } else g.at = d.ng.at; post({ t: "edit", model: N, sel }); }
       else drawGuides();
       return;
