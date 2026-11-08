@@ -921,6 +921,7 @@
       if (ix >= 0) { drag = { wend: true, hw, ix, e0: hw.seg[ix], fixed: hw.seg[1 - ix], u: hw.seg[ix], x0: e.clientX, y0: e.clientY, moved: false }; document.body.style.cursor = X ? "ns-resize" : "ew-resize"; return true; }
     }
     const h = hit(e.clientX, e.clientY); hover(null);
+    if (h && h.wall && !moveMode) return true;   // sienu pārbīda tikai ar Move rīku; galus velk ar rokturiem
     if (!h) { if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false; }
     if (h.del) { post({ t: "delete" }); return true; }
     if (h.rot) {   // klikšķis = 90°, vilkšana = brīvi (solis 15°, ar Shift 1°)
@@ -937,9 +938,11 @@
     const inGrp = grpOk && sel && sel.more && sel.more.length && (same(h.it, sel) || sel.more.some(m => same(m, h.it)));
     if (!h.wall && !inGrp) { sel = { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
     drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
-    document.body.style.cursor = cur(drag.zone);
+    document.body.style.cursor = h.wall ? MVC : cur(drag.zone);
     return true;
   };
+  let moveMode = false;
+  const MVC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='%23e0201b' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'><path d='M16 2l5 6h-3.4v6.6H24V11l6 5-6 5v-3.6h-6.4V24H21l-5 6-5-6h3.4v-6.6H8V21l-6-5 6-5v3.6h6.4V8H11z'/></g></svg>\") 16 16, move";
   const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";
   addEventListener("pointermove", e => {
     if (place && place.t === "erase") { document.body.style.cursor = ERC; const h = guideHit(e.clientX, e.clientY) >= 0 ? null : hit(e.clientX, e.clientY); hover(h); return; }
@@ -965,7 +968,7 @@
     if (place) { hover(null); return; }
     if (!drag) {
       const h = hit(e.clientX, e.clientY);
-      document.body.style.cursor = h ? cur(zone(h)) : ""; hover(h);
+      document.body.style.cursor = h ? (h.wall ? (moveMode ? MVC : "") : cur(zone(h))) : (moveMode ? MVC : ""); hover(h);
       return;
     }
     const a = toLocal(drag.h.bl.g, e.clientX, e.clientY), b = toLocal(drag.h.bl.g, drag.x0, drag.y0);
@@ -1013,6 +1016,7 @@
     if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) { e.preventDefault(); post({ t: e.shiftKey ? "redo" : "undo" }); return; }
     if ((e.ctrlKey || e.metaKey) && (e.key === "y" || e.key === "Y")) { e.preventDefault(); post({ t: "redo" }); return; }
     if (e.key === "Escape" && drag) { drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); drawSel(); return; }
+    if (e.key === "Escape" && moveMode && !drag) { moveMode = false; document.body.style.cursor = ""; post({ t: "mvoff" }); }
     if (e.key === "Escape" && place) { place = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); drawGuides(); post({ t: "placed" }); return; }
     if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) post({ t: "key", k: "combo", c: (e.shiftKey ? "shift+" : "") + e.key.toLowerCase() });   // taustiņus apstrādā ārējā lapa (pielāgojami)
     if ((e.ctrlKey || e.metaKey) && /^[cC]$/.test(e.key) && sel && GRP.includes(sel.k)) {   // Ctrl+C: nokopē atlasītos logus, durvis, mēbeles
@@ -1070,6 +1074,7 @@
       if (bathFix(N)) { post({ t: "hint", text: BATHMSG }); post({ t: "edit", model: clone(M), sel }); return; }
       post({ t: "edit", model: N, sel, resized: 1 }); return;
     }
+    if (m && "mmMove" in m) { moveMode = !!m.mmMove; document.body.style.cursor = moveMode ? MVC : ""; return; }
     if (!m || !("mmPlace" in m)) return;
     place = m.mmPlace; document.body.style.cursor = place ? "crosshair" : ""; drawGuides();
   });
