@@ -116,7 +116,7 @@ function inset(poly, d) {
   return poly.map((p, i) => { const a = nrm((i - 1 + n) % n), b = nrm(i); return [p[0] + d * (a[0] + b[0]), p[1] + d * (a[1] + b[1])]; });
 }
 // sienu kontūru biezuma reizinātājs no redaktora joslas (projekts.wall_style.outer / inner: 0 tieva … 3 bieza, 2 = parasts)
-const SWD = dflt => { const q = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).swing; return q === "dash" || (!q && dflt) ? { "stroke-dasharray": dflt ? "40 30" : "70 45" } : {}; };   // durvju un logu vēršanās loks: pilns vai raustīts
+const SWD = () => (((window.AR && AR.projekts && AR.projekts.wall_style) || {}).swing === "dash" ? { "stroke-dasharray": "70 45" } : {});   // vēršanās loks durvīm un logiem vienāds: pilns vai raustīts
 const DIMC = () => ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim || null;   // vienota mēru krāsa
 const FDIMC = () => ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).fdim || C.ink;   // fasāžu lineāro mēru krāsa
 const WL = k => { const s = (window.AR && AR.projekts && AR.projekts.wall_style) || {}, i = s[k] == null ? 3 : s[k]; return [0.25, 0.55, 1, 1.8][i] || 1; };
