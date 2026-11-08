@@ -306,7 +306,7 @@ aside #hint, aside .savebar #status { display: none; }
 </style>
 
 <header>
-  <span class="mark">MM HOMES</span>
+  <span class="mark">SBE</span>
   <h1 id="hName">__MM_NAME__</h1>
   <span class="tag" id="hTag">Skices labošana</span>
   <span class="sp"></span>
@@ -443,6 +443,7 @@ aside #hint, aside .savebar #status { display: none; }
 </div>
 <script>__MM_THREE__</script>
 <script>
+addEventListener("error", e => { try { let b = document.getElementById("errbar"); if (!b) { b = document.createElement("div"); b.id = "errbar"; b.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99;background:#b3261e;color:#fff;padding:6px 12px;font:12px/1.3 monospace"; document.body.appendChild(b); } b.textContent = "Kļūda: " + e.message + " (rinda " + e.lineno + ")"; } catch (_) {} });
 (function () {
   const LAYERS0 = __MM_LAYERS__, TONES = __MM_TONES__, TPL = __MM_TEMPLATE__, BASE = __MM_MODEL__, FRAME_JS = __MM_FRAME_JS__, MARK = "/*@@MM_BLOCKS@@*/";
   const clone = o => JSON.parse(JSON.stringify(o));
