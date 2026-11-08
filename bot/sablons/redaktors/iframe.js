@@ -88,8 +88,8 @@
     if (l === "loft") return null;
     const R = rects("main");
     for (const a of R) for (const b of R) {
-      if (b[0] - a[2] > 0 && b[0] - a[2] <= 300 && x >= a[2] - 20 && x <= b[0] + 20 && y >= Math.max(a[1], b[1]) && y <= Math.min(a[3], b[3])) return { axis: "x", lo: a[2], hi: b[0] };
-      if (b[1] - a[3] > 0 && b[1] - a[3] <= 300 && y >= a[3] - 20 && y <= b[1] + 20 && x >= Math.max(a[0], b[0]) && x <= Math.min(a[2], b[2])) return { axis: "y", lo: a[3], hi: b[1] };
+      if (b[0] - a[2] > 0 && b[0] - a[2] <= 300 && x >= a[2] - 20 && x <= b[0] + 20 && y >= Math.max(a[1], b[1]) && y <= Math.min(a[3], b[3])) return { axis: "x", lo: a[2], hi: b[0], v0: Math.max(a[1], b[1]), v1: Math.min(a[3], b[3]) };
+      if (b[1] - a[3] > 0 && b[1] - a[3] <= 300 && y >= a[3] - 20 && y <= b[1] + 20 && x >= Math.max(a[0], b[0]) && x <= Math.min(a[2], b[2])) return { axis: "y", lo: a[3], hi: b[1], v0: Math.max(a[0], b[0]), v1: Math.min(a[2], b[2]) };
     }
     return null;
   }
@@ -162,7 +162,8 @@
     for (const bl of bls) {
       if (bl.type !== "plan") continue;
       const p = toLocal(bl.g, cx, cy), w = wallAt(bl.lv, p);
-      if (w) return { it: { k: "wall", lv: bl.lv, b: w.axis === "x" ? [w.lo, -1e9, w.hi, 1e9] : [-1e9, w.lo, 1e9, w.hi], w }, bl, p, wall: true };
+      if (w) { const e0 = w.v0 != null ? w.v0 : T, e1 = w.v1 != null ? w.v1 : (w.axis === "x" ? M.D : M.W) - T;   // tikai pati sienas posma garums, nevis visa lapa
+      return { it: { k: "wall", lv: bl.lv, b: w.axis === "x" ? [w.lo, e0, w.hi, e1] : [e0, w.lo, e1, w.hi], w }, bl, p, wall: true }; }
     }
     return null;
   }
@@ -299,6 +300,13 @@
     let side = -1; blocks().filter(b => b.type === "elev").forEach(bl => { const r = bl.g.getBoundingClientRect(); if (cx >= r.left && cx <= r.right) side = cx < r.left + r.width / 2 ? -1 : 1; }); void W;
     return { o, x: +pt[0].toFixed(2), y: +pt[1].toFixed(2), a: side < 0 ? -pitch : pitch, hit: !!bp, hp: pt };
   }
+  function guideAuto(cx, cy, P, shift) {   // pati izvēlas vertikālu vai horizontālu: kurai tuvāks pielipšanas punkts, citādi vertikāla (Shift = horizontāla)
+    const v = guideAt("v", cx, cy, P), h = guideAt("h", cx, cy, P), [x, y] = toSheet(cx, cy);
+    if (v.hit && h.hit) return Math.abs(v.at - x) <= Math.abs(h.at - y) ? v : h;
+    if (v.hit) return v; if (h.hit) return h;
+    return shift ? h : v;
+  }
+  const guideNow = (pl, cx, cy, shift) => pl.o === "a" ? guideAuto(cx, cy, pl.P || (pl.P = guidePts()), shift) : guideAt(pl.o, cx, cy, pl.P || (pl.P = guidePts()));
   function guideHit(cx, cy) {   // palīglīnija tuvāk par 5 px
     const [x, y] = toSheet(cx, cy), rad = 5 / pxU(); let best = -1, bd = rad;
     GUIDES().forEach((gd, i) => {
@@ -846,10 +854,24 @@
   }
 
   const cur = z => (z === "l" || z === "r" || z === "wx" ? "ew-resize" : z === "t" || z === "b" || z === "wy" ? "ns-resize" : z === "rot" ? "grab" : z === "del" ? "pointer" : "move");
+
+  // lineāli kā ArchiCAD: izvelc palīglīniju no kreisās vai augšējās malas, atpakaļ uz lineālu to dzēš
+  const RUL = 16;
+  (function () {
+    const css = document.createElement("style"); css.textContent = ".mm-rul{position:fixed;z-index:5;background:rgba(26,155,215,.12);border:0 solid #1a9bd7}.mm-rul.v{left:0;top:0;bottom:0;width:" + RUL + "px;border-right-width:1px;cursor:col-resize}.mm-rul.h{left:0;top:0;right:0;height:" + RUL + "px;border-bottom-width:1px;cursor:row-resize}.mm-rul:hover{background:rgba(26,155,215,.18)}";
+    document.head.appendChild(css);
+    [["v", "v"], ["h", "h"]].forEach(([o]) => {
+      const el = document.createElement("div"); el.className = "mm-rul " + o; el.title = o === "v" ? "Velc, lai ievilktu vertikālu palīglīniju" : "Velc, lai ievilktu horizontālu palīglīniju"; document.documentElement.appendChild(el);
+      el.addEventListener("pointerdown", e => {
+        if (e.button !== 0 || place) return; e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+        drag = { gi: -1, isNew: true, gd: { o }, x0: e.clientX, y0: e.clientY, moved: false, P: guidePts(), h: null };
+      });
+    });
+  })();
   window.MMZ_HOOK = e => {
     if (e.button !== 0) return false;
     if (place && place.t === "guide") {
-      const gd = guideAt(place.o, e.clientX, e.clientY, place.P || (place.P = guidePts())); delete gd.hit; delete gd.hp;
+      const gd = guideNow(place, e.clientX, e.clientY, e.shiftKey); delete gd.hit; delete gd.hp;
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.guides = (N.projekts.guides || []).concat([gd]);
       post({ t: "edit", model: N, sel }); return true;
     }
@@ -886,10 +908,10 @@
   addEventListener("pointermove", e => {
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
-    if (place && place.t === "guide") { drawGuides(guideAt(place.o, e.clientX, e.clientY, place.P || (place.P = guidePts()))); return; }
+    if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
     if (drag && drag.gi != null) {
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
-      if (drag.moved) { drag.ng = guideAt(drag.gd.o, e.clientX, e.clientY, drag.P); if (drag.gd.o === "s") drag.ng.a = drag.gd.a; drawGuides(drag.ng); }
+      if (drag.moved) { drag.ng = guideAt(drag.gd.o, e.clientX, e.clientY, drag.P); if (drag.gd.o === "s") drag.ng.a = drag.gd.a; drag.over = drag.gd.o === "v" ? e.clientX < RUL : drag.gd.o === "h" ? e.clientY < RUL : false; drawGuides(drag.over ? null : drag.ng); }
       return;
     }
     if (!drag && !place) { const gi = guideHit(e.clientX, e.clientY); if (gi >= 0) { document.body.style.cursor = GUIDES()[gi].o === "h" ? "ns-resize" : "ew-resize"; hover(null); return; } }
@@ -913,6 +935,11 @@
     if (!drag) return;
     if (drag.gi != null) {
       const d = drag; drag = null; document.body.style.cursor = "";
+      if (d.isNew) {   // jauna palīglīnija, izvilkta no lineāla: tukšums = atcelts
+        if (d.moved && d.ng && d.over !== true) { const gd = Object.assign({}, d.ng); delete gd.hit; delete gd.hp; const N = clone(M); N.projekts = N.projekts || {}; N.projekts.guides = (N.projekts.guides || []).concat([gd]); post({ t: "edit", model: N, sel }); } else drawGuides();
+        return;
+      }
+      if (d.moved && d.over === true) { const N = clone(M); N.projekts.guides.splice(d.gi, 1); sel = null; post({ t: "edit", model: N, sel: null }); return; }   // vilkta atpakaļ uz lineālu: dzēš
       if (d.moved && d.ng) { const N = clone(M), g = N.projekts.guides[d.gi]; if (g.o === "s") { g.x = d.ng.x; g.y = d.ng.y; } else g.at = d.ng.at; post({ t: "edit", model: N, sel }); }
       else drawGuides();
       return;
@@ -934,8 +961,7 @@
     if ((e.ctrlKey || e.metaKey) && (e.key === "y" || e.key === "Y")) { e.preventDefault(); post({ t: "redo" }); return; }
     if (e.key === "Escape" && drag) { drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); drawSel(); return; }
     if (e.key === "Escape" && place) { place = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); drawGuides(); post({ t: "placed" }); return; }
-    if ((e.key === "d" || e.key === "D") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); post({ t: "key", k: "dim" }); return; }
-    if ((e.key === "g" || e.key === "G") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); post({ t: "key", k: "guide", o: e.shiftKey ? "h" : "v" }); return; }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1) post({ t: "key", k: "combo", c: (e.shiftKey ? "shift+" : "") + e.key.toLowerCase() });   // taustiņus apstrādā ārējā lapa (pielāgojami)
     if ((e.ctrlKey || e.metaKey) && /^[cC]$/.test(e.key) && sel && GRP.includes(sel.k)) {   // Ctrl+C: nokopē atlasītos logus, durvis, mēbeles
       e.preventDefault(); const L = lv(sel.lv), list = [sel, ...(sel.more || [])].map(s => ({ k: s.k, lv: s.lv, o: clone(L[s.k === "furn" ? "furniture" : s.k === "win" ? "windows" : "doors"][s.i]) }));
       clip = list; post({ t: "clip", clip: list, n: list.length }); return;

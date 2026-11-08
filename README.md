@@ -7,6 +7,14 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
     /plugin marketplace add eziz-reely/SBE-Architect
     /plugin install sbe-architect@sbe-architect
 
+## Lejupielāde kā zip (bez Claude)
+
+1. GitHub lapā: **Code, Download ZIP** (vai tieši `https://github.com/eziz-reely/SBE-Architect/archive/refs/heads/main.zip`). Atarhivē jebkurā mapē.
+2. Vajag tikai Python 3 (un pārlūku). Redaktora lapa: `python3 bot/redaktors.py "MĀJAS/100m2/MM-100-01/model.json"`, tad atver izveidoto failu `…/rasejumi/MM-100-01_LV_redaktors.html` ar Chrome vai Edge dubultklikšķi (ne čata priekšskatījumā).
+3. Ar Claude Code to pašu var uzstādīt kā spraudni, skat. „Instalēšana" augstāk.
+
+Redaktorā: rīku josla kreisajā malā, taustiņus var mainīt ar tastatūras ikonu joslas apakšā. Palīglīnijas: G, vai velc no rasējuma kreisās/augšējās malas.
+
 ## Komandas
 
 - `/sbe-arhitekts`: jauns modelis. Uzdod jautājumus ar ķeksīšiem, uzģenerē plānojumu (vienmēr sāk ar 1. variantu), pārbauda un parāda apstiprināšanai. Vizualizācijas tikai pēc apstiprinājuma.
