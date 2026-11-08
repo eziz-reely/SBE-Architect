@@ -997,6 +997,7 @@
   const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";
   addEventListener("pointermove", e => {
     if (place && place.t === "erase") { document.body.style.cursor = ERC; const h = guideHit(e.clientX, e.clientY) >= 0 ? null : hit(e.clientX, e.clientY); hover(h); return; }
+    if (place && place.t === "dim" && fdimMove(e)) return;
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
@@ -1127,6 +1128,7 @@
     }
     if (m && "mmMove" in m) { moveMode = !!m.mmMove; document.body.style.cursor = moveMode ? MVC : ""; return; }
     if (!m || !("mmPlace" in m)) return;
+    document.querySelectorAll(".fdc").forEach(x => x.remove());
     place = m.mmPlace; document.body.style.cursor = place ? "crosshair" : ""; drawGuides();
   });
   const sideOfWall = w => (w.axis === "x" ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south"));
@@ -1361,6 +1363,72 @@
     }
   }
 
+  // ---- fasādes mēri: viens klikšķis, tad izvēle starp augstuma atzīmi un lineāru mēru ----
+  const fdCache = {};
+  function fCand(bl) {
+    if (fdCache[bl.side]) return fdCache[bl.side];
+    const U = [0], Z = [0], lim = span(bl.side) * 1.5;
+    bl.g.querySelectorAll("rect,polygon,line,path,polyline").forEach(n => {
+      if (n.closest("g.mm-ov") || n.closest("defs") || n.closest("clipPath") || n.hasAttribute("transform")) return;
+      let b; try { b = n.getBBox(); } catch (_) { return; }
+      if (!isFinite(b.x) || b.width > lim) return;
+      U.push(b.x, b.x + b.width); Z.push(-b.y, -(b.y + b.height));
+    });
+    return (fdCache[bl.side] = { U, Z });
+  }
+  function fSnap(bl, p) {
+    const c = fCand(bl), near = (arr, v) => { let r = null; arr.forEach(x => { if (Math.abs(x - v) < 150 && (r == null || Math.abs(x - v) < Math.abs(r - v))) r = x; }); return r; };
+    const u = near(c.U, p[0]), z = near(c.Z, -p[1]);
+    return { u: Math.round(u != null ? u : p[0]), z: Math.round(z != null ? z : -p[1]), hu: u != null, hz: z != null };
+  }
+  const zTxt = z => (z > 0 ? "+" : z < 0 ? "−" : "±") + (Math.abs(z) / 1000).toFixed(3).replace(".", ",");
+  function fChooser(cx, cy, bl, q) {
+    document.querySelectorAll(".fdc").forEach(x => x.remove());
+    const d = document.createElement("div"); d.className = "fdc";
+    d.style.cssText = `position:fixed;left:${Math.max(4, Math.min(cx + 12, innerWidth - 200))}px;top:${Math.max(4, Math.min(cy + 12, innerHeight - 110))}px;z-index:99;background:#fff;border:1px solid #bbb;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:6px;display:grid;gap:5px;font:600 13px system-ui,sans-serif;width:188px;color:#222`;
+    const mkb = (t, fn) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "padding:9px 11px;border:1px solid #cfcac0;border-radius:6px;background:#f6f4ef;cursor:pointer;text-align:left;font:inherit;color:#222"; b.onclick = ev => { ev.stopPropagation(); fn(); }; return b; };
+    d.append(mkb("Augstuma atzīme  " + zTxt(q.z), () => {
+      const N = clone(M); N.projekts = N.projekts || {}; (N.projekts.fdims = N.projekts.fdims || []).push({ s: bl.side, k: "lvl", z: q.z });
+      d.remove(); place = null; document.body.style.cursor = ""; post({ t: "edit", model: N, sel: null, placed: true });
+    }), mkb("Lineārs mērs", () => { place.fm = true; d.remove(); post({ t: "hint", text: "Uzklikšķini mēra otro punktu. Līnija tiek novietota automātiski." }); }));
+    ["pointerdown", "pointerup", "wheel"].forEach(t => d.addEventListener(t, ev => ev.stopPropagation()));
+    document.body.appendChild(d);
+  }
+  function fdimClick(bl, p, cx, cy) {
+    const q = fSnap(bl, p), a = place.fp;
+    if (a && place.fm) {
+      if (a.side !== bl.side) return { miss: "Otrajam punktam jābūt tajā pašā fasādē." };
+      const H = Math.abs(q.u - a.u) >= Math.abs(q.z - a.z), A = H ? a.u : a.z, B = H ? q.u : q.z;
+      if (Math.abs(B - A) < 100) return { miss: "Mērs par īsu. Uzklikšķini tālāk." };
+      const N = clone(M); N.projekts = N.projekts || {}; const L = N.projekts.fdims = N.projekts.fdims || [];
+      const n = L.filter(d => d.s === bl.side && d.k === "lin" && d.o === (H ? "h" : "v")).length, ov = (M.jumts && M.jumts.ov) || 0;
+      const pa = H ? a.z : a.u, pb = H ? q.z : q.u, lo = A <= B;
+      L.push({ s: bl.side, k: "lin", o: H ? "h" : "v", a: Math.min(A, B), b: Math.max(A, B), p: lo ? [pa, pb] : [pb, pa], at: H ? -(1800 + n * 450) : span(bl.side) + ov + 2000 + n * 450 });
+      return { N, sel: null };
+    }
+    place.fp = { side: bl.side, u: q.u, z: q.z }; place.fm = false;
+    fChooser(cx, cy, bl, q);
+    return { pending: "Izvēlies: augstuma atzīme vai lineārs mērs." };
+  }
+  function fdimMove(e) {
+    document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+    const eave = (M.jumts && M.jumts.eave) || 2600;
+    for (const bl of blocks()) {
+      if (bl.type !== "elev") continue;
+      const p = toLocal(bl.g, e.clientX, e.clientY), sp = span(bl.side);
+      if (p[0] < -200 || p[0] > sp + 200 || p[1] > 300 || p[1] < -(eave + sp)) continue;
+      const o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" }), q = fSnap(bl, p), a = place.fp;
+      snapMark(g, [q.u, -q.z], q.hu || q.hz, k);
+      if (a && place.fm && a.side === bl.side) {
+        const H = Math.abs(q.u - a.u) >= Math.abs(q.z - a.z), x2 = H ? q.u : a.u, y2 = H ? -a.z : -q.z;
+        mk(g, "line", { x1: a.u, y1: -a.z, x2, y2, stroke: ACC, "stroke-width": 0.5 / k });
+        label(g, (a.u + x2) / 2, (-a.z + y2) / 2 - 2 / k, `${Math.round(H ? Math.abs(q.u - a.u) : Math.abs(q.z - a.z))} mm`, k);
+      }
+      return true;
+    }
+    return false;
+  }
+
   function placeAt(cx, cy) {
     const P = place, N = clone(M), eave = (M.jumts && M.jumts.eave) || 2600;
     for (const bl of blocks()) {
@@ -1414,6 +1482,7 @@
       } else {
         const s = bl.side, sp = span(s);
         if (p[0] < -200 || p[0] > sp + 200 || p[1] > 300 || p[1] < -(eave + sp)) continue;
+        if (P.t === "dim") return fdimClick(bl, p, cx, cy);
         if (P.t !== "win" && P.t !== "gwin") return { miss: "Mēbeles un durvis ieliec plānā." };
         const a = mapU(s, p[0]), z = -p[1], gable = s === "east" || s === "west";
         if (gable && (z > eave - 150 || P.t === "gwin")) return { N, sel: newGableWin(N, s, a, Math.max(z, eave - 400), P.t === "gwin") };

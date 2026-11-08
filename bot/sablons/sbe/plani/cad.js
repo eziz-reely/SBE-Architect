@@ -838,6 +838,23 @@ function elevation(parent, v, side, opt = { levels: true }) {
     lvl(-ROOF.plinth, lv(-ROOF.plinth));
   }
 
+  // lietotāja fasādes mēri (projekts.fdims): augstuma atzīmes labajā pusē un lineārie mēri
+  ((window.AR && AR.projekts && AR.projekts.fdims) || []).filter(d => d.s === side).forEach(d => {
+    const dc = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim || C.ink;
+    if (d.k === "lvl") {
+      const x0 = span + ROOF.ov + 150, lx = span + ROOF.ov + 1300, ty = -d.z - 210, lab = lv(Math.round(d.z)), tw = lab.length * 152;
+      el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: dc, "stroke-width": 7 }, g);
+      el("path", { d: `M ${lx} ${-d.z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: dc }, g);
+      el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: dc, "stroke-width": 10 }, g);
+      const t = T_(g, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", dc);
+    } else if (d.k === "lin") {
+      const h = d.o === "h", pa = (d.p || [0, 0]);
+      const ex = (c, pv) => el("line", { x1: h ? c : pv, y1: h ? -pv : c, x2: h ? c : d.at, y2: h ? d.at : c, stroke: dc, "stroke-width": 5 }, g);
+      if (h) { ex(d.a, pa[0]); ex(d.b, pa[1]); chainCad(g, [d.a, d.b], "x", -d.at); }
+      else { el("line", { x1: pa[0], y1: -d.a, x2: d.at, y2: -d.a, stroke: dc, "stroke-width": 5 }, g); el("line", { x1: pa[1], y1: -d.b, x2: d.at, y2: -d.b, stroke: dc, "stroke-width": 5 }, g); chainCad(g, [-d.b, -d.a], "y", d.at); }
+    }
+  });
+
   postsU.forEach(([u, s]) => {
     // post stands on the lievenis deck (cokola augstums, −fT) up to the soffit
     el("rect", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: "#4a4f53", stroke: C.ink, "stroke-width": 14 }, g);
