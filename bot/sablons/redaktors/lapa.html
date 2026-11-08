@@ -94,6 +94,10 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; 
 #ribbon .rc button svg { width: 34px; height: 16px; flex: none; }
 #ribbon .rc button.sv { background: var(--gold); border-color: var(--gold); color: #1f1b17; padding: 0 20px; border-radius: 7px; }
 #ribbon .rc button.ca { margin-left: 8px; border-radius: 7px; }
+#ribbon .fdl { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+#ribbon .fdi { display: inline-flex; align-items: center; gap: 6px; background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 3px 4px 3px 10px; font: 600 12px/1 var(--f-ui); }
+#ribbon .fdi input[type=color] { width: 30px; height: 24px; margin: 0; }
+#ribbon .fdi button { height: 24px; width: 24px; border: 0; background: transparent; color: var(--muted); font-size: 16px; }
 #ribbon .rfoot { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 2px; }
 #ribbon .rfoot button { height: 34px; padding: 0 22px; border-radius: 7px; font: 600 13px/1 var(--f-ui); border: 1px solid var(--line); background: var(--field); color: var(--ink); }
 #ribbon .rfoot button.sv { background: var(--gold); border-color: var(--gold); color: #1f1b17; }
@@ -638,7 +642,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const els = [btn("Šrafēts", "Sienas ar pīrāgu šrafējumu", mode === "piragi", () => setMode("piragi")), btn("Tīrs", "Sienas bez šrafējuma", mode === "tirs", () => setMode("tirs")), btn("Tonis", "Sienas aizliktas ar toni", mode === "krasa", () => setMode("krasa"))];
     if (hx) { const c = document.createElement("input"); c.type = "color"; c.value = hx; c.title = "Sienu tonis"; c.onchange = () => { try { localStorage.setItem("mmWallHex", c.value); } catch (e) {} const n = clone(model); n.projekts.sienas_hex = c.value.toLowerCase(); commit(n); }; els.push(c); }
     grp("Sienu aizpildījums", ...els);
-    const W = [[0, 1], [1, 2], [2, 3.5], [3, 6]], wb = k => W.map(([v, w]) => btn(`<svg viewBox="0 0 22 12"><path d="M1 6h20" stroke="currentColor" stroke-width="${w}"/></svg>`, ["Tieva", "Plāna", "Vidēja", "Bieza"][v], (WS[k] == null ? 2 : WS[k]) === v, () => { const n = clone(model); wsSet(n, k, v === 2 ? null : v); commit(n); }));
+    const W = [[0, 1], [1, 2], [2, 3.5], [3, 6]], wb = k => W.map(([v, w]) => btn(`<svg viewBox="0 0 22 12"><path d="M1 6h20" stroke="currentColor" stroke-width="${w}"/></svg>`, ["Tieva", "Plāna", "Vidēja", "Bieza"][v], (WS[k] == null ? 3 : WS[k]) === v, () => { const n = clone(model); wsSet(n, k, v === 3 ? null : v); commit(n); }));
     grp("Ārsienu kontūra", ...wb("outer")); grp("Starpsienu kontūra", ...wb("inner"));
     { const sw = WS.swing || "", dsh = d => `<svg viewBox="0 0 28 14"><path d="M2 12 A10 10 0 0 1 12 2" fill="none" stroke="currentColor" stroke-width="1.6"${d ? ' stroke-dasharray="2.6 1.8"' : ""}/><path d="M12 2 V12 H2" fill="none" stroke="currentColor" stroke-width="1"/></svg>`;
       const set = v => { const n = clone(model); wsSet(n, "swing", v); commit(n); };
@@ -653,6 +657,22 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { const sv = +(WS.section) || 1, sk = n => `<svg viewBox="0 0 30 14"><path d="M1 7h28" stroke="currentColor" stroke-width="1.2"${n === 2 ? "" : ' stroke-dasharray="5 1.5 1 1.5"'}/>${n === 3 ? '<path d="M15 3 L11 -0 H19Z" fill="#aaa" stroke="currentColor" stroke-width=".8" transform="translate(0 4)"/>' : '<path d="M1 3v8M29 3v8" stroke="currentColor" stroke-width="2.4"/>'}</svg>`;
       const setS = v => { const n = clone(model); wsSet(n, "section", v === 1 ? null : v); commit(n); };
       grp("Griezuma līnija", ...[1, 2, 3].map(v => btn(["Bultiņas", "Melna zīme", "Pelēka zīme"][v - 1], ["Raustīta ar bultiņām", "Melns trijstūris ar apli", "Pelēks trijstūris ar apli un lapas numuru"][v - 1], sv === v, () => setS(v)))); }
+    { const FD = P.fdims || [];
+      if (FD.length) {
+        const SN = { south: "Dienvidu", north: "Ziemeļu", east: "Austrumu", west: "Rietumu" }, zt = z => (z > 0 ? "+" : z < 0 ? "−" : "±") + (Math.abs(z) / 1000).toFixed(3).replace(".", ",");
+        const g = document.createElement("div"); g.className = "rg"; g.style.gridColumn = "1 / -1";
+        const rows = document.createElement("div"); rows.className = "fdl";
+        FD.forEach((d, i) => {
+          const r = document.createElement("div"); r.className = "fdi";
+          const t = document.createElement("span"); t.textContent = (SN[d.s] || d.s) + " fasāde · " + (d.k === "lvl" ? "atzīme " + zt(d.z) : "mērs " + Math.round(d.b - d.a) + " mm");
+          const c = document.createElement("input"); c.type = "color"; c.value = d.c || (WS.dim || "#000000"); c.title = "Šī mēra krāsa";
+          c.onchange = () => { const n = clone(model); n.projekts.fdims[i].c = c.value; commit(n); };
+          const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.title = "Dzēst šo mēru";
+          x.onclick = () => { const n = clone(model); n.projekts.fdims.splice(i, 1); if (!n.projekts.fdims.length) delete n.projekts.fdims; commit(n); };
+          r.append(t, c, x); rows.appendChild(r);
+        });
+        const l = document.createElement("span"); l.className = "rl"; l.textContent = "Fasāžu mēri un atzīmes (krāsa katram atsevišķi)"; g.append(rows, l); R.appendChild(g);
+      } }
     { const ft = document.createElement("div"); ft.className = "rfoot"; const ca = document.createElement("button"); ca.type = "button"; ca.textContent = "Atcelt"; ca.title = "Atcelt izmaiņas, kas veiktas šajā panelī"; ca.onclick = ribCancel; const sv = document.createElement("button"); sv.type = "button"; sv.className = "sv"; sv.textContent = "Saglabāt noformējumu"; sv.onclick = () => ribToggle(false); ft.append(ca, sv); R.appendChild(ft); }
   }
   function buttons() { ribbon(); try { topSync(); } catch (e) {} { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }

@@ -117,7 +117,7 @@ function inset(poly, d) {
 }
 // sienu kontūru biezuma reizinātājs no redaktora joslas (projekts.wall_style.outer / inner: 0 tieva … 3 bieza, 2 = parasts)
 const SWD = dflt => { const q = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).swing; return q === "dash" || (!q && dflt) ? { "stroke-dasharray": dflt ? "40 30" : "70 45" } : {}; };   // durvju un logu vēršanās loks: pilns vai raustīts
-const WL = k => { const s = (window.AR && AR.projekts && AR.projekts.wall_style) || {}, i = s[k] == null ? 2 : s[k]; return [0.25, 0.55, 1, 1.8][i] || 1; };
+const WL = k => { const s = (window.AR && AR.projekts && AR.projekts.wall_style) || {}, i = s[k] == null ? 3 : s[k]; return [0.25, 0.55, 1, 1.8][i] || 1; };
 function drawWalls(g, v, cid) {
   const poly = v.poly, n = poly.length, ps = p => p.map(q => q.join(",")).join(" ");
   const offs = [0]; EXT_LAYERS.forEach(l => offs.push(offs[offs.length - 1] + l.t));
@@ -278,7 +278,7 @@ function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
     const t = axis === "x" ? T_(g, mm, at - 70 + off, txt, { a: "middle", fs: 190 }) : T_(g, at - 70 + off, mm, txt, { a: "middle", fs: 190, tr: `rotate(-90 ${at - 70 + off} ${mm})` });
     if (inner) { t.setAttribute("stroke", "#fff"); t.setAttribute("stroke-width", 60); t.setAttribute("paint-order", "stroke"); t.setAttribute("stroke-linejoin", "round"); }
   }
-  const dc = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim;   // dimensiju ķēžu krāsa (noformējuma panelis)
+  const dc = window.__dimC || ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim;   // dimensiju ķēžu krāsa (noformējuma panelis)
   if (dc) for (let k = dn0; k < g.childNodes.length; k++) { const q = g.childNodes[k]; if (q.tagName === "text") q.setAttribute("fill", dc); else q.setAttribute("stroke", dc); }
 }
 
@@ -840,7 +840,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
 
   // lietotāja fasādes mēri (projekts.fdims): augstuma atzīmes labajā pusē un lineārie mēri
   ((window.AR && AR.projekts && AR.projekts.fdims) || []).filter(d => d.s === side).forEach(d => {
-    const dc = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim || C.ink;
+    const dc = d.c || ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim || C.ink;
     if (d.k === "lvl") {
       const x0 = span + ROOF.ov + 150, lx = span + ROOF.ov + 1300, ty = -d.z - 210, lab = lv(Math.round(d.z)), tw = lab.length * 152;
       el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: dc, "stroke-width": 7 }, g);
@@ -850,8 +850,10 @@ function elevation(parent, v, side, opt = { levels: true }) {
     } else if (d.k === "lin") {
       const h = d.o === "h", pa = (d.p || [0, 0]);
       const ex = (c, pv) => el("line", { x1: h ? c : pv, y1: h ? -pv : c, x2: h ? c : d.at, y2: h ? d.at : c, stroke: dc, "stroke-width": 5 }, g);
+      window.__dimC = d.c || null;
       if (h) { ex(d.a, pa[0]); ex(d.b, pa[1]); chainCad(g, [d.a, d.b], "x", -d.at); }
       else { el("line", { x1: pa[0], y1: -d.a, x2: d.at, y2: -d.a, stroke: dc, "stroke-width": 5 }, g); el("line", { x1: pa[1], y1: -d.b, x2: d.at, y2: -d.b, stroke: dc, "stroke-width": 5 }, g); chainCad(g, [-d.b, -d.a], "y", d.at); }
+      window.__dimC = null;
     }
   });
 

@@ -1394,35 +1394,55 @@
     ["pointerdown", "pointerup", "wheel"].forEach(t => d.addEventListener(t, ev => ev.stopPropagation()));
     document.documentElement.appendChild(d);
   }
+  const fdAt = (H, p) => (H ? Math.round(-p[1] / 50) * 50 : Math.round(p[0] / 50) * 50);   // mēra līnijas vieta: z (horiz.) vai u (vert.)
   function fdimClick(bl, p, cx, cy) {
     const q = fSnap(bl, p), a = place.fp;
+    if (a && place.fm && place.f2) {   // trešais klikšķis: kur novietot mēra līniju
+      const f = place.f2; if (f.side !== bl.side) return { miss: "Mēra līnija jāliek tajā pašā fasādē." };
+      const N = clone(M); N.projekts = N.projekts || {};
+      (N.projekts.fdims = N.projekts.fdims || []).push({ s: f.side, k: "lin", o: f.H ? "h" : "v", a: f.a, b: f.b, p: f.p, at: fdAt(f.H, p) });
+      return { N, sel: null };
+    }
     if (a && place.fm) {
       if (a.side !== bl.side) return { miss: "Otrajam punktam jābūt tajā pašā fasādē." };
       const H = Math.abs(q.u - a.u) >= Math.abs(q.z - a.z), A = H ? a.u : a.z, B = H ? q.u : q.z;
       if (Math.abs(B - A) < 100) return { miss: "Mērs par īsu. Uzklikšķini tālāk." };
-      const N = clone(M); N.projekts = N.projekts || {}; const L = N.projekts.fdims = N.projekts.fdims || [];
-      const n = L.filter(d => d.s === bl.side && d.k === "lin" && d.o === (H ? "h" : "v")).length, ov = (M.jumts && M.jumts.ov) || 0;
       const pa = H ? a.z : a.u, pb = H ? q.z : q.u, lo = A <= B;
-      L.push({ s: bl.side, k: "lin", o: H ? "h" : "v", a: Math.min(A, B), b: Math.max(A, B), p: lo ? [pa, pb] : [pb, pa], at: H ? -(1800 + n * 450) : span(bl.side) + ov + 2000 + n * 450 });
-      return { N, sel: null };
+      place.f2 = { side: bl.side, H, a: Math.min(A, B), b: Math.max(A, B), p: lo ? [pa, pb] : [pb, pa] };
+      return { pending: "Uzklikšķini, kur novietot mēra līniju." };
     }
-    place.fp = { side: bl.side, u: q.u, z: q.z }; place.fm = false;
+    place.fp = { side: bl.side, u: q.u, z: q.z }; place.fm = false; place.f2 = null;
     fChooser(cx, cy, bl, q);
     return { pending: "Izvēlies: augstuma atzīme vai lineārs mērs." };
   }
   function fdimMove(e) {
     document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
-    const eave = (M.jumts && M.jumts.eave) || 2600;
+    const eave = (M.jumts && M.jumts.eave) || 2600, ov = (M.jumts && M.jumts.ov) || 0;
     for (const bl of blocks()) {
       if (bl.type !== "elev") continue;
-      const p = toLocal(bl.g, e.clientX, e.clientY), sp = span(bl.side);
-      if (p[0] < -200 || p[0] > sp + 200 || p[1] > 300 || p[1] < -(eave + sp)) continue;
-      const o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" }), q = fSnap(bl, p), a = place.fp;
+      const p = toLocal(bl.g, e.clientX, e.clientY), sp = span(bl.side), rl = place.f2 ? 3500 : 200;
+      if (p[0] < -rl || p[0] > sp + rl || p[1] > (place.f2 ? 3500 : 300) || p[1] < -(eave + sp)) continue;
+      const o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" }), q = fSnap(bl, p), a = place.fp, st = { stroke: ACC, "stroke-width": 0.4 / k };
+      if (a && place.fm && place.f2 && place.f2.side === bl.side) {   // mēra līnijas novietojums
+        const f = place.f2, at = fdAt(f.H, p), X = f.H;
+        const P2 = (c, d) => (X ? [c, d] : [d, c]);
+        const s0 = P2(f.a, -at), s1 = P2(f.b, -at), e0 = P2(f.a, -f.p[0]), e1 = P2(f.b, -f.p[1]);
+        if (!X) { s0[0] = at; s1[0] = at; s0[1] = -f.a; s1[1] = -f.b; e0[0] = f.p[0]; e0[1] = -f.a; e1[0] = f.p[1]; e1[1] = -f.b; }
+        mk(g, "line", Object.assign({ x1: e0[0], y1: e0[1], x2: s0[0], y2: s0[1] }, st, { "stroke-dasharray": `${1 / k} ${0.7 / k}` }));
+        mk(g, "line", Object.assign({ x1: e1[0], y1: e1[1], x2: s1[0], y2: s1[1] }, st, { "stroke-dasharray": `${1 / k} ${0.7 / k}` }));
+        mk(g, "line", Object.assign({ x1: s0[0], y1: s0[1], x2: s1[0], y2: s1[1] }, st));
+        label(g, (s0[0] + s1[0]) / 2, (s0[1] + s1[1]) / 2 - 2 / k, `${Math.round(f.b - f.a)} mm`, k);
+        return true;
+      }
       snapMark(g, [q.u, -q.z], q.hu || q.hz, k);
       if (a && place.fm && a.side === bl.side) {
         const H = Math.abs(q.u - a.u) >= Math.abs(q.z - a.z), x2 = H ? q.u : a.u, y2 = H ? -a.z : -q.z;
         mk(g, "line", { x1: a.u, y1: -a.z, x2, y2, stroke: ACC, "stroke-width": 0.5 / k });
         label(g, (a.u + x2) / 2, (-a.z + y2) / 2 - 2 / k, `${Math.round(H ? Math.abs(q.u - a.u) : Math.abs(q.z - a.z))} mm`, k);
+      } else if (!a || !place.fm) {   // augstuma atzīme no ±0,000 redzama jau pie kursora
+        const x0 = sp + ov + 150, lx = sp + ov + 1300;
+        mk(g, "line", Object.assign({ x1: -300, y1: -q.z, x2: x0 + 1150, y2: -q.z }, st, { "stroke-dasharray": `${1.2 / k} ${0.9 / k}`, opacity: 0.55 }));
+        label(g, lx + 200, -q.z - 1.2 / k, zTxt(q.z), k);
       }
       return true;
     }
@@ -1481,7 +1501,8 @@
         return { N, sel: newWin(N, side, a, null) };
       } else {
         const s = bl.side, sp = span(s);
-        if (p[0] < -200 || p[0] > sp + 200 || p[1] > 300 || p[1] < -(eave + sp)) continue;
+        const rl = P.t === "dim" && P.f2 ? 3500 : 200;
+        if (p[0] < -rl || p[0] > sp + rl || p[1] > (P.f2 && P.t === "dim" ? 3500 : 300) || p[1] < -(eave + sp)) continue;
         if (P.t === "dim") return fdimClick(bl, p, cx, cy);
         if (P.t !== "win" && P.t !== "gwin") return { miss: "Mēbeles un durvis ieliec plānā." };
         const a = mapU(s, p[0]), z = -p[1], gable = s === "east" || s === "west";
