@@ -220,8 +220,8 @@ function drawWalls(g, v, cid) {
       [[-1], [1]].forEach(([dr]) => {
         const e = v ? (dr < 0 ? y : y + h) : (dr < 0 ? x : x + w), mx = v ? x + w / 2 : x, my = v ? y : y + h / 2;
         if (inPoly(v ? mx : e + dr * 4, v ? e + dr * 4 : y + h / 2)) return;
-        if (v) el("rect", { x: x + k, y: dr < 0 ? e - c - 2 : e - c, width: w - 2 * k, height: 2 * c + 2, fill: pf }, g);
-        else el("rect", { x: dr < 0 ? e - c - 2 : e - c, y: y + k, width: 2 * c + 2, height: h - 2 * k, fill: pf }, g);
+        if (v) el("rect", { x: x + k, y: dr < 0 ? e - c : e - 1, width: w - 2 * k, height: c + 1, fill: pf }, g);
+        else el("rect", { x: dr < 0 ? e - c : e - 1, y: y + k, width: c + 1, height: h - 2 * k, fill: pf }, g);
       });
     }); }
 }
@@ -420,8 +420,8 @@ function cadPlan(parent, v, opt = {}) {
 
   const gap = (x, y, w, h) => el("rect", { x, y, width: w, height: h, fill: "#fff" }, g);
   const jamb = (x1, y1, x2, y2) => {   // ailas gala līnija: īsāka par sienas biezumu, lai neizvirzās pāri sienas kontūrai
-    const dx = Math.sign(x2 - x1), dy = Math.sign(y2 - y1), c = 11;
-    el("line", { x1: x1 + dx * c, y1: y1 + dy * c, x2: x2 - dx * c, y2: y2 - dy * c, stroke: C.line, "stroke-width": 22 }, g); };
+    const dx = Math.sign(x2 - x1), dy = Math.sign(y2 - y1), c = 4;
+    el("line", { x1: x1 + dx * c, y1: y1 + dy * c, x2: x2 - dx * c, y2: y2 - dy * c, stroke: C.line, "stroke-width": 8 }, g); };
   v.openings.forEach(o => {
     if (o.o === "h") { gap(o.x, o.y - 14, o.w, o.th + 28); jamb(o.x, o.y, o.x, o.y + o.th); jamb(o.x + o.w, o.y, o.x + o.w, o.y + o.th); }
     else { gap(o.x - 14, o.y, o.th + 28, o.w); jamb(o.x, o.y, o.x + o.th, o.y); jamb(o.x, o.y + o.w, o.x + o.th, o.y + o.w); }

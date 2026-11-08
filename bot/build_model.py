@@ -283,7 +283,7 @@ def build(model_path, langs=None):
          '      elevation(el("g", { "data-block": "elev-" + b, transform: `translate(266 150) scale(0.01)` }, svg), v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` });\n',
          '      { const La = v.W + 2 * ROOF.ov, Lb = v.D + 2 * ROOF.ov, wa = (k === "fas1" ? v.D : v.D) , xa = 40 + ROOF.ov * fs_, xb = Math.min(266, xa + La * fs_ + 60 + ROOF.ov * fs_);\n'
          '        const aLen = (a === "south" || a === "north") ? La : Lb, bLen = (b === "south" || b === "north") ? La : Lb; void wa; void bLen;\n'
-         '        const x1 = fs_ === 0.01 ? 52 : 40 + ROOF.ov * fs_, x2 = fs_ === 0.01 ? 266 : Math.min(266, x1 + aLen * fs_ + 70);\n'
+         '        const x1 = fs_ === 0.01 ? 52 : 62 + ROOF.ov * fs_, x2 = fs_ === 0.01 ? 266 : Math.min(266, x1 + aLen * fs_ + 70);\n'
          '        const gy_ = fs_ === 0.01 ? 150 : Math.min(150, 174.5 - 2450 * fs_);   // nosaukums paliek tajā pašā vietā lapā\n        window.AR_K = 0.01 / fs_; window.MM_SCALE = fd_;\n'
          '        const ga = el("g", { "data-block": "elev-" + a, transform: `translate(${x1} ${gy_}) scale(${fs_})` }, svg); elevation(ga, v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` }); arFix(ga, 0.01 / fs_);\n'
          '        const gb = el("g", { "data-block": "elev-" + b, transform: `translate(${x2} ${gy_}) scale(${fs_})` }, svg); elevation(gb, v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` }); arFix(gb, 0.01 / fs_);\n'
