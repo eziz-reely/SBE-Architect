@@ -266,6 +266,32 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
   #v3 { grid-template-columns: 1fr; grid-template-rows: 40dvh 1fr; }
   #busy { bottom: 8px; left: 8px; }
 }
+
+/* ---- CAD izkārtojums: rīku josla, statusa rinda ---- */
+main { grid-template-columns: 44px 1fr 320px; }
+#rail { background: var(--paper); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; }
+#rail button { width: 36px; height: 36px; padding: 0; background: transparent; border: 1px solid transparent; border-radius: 3px; color: var(--ink); display: grid; place-items: center; position: relative; }
+#rail button svg { width: 26px; height: 20px; }
+#rail button:hover { background: var(--field); border-color: var(--line); }
+#rail button.on { background: var(--brand); color: #f4efe6; }
+#rail button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 9px/1 var(--f-cap); color: var(--muted); }
+#rail button.on kbd { color: #d8cdb8; }
+#rail hr { width: 24px; border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+#rail .sp { flex: 1; }
+#sbar { display: flex; gap: 16px; align-items: center; background: var(--paper); border-top: 1px solid var(--line); padding: 3px 12px; font-size: 12px; color: var(--muted); min-height: 24px; }
+#sbar b { color: var(--ink); font-weight: 600; }
+#sbar .sp { flex: 1; }
+#sbar .dirty { color: var(--mark); }
+aside #hint, aside .savebar #status { display: none; }
+#libOpen small { display: none; }
+#keys { position: fixed; left: 52px; bottom: 34px; z-index: 60; width: 300px; max-height: 70vh; overflow: auto; background: var(--paper); border: 1px solid var(--line); padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+#keys h3 { margin: 0 0 6px; font: 600 11px/1 var(--f-cap); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+#keys .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
+#keys .kr button { min-width: 72px; padding: 4px 8px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); }
+#keys .kr button.cap { border-color: var(--mark); color: var(--mark); }
+#keys .ft { display: flex; justify-content: space-between; margin-top: 8px; }
+#keys .ft button { background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; padding: 5px 9px; }
+@media (max-width: 760px) { #rail, #sbar { display: none; } main { grid-template-columns: 1fr; } }
 </style>
 
 <header>
@@ -315,6 +341,7 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
   </div>
 </header>
 <main>
+  <nav id="rail" aria-label="Rīki"></nav>
   <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span></div>
   <aside>
     <section class="selcard" aria-live="polite">
@@ -374,6 +401,8 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
           </footer>
   </aside>
 </main>
+<div id="sbar"><span id="sbTool"></span><span class="sp"></span><span id="sbSave"></span></div>
+<div id="keys" hidden></div>
 
 <div id="v3" hidden role="dialog" aria-label="3D skats un Gemini">
   <div id="v3stage"><canvas id="v3canvas" width="900" height="600"></canvas></div>
@@ -542,8 +571,8 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
     if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && sel && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); toFrame({ mmKey: { key: e.key, shiftKey: e.shiftKey } }); return; }   // bultiņas strādā arī tad, ja fokuss nav rasējumā
     if (e.key === "Escape" && placing) { endPlace(); toFrame({ mmPlace: null }); }
     else if (e.key === "Escape" && sel) { sel = null; panel(); toFrame({ mmDesel: 1 }); }
-    if ((e.key === "d" || e.key === "D") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); startDim(); }
-    if ((e.key === "g" || e.key === "G") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); startGuide(e.shiftKey ? "h" : "v"); }
+    if (keyCap) return;
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) { const a = ACTIONS.find(x => keyMap[x.id] === comboOf(e)); if (a) { e.preventDefault(); a.run(); } }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); doRedo(); }
   });
@@ -634,18 +663,76 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
       endPlace(); placing = clone(spec); onBtn = b; b.classList.add("on");
       if (placing.vy) placing.entry[0] = typeV(placing.entry[0], detail);
       $("hint").textContent = spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Uzklikšķini plānā mēra pirmo galu (pielīp sienām)." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
-      toFrame({ mmPlace: spec });
+      toFrame({ mmPlace: spec }); railSync();
     };
+    b.title = item.n + " · " + item.s;
     host.appendChild(b);
   }
   function startDim() { const b = [...document.querySelectorAll("#libOpen button")].find(x => /Mērs/.test(x.textContent)); if (b && onBtn !== b) b.click(); }
-  function endPlace() { placing = null; if (onBtn) onBtn.classList.remove("on"); onBtn = null; $("hint").textContent = ""; }
+  function endPlace() { placing = null; if (onBtn) onBtn.classList.remove("on"); onBtn = null; $("hint").textContent = ""; try { railSync(); } catch (_) {} }
   OPEN.forEach(o => libButton($("libOpen"), o, o.p));
   { const b = document.createElement("button"); b.type = "button"; b.id = "bGuideClr"; b.className = "wide"; b.innerHTML = icon("gv"); b.append("Dzēst visas palīglīnijas"); const sm = document.createElement("small"); sm.textContent = "lapā nav, tikai redaktorā"; b.appendChild(sm);
     b.onclick = () => { if (!((model.projekts || {}).guides || []).length) { status("Palīglīniju nav."); return; } const n = clone(model); n.projekts.guides = []; if (sel && sel.k === "guide") sel = null; commit(n); status("Visas palīglīnijas dzēstas."); };
     $("libOpen").appendChild(b); }
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
   FURN_LIB.forEach(f => libButton($("libFurn"), f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy }));
+
+  // ---- CAD rīku josla, pielāgojami taustiņi, statusa rinda ----
+  const ACTIONS = [
+    { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); railSync(); } },
+    ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = $("libOpen").children[i]; if (b) b.click(); railSync(); } })),
+    { id: "hg", n: "Horiz. palīglīnija", k: "shift+g", ic: "gh", run: () => { startGuide("h"); railSync(); } },
+  ];
+  IC.sel = '<path d="M9 3l16 10-7 1.5 4 8-3 1.5-4-8-6 4z" fill="currentColor"/>';
+  const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
+  let keyMap = Object.assign({}, DEF), keyCap = null;
+  try { Object.assign(keyMap, JSON.parse(localStorage.getItem("mmKeys") || "{}")); } catch (_) {}
+  const saveKeys = () => { try { localStorage.setItem("mmKeys", JSON.stringify(keyMap)); } catch (_) {} };
+  const comboOf = e => (e.shiftKey ? "shift+" : "") + e.key.toLowerCase().replace(/^shift\+/, "");
+  const keyLbl = k => k ? k.replace("shift+", "⇧").toUpperCase() : "—";
+  function railBuild() {
+    const r = $("rail"); r.innerHTML = "";
+    ACTIONS.forEach((a, i) => {
+      if (a.id === "t0" || a.id === "t3" || a.id === "t5") r.appendChild(document.createElement("hr"));
+      const b = document.createElement("button"); b.type = "button"; b.dataset.id = a.id; b.title = a.n + (keyMap[a.id] ? " (" + keyLbl(keyMap[a.id]) + ")" : "");
+      b.innerHTML = icon(a.ic) + (keyMap[a.id] ? "<kbd>" + keyLbl(keyMap[a.id]) + "</kbd>" : ""); b.onclick = a.run; r.appendChild(b);
+    });
+    const sp = document.createElement("span"); sp.className = "sp"; r.appendChild(sp);
+    const kb = document.createElement("button"); kb.type = "button"; kb.title = "Taustiņi"; kb.innerHTML = '<svg viewBox="0 0 40 28" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="6" width="34" height="16" rx="2"/><path d="M8 11h2M13 11h2M18 11h2M23 11h2M28 11h2M10 17h20"/></svg>'; kb.onclick = keysToggle; r.appendChild(kb);
+    railSync();
+  }
+  function railSync() {
+    const on = onBtn ? [...$("libOpen").children].indexOf(onBtn) : -1, id = on >= 0 && on < 7 ? "t" + on : onBtn ? null : "sel";
+    document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
+    syncBar();
+  }
+  function syncBar() {
+    const a = onBtn ? onBtn.childNodes[1] && onBtn.childNodes[1].textContent : "Atlasīt", h = $("hint").textContent;
+    $("sbTool").innerHTML = "<b>" + (a || "Rīks") + "</b>" + (h ? " · " + h : onBtn ? "" : " · uzklikšķini uz elementa vai izvēlies rīku");
+    const st = $("status").textContent; $("sbSave").textContent = st; $("sbSave").className = /nesaglab/i.test(st) ? "dirty" : "";
+  }
+  new MutationObserver(syncBar).observe($("hint"), { childList: true, characterData: true, subtree: true });
+  new MutationObserver(syncBar).observe($("status"), { childList: true, characterData: true, subtree: true });
+  function keysToggle() {
+    const k = $("keys"); if (!k.hidden) { k.hidden = true; keyCap = null; return; }
+    const draw = () => {
+      k.innerHTML = "<h3>Taustiņi</h3>"; ACTIONS.forEach(a => { const r = document.createElement("div"); r.className = "kr"; r.innerHTML = "<span>" + a.n + "</span>"; const b = document.createElement("button"); b.type = "button"; b.textContent = keyCap === a.id ? "spied taustiņu…" : keyLbl(keyMap[a.id]); if (keyCap === a.id) b.className = "cap";
+        b.onclick = () => { keyCap = keyCap === a.id ? null : a.id; draw(); }; r.appendChild(b); k.appendChild(r); });
+      const f = document.createElement("div"); f.className = "ft"; const rs = document.createElement("button"); rs.type = "button"; rs.textContent = "Atiestatīt"; rs.onclick = () => { keyMap = Object.assign({}, DEF); saveKeys(); keyCap = null; railBuild(); draw(); };
+      const cl = document.createElement("button"); cl.type = "button"; cl.textContent = "Gatavs"; cl.onclick = keysToggle; f.append(rs, cl); k.appendChild(f);
+    };
+    k.hidden = false; draw();
+    k._cap = e => {
+      if (!keyCap) return; e.preventDefault(); e.stopPropagation();
+      if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return;
+      if (e.key === "Escape") { keyCap = null; draw(); return; }
+      const c = e.key === "Backspace" || e.key === "Delete" ? "" : comboOf(e);
+      if (c) Object.keys(keyMap).forEach(id => { if (keyMap[id] === c) keyMap[id] = ""; });
+      keyMap[keyCap] = c; keyCap = null; saveKeys(); railBuild(); draw();
+    };
+  }
+  addEventListener("keydown", e => { const k = $("keys"); if (!k.hidden && keyCap && k._cap) k._cap(e); }, true);
+  railBuild();
 
   // ---- selected item ----
   const lvOf = (m, s) => (s.lv === "loft" ? m.loft : m);
