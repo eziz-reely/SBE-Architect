@@ -47,8 +47,8 @@
         const b = pts3[(i + 1) % pts3.length], d = new THREE.Vector3().subVectors(b, a), L = d.length(); if (L < 1) return; d.normalize();
         const w = new THREE.Vector3().crossVectors(n, d).normalize();
         const box = new THREE.Mesh(new THREE.BoxGeometry(L + fw, fw, fd), mat);
-        box.applyMatrix4(new THREE.Matrix4().makeBasis(d, w, n).setPosition(a.clone().add(b).multiplyScalar(.5).addScaledVector(n, 25)));
-        out.add(box);
+        box.applyMatrix4(new THREE.Matrix4().makeBasis(d, w, n).setPosition(a.clone().add(b).multiplyScalar(.5)));
+        out.add(box); edgeLines(box, out);
       });
     }
     const sideOf = (pts, W, D) => {
@@ -63,6 +63,39 @@
       const W = m.W, D = m.D, dp = +t.depth || 1100, a = +t.a || 0, b = +t.b || 0;
       return { south: [-a, D, W + b, D + dp], north: [-a, -dp, W + b, 0], west: [-dp, -a, 0, D + b], east: [W, -a, W + dp, D + b] }[t.side] || null;
     }
+    function edgeLines(mesh, parent) {   // SketchUp stila melnas šķautnes
+      const l = new THREE.LineSegments(new THREE.EdgesGeometry(mesh.geometry, 25), new THREE.LineBasicMaterial({ color: 0x111111 }));
+      l.position.copy(mesh.position); l.quaternion.copy(mesh.quaternion); l.scale.copy(mesh.scale); parent.add(l);
+    }
+    function cladTex() {   // vertikāli dēļi, 1 flīze = 600 mm
+      const c = document.createElement("canvas"); c.width = 256; c.height = 256; const x = c.getContext("2d");
+      x.fillStyle = "#f4f2ee"; x.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 6; i++) { const X = i * 256 / 6; x.fillStyle = `rgba(90,80,65,${.05 + Math.random() * .08})`; x.fillRect(X, 0, 256 / 6, 256);
+        x.fillStyle = "rgba(60,50,40,.35)"; x.fillRect(X, 0, 1.5, 256);
+        for (let k = 0; k < 14; k++) { x.fillStyle = `rgba(110,95,75,${Math.random() * .12})`; x.fillRect(X + Math.random() * 40, Math.random() * 256, 1, 8 + Math.random() * 50); } }
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 600, 1 / 600); t.anisotropy = 4; return t;
+    }
+    function roofTex() {   // jumta vīles gar nogāzi, 1 flīze = 500 mm
+      const c = document.createElement("canvas"); c.width = 128; c.height = 128; const x = c.getContext("2d");
+      x.fillStyle = "#40464b"; x.fillRect(0, 0, 128, 128); x.fillStyle = "#1c1f22"; x.fillRect(0, 0, 3, 128); x.fillStyle = "rgba(255,255,255,.05)"; x.fillRect(4, 0, 30, 128);
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 500, 1 / 500); return t;
+    }
+    function groundTex() {
+      const c = document.createElement("canvas"); c.width = 128; c.height = 128; const x = c.getContext("2d"); x.fillStyle = "#b7a58a"; x.fillRect(0, 0, 128, 128);
+      for (let i = 0; i < 700; i++) { const g = 120 + Math.random() * 90; x.fillStyle = `rgb(${g + 30},${g + 12},${g - 25})`; x.beginPath(); x.arc(Math.random() * 128, Math.random() * 128, 1 + Math.random() * 3, 0, 7); x.fill(); }
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 400, 1 / 400); return t;
+    }
+    function trimRoof(g, out, ridgeZ) {   // balta apmale (vējdēlis/karnīze) gar jumta ārmalām
+      const o = g.outer.map(T3), { n } = basis(o, new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize()), mat = new THREE.MeshLambertMaterial({ color: "#f3f1ec" });
+      o.forEach((a, i) => {
+        const b = o[(i + 1) % o.length]; if (a.y > ridgeZ - 5 && b.y > ridgeZ - 5) return;
+        const d = new THREE.Vector3().subVectors(b, a), L = d.length(); if (L < 1) return; d.normalize();
+        const w = new THREE.Vector3().crossVectors(n, d).normalize(), box = new THREE.Mesh(new THREE.BoxGeometry(L + 40, 190, 70), mat);
+        box.applyMatrix4(new THREE.Matrix4().makeBasis(d, w, n).setPosition(a.clone().add(b).multiplyScalar(.5).addScaledVector(n, g.d / 2 + 15)));
+        const wd = w.clone(); if (wd.y > 0) box.translateY(-75); else box.translateY(75);   // apmale iet uz leju no jumta malas
+        out.add(box); edgeLines(box, out);
+      });
+    }
     function boardsTex() {
       const c = document.createElement("canvas"); c.width = 64; c.height = 64; const x = c.getContext("2d");
       x.fillStyle = "#3d4247"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#2a2e32"; for (let i = 0; i < 64; i += 16) x.fillRect(0, i, 64, 2);
@@ -70,19 +103,19 @@
     }
     function buildScene(m) {
       const P = m.projekts || {}, tk = V.tone || lv0(), wallHex = (tk === lv0() && P.sienas_hex) || TONES[tk].sw, frameHex = hexOf(P.logu_tonis || TONES[tk].logi);
-      const geo = []; skpRb(m, geo);
+      const geo = []; skpRb(m, geo); const J0 = m.jumts || {}, ridgeZ = (J0.eave || 2600) + m.D / 2 * Math.tan((J0.pitch || 30) * Math.PI / 180) - 20;
       const grp = new THREE.Group(), walls = [];
       const mat = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c, side: THREE.DoubleSide }, o));
-      const mats = { M_WALL: mat(wallHex), M_INT: mat("#f2efe9"), M_FLOOR: mat(P.pamati === "platne" ? "#9a9a96" : hexOf(P.cokols || "RAL 9005")), M_ROOF: mat("#40464b"), M_STAIR: mat("#c9a77c") };
+      const wt = cladTex(), rt = roofTex(), mats = { M_WALL: mat(wallHex, { map: wt }), M_INT: mat("#f2efe9"), M_FLOOR: mat(P.pamati === "platne" ? "#9a9a96" : hexOf(P.cokols || "RAL 9005")), M_ROOF: mat("#ffffff", { map: rt }), M_STAIR: mat("#c9a77c") };
       const frameM = mat(frameHex), glassM = mat("#7fa5b8", { transparent: true, opacity: .75 });
       const facts = { win: { south: 0, north: 0, east: 0, west: 0 }, door: { south: 0, north: 0, east: 0, west: 0 }, gable: { east: 0, west: 0 } };
       geo.forEach(g => {
-        if (g.k === "s") { const me = extrude(g, mats[g.mat] || mats.M_WALL); if (g.mat === "M_WALL") walls.push(me); if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
+        if (g.k === "s") { const me = extrude(g, mats[g.mat] || mats.M_WALL); if (g.mat === "M_WALL") walls.push(me); if (g.mat !== "M_INT" && g.mat !== "M_STAIR") { grp.add(me); edgeLines(me, grp); if (g.mat === "M_ROOF") trimRoof(g, grp, ridgeZ); } }
         else if (g.k === "g") {
-          const p3 = g.pts.map(T3); grp.add(planeMesh(p3, glassM, 0)); frameAround(p3, frameM, grp, 80, 90);
+          const p3 = g.pts.map(T3); grp.add(planeMesh(p3, glassM, 0)); frameAround(p3, frameM, grp, 110, 300);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) { if (g.pts.some(p => p[2] > (m.jumts && m.jumts.eave || 2600) - 400) || g.pts.length > 4) facts.gable[sd] = (facts.gable[sd] || 0) + 1; else facts.win[sd]++; }
         } else if (g.k === "d") {
-          const p3 = g.pts.map(T3); grp.add(planeMesh(p3, frameM, 0)); frameAround(p3, frameM, grp, 90, 100);
+          const p3 = g.pts.map(T3); grp.add(planeMesh(p3, frameM, 0)); frameAround(p3, frameM, grp, 110, 300);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) facts.door[sd]++;
         }
       });
@@ -96,7 +129,7 @@
         box.position.set((x0 + x1) / 2, topZ - h / 2, (y0 + y1) / 2); grp.add(box);
       }
       // zeme
-      const gr = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshLambertMaterial({ color: "#aab39a" }));
+      const gr = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshLambertMaterial({ color: "#ffffff", map: groundTex() }));
       gr.rotation.x = -Math.PI / 2; gr.position.y = -301; grp.add(gr);
       return { grp, walls, facts, tr };
     }
