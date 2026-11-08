@@ -1297,7 +1297,27 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
           g.append(field("Pagriezienā", base[7] === "vij" ? "vij" : "lauk", (n, v) => { B(n)[7] = v; }, { lauk: "Starplaukums", vij: "Vītņu pakāpieni" }));
           g.append(field("Kāpšanas virziens", base[8] ? "1" : "0", (n, v) => { B(n)[8] = +v; }, { 0: "No apakšējā marša", 1: "No augšējā marša" }, "full"));
         }
-        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Pakāpiens plānā 250 mm. Bulta rāda kāpšanas virzienu, aplītis ir sākums."; g.appendChild(nt);
+        // kāpņu formula (Blondel): 2R + G = 600-650 mm; R 150-200, G 250-350. Tikai brīdinājums, nekas netiek aizliegts.
+        {
+          const H = model.loft && model.loft.level ? model.loft.level : (model.ceiling || 0) + PANEL;
+          let runs;   // pakāpienu dziļumi (G) katrā posmā + paceltuvju skaits
+          if (nm === "kapnes") { const n = Math.max(2, Math.round(H / 180)); runs = { n, g: [base[3] / n] }; }
+          else {
+            const b = Math.min(base[5] || 900, base[3] - 300, base[4] - 300);
+            const n1 = Math.max(2, Math.round((base[3] - b) / 250)), n2 = Math.max(2, Math.round((base[4] - b) / 250));
+            runs = { n: n1 + n2 + 1, g: [(base[3] - b) / n1, (base[4] - b) / n2] };
+          }
+          const R = H / runs.n, Gs = runs.g, Gm = Math.min(...Gs), GM = Math.max(...Gs);
+          const bad = [], f0 = x => Math.round(x);
+          if (R < 150 || R > 200) bad.push("pacēlums R ārpus 150–200");
+          if (Gm < 250 || GM > 350) bad.push("pakāpiens G ārpus 250–350");
+          [Gm, GM].forEach(G => { const s = 2 * R + G; if ((s < 600 || s > 650) && !bad.some(x => x.startsWith("2R"))) bad.push("2R+G ārpus 600–650"); });
+          const fm = document.createElement("p"); fm.className = "note full";
+          fm.style.cssText = "margin:4px 0;padding:6px 8px;border-radius:6px;font-weight:500;background:" + (bad.length ? "#fdecea;color:#8a1f11" : "#e8f3ea;color:#1d5b2c");
+          fm.textContent = `Pakāpieni: ${runs.n} × R ${f0(R)} mm, G ${Gm === GM ? f0(Gm) : f0(Gm) + "–" + f0(GM)} mm. Formula 2R+G = ${Gm === GM ? f0(2 * R + Gm) : f0(2 * R + Gm) + "–" + f0(2 * R + GM)} mm (optimums ~630, norma 600–650). ` + (bad.length ? "⚠ Nav optimāls: " + bad.join(", ") + ". Atstāts jūsu ziņā." : "✓ Optimāls.");
+          g.appendChild(fm);
+        }
+        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Bulta rāda kāpšanas virzienu, aplītis ir sākums."; g.appendChild(nt);
       }
       if (vary) g.append(field("Detalizācija", String(vOf(nm0)), (n, v) => { const f = B(n); f[0] = typeV(f[0], +v); }, { 1: "Vienkāršs", 2: "Standarta", 3: "Detalizēts" }, "full"));
       if (nm === "Ci") g.append(field("Rādiuss, mm", base[3], (n, v) => { B(n)[3] = v; }));
