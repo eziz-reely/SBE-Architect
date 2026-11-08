@@ -216,8 +216,9 @@ def check(m, verbose=False):
         host = None
         for r in m['rooms']:
             for q in r['r']:
-                touch = ((wall == 'north' and abs(q[1] - T) < 2) or (wall == 'south' and abs(q[1] + q[3] - (D - T)) < 2) or
-                         (wall == 'west' and abs(q[0] - T) < 2) or (wall == 'east' and abs(q[0] + q[2] - (W - T)) < 2))
+                PX = {p[0] for p in m.get('poly', [])} | {W}; PY = {p[1] for p in m.get('poly', [])} | {D}   # L/T formas: arī ieejošie stūri
+                touch = ((wall == 'north' and abs(q[1] - T) < 2) or (wall == 'south' and any(abs(q[1] + q[3] - (y - T)) < 2 for y in PY)) or
+                         (wall == 'west' and abs(q[0] - T) < 2) or (wall == 'east' and any(abs(q[0] + q[2] - (x - T)) < 2 for x in PX)))
                 lo, hi = (q[0], q[0] + q[2]) if wall in ('north', 'south') else (q[1], q[1] + q[3])
                 if touch and lo - 1 <= cx <= hi + 1:
                     host = (r, lo, hi)
