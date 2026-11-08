@@ -579,6 +579,7 @@
     (L.windows || []).forEach(w => { if ((w.o === "h") === X) c.push(X ? w.x : w.y, (X ? w.x : w.y) + w.len); });
     (L.doors || []).forEach(d => { if ((d.o === "h") === X) c.push(X ? d.x : d.y, (X ? d.x : d.y) + d.w); });
     ((M.axes || {})[axis] || []).forEach(a => c.push(a[0]));
+    GUIDES().forEach(g => { if ((g.o === "v" && X) || (g.o === "h" && !X)) c.push(g.at); });   // palīglīnijas: viegli pielīp
     return c;
   }
   function snapI(l, axis, v, rad = 150) {
@@ -731,9 +732,21 @@
     let N; try { N = apply(d, dx, dy); } finally { arr.pop(); }
     d.cpI = ni; return N;
   }
+  // palīglīnijas pievilkšana vilkšanas laikā: vals = elementa malas/centrs attiecīgajā ass virzienā; atgriež labojumu mm vai null
+  function gSnap(d, axis, vals) {
+    const m = d.h.bl.g.getScreenCTM(), thr = m && m.a ? 9 / Math.abs(m.a) : 60;
+    let best = null;
+    GUIDES().forEach(g => { if (!((g.o === "v" && axis === "x") || (g.o === "h" && axis === "y"))) return; vals.forEach(v => { const df = g.at - v; if (Math.abs(df) <= thr && (best == null || Math.abs(df) < Math.abs(best.df))) best = { df, at: g.at }; }); });
+    return best;
+  }
   function apply(d, dx, dy) {
     const it = d.h.it, z = d.zone;
-    if (z === "wx" || z === "wy") return moveWall(it.w, z === "wx" ? dx : dy);
+    if (z === "wx" || z === "wy") {
+      let q = r10(z === "wx" ? dx : dy); const w = it.w, ax = z === "wx" ? "x" : "y", sn = gSnap(d, ax, [w.lo + q, w.hi + q, (w.lo + w.hi) / 2 + q]);
+      if (sn) q = +(q + sn.df).toFixed(1);
+      d.wd = q; d.snapLine = sn ? [ax, sn.at] : null;
+      return moveWall(w, q);
+    }
     const N = clone(M);
     if (d.h.bl.type === "plan") {
       const L = lv(it.lv, N);
@@ -770,6 +783,10 @@
         d.nb = null; d.back = null;
         let [fx, fy, rm] = fit(it.lv, it.b, r10(dx), r10(dy));
         [fx, fy] = collide(it.lv, it.b, fx, fy, d.boxes, grp, rm);
+        {   // pielīp palīglīnijām (malas vai centrs)
+          const b0 = it.b, sx = gSnap(d, "x", [b0[0] + fx, b0[2] + fx, (b0[0] + b0[2]) / 2 + fx]), sy = gSnap(d, "y", [b0[1] + fy, b0[3] + fy, (b0[1] + b0[3]) / 2 + fy]);
+          if (sx || sy) { let [gx, gy] = fit(it.lv, it.b, fx + (sx ? sx.df : 0), fy + (sy ? sy.df : 0)); [gx, gy] = collide(it.lv, it.b, gx, gy, d.boxes, grp, rm); fx = gx; fy = gy; }
+        }
         grp.forEach(j => shiftF(L.furniture[j], fx, fy));
         d.fdx = fx; d.fdy = fy;
         return N;
@@ -785,6 +802,8 @@
           const c = v + len / 2, cs = wallCenters(it.lv, o, it.k === "win" ? T : o.th), best = cs.sort((a, b2) => Math.abs(a - c) - Math.abs(b2 - c))[0];
           if (best != null && Math.abs(best - c) < 220) { v = Math.max(T, Math.min(lim - T - len, +(best - len / 2).toFixed(1))); d.snapLine = [o.o === "h" ? "y" : "x", best]; }
         }
+        const gs = gSnap(d, key, [v, v + len, v + len / 2]);
+        if (gs) v = Math.max(T, Math.min(lim - T - len, +(v + gs.df).toFixed(1)));
         o[key] = v;
       }
       if (o.parts && o.parts.length === 2) o.parts[1].len = Math.max(200, o.len - o.parts[0].len);
@@ -833,7 +852,7 @@
     o.querySelectorAll(".gh").forEach(e => e.remove());
     const g = mk(o, "g", { class: "gh" });
     if (it.k === "wall") {
-      const w = it.w, dd = r10(d.zone === "wx" ? d.dx : d.dy), X = w.axis === "x";
+      const w = it.w, dd = d.wd != null ? d.wd : r10(d.zone === "wx" ? d.dx : d.dy), X = w.axis === "x";
       const b = X ? [w.lo + dd, 0, w.hi + dd, M.D] : [0, w.lo + dd, M.W, w.hi + dd];
       rect(g, b, true, k);
       label(g, X ? b[2] + 1.5 / k : b[0] + 1.5 / k, X ? M.D / 2 : b[1] - 1.5 / k, (dd > 0 ? "+" : "") + dd + " mm" + (N ? "" : "  · par šauru"), k);
@@ -922,7 +941,6 @@
       if (ix >= 0) { drag = { wend: true, hw, ix, e0: hw.seg[ix], fixed: hw.seg[1 - ix], u: hw.seg[ix], x0: e.clientX, y0: e.clientY, moved: false }; document.body.style.cursor = X ? "ns-resize" : "ew-resize"; return true; }
     }
     const h = hit(e.clientX, e.clientY); hover(null);
-    if (h && h.wall && !moveMode) return true;   // sienu pārbīda tikai ar Move rīku; galus velk ar rokturiem
     if (!h) { if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false; }
     if (h.del) { post({ t: "delete" }); return true; }
     if (h.rot) {   // klikšķis = 90°, vilkšana = brīvi (solis 15°, ar Shift 1°)
@@ -969,7 +987,7 @@
     if (place) { hover(null); return; }
     if (!drag) {
       const h = hit(e.clientX, e.clientY);
-      document.body.style.cursor = h ? (h.wall ? (moveMode ? MVC : "") : cur(zone(h))) : (moveMode ? MVC : ""); hover(h);
+      document.body.style.cursor = h ? (h.wall ? MVC : cur(zone(h))) : (moveMode ? MVC : ""); hover(h);
       return;
     }
     const a = toLocal(drag.h.bl.g, e.clientX, e.clientY), b = toLocal(drag.h.bl.g, drag.x0, drag.y0);

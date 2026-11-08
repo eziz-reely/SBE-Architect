@@ -726,12 +726,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   // ---- CAD rīku josla, pielāgojami taustiņi, statusa rinda ----
   const ACTIONS = [
     { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); setMove(false); railSync(); } },
-    { id: "mv", n: "Pārvietot (siena, elements)", k: "m", ic: "mv", run: () => { endPlace(); toFrame({ mmPlace: null }); setMove(!moveOn); railSync(); } },
     ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
     { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gv", run: () => { $("bGuideClr").click(); } },
   ];
-  const RAIL = ["sel", "mv", "t3", "t4", "er", "t5", "t6", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
+  const RAIL = ["sel", "t3", "t4", "er", "t5", "t6", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
   IC.sel = '<path d="M9 3l16 10-7 1.5 4 8-3 1.5-4-8-6 4z" fill="currentColor"/>';
   const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
   let keyMap = Object.assign({}, DEF), keyCap = null;
