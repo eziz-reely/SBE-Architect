@@ -141,8 +141,18 @@ function sectionLines(g, v, ext = 2300) {
     const span = s.o === "v" ? v.D : v.W, a0 = -ext, a1 = span + ext;
     const P = (a, b = s.at) => s.o === "v" ? [b, a] : [a, b];
     const line = (p, q, sw, dash) => el("line", { x1: p[0], y1: p[1], x2: q[0], y2: q[1], stroke: C.ink, "stroke-width": sw, ...(dash ? { "stroke-dasharray": dash } : {}) }, sg);
-    line(P(a0), P(a1), 10, "380 110 50 110");
+    const SV = +(((window.AR && window.AR.projekts && window.AR.projekts.wall_style) || {}).section) || 1;   // griezuma līnijas veids 1-3
+    line(P(a0), P(a1), SV === 2 ? 12 : 10, SV === 2 ? null : "380 110 50 110");
     [[a0, a0 + 550], [a1 - 550, a1]].forEach(([p, q]) => line(P(p), P(q), 38));
+    if (SV === 3) {   // ArchiCAD veida zīme: trijstūris skata virzienā un aplis ar numuru
+      [a0, a1].forEach(a => {
+        const d = s.look, B = (u, w) => P(a + u, s.at + d * w), tri = [B(-380, 150), B(380, 150), B(0, 900)];
+        el("polygon", { points: tri.map(t => t.join(",")).join(" "), fill: "#bdbdbd", stroke: C.ink, "stroke-width": 10 }, sg);
+        const c = B(0, 1250); el("circle", { cx: c[0], cy: c[1], r: 340, fill: "#fff", stroke: C.ink, "stroke-width": 14 }, sg);
+        T_(sg, c[0], c[1] + 95, s.n, { fs: 300, fw: 700, a: "middle" });
+      });
+      return;
+    }
     // view arrows at both ends, number beyond the arrow head
     const dir = s.look;
     [a0, a1].forEach(a => {
