@@ -15,6 +15,10 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 
 Redaktorā: rīku josla kreisajā malā, taustiņus var mainīt ar tastatūras ikonu joslas apakšā. Palīglīnijas: G, vai velc no rasējuma kreisās/augšējās malas.
 
+## Projektu arhīvs
+
+`python3 bot/arhivs.py PROJEKTI` uzbūvē `PROJEKTI/arhivs.html`: viens logs ar visiem projektiem (nosaukums, laukums, plāna un fasādes miniatūra), meklēšana un filtrs pa uzņēmumiem. Klikšķis atver projekta redaktoru. Mapes: `PROJEKTI/<uzņēmums>/<projekts>/model.json`. Pievienot modeli: `python3 bot/arhivs.py PROJEKTI --pievienot model.json --uznemums "Uzņēmums"`. Miniatūras pārbūvējas pašas, ja `model.json` ir mainīts. Mape `PROJEKTI/` nonāk repo ignorēto sarakstā (klientu dati).
+
 ## Komandas
 
 - `/sbe-arhitekts`: jauns modelis. Uzdod jautājumus ar ķeksīšiem, uzģenerē plānojumu (vienmēr sāk ar 1. variantu), pārbauda un parāda apstiprināšanai. Vizualizācijas tikai pēc apstiprinājuma.
