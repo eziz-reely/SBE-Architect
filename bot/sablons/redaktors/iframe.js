@@ -739,12 +739,27 @@
     GUIDES().forEach(g => { if (!((g.o === "v" && axis === "x") || (g.o === "h" && axis === "y"))) return; vals.forEach(v => { const df = g.at - v; if (Math.abs(df) <= thr && (best == null || Math.abs(df) < Math.abs(best.df))) best = { df, at: g.at }; }); });
     return best;
   }
+  // visas pārējās iekšējās sienas vienā virzienā: [lo, hi] (lai pārbīdot siena nostātos vienā taisnē ar citu)
+  function wallBands(axis, skip) {
+    const R = roomRects(M), out = [], seen = new Set();
+    for (const a of R) for (const b of R) {
+      const A = a.b, B = b.b, X = axis === "x", g0 = X ? A[2] : A[3], g1 = X ? B[0] : B[1];
+      if (g1 - g0 < 100 || g1 - g0 > 300) continue;
+      const ov = X ? Math.min(A[3], B[3]) - Math.max(A[1], B[1]) : Math.min(A[2], B[2]) - Math.max(A[0], B[0]); if (ov < 50) continue;
+      if (Math.abs(g0 - skip.lo) < 1) continue;
+      const k = Math.round(g0) + "|" + Math.round(g1); if (seen.has(k)) continue; seen.add(k); out.push([g0, g1]);
+    }
+    return out;
+  }
   function apply(d, dx, dy) {
     const it = d.h.it, z = d.zone;
     if (z === "wx" || z === "wy") {
       let q = r10(z === "wx" ? dx : dy); const w = it.w, ax = z === "wx" ? "x" : "y", sn = gSnap(d, ax, [w.lo + q, w.hi + q, (w.lo + w.hi) / 2 + q]);
+      let al = null;   // pievilkšana citai sienai: abas vienā taisnē
+      if (!w.ext) wallBands(w.axis, w).forEach(([l2, h2]) => [[l2 - w.lo], [h2 - w.hi], [(l2 + h2) / 2 - (w.lo + w.hi) / 2]].forEach(([df]) => { const t = (() => { const m = d.h.bl.g.getScreenCTM(); return m && m.a ? 12 / Math.abs(m.a) : 80; })(); const e = df - q; if (Math.abs(e) <= t && (!al || Math.abs(e) < Math.abs(al.e))) al = { e, at: (l2 + h2) / 2 }; }));
+      if (al && (!sn || Math.abs(al.e) <= Math.abs(sn.df))) { q = +(q + al.e).toFixed(1); d.wd = q; d.snapLine = [ax === "x" ? "y" : "x", al.at]; return moveWall(w, q); }
       if (sn) q = +(q + sn.df).toFixed(1);
-      d.wd = q; d.snapLine = sn ? [ax, sn.at] : null;
+      d.wd = q; d.snapLine = sn ? [ax === "x" ? "y" : "x", sn.at] : null;
       return moveWall(w, q);
     }
     const N = clone(M);
