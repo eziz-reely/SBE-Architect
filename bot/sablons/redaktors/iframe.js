@@ -1124,7 +1124,7 @@
   }
 
   // ---- starpsienas: telpas taisnstūris tiek sadalīts ar 195 mm sienu; sienas posmu var izgriezt (atvere bez durvīm) ----
-  const PT = 195;
+  const PT = 195; let PMIN = 600;
   function partC(l, axis, v) {   // sienas ass pielīp tā, lai viena virsma sakristu ar citas sienas virsmu
     const h = PT / 2; let best = null;
     snapPts(l, axis).forEach(t => [t + h, t - h].forEach(cc => { if (Math.abs(cc - v) < 150 && (best == null || Math.abs(cc - v) < Math.abs(best - v))) best = cc; }));
@@ -1138,15 +1138,17 @@
     for (const e of roomRects(X)) {
       const [x0, y0, x1, y1] = e.b, U0 = vertical ? x0 : y0, U1 = vertical ? x1 : y1, V0 = vertical ? y0 : x0, V1 = vertical ? y1 : x1;
       if (c < U0 || c > U1 || mid < V0 || mid > V1) continue;
-      if (c - h < U0 + MINR || c + h > U1 - MINR) return { err: "Starpsiena par tuvu sienai: telpa kļūtu šaurāka par 600 mm." };
+      const fLo = Math.abs(c - h - U0) < 1, fHi = Math.abs(c + h - U1) < 1;   // siena precīzi pie telpas malas: tur paliekošas joslas nav
+      if ((!fLo && c - h < U0 + MINR) || (!fHi && c + h > U1 - MINR)) return { err: "Starpsiena par tuvu sienai: telpa kļūtu šaurāka par 600 mm." };
       const a2 = a <= V0 + 300 ? V0 : a, b2 = b >= V1 - 300 ? V1 : b, tA = a2 <= V0 + 1, tB = b2 >= V1 - 1;
-      if (b2 - a2 < 600) return { err: "Siena par īsu." };
+      if (b2 - a2 < PMIN) return { err: "Siena par īsu." };
       if (!tA && !tB) return { err: "Siena jāsāk pie telpas malas (ārsienas vai citas sienas)." };
       const P = (u0, v0, u1, v1) => (vertical ? [u0, v0, u1 - u0, v1 - v0] : [v0, u0, v1 - v0, u1 - u0]);
       let parts;
       if (tA && tB) parts = [P(U0, V0, c - h, V1), P(c + h, V0, U1, V1)];
       else if (tA) parts = [P(U0, V0, c - h, b2), P(c + h, V0, U1, b2), P(U0, b2, U1, V1)];
       else parts = [P(U0, V0, U1, a2), P(U0, a2, c - h, V1), P(c + h, a2, U1, V1)];
+      parts = parts.filter(q => q[2] > 1 && q[3] > 1);
       return { e, parts, full: tA && tB, a: a2, b: b2 };
     }
     return { err: "Uzklikšķini telpas iekšpusē." };
@@ -1155,7 +1157,7 @@
     const sp = partitionSpec(N, vertical, c, a, b); if (sp.err) return sp;
     const rm = N.rooms[sp.e.ri], q = rm.r[sp.e.qi], cen = r => [r[0] + r[2] / 2, r[1] + r[3] / 2];
     rm.r[sp.e.qi] = sp.parts[0];
-    if (sp.full && rm.r.length === 1) {   // pilna siena vienā taisnstūrī: otra puse kļūst par jaunu telpu
+    if (sp.full && rm.r.length === 1 && sp.parts.length === 2) {   // pilna siena vienā taisnstūrī: otra puse kļūst par jaunu telpu
       N.rooms.push({ n: "Telpa", en: "Room", r: [sp.parts[1]] });
       N.stampAt = N.stampAt || {}; N.stampScale = N.stampScale || {};
       const ni = N.rooms.length - 1, cn = cen(sp.parts[1]); N.stampAt[ni] = [+cn[0].toFixed(1), +cn[1].toFixed(1)]; N.stampScale[ni] = 0.4;
@@ -1244,7 +1246,7 @@
     if (beyond) {
       const lim = w.endIdx === 1 ? w.v1 : w.v0;
       if (Math.abs(lim - e0) >= 10) { const r1 = moveWallEnd(N, Object.assign({}, w), e0, lim, mid); if (r1.err && r1.err !== "Šeit nav ko aizpildīt ar sienu.") return r1; }
-      return addPartitionAcross(N, X, cc, lim, uRaw);
+      PMIN = 150; try { return addPartitionAcross(N, X, cc, lim, uRaw); } finally { PMIN = 600; }   // pagarinot siena var būt īsa
     }
     if (Math.abs(u - e0) < 10) return { err: "Nav ko mainīt." };
     const shrink = (w.endIdx === 1 && u < e0) || (w.endIdx === 0 && u > e0);
