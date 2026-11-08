@@ -646,6 +646,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const sel = document.createElement("select"); [["", "Barlow (parasts)"], ["Arial", "Arial"], ["Calibri", "Calibri"], ["Segoe UI", "Segoe UI"], ["Verdana", "Verdana"], ["Times New Roman", "Times New Roman"], ["Courier New", "Courier New"], ["ISOCPEUR", "ISOCPEUR"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); });
     sel.value = P.fonts || ""; sel.onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; if (sel.value) n.projekts.fonts = sel.value; else delete n.projekts.fonts; commit(n); };
     grp("Teksta fonts", sel);
+    { const c = document.createElement("input"); c.type = "color"; c.value = WS.dim || "#000000"; c.title = "Mēru ķēžu krāsa";
+      c.onchange = () => { const n = clone(model); wsSet(n, "dim", c.value); commit(n); };
+      const rs = btn("Melna", "Atgriezt standarta krāsu", !WS.dim, () => { const n = clone(model); wsSet(n, "dim", null); commit(n); });
+      grp("Mēru ķēdes", rs, c); }
     { const sv = +(WS.section) || 1, sk = n => `<svg viewBox="0 0 30 14"><path d="M1 7h28" stroke="currentColor" stroke-width="1.2"${n === 2 ? "" : ' stroke-dasharray="5 1.5 1 1.5"'}/>${n === 3 ? '<path d="M15 3 L11 -0 H19Z" fill="#aaa" stroke="currentColor" stroke-width=".8" transform="translate(0 4)"/>' : '<path d="M1 3v8M29 3v8" stroke="currentColor" stroke-width="2.4"/>'}</svg>`;
       const setS = v => { const n = clone(model); wsSet(n, "section", v === 1 ? null : v); commit(n); };
       grp("Griezuma līnija", ...[1, 2, 3].map(v => btn(["Bultiņas", "Melna zīme", "Pelēka zīme"][v - 1], ["Raustīta ar bultiņām", "Melns trijstūris ar apli", "Pelēks trijstūris ar apli un lapas numuru"][v - 1], sv === v, () => setS(v)))); }

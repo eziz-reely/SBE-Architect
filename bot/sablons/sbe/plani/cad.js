@@ -256,6 +256,7 @@ function wallSample(g, layers, L) {
 
 // ---------- plan ----------
 function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
+  const dn0 = g.childNodes.length;
   pts = [...new Set(pts.map(Math.round))].sort((a, b) => a - b);
   const a0 = pts[0], a1 = pts[pts.length - 1];
   const L = (x1, y1, x2, y2, sw = 7) => el("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": sw, "stroke-linecap": "butt" }, g);
@@ -277,6 +278,8 @@ function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
     const t = axis === "x" ? T_(g, mm, at - 70 + off, txt, { a: "middle", fs: 190 }) : T_(g, at - 70 + off, mm, txt, { a: "middle", fs: 190, tr: `rotate(-90 ${at - 70 + off} ${mm})` });
     if (inner) { t.setAttribute("stroke", "#fff"); t.setAttribute("stroke-width", 60); t.setAttribute("paint-order", "stroke"); t.setAttribute("stroke-linejoin", "round"); }
   }
+  const dc = ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim;   // dimensiju ķēžu krāsa (noformējuma panelis)
+  if (dc) for (let k = dn0; k < g.childNodes.length; k++) { const q = g.childNodes[k]; if (q.tagName === "text") q.setAttribute("fill", dc); else q.setAttribute("stroke", dc); }
 }
 
 function furniture(g, list) {
