@@ -803,6 +803,7 @@ const EXT_SPEC = [
 const INT_LAYERS = [{ t: 12.5, name: "ģipškartons 12,5" }, { t: 145, ins: true, name: "karkass ar minerālvati 145" }, { t: 12.5, name: "ģipškartons 12,5" }];
 // loop insulation along a band: origin o, along u, across n (unit vectors), length L, thickness h
 function loops(ox, oy, ux, uy, nx, ny, L, h) {
+  if (!(h > 0) || !(L > 0)) return "";
   const r = h / 4, k = 0.5523;
   const P = (a, b) => `${(ox + ux * a + nx * b).toFixed(1)} ${(oy + uy * a + ny * b).toFixed(1)}`;
   let d = "";
@@ -884,7 +885,8 @@ function drawWalls(g, v, cid) {
   // ArchiCAD-style clean-up: cores merge at junctions, skins wrap around them.
   // 1) white wall bodies, 2) core outlines stroked double then filled white, so only the
   // outline of the union survives, 3) loops — shorter walls first, the through wall on top.
-  const gy = INT_LAYERS[0].t;
+  const gy = (() => { const i0 = INT_LAYERS.findIndex(l => l.ins); if (i0 < 0) return 0; let i1 = i0; INT_LAYERS.forEach((l, i) => { if (l.ins) i1 = i; });
+    const f = INT_LAYERS.slice(0, i0).reduce((a, l) => a + l.t, 0), k = INT_LAYERS.slice(i1 + 1).reduce((a, l) => a + l.t, 0); return Math.min(f, k); })();   // ādas biezums katrā pusē (slāņu secība var būt jebkāda)
   const core0 = ([x, y, w, h, o]) => o === "v" ? [x + gy, y, w - 2 * gy, h] : [x, y + gy, w, h - 2 * gy];
   // a branch ending inside a crossing wall stops at that wall's core
   walls.forEach(wl => {
