@@ -298,6 +298,10 @@ aside #hint, aside .savebar #status { display: none; }
 #libFurn button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; gap: 2px; border-radius: 3px; font-size: 11.5px; }
 #libFurn button svg { grid-row: auto; width: 36px; height: 26px; }
 #libFurn button small { grid-column: 1; margin: 0; font-size: 10px; }
+#libOpenings { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#libOpenings button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; font-size: 11.5px; gap: 2px; border-radius: 3px; }
+#libOpenings button svg { grid-row: auto; width: 36px; height: 26px; }
+#libOpenings small { display: none; }
 #libOpen { grid-template-columns: repeat(3, 1fr); gap: 4px; }
 #libOpen button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; font-size: 11.5px; gap: 2px; border-radius: 3px; }
 #libOpen button svg { grid-row: auto; width: 36px; height: 26px; }
@@ -366,7 +370,9 @@ aside #hint, aside .savebar #status { display: none; }
     </nav>
     <div class="tabpanes">
       <section data-pane="add">
-        <p class="cap">Rīki</p>
+        <p class="cap">Logi un durvis</p>
+        <div class="lib" id="libOpenings"></div>
+        <p class="cap">CAD rīki</p>
         <div class="lib" id="libOpen"></div>
         <p id="hint"></p>
         <div class="caprow"><p class="cap">Mēbeles un kāpnes</p></div>
@@ -683,10 +689,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     };
     b.title = item.n + " · " + item.s;
     host.appendChild(b);
+    return b;
   }
   function startDim() { const b = [...document.querySelectorAll("#libOpen button")].find(x => /Mērs/.test(x.textContent)); if (b && onBtn !== b) b.click(); }
   function endPlace() { placing = null; if (onBtn) onBtn.classList.remove("on"); onBtn = null; $("hint").textContent = ""; try { railSync(); } catch (_) {} }
-  OPEN.forEach(o => libButton($("libOpen"), o, o.p));
+  const OPENB = [];
+  OPEN.forEach((o, i) => OPENB.push(libButton($(i < 3 ? "libOpenings" : "libOpen"), o, o.p)));
   { const b = document.createElement("button"); b.type = "button"; b.id = "bGuideClr"; b.className = "wide"; b.innerHTML = icon("gv"); b.append("Dzēst visas palīglīnijas"); const sm = document.createElement("small"); sm.textContent = "lapā nav, tikai redaktorā"; b.appendChild(sm);
     b.onclick = () => { if (!((model.projekts || {}).guides || []).length) { status("Palīglīniju nav."); return; } const n = clone(model); n.projekts.guides = []; if (sel && sel.k === "guide") sel = null; commit(n); status("Visas palīglīnijas dzēstas."); };
     $("libOpen").appendChild(b); }
@@ -698,7 +706,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   // ---- CAD rīku josla, pielāgojami taustiņi, statusa rinda ----
   const ACTIONS = [
     { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); railSync(); } },
-    ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = $("libOpen").children[i]; if (b) b.click(); railSync(); } })),
+    ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
     { id: "hg", n: "Horiz. palīglīnija", k: "shift+g", ic: "gh", run: () => { startGuide("h"); railSync(); } },
   ];
   IC.sel = '<path d="M9 3l16 10-7 1.5 4 8-3 1.5-4-8-6 4z" fill="currentColor"/>';
@@ -720,7 +728,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     railSync();
   }
   function railSync() {
-    const on = onBtn ? [...$("libOpen").children].indexOf(onBtn) : -1, id = on >= 0 && on < 7 ? "t" + on : onBtn ? null : "sel";
+    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = on >= 0 && on < 7 ? "t" + on : onBtn ? null : "sel";
     document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
     syncBar();
   }
