@@ -284,6 +284,10 @@ main { grid-template-columns: 44px 1fr 320px; }
 #sbar .dirty { color: var(--mark); }
 aside #hint, aside .savebar #status { display: none; }
 #libOpen small { display: none; }
+#keysPane .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--line); }
+#keysPane .kr button, #keysPane .ft button { min-width: 72px; padding: 4px 8px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); }
+#keysPane .kr button.cap { border-color: var(--mark); color: var(--mark); }
+#keysPane .ft { margin-top: 10px; } #keysPane .kh { color: var(--muted); font-size: 12px; }
 #keys { position: fixed; left: 52px; bottom: 34px; z-index: 60; width: 300px; max-height: 70vh; overflow: auto; background: var(--paper); border: 1px solid var(--line); padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
 #keys h3 { margin: 0 0 6px; font: 600 11px/1 var(--f-cap); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
 #keys .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
@@ -366,14 +370,14 @@ aside #hint, aside .savebar #status { display: none; }
       <button type="button" role="tab" data-tab="add" aria-selected="true">Pievienot</button>
       <button type="button" role="tab" data-tab="house" aria-selected="false">Māja</button>
       <button type="button" role="tab" data-tab="check" aria-selected="false">Pārbaude <span class="badge" id="nCheck" hidden></span></button>
+      <button type="button" role="tab" data-tab="keys" aria-selected="false">Taustiņi</button>
       <button type="button" role="tab" data-tab="help" aria-selected="false" aria-label="Palīdzība">?</button>
     </nav>
     <div class="tabpanes">
       <section data-pane="add">
         <p class="cap">Logi un durvis</p>
         <div class="lib" id="libOpenings"></div>
-        <p class="cap">CAD rīki</p>
-        <div class="lib" id="libOpen"></div>
+        <div class="lib" id="libOpen" hidden></div>
         <p id="hint"></p>
         <div class="caprow"><p class="cap">Mēbeles un kāpnes</p></div>
         <div class="seg" id="detail" role="group" aria-label="Mēbeļu detalizācija visai lapai"><button type="button" data-v="1" aria-pressed="false">Vienkāršs</button><button type="button" data-v="2" aria-pressed="true">Standarta</button><button type="button" data-v="3" aria-pressed="false">Detalizēts</button></div>
@@ -385,6 +389,10 @@ aside #hint, aside .savebar #status { display: none; }
       <section data-pane="check" hidden>
         <p class="cap">MM noteikumi</p>
         <ul id="check"><li class="ok">Gaida rasējumu…</li></ul>
+      </section>
+      <section data-pane="keys" hidden>
+        <p class="cap">Īsinājumtaustiņi</p>
+        <div id="keysPane"></div>
       </section>
       <section data-pane="help" hidden>
         <p class="cap">Kā lietot</p>
@@ -709,7 +717,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); railSync(); } },
     ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
     { id: "hg", n: "Horiz. palīglīnija", k: "shift+g", ic: "gh", run: () => { startGuide("h"); railSync(); } },
+    { id: "gv", n: "Vert. palīglīnija", k: "v", ic: "gv", run: () => { startGuide("v"); railSync(); } },
+    { id: "gs", n: "Slīpa palīglīnija", k: "", ic: "gs", run: () => { const b = OPENB[9]; if (b) b.click(); railSync(); } },
+    { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gv", run: () => { $("bGuideClr").click(); } },
   ];
+  const RAIL = ["sel", "t3", "t4", "t5", "t6", "hg", "gv", "gs", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
   IC.sel = '<path d="M9 3l16 10-7 1.5 4 8-3 1.5-4-8-6 4z" fill="currentColor"/>';
   const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
   let keyMap = Object.assign({}, DEF), keyCap = null;
@@ -719,17 +731,17 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const keyLbl = k => k ? k.replace("shift+", "⇧").toUpperCase() : "—";
   function railBuild() {
     const r = $("rail"); r.innerHTML = "";
-    ACTIONS.forEach((a, i) => {
-      if (a.id === "t0" || a.id === "t3" || a.id === "t5") r.appendChild(document.createElement("hr"));
+    ACTIONS.filter(a => RAIL.includes(a.id)).forEach((a, i) => {
+      if (a.id === "t3" || a.id === "t5" || a.id === "t6") r.appendChild(document.createElement("hr"));
       const b = document.createElement("button"); b.type = "button"; b.dataset.id = a.id; b.title = a.n + (keyMap[a.id] ? " (" + keyLbl(keyMap[a.id]) + ")" : "");
       b.innerHTML = icon(a.ic) + (keyMap[a.id] ? "<kbd>" + keyLbl(keyMap[a.id]) + "</kbd>" : ""); b.onclick = a.run; r.appendChild(b);
     });
     const sp = document.createElement("span"); sp.className = "sp"; r.appendChild(sp);
-    const kb = document.createElement("button"); kb.type = "button"; kb.title = "Taustiņi"; kb.innerHTML = '<svg viewBox="0 0 40 28" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="6" width="34" height="16" rx="2"/><path d="M8 11h2M13 11h2M18 11h2M23 11h2M28 11h2M10 17h20"/></svg>'; kb.onclick = keysToggle; r.appendChild(kb);
+    const kb = document.createElement("button"); kb.type = "button"; kb.title = "Taustiņi"; kb.innerHTML = '<svg viewBox="0 0 40 28" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="6" width="34" height="16" rx="2"/><path d="M8 11h2M13 11h2M18 11h2M23 11h2M28 11h2M10 17h20"/></svg>'; kb.onclick = () => { tab("keys"); keysDraw(); }; r.appendChild(kb);
     railSync();
   }
   function railSync() {
-    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = on >= 0 && on < 7 ? "t" + on : onBtn ? null : "sel";
+    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = on >= 0 ? ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "hg", "gs"][on] : onBtn ? null : "sel";
     document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
     syncBar();
   }
@@ -740,26 +752,24 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   new MutationObserver(syncBar).observe($("hint"), { childList: true, characterData: true, subtree: true });
   new MutationObserver(syncBar).observe($("status"), { childList: true, characterData: true, subtree: true });
-  function keysToggle() {
-    const k = $("keys"); if (!k.hidden) { k.hidden = true; keyCap = null; return; }
-    const draw = () => {
-      k.innerHTML = "<h3>Taustiņi</h3>"; ACTIONS.forEach(a => { const r = document.createElement("div"); r.className = "kr"; r.innerHTML = "<span>" + a.n + "</span>"; const b = document.createElement("button"); b.type = "button"; b.textContent = keyCap === a.id ? "spied taustiņu…" : keyLbl(keyMap[a.id]); if (keyCap === a.id) b.className = "cap";
-        b.onclick = () => { keyCap = keyCap === a.id ? null : a.id; draw(); }; r.appendChild(b); k.appendChild(r); });
-      const f = document.createElement("div"); f.className = "ft"; const rs = document.createElement("button"); rs.type = "button"; rs.textContent = "Atiestatīt"; rs.onclick = () => { keyMap = Object.assign({}, DEF); saveKeys(); keyCap = null; railBuild(); draw(); };
-      const cl = document.createElement("button"); cl.type = "button"; cl.textContent = "Gatavs"; cl.onclick = keysToggle; f.append(rs, cl); k.appendChild(f);
-    };
-    k.hidden = false; draw();
-    k._cap = e => {
-      if (!keyCap) return; e.preventDefault(); e.stopPropagation();
-      if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return;
-      if (e.key === "Escape") { keyCap = null; draw(); return; }
-      const c = e.key === "Backspace" || e.key === "Delete" ? "" : comboOf(e);
-      if (c) Object.keys(keyMap).forEach(id => { if (keyMap[id] === c) keyMap[id] = ""; });
-      keyMap[keyCap] = c; keyCap = null; saveKeys(); railBuild(); draw();
-    };
+  function keysDraw() {
+    const k = $("keysPane"); k.innerHTML = "";
+    ACTIONS.forEach(a => { const r = document.createElement("div"); r.className = "kr"; r.innerHTML = "<span>" + a.n + "</span>"; const b = document.createElement("button"); b.type = "button"; b.textContent = keyCap === a.id ? "spied taustiņu…" : keyLbl(keyMap[a.id]); if (keyCap === a.id) b.className = "cap";
+      b.onclick = () => { keyCap = keyCap === a.id ? null : a.id; keysDraw(); }; r.appendChild(b); k.appendChild(r); });
+    const f = document.createElement("div"); f.className = "ft"; const rs = document.createElement("button"); rs.type = "button"; rs.textContent = "Atiestatīt"; rs.onclick = () => { keyMap = Object.assign({}, DEF); saveKeys(); keyCap = null; railBuild(); keysDraw(); };
+    f.appendChild(rs); k.appendChild(f);
+    const h = document.createElement("p"); h.className = "kh"; h.textContent = "Uzklikšķini uz taustiņa, tad nospied jauno. Backspace noņem, Esc atceļ."; k.appendChild(h);
   }
-  addEventListener("keydown", e => { const k = $("keys"); if (!k.hidden && keyCap && k._cap) k._cap(e); }, true);
-  railBuild();
+  function keyCapture(e) {
+    e.preventDefault(); e.stopPropagation();
+    if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return;
+    if (e.key === "Escape") { keyCap = null; keysDraw(); return; }
+    const c = e.key === "Backspace" || e.key === "Delete" ? "" : comboOf(e);
+    if (c) Object.keys(keyMap).forEach(id => { if (keyMap[id] === c) keyMap[id] = ""; });
+    keyMap[keyCap] = c; keyCap = null; saveKeys(); railBuild(); keysDraw();
+  }
+  addEventListener("keydown", e => { if (keyCap) keyCapture(e); }, true);
+  railBuild(); keysDraw();
 
   // ---- selected item ----
   const lvOf = (m, s) => (s.lv === "loft" ? m.loft : m);
