@@ -990,6 +990,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const addWt = document.createElement("button"); addWt.type = "button"; addWt.className = "add full"; addWt.textContent = "+ starpsienas veids";
       addWt.addEventListener("click", () => { const n = clone(model); n.projekts = n.projekts || {}; const L = n.projekts.wall_types = n.projekts.wall_types || []; let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; const base = (PLs.S2 || LAYERS0.S2.layers).map(l => l.slice()); L.push({ id: "P" + i, name: "Starpsiena " + Math.round(base.reduce((a, l) => a + (+l[1] || 0), 0)) + " (jauna)", layers: base }); commit(n); });
       gs.appendChild(addWt);
+      { const top = addWt.cloneNode(true); top.textContent = "+ Jauna starpsiena (pīrāgs)"; top.title = "Pievieno jaunu starpsienas veidu ar saviem slāņiem"; top.addEventListener("click", () => addWt.click()); gs.insertBefore(top, note0.nextSibling); }
     }
     const g2 = group("Visi logi", host);
     const all = [...(model.windows || []), ...(model.gableWins || [])], vals = [...new Set(all.map(casOf))];
