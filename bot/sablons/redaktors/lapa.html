@@ -77,6 +77,16 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; 
 #stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--desk); }
 #gClr { position: absolute; right: 14px; top: 24px; z-index: 6; display: flex; align-items: center; gap: 6px; padding: 5px 9px 5px 7px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
 #gClr svg { width: 26px; height: 18px; } #gClr:hover { border-color: var(--mark); color: var(--mark); }
+#ribbon { display: flex; align-items: stretch; gap: 0; background: var(--paper); border-bottom: 1px solid var(--line); overflow-x: auto; min-height: 40px; }
+#ribbon .rg { display: flex; flex-direction: column; justify-content: space-between; gap: 3px; padding: 4px 12px 3px; border-right: 1px solid var(--line); }
+#ribbon .rg > .rl { font: 600 9.5px/1 var(--f-cap); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#ribbon .rc { display: flex; align-items: center; gap: 2px; }
+#ribbon .rc button { min-width: 30px; height: 22px; padding: 0 7px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 2px; font: 600 11.5px/1 var(--f-ui); display: grid; place-items: center; }
+#ribbon .rc button.on { background: var(--brand); color: #f4efe6; border-color: var(--brand); }
+#ribbon .rc button svg { width: 22px; height: 12px; }
+#ribbon select, #ribbon input[type=color] { height: 22px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 2px; font: 600 11.5px/1 var(--f-ui); padding: 0 4px; }
+#ribbon input[type=color] { width: 30px; padding: 1px; }
+@media (max-width: 760px) { #ribbon { display: none; } }
 #stage iframe.wait { visibility: hidden; }
 #busy { position: absolute; left: 12px; bottom: 12px; font-size: 12px; color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; }
 aside { background: var(--paper); border-left: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
@@ -361,6 +371,7 @@ aside #hint, aside .savebar #status { display: none; }
     <button id="bSave" class="pri" type="button">Saglabāt</button>
   </div>
 </header>
+<div id="ribbon" role="toolbar" aria-label="Noformējums"></div>
 <main>
   <nav id="rail" aria-label="Rīki"></nav>
   <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 40 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 2v24" stroke-dasharray="3 2"/><path d="M4 14h32" stroke-dasharray="3 2"/><circle cx="20" cy="14" r="5" fill="var(--paper)"/><path d="M17.5 11.5l5 5M22.5 11.5l-5 5"/></svg><span>Dzēst palīglīnijas</span></button></div>
@@ -590,7 +601,25 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function doUndo() { if (!undo.length) return; redo.push(model); model = undo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function doRedo() { if (!redo.length) return; undo.push(model); model = redo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function check() { if (sel && !itemOf(model, sel)) sel = null; }
-  function buttons() { { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
+  // ---- noformējuma josla (ribbon): sienu izskats un fonts, saglabājas projektā ----
+  function ribbon() {
+    const R = $("ribbon"); if (!R) return; R.textContent = "";
+    const P = model.projekts || {}, WS = P.wall_style || {}, hx = P.sienas_hex || "";
+    const wsSet = (n, k, v) => { n.projekts = n.projekts || {}; const w = n.projekts.wall_style = n.projekts.wall_style || {}; if (v == null) delete w[k]; else w[k] = v; if (!Object.keys(w).length) delete n.projekts.wall_style; };
+    const grp = (lab, ...els) => { const g = document.createElement("div"); g.className = "rg"; const l = document.createElement("span"); l.className = "rl"; l.textContent = lab; const c = document.createElement("div"); c.className = "rc"; els.forEach(e => c.appendChild(e)); g.append(c, l); R.appendChild(g); return c; };
+    const btn = (html, title, on, fn) => { const b = document.createElement("button"); b.type = "button"; b.innerHTML = html; b.title = title; if (on) b.className = "on"; b.onclick = fn; return b; };
+    const mode = hx ? "krasa" : WS.hatch === 0 ? "tirs" : "piragi";
+    const setMode = v => { const n = clone(model); n.projekts = n.projekts || {}; delete n.projekts.sienas_hex; wsSet(n, "hatch", null); if (v === "krasa") n.projekts.sienas_hex = localStorage.getItem("mmWallHex") || "#5a5a5a"; else if (v === "tirs") wsSet(n, "hatch", 0); commit(n); };
+    const els = [btn("Šrafēts", "Sienas ar pīrāgu šrafējumu", mode === "piragi", () => setMode("piragi")), btn("Tīrs", "Sienas bez šrafējuma", mode === "tirs", () => setMode("tirs")), btn("Tonis", "Sienas aizliktas ar toni", mode === "krasa", () => setMode("krasa"))];
+    if (hx) { const c = document.createElement("input"); c.type = "color"; c.value = hx; c.title = "Sienu tonis"; c.onchange = () => { try { localStorage.setItem("mmWallHex", c.value); } catch (e) {} const n = clone(model); n.projekts.sienas_hex = c.value.toLowerCase(); commit(n); }; els.push(c); }
+    grp("Sienu aizpildījums", ...els);
+    const W = [[0, 1], [1, 2], [2, 3.5], [3, 6]], wb = k => W.map(([v, w]) => btn(`<svg viewBox="0 0 22 12"><path d="M1 6h20" stroke="currentColor" stroke-width="${w}"/></svg>`, ["Tieva", "Plāna", "Vidēja", "Bieza"][v], (WS[k] == null ? 2 : WS[k]) === v, () => { const n = clone(model); wsSet(n, k, v === 2 ? null : v); commit(n); }));
+    grp("Ārsienu kontūra", ...wb("outer")); grp("Starpsienu kontūra", ...wb("inner"));
+    const sel = document.createElement("select"); [["", "Barlow (parasts)"], ["Arial", "Arial"], ["Calibri", "Calibri"], ["Segoe UI", "Segoe UI"], ["Verdana", "Verdana"], ["Times New Roman", "Times New Roman"], ["Courier New", "Courier New"], ["ISOCPEUR", "ISOCPEUR"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); });
+    sel.value = P.fonts || ""; sel.onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; if (sel.value) n.projekts.fonts = sel.value; else delete n.projekts.fonts; commit(n); };
+    grp("Teksta fonts", sel);
+  }
+  function buttons() { ribbon(); { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
   $("bFit").onclick = () => { view = null; try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
@@ -778,7 +807,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     keyMap[keyCap] = c; keyCap = null; saveKeys(); railBuild(); keysDraw();
   }
   addEventListener("keydown", e => { if (keyCap) keyCapture(e); }, true);
-  railBuild(); keysDraw();
+  railBuild(); keysDraw(); ribbon();
 
   // ---- selected item ----
   const lvOf = (m, s) => (s.lv === "loft" ? m.loft : m);
@@ -860,30 +889,6 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const sDef = TONES[tk].sturi ? "balts" : "nav", sCur = P.sturi_opc || sDef;
     g1.appendChild(colorField("Dekoratīvie stūra dēļi", sCur, { balts: "#F2F0EA", melns: "#1d1d1d", tonis: TONES[tk].sw, nav: "transparent" }[sCur], (n, v) => { n.projekts = n.projekts || {}; const d = (TONES[n.projekts.tonis || "peleks"] || {}).sturi ? "balts" : "nav"; if (v === d) delete n.projekts.sturi_opc; else n.projekts.sturi_opc = v; },
       { nav: "Nav", balts: "Balti", melns: "Melni", tonis: "Mājas tonī" }));
-    { // sienas plānā: pīrāgu slāņi vai aizlietas ar vienu toni (krāsu aplis)
-      const gp = group("Sienas plānā", host), hx = P.sienas_hex || "";
-      const WSt = P.wall_style || {};
-      const wsSet = (n, k, v) => { const w = n.projekts.wall_style = n.projekts.wall_style || {}; if (v == null) delete w[k]; else w[k] = v; if (!Object.keys(w).length) delete n.projekts.wall_style; };
-      const f = field("Attēlojums", hx ? "krasa" : WSt.hatch === 0 ? "tirs" : "piragi", (n, v) => { n.projekts = n.projekts || {}; delete n.projekts.sienas_hex; wsSet(n, "hatch", null);
-        if (v === "krasa") n.projekts.sienas_hex = localStorage.getItem("mmWallHex") || "#5a5a5a"; else if (v === "tirs") wsSet(n, "hatch", 0); }, { piragi: "Šrafējums (pīrāgi)", tirs: "Tīrs, bez šrafējuma", krasa: "Aizliet ar toni" }, hx ? "" : "full");
-      gp.appendChild(f);
-      const LW = { 0: "Nav (tieva)", 1: "Plāna", 2: "Vidēja", 3: "Bieza" };
-      { const gf = group("Teksta fonts rasējumā", host);
-        gf.appendChild(field("Fonts", P.fonts || "", (n, v) => { n.projekts = n.projekts || {}; if (v) n.projekts.fonts = v; else delete n.projekts.fonts; }, { "": "Barlow (parasts)", "Arial": "Arial", "Calibri": "Calibri", "Segoe UI": "Segoe UI", "Verdana": "Verdana", "Times New Roman": "Times New Roman", "Courier New": "Courier New", "ISOCPEUR": "ISOCPEUR (ja uzstādīts)" }, "full")); }
-      gp.appendChild(field("Ārsienu kontūra", WSt.outer == null ? 2 : WSt.outer, (n, v) => { n.projekts = n.projekts || {}; wsSet(n, "outer", +v === 2 ? null : +v); }, LW));
-      gp.appendChild(field("Starpsienu kontūra", WSt.inner == null ? 2 : WSt.inner, (n, v) => { n.projekts = n.projekts || {}; wsSet(n, "inner", +v === 2 ? null : +v); }, LW));
-      if (hx) {
-        const l = document.createElement("label"); l.textContent = "Tonis";
-        const w = document.createElement("span"); w.className = "pick";
-        const c = document.createElement("input"); c.type = "color"; c.value = hx; c.title = "Izvēlies toni";
-        const t = document.createElement("input"); t.type = "text"; t.value = hx.toUpperCase(); t.maxLength = 7; t.spellcheck = false;
-        const put = v => { if (!/^#[0-9a-f]{6}$/i.test(v) || v.toLowerCase() === hx.toLowerCase()) return; try { localStorage.setItem("mmWallHex", v); } catch (e) {} const n = clone(model); n.projekts.sienas_hex = v.toLowerCase(); commit(n); };
-        c.addEventListener("input", () => { t.value = c.value.toUpperCase(); });
-        c.addEventListener("change", () => put(c.value));
-        t.addEventListener("change", () => put(t.value.trim().startsWith("#") ? t.value.trim() : "#" + t.value.trim()));
-        w.append(c, t); l.appendChild(w); gp.appendChild(l);
-      }
-    }
     { // sienu specifikācija: pīrāgu slāņi, pārbaude pret plāna sienu biezumiem; labojumus saglabā modelī (projekts.piragi_layers)
       if (!document.getElementById("specCss")) { const st = document.createElement("style"); st.id = "specCss"; st.textContent = ".spec{margin:6px 0 10px;font-size:12px}.spec b{display:block;margin:4px 0}.spec table{width:100%;border-collapse:collapse}.spec td{padding:1px 2px}.spec td.grip{width:14px;cursor:grab;color:var(--muted);user-select:none;text-align:center;font-size:12px;letter-spacing:-2px}.spec tr.dragging{opacity:.45}.spec tr.dropb td{box-shadow:inset 0 2px 0 var(--mark)}.spec tr.dropa td{box-shadow:inset 0 -2px 0 var(--mark)}.spec input{width:100%;box-sizing:border-box;font:inherit;padding:2px 4px}.spec input.n{text-align:right}.spec .x{width:22px;cursor:pointer;border:0;background:none;color:#a33}.spec .ok{color:#2b7a3d}.spec .bad{color:#b3261e}.spec .sum td{border-top:1px solid #bbb;font-weight:600}.spec button.add{margin-top:3px;font:inherit}"; document.head.appendChild(st); }
       const gs = group("Sienu specifikācija (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};

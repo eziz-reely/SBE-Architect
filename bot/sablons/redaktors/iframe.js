@@ -582,12 +582,17 @@
     GUIDES().forEach(g => { if ((g.o === "v" && X) || (g.o === "h" && !X)) c.push(g.at); });   // palīglīnijas: viegli pielīp
     return c;
   }
+  function furnEdges(l, axis) {   // mēbeļu malas (mēram un sienu galiem)
+    const bl = blocks().find(b => b.type === "plan" && b.lv === l); if (!bl) return [];
+    let bx; try { bx = furnBoxes(bl); } catch (_) { return []; }
+    return Object.values(bx).flatMap(q => axis === "x" ? [q[0], q[2]] : [q[1], q[3]]);
+  }
   function snapI(l, axis, v, rad = 150) {
-    let best = null; snapPts(l, axis).forEach(t => { if (Math.abs(t - v) < rad && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
+    let best = null; snapPts(l, axis).concat(furnEdges(l, axis)).forEach(t => { if (Math.abs(t - v) < rad && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
     return best != null ? { v: best, hit: true } : { v: r10(v), hit: false };
   }
   function snapAx(l, axis, v, rad = 150) {
-    let best = null; snapPts(l, axis).forEach(t => { if (Math.abs(t - v) < rad && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
+    let best = null; snapPts(l, axis).concat(furnEdges(l, axis)).forEach(t => { if (Math.abs(t - v) < rad && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
     return best != null ? best : r10(v);
   }
   // keep a box inside the room it stands in, and pull it flush to a wall that is closer than SNAP
