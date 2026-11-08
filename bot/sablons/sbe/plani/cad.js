@@ -383,7 +383,7 @@ function cadPlan(parent, v, opt = {}) {
   const cid = "fp-" + key(v) + (opt.tag || "");
   el("polygon", { points: pts }, el("clipPath", { id: cid }, g));
   drawWalls(g, v, cid);
-  if (v.porch) porchPlan(g, v.porch, v.rooms.length + 1);
+  [].concat(v.porch || []).forEach((pc, pi) => porchPlan(g, pc, v.rooms.length + 1 + pi));   // [MM] vairāki lievenis/terase
 
   // axes (behind furniture and stamps)
   if (opt.axes && v.axes) {
@@ -618,8 +618,8 @@ function elevation(parent, v, side, opt = { levels: true }) {
 
   // lievenis: deck face with wide horizontal boards (same wood texture), posts up to the soffit (drawn last, in front)
   const postsU = [];
-  if (v.porch) {
-    const pc = v.porch, out = { south: q => q[1] >= v.D - 1, north: q => q[1] <= 1, west: q => q[0] <= 1, east: q => q[0] >= v.W - 1 }[side];
+  for (const pc of [].concat(v.porch || [])) {
+    const out = { south: q => q[1] >= v.D - 1, north: q => q[1] <= 1, west: q => q[0] <= 1, east: q => q[0] >= v.W - 1 }[side];
     const along = q => endV ? q[1] : q[0], edge = pc.poly.filter(out).map(q => map(along(q)));
     if (edge.length > 1) {
       const u0 = Math.min(...edge), u1 = Math.max(...edge), k = 1.4;
@@ -902,7 +902,7 @@ function planSheet(v, o = {}) {
     ln(c2, y + RH, c2, y + 4 * RH);
     // 2) rooms
     y = 4 * RH + 8;
-    const n = v.rooms.length, pr = v.porch ? 2 : 0, rows = n + 4 + pr;
+    const n = v.rooms.length, PCS = [].concat(v.porch || []), pr = PCS.length ? 1 + PCS.length : 0, rows = n + 4 + pr;
     box(y, rows);
     cell(WX / 2, y, "TELPU EKSPLIKĀCIJA", { a: "middle", ls: 1.2, fw: 700, fs: 3.2 }); ln(0, y + RH, WX, y + RH);
     cell(c1 / 2, y + RH, "NR.", { a: "middle", ls: 1, fw: 500 }); cell((c1 + c2) / 2, y + RH, "NOSAUKUMS", { a: "middle", ls: 1.2, fw: 500 }); cell((c2 + WX) / 2, y + RH, "PLATĪBA, m²", { a: "middle", ls: 1, fw: 500 });
@@ -918,7 +918,7 @@ function planSheet(v, o = {}) {
     if (pr) {   // lievenis: ārtelpa, nav kopējā platībā
       const yy = y + (4 + n) * RH; ln(0, yy, WX, yy);
       cell(1.5, yy, "ĀRTELPAS", { fw: 500 }); ln(0, yy + RH, WX, yy + RH);
-      cell(c1 / 2, yy + RH, String(n + 1), { a: "middle" }); cell(c1 + 2, yy + RH, v.porch.name || "Lievenis"); cell(WX - 2, yy + RH, f2(polyArea(v.porch.poly)), { a: "end" });
+      PCS.forEach((pc, pi) => { const y2 = yy + (1 + pi) * RH; cell(c1 / 2, y2, String(n + 1 + pi), { a: "middle" }); cell(c1 + 2, y2, pc.name || "Lievenis"); cell(WX - 2, y2, f2(polyArea(pc.poly)), { a: "end" }); if (pi) ln(0, y2, WX, y2); });
     }
     ln(c1, y + RH, c1, y + 2 * RH); ln(c2, y + RH, c2, y + 2 * RH);
     [[3, 4 + n], ...(pr ? [[5 + n, rows]] : [])].forEach(([a, b]) => { ln(c1, y + a * RH, c1, y + b * RH); ln(c2, y + a * RH, c2, y + b * RH); });

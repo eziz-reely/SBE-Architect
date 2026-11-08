@@ -22,7 +22,7 @@ const mmRooms = v => v ? v.rooms.filter(rm => !rm.void) : [];
 const mmNum = (x, d = 2) => x.toFixed(d).replace(".", ",");
 
 // room table: dark header, numbered rows, total
-function mmTable(svg, x, y, w, title, sub, rooms, L, foot) {
+function mmTable(svg, x, y, w, title, sub, rooms, L, foot, outs) {
   const g = el("g", { "data-block": "schedule", transform: `translate(${x} ${y})` }, svg), RH = 5;
   el("rect", { width: w, height: 6.5, fill: MM_DARK }, g);
   T_(g, 2, 4.4, title, { fs: 2.4, fw: 700, ls: .45, fill: "#fff" });
@@ -41,6 +41,18 @@ function mmTable(svg, x, y, w, title, sub, rooms, L, foot) {
   T_(g, 2, yy + 3.8, MM_TXT[L].total, { fs: 2.3, fw: 700 });
   T_(g, w - 2, yy + 3.8, mmNum(rooms.reduce((a, rm) => a + area(rm), 0)) + " m²", { fs: 2.3, a: "end", fw: 700 });
   yy += RH + .5;
+  if (outs && outs.length) {   // [MM] ārtelpas (terase, lievenis): nav iekštelpu platībā
+    T_(g, 2, yy + 3.3, L === "en" ? "OUTDOOR AREAS" : "ĀRTELPAS", { fs: 1.9, fw: 700, ls: .35, fill: MM_ACC }); yy += RH - 1;
+    outs.forEach((pc, i) => {
+      const nm = L === "en" ? (pc.en || ({ Terase: "Terrace", Lievenis: "Porch" }[pc.name] || pc.name)) : (pc.name || "Lievenis");
+      el("circle", { cx: 3.6, cy: yy + RH / 2, r: 1.75, fill: "none", stroke: MM_ACC, "stroke-width": .25 }, g);
+      T_(g, 3.6, yy + RH / 2 + .75, String(rooms.length + 1 + i), { fs: 1.9, a: "middle", fw: 600 });
+      T_(g, 7, yy + RH / 2 + .8, nm, { fs: 2.2 });
+      T_(g, w - 2, yy + RH / 2 + .8, mmNum(polyArea(pc.poly)) + " m²", { fs: 2.2, a: "end" });
+      yy += RH;
+    });
+    yy += .5;
+  }
   if (foot) { T_(g, 2, yy + 3.3, MM_TXT[L].foot, { fs: 2, fill: MM_GREY }); T_(g, w - 2, yy + 3.3, mmNum(foot) + " m²", { fs: 2, a: "end", fill: MM_GREY }); yy += RH; }
   el("rect", { width: w, height: yy, fill: "none", stroke: MM_DARK, "stroke-width": .3 }, g);
   return yy;
@@ -153,7 +165,7 @@ function modelSheet(v) {
   cadPlan(el("g", { "data-block": "plan", transform: `translate(${PX} ${PY}) scale(${k})` }, svg), v, { furniture: true, axes: true, levels: true, tag: "-a3", tags: false, axOff: 1650 });
   let y = PY + d + 29;
   sheetHeading(svg, 26, y, 215, tx.plan);
-  mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly));
+  mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly), [].concat(v.porch || []));
 
   // 2) loft: tie paši ārējie izmēri kā 1. stāvam (mājas gabarīti, bez dublēšanas); sava telpu tabula blakus
   if (lf) {
