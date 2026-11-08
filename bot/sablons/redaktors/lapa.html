@@ -875,12 +875,21 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const gs = group("Sienu specifikācija (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
       const Tw = Math.min(...(model.rooms || []).flatMap(r => r.r.map(q => q[0]))), EXP = { S1: [Tw, "ārsienas biezums plānā"], S2: [195, "starpsienas biezums plānā"] };
       const note0 = document.createElement("p"); note0.className = "note full"; note0.textContent = "Pārbaudi slāņus un biezumus (mm). Ja kaut kas nav pareizi vai trūkst, labo laukos: izmaiņas iet uz AR projekta lapu \"Sienu specifikācija\" un model.json."; gs.appendChild(note0);
-      ["S1", "S2", "G1", "J1"].forEach(k => {
-        const base = LAYERS0[k]; if (!base) return;
-        const cur = (PLs[k] || base.layers).map(l => l.slice()), sum = cur.reduce((a, l) => a + (+l[1] || 0), 0);
-        const save = arr => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.piragi_layers = n.projekts.piragi_layers || {}; if (JSON.stringify(arr) === JSON.stringify(base.layers)) delete n.projekts.piragi_layers[k]; else n.projekts.piragi_layers[k] = arr; if (!Object.keys(n.projekts.piragi_layers).length) delete n.projekts.piragi_layers; commit(n); };
+      const WT = (model.projekts || {}).wall_types || [];   // papildu starpsienu veidi: [{id, name, layers}]
+      const ENT = ["S1", "S2", "G1", "J1"].filter(k => LAYERS0[k]).map(k => ({ k, name: LAYERS0[k].name, cur: PLs[k] || LAYERS0[k].layers, edited: !!PLs[k], exp: EXP[k],
+        save: arr => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.piragi_layers = n.projekts.piragi_layers || {}; if (JSON.stringify(arr) === JSON.stringify(LAYERS0[k].layers)) delete n.projekts.piragi_layers[k]; else n.projekts.piragi_layers[k] = arr; if (!Object.keys(n.projekts.piragi_layers).length) delete n.projekts.piragi_layers; commit(n); } }));
+      WT.forEach((w, wi) => ENT.push({ k: w.id, name: w.name, cur: w.layers, custom: wi, exp: null,
+        save: arr => { const n = clone(model); n.projekts.wall_types[wi].layers = arr; commit(n); } }));
+      ENT.forEach(en => {
+        const k = en.k, base = { name: en.name }, cur = en.cur.map(l => l.slice()), sum = cur.reduce((a, l) => a + (+l[1] || 0), 0), save = en.save, PL1 = en.edited;
         const box = document.createElement("div"); box.className = "full spec";
-        const t = document.createElement("b"); t.textContent = base.name + (PLs[k] ? "  (labots)" : ""); box.appendChild(t);
+        const t = document.createElement("b");
+        if (en.custom != null) {
+          const ni = document.createElement("input"); ni.value = en.name; ni.style.width = "calc(100% - 28px)"; ni.addEventListener("change", () => { const n = clone(model); n.projekts.wall_types[en.custom].name = ni.value.trim() || en.name; commit(n); });
+          const dx = document.createElement("button"); dx.type = "button"; dx.className = "x"; dx.textContent = "×"; dx.title = "Dzēst starpsienas veidu"; dx.addEventListener("click", () => { const n = clone(model); n.projekts.wall_types.splice(en.custom, 1); commit(n); });
+          t.append(ni, dx);
+        } else t.textContent = base.name + (PL1 ? "  (labots)" : "");
+        box.appendChild(t);
         const tb = document.createElement("table");
         cur.forEach((l, i) => {
           const tr = document.createElement("tr"), a = document.createElement("td"), b = document.createElement("td"), c = document.createElement("td"), ia = document.createElement("input"), ib = document.createElement("input"), x = document.createElement("button");
@@ -894,7 +903,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         box.appendChild(tb);
         const add = document.createElement("button"); add.type = "button"; add.className = "add"; add.textContent = "+ slānis";
         add.addEventListener("click", () => { const arr = cur.map(q => q.slice()); arr.push(["Jauns slānis", 0, ""]); save(arr); }); box.appendChild(add);
-        const msgs = [], e = EXP[k];
+        const msgs = [], e = en.exp;
         if (e) msgs.push(Math.abs(sum - e[0]) <= 0.6 ? ["ok", `✓ ${Math.round(sum * 10) / 10} mm sakrīt ar ${e[1]} (${e[0]} mm)`] : ["bad", `⚠ Σ ${Math.round(sum * 10) / 10} mm, bet ${e[1]} ir ${e[0]} mm. Plāns zīmē sienu ar ${e[0]} mm: izlabo slāņus vai sienas biezumu`]);
         if (!cur.some(l => l[2] === "i")) msgs.push(["bad", "⚠ Nav siltumizolācijas slāņa"]);
         if (cur.some(l => !String(l[0]).trim())) msgs.push(["bad", "⚠ Slānim nav nosaukuma"]);
@@ -902,6 +911,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         msgs.forEach(([c, tx]) => { const p = document.createElement("div"); p.className = c; p.textContent = tx; box.appendChild(p); });
         gs.appendChild(box);
       });
+      const addWt = document.createElement("button"); addWt.type = "button"; addWt.className = "add full"; addWt.textContent = "+ starpsienas veids";
+      addWt.addEventListener("click", () => { const n = clone(model); n.projekts = n.projekts || {}; const L = n.projekts.wall_types = n.projekts.wall_types || []; let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; const base = (PLs.S2 || LAYERS0.S2.layers).map(l => l.slice()); L.push({ id: "P" + i, name: "Starpsiena " + Math.round(base.reduce((a, l) => a + (+l[1] || 0), 0)) + " (jauna)", layers: base }); commit(n); });
+      gs.appendChild(addWt);
     }
     const g2 = group("Visi logi", host);
     const all = [...(model.windows || []), ...(model.gableWins || [])], vals = [...new Set(all.map(casOf))];
