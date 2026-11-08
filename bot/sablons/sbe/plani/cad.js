@@ -208,8 +208,8 @@ function drawWalls(g, v, cid) {
   });
   // outline then fill, so seams between rectangles of one room disappear
   R.forEach(([x, y, w, h]) => el("rect", { x, y, width: w, height: h, fill: "none", stroke: C.line, "stroke-width": 32 }, g));
-  // fills overlap by 2 mm: no anti-aliased hairline where two rectangles meet
-  R.forEach(([x, y, w, h]) => el("rect", { x: x - 2, y: y - 2, width: w + 4, height: h + 4, fill: "#fff" }, g));
+  // fills overlap by 8 mm: no anti-aliased hairline where two rectangles meet
+  R.forEach(([x, y, w, h]) => el("rect", { x: x - 8, y: y - 8, width: w + 16, height: h + 16, fill: "#fff" }, g));
 }
 // wall sample for the legend, drawn in model mm (scale it outside)
 function wallSample(g, layers, L) {
