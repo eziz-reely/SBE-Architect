@@ -1392,7 +1392,7 @@
       d.remove(); place = null; document.body.style.cursor = ""; post({ t: "edit", model: N, sel: null, placed: true });
     }), mkb("Lineārs mērs", () => { place.fm = true; d.remove(); post({ t: "hint", text: "Uzklikšķini mēra otro punktu. Līnija tiek novietota automātiski." }); }));
     ["pointerdown", "pointerup", "wheel"].forEach(t => d.addEventListener(t, ev => ev.stopPropagation()));
-    document.body.appendChild(d);
+    document.documentElement.appendChild(d);
   }
   function fdimClick(bl, p, cx, cy) {
     const q = fSnap(bl, p), a = place.fp;
