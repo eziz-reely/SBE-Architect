@@ -653,7 +653,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { const c = document.createElement("input"); c.type = "color"; c.value = WS.dim || "#000000"; c.title = "Mēru ķēžu krāsa";
       c.onchange = () => { const n = clone(model); wsSet(n, "dim", c.value); commit(n); };
       const rs = btn("Melna", "Atgriezt standarta krāsu", !WS.dim, () => { const n = clone(model); wsSet(n, "dim", null); commit(n); });
-      grp("Mēru ķēdes", rs, c); }
+      grp("Mēru krāsa (visi mēri)", rs, c); }
     { const sv = +(WS.section) || 1, sk = n => `<svg viewBox="0 0 30 14"><path d="M1 7h28" stroke="currentColor" stroke-width="1.2"${n === 2 ? "" : ' stroke-dasharray="5 1.5 1 1.5"'}/>${n === 3 ? '<path d="M15 3 L11 -0 H19Z" fill="#aaa" stroke="currentColor" stroke-width=".8" transform="translate(0 4)"/>' : '<path d="M1 3v8M29 3v8" stroke="currentColor" stroke-width="2.4"/>'}</svg>`;
       const setS = v => { const n = clone(model); wsSet(n, "section", v === 1 ? null : v); commit(n); };
       grp("Griezuma līnija", ...[1, 2, 3].map(v => btn(["Bultiņas", "Melna zīme", "Pelēka zīme"][v - 1], ["Raustīta ar bultiņām", "Melns trijstūris ar apli", "Pelēks trijstūris ar apli un lapas numuru"][v - 1], sv === v, () => setS(v)))); }
@@ -665,13 +665,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         FD.forEach((d, i) => {
           const r = document.createElement("div"); r.className = "fdi";
           const t = document.createElement("span"); t.textContent = (SN[d.s] || d.s) + " fasāde · " + (d.k === "lvl" ? "atzīme " + zt(d.z) : "mērs " + Math.round(d.b - d.a) + " mm");
-          const c = document.createElement("input"); c.type = "color"; c.value = d.c || (WS.dim || "#000000"); c.title = "Šī mēra krāsa";
-          c.onchange = () => { const n = clone(model); n.projekts.fdims[i].c = c.value; commit(n); };
           const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.title = "Dzēst šo mēru";
           x.onclick = () => { const n = clone(model); n.projekts.fdims.splice(i, 1); if (!n.projekts.fdims.length) delete n.projekts.fdims; commit(n); };
-          r.append(t, c, x); rows.appendChild(r);
+          r.append(t, x); rows.appendChild(r);
         });
-        const l = document.createElement("span"); l.className = "rl"; l.textContent = "Fasāžu mēri un atzīmes (krāsa katram atsevišķi)"; g.append(rows, l); R.appendChild(g);
+        const l = document.createElement("span"); l.className = "rl"; l.textContent = "Fasāžu mēri un atzīmes"; g.append(rows, l); R.appendChild(g);
       } }
     { const ft = document.createElement("div"); ft.className = "rfoot"; const ca = document.createElement("button"); ca.type = "button"; ca.textContent = "Atcelt"; ca.title = "Atcelt izmaiņas, kas veiktas šajā panelī"; ca.onclick = ribCancel; const sv = document.createElement("button"); sv.type = "button"; sv.className = "sv"; sv.textContent = "Saglabāt noformējumu"; sv.onclick = () => ribToggle(false); ft.append(ca, sv); R.appendChild(ft); }
   }
