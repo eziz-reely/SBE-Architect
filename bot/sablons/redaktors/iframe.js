@@ -927,7 +927,7 @@
   // lineāli kā ArchiCAD: izvelc palīglīniju no kreisās vai augšējās malas, atpakaļ uz lineālu to dzēš
   const RUL = 16;
   (function () {
-    const css = document.createElement("style"); css.textContent = ".mm-rul{position:fixed;z-index:5;background:rgba(26,155,215,.12);border:0 solid #1a9bd7}.mm-rul.v{left:0;top:0;bottom:0;width:" + RUL + "px;border-right-width:1px;cursor:col-resize}.mm-rul.h{left:0;top:0;right:0;height:" + RUL + "px;border-bottom-width:1px;cursor:row-resize}.mm-rul:hover{background:rgba(26,155,215,.18)}";
+    const css = document.createElement("style"); css.textContent = ".mm-rul{position:fixed;z-index:5;background-color:#eceef1;border:0 solid #b4bac2}.mm-rul.v{background-image:repeating-linear-gradient(to bottom,#9aa1a9 0 1px,transparent 1px 10px);background-size:5px 100%;background-repeat:no-repeat;background-position:right 0 top 0}.mm-rul.h{background-image:repeating-linear-gradient(to right,#9aa1a9 0 1px,transparent 1px 10px);background-size:100% 5px;background-repeat:no-repeat;background-position:left 0 bottom 0}.mm-rul.v{left:0;top:0;bottom:0;width:" + RUL + "px;border-right-width:1px;cursor:col-resize}.mm-rul.h{left:0;top:0;right:0;height:" + RUL + "px;border-bottom-width:1px;cursor:row-resize}.mm-rul:hover{background-color:#dde6f6}@media (prefers-color-scheme:dark){.mm-rul{background-color:#2a2e33;border-color:#454b52}.mm-rul:hover{background-color:#1f3354}}";
     document.head.appendChild(css);
     [["v", "v"], ["h", "h"]].forEach(([o]) => {
       const el = document.createElement("div"); el.className = "mm-rul " + o; el.title = o === "v" ? "Velc, lai ievilktu vertikālu palīglīniju" : "Velc, lai ievilktu horizontālu palīglīniju"; document.documentElement.appendChild(el);

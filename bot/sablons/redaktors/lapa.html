@@ -6,13 +6,13 @@
 <style>
 /* Layout: darba galds. Rasējums aizņem visu kreiso laukumu, labajā pusē šaura īpašību josla kā CAD programmā. */
 :root {
-  --ink: #2a2622;          /* teksts */
-  --brand: #36312D;        /* MM tumši brūnais */
-  --gold: #A8916A;         /* MM akcents */
-  --paper: #f3f1ec;        /* panelis */
-  --desk: #dcd8d0;         /* galds aiz lapas */
-  --line: #d3cdc2;
-  --muted: #6f675e;
+  --ink: #1d2125;          /* teksts */
+  --brand: #2a2e33;        /* MM tumši brūnais */
+  --gold: #2266d8;         /* MM akcents */
+  --paper: #f4f5f7;        /* panelis */
+  --desk: #c3c8ce;         /* galds aiz lapas */
+  --line: #d5d9de;
+  --muted: #5f666e;
   --mark: #d9480f;         /* izvēle rasējumā */
   --ok: #2f7d4f; --bad: #b3261e;
   --field: #ffffff;
@@ -21,22 +21,22 @@
   height: 100%;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --ink: #ece7df; --paper: #24211e; --desk: #171513; --line: #3b3631; --muted: #a59c90; --field: #2e2a26;
+  --ink: #e6e9ec; --paper: #23262a; --desk: #141619; --line: #383d43; --muted: #9aa1a9; --field: #2c3035;
   --ok: #6cc28f; --bad: #f08a80; color-scheme: dark } }
-:root[data-theme="dark"] { --ink: #ece7df; --paper: #24211e; --desk: #171513; --line: #3b3631; --muted: #a59c90; --field: #2e2a26;
+:root[data-theme="dark"] { --ink: #e6e9ec; --paper: #23262a; --desk: #141619; --line: #383d43; --muted: #9aa1a9; --field: #2c3035;
   --ok: #6cc28f; --bad: #f08a80; color-scheme: dark }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
 body { background: var(--desk); color: var(--ink); font: 14px/1.4 var(--f-ui); display: flex; flex-direction: column; overflow: hidden; }
-header { background: var(--brand); color: #f4efe6; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+header { background: var(--brand); color: #f2f4f6; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 header .mark { font: 600 13px/1 var(--f-cap); letter-spacing: .22em; color: var(--gold); }
 header h1 { font: 600 17px/1.1 var(--f-ui); margin: 0; letter-spacing: .02em; }
-header .tag { font-size: 12px; color: #cdbf9f; border: 1px solid #6b5f50; border-radius: 99px; padding: 2px 9px; }
+header .tag { font-size: 12px; color: #aab1b9; border: 1px solid #50565d; border-radius: 99px; padding: 2px 9px; }
 header .sp { flex: 1; }
-header .tseg { display: inline-flex; background: #2f2a26; border: 1px solid #5d554d; border-radius: 9px; padding: 2px; gap: 2px; }
+header .tseg { display: inline-flex; background: #202327; border: 1px solid #4a5057; border-radius: 9px; padding: 2px; gap: 2px; }
 header .tseg button { background: transparent; border: 0; padding: 5px 10px; border-radius: 7px; font-weight: 600; }
-header .tseg button[aria-checked="true"] { background: var(--gold); color: #1f1b17; }
+header .tseg button[aria-checked="true"] { background: var(--gold); color: #ffffff; }
 .tb { display: flex; gap: 6px; flex-wrap: wrap; }
 button { font: 500 13px/1 var(--f-ui); border-radius: 6px; padding: 8px 11px; cursor: pointer; border: 1px solid transparent; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -62,18 +62,18 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .pop .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--field); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
 .pop .seg button { background: transparent; color: var(--ink); border: 0; padding: 7px 4px; display: grid; gap: 3px; justify-items: center; font-weight: 600; }
 .pop .seg button small { font-weight: 400; font-size: 10.5px; color: var(--muted); }
-.pop .seg button[aria-checked="true"] { background: var(--gold); color: #1f1b17; }
-.pop .seg button[aria-checked="true"] small { color: #3a3026; }
-.pop button.wide { width: 100%; padding: 10px; background: var(--gold); color: #1f1b17; border-color: var(--gold); font-weight: 600; }
+.pop .seg button[aria-checked="true"] { background: var(--gold); color: #ffffff; }
+.pop .seg button[aria-checked="true"] small { color: #dce7fb; }
+.pop button.wide { width: 100%; padding: 10px; background: var(--gold); color: #ffffff; border-color: var(--gold); font-weight: 600; }
 .pop button.it { background: transparent; color: var(--ink); border: 1px solid var(--line); text-align: left; display: grid; gap: 3px; padding: 9px 10px; }
 .pop button.it:hover { background: var(--field); }
 .pop button.it small { color: var(--muted); font-size: 11.5px; font-weight: 400; }
 .pick { display: flex; gap: 6px; align-items: center; }
-.pick input[type=color] { width: 40px; height: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--line, #d8d2c6); background: #fff; cursor: pointer; flex: none; }
+.pick input[type=color] { width: 40px; height: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--line, #d5d9de); background: #fff; cursor: pointer; flex: none; }
 .pick input[type=text] { flex: 1; min-width: 0; font-family: ui-monospace, monospace; }
-header button { background: #4a433d; color: #f4efe6; border-color: #5d554d; }
-header button:hover:not(:disabled) { background: #5a5148; }
-header button.pri { background: var(--gold); color: #1f1b17; border-color: var(--gold); font-weight: 600; }
+header button { background: #3a3f45; color: #f2f4f6; border-color: #4a5057; }
+header button:hover:not(:disabled) { background: #454b52; }
+header button.pri { background: var(--gold); color: #ffffff; border-color: var(--gold); font-weight: 600; }
 button:disabled { opacity: .45; cursor: default; }
 main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
@@ -90,9 +90,9 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; 
 #ribbon .rc button:last-child { border-radius: 0 7px 7px 0; }
 #ribbon .rc button:only-child { border-radius: 7px; }
 #ribbon .rc button:hover { background: #fff; }
-#ribbon .rc button.on { background: var(--brand); color: #f4efe6; border-color: var(--brand); z-index: 1; position: relative; }
+#ribbon .rc button.on { background: var(--brand); color: #f2f4f6; border-color: var(--brand); z-index: 1; position: relative; }
 #ribbon .rc button svg { width: 34px; height: 16px; flex: none; }
-#ribbon .rc button.sv { background: var(--gold); border-color: var(--gold); color: #1f1b17; padding: 0 20px; border-radius: 7px; }
+#ribbon .rc button.sv { background: var(--gold); border-color: var(--gold); color: #ffffff; padding: 0 20px; border-radius: 7px; }
 #ribbon .rc button.ca { margin-left: 8px; border-radius: 7px; }
 #ribbon .fdl { display: flex; flex-wrap: wrap; gap: 8px 14px; }
 #ribbon .fdi { display: inline-flex; align-items: center; gap: 6px; background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 3px 4px 3px 10px; font: 600 12px/1 var(--f-ui); }
@@ -100,7 +100,7 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; 
 #ribbon .fdi button { height: 24px; width: 24px; border: 0; background: transparent; color: var(--muted); font-size: 16px; }
 #ribbon .rfoot { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 2px; }
 #ribbon .rfoot button { height: 34px; padding: 0 22px; border-radius: 7px; font: 600 13px/1 var(--f-ui); border: 1px solid var(--line); background: var(--field); color: var(--ink); }
-#ribbon .rfoot button.sv { background: var(--gold); border-color: var(--gold); color: #1f1b17; }
+#ribbon .rfoot button.sv { background: var(--gold); border-color: var(--gold); color: #ffffff; }
 #ribbon select, #ribbon input[type=color] { height: 32px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 7px; font: 600 12.5px/1 var(--f-ui); padding: 0 8px; }
 #ribbon input[type=color] { width: 40px; padding: 2px; margin-left: 8px; }
 #ribbon input[type=color] { width: 30px; padding: 1px; }
@@ -125,7 +125,7 @@ input, select { font: 500 14px var(--f-ui); color: var(--ink); background: var(-
 .help { font-size: 12.5px; color: var(--muted); margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 kbd { font: 600 11px var(--f-ui); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--ink); }
 #status { font-size: 12.5px; color: var(--muted); margin: 0; min-height: 1.4em; }
-#confirm { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: #f4efe6; }
+#confirm { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: #f2f4f6; }
 .lib { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .lib button { background: var(--field); color: var(--ink); border-color: var(--line); text-align: left; padding: 7px 9px; font-size: 12.5px; line-height: 1.2; }
 .lib button small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
@@ -137,7 +137,7 @@ kbd { font: 600 11px var(--f-ui); border: 1px solid var(--line); border-bottom-w
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
 .seg button { border: 0; border-radius: 0; background: var(--field); color: var(--muted); padding: 7px 4px; font-size: 12px; }
 .seg button + button { border-left: 1px solid var(--line); }
-.seg button[aria-pressed="true"] { background: var(--brand); color: #f4efe6; }
+.seg button[aria-pressed="true"] { background: var(--brand); color: #f2f4f6; }
 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -2px; margin-right: 6px; }
 .sub-cap { font-size: 12px; color: var(--muted); margin: 10px 0 6px; }
 #hint { font-size: 12.5px; color: var(--mark); margin: 8px 0 0; min-height: 1.3em; }
@@ -204,64 +204,64 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
    nevis ēnas un apaļi stūri; mazi stūru rādiusi (3 px); ciparu tabulārā līdzināšana. */
 :root {
   --r: 3px;
-  --gold: #8f7a54;           /* tumšāks, lai teksts uz tā un uz papīra ir lasāms */
-  --accent: #36312D;
-  --paper: #f5f4f1; --desk: #d9d6d0; --line: #d6d2ca; --field: #fff;
+  --gold: #2266d8;           /* tumšāks, lai teksts uz tā un uz papīra ir lasāms */
+  --accent: #2a2e33;
+  --paper: #f4f5f7; --desk: #c3c8ce; --line: #d5d9de; --field: #fff;
 }
 body { font-size: 13px; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
-header { gap: 0; padding-block: 0; min-height: 44px; border-bottom: 1px solid #1f1c19; flex-wrap: nowrap; }
-header .mark { font-size: 12px; letter-spacing: .24em; color: #b9a67f; padding-right: 14px; margin-right: 14px; border-right: 1px solid #5a524a; line-height: 44px; }
+header { gap: 0; padding-block: 0; min-height: 44px; border-bottom: 1px solid #16181b; flex-wrap: nowrap; }
+header .mark { font-size: 12px; letter-spacing: .24em; color: #5b9bf8; padding-right: 14px; margin-right: 14px; border-right: 1px solid #454b52; line-height: 44px; }
 header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0; }
-header .tag { border: 0; border-radius: 0; padding: 0 0 0 12px; margin-left: 12px; border-left: 1px solid #5a524a; color: #a89d8c; font-size: 12px; }
+header .tag { border: 0; border-radius: 0; padding: 0 0 0 12px; margin-left: 12px; border-left: 1px solid #454b52; color: #9aa1a9; font-size: 12px; }
 .tb { gap: 0; flex-wrap: nowrap; align-items: center; }
 button { border-radius: var(--r); padding: 7px 10px; font-size: 12.5px; }
-header .tb > button, header .tb > .expw > button { background: transparent; border-color: transparent; color: #e6dfd2; border-radius: var(--r); margin-right: 2px; }
-header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: #4a433d; }
-header .tb > #bFit { margin-left: 8px; padding-left: 12px; border-left: 1px solid #5a524a; border-radius: 0 var(--r) var(--r) 0; }
-header .tb > #b3d { margin-left: 8px; padding-left: 12px; border-left: 1px solid #5a524a; border-radius: 0 var(--r) var(--r) 0; }
-header button.pri { background: #e6dfd2; color: #1f1b17; border-color: #e6dfd2; margin-left: 10px; padding: 7px 16px; }
+header .tb > button, header .tb > .expw > button { background: transparent; border-color: transparent; color: #e8ebee; border-radius: var(--r); margin-right: 2px; }
+header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: #3a3f45; }
+header .tb > #bFit { margin-left: 8px; padding-left: 12px; border-left: 1px solid #454b52; border-radius: 0 var(--r) var(--r) 0; }
+header .tb > #b3d { margin-left: 8px; padding-left: 12px; border-left: 1px solid #454b52; border-radius: 0 var(--r) var(--r) 0; }
+header button.pri { background: #e8ebee; color: #ffffff; border-color: #e8ebee; margin-left: 10px; padding: 7px 16px; }
 header button.pri:hover:not(:disabled) { background: #fff; }
-.pop { border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.18); border-color: #bdb7ab; }
+.pop { border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.18); border-color: #bcc2c9; }
 .pop input[type=text], .pop .fg input { border-radius: var(--r); }
 .pop .seg { border-radius: var(--r); padding: 2px; }
 .pop .seg button { border-radius: 2px; }
-.pop .seg button[aria-checked="true"], .pop button.wide { background: var(--accent); color: #f4efe6; border-color: var(--accent); }
-.pop .seg button[aria-checked="true"] small { color: #c9bfae; }
+.pop .seg button[aria-checked="true"], .pop button.wide { background: var(--accent); color: #f2f4f6; border-color: var(--accent); }
+.pop .seg button[aria-checked="true"] small { color: #dce7fb; }
 .pop button.it { border-radius: var(--r); }
 .pick input[type=color] { border-radius: var(--r); }
 main { grid-template-columns: 1fr 320px; }
-aside { border-left: 1px solid #bdb7ab; }
+aside { border-left: 1px solid #bcc2c9; }
 .cap, .pop .pcap { font: 600 11px/1 var(--f-ui); letter-spacing: .08em; color: var(--muted); }
 .cap { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
 input, select { border-radius: var(--r); padding: 5px 7px; font-size: 13px; }
-input:hover, select:hover { border-color: #b3ad9f; }
-.selcard { background: var(--paper); border-bottom: 1px solid #bdb7ab; }
+input:hover, select:hover { border-color: #a9b0b8; }
+.selcard { background: var(--paper); border-bottom: 1px solid #bcc2c9; }
 .selcard .sel-name { font-size: 15px; }
 .selcard .sel-name::before { border-radius: 0; width: 6px; height: 6px; }
 .selcard .empty::before { content: none; }
 .selcard .empty { font-size: 12.5px; }
-.tabs { padding-top: 0; gap: 0; border-bottom: 1px solid #bdb7ab; }
+.tabs { padding-top: 0; gap: 0; border-bottom: 1px solid #bcc2c9; }
 .tabs button { font-size: 12.5px; padding: 11px 4px 10px; border-bottom-width: 2px; }
 .tabs button[aria-selected="true"] { border-bottom-color: var(--accent); }
 .badge { border-radius: 2px; min-width: 16px; line-height: 15px; padding: 0 4px; }
 .lib { gap: 4px; }
 .lib button { border-radius: var(--r); padding: 6px 8px; grid-template-columns: 30px 1fr; column-gap: 8px; background: var(--field); }
 .lib button svg { width: 30px; height: 24px; }
-.lib button:hover { border-color: var(--accent); background: #faf9f6; }
+.lib button:hover { border-color: var(--accent); background: #f7f9fb; }
 .lib button.on { border-color: var(--mark); box-shadow: inset 2px 0 0 var(--mark); background: #fff7f2; }
 .row button { border-radius: var(--r); }
 .seg { border-radius: var(--r); }
 .seg button[aria-pressed="true"] { background: var(--accent); }
 .group { border-radius: var(--r); background: transparent; }
-.savebar { background: var(--paper); border-top: 1px solid #bdb7ab; }
+.savebar { background: var(--paper); border-top: 1px solid #bcc2c9; }
 #check li { border-left-width: 2px; }
 kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
 #busy { border-radius: var(--r); }
 #v3side .v3b, #v3views button, #v3side select, #v3side input[type=number], #v3prompt { border-radius: var(--r); }
 #v3views button[aria-pressed="true"], #v3side .v3b.pri { background: var(--accent); border-color: var(--accent); color: #f4efe6; }
 #v3canvas { box-shadow: none; outline: 1px solid #4a433d; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #d8cdb8; --paper: #242220; --desk: #161412; --line: #3a3631; --field: #2c2926; --gold: #b9a67f; }
-  :root:not([data-theme="light"]) .pop .seg button[aria-checked="true"], :root:not([data-theme="light"]) .pop button.wide, :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #1f1b17 } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #cfd5dc; --paper: #23262a; --desk: #141619; --line: #383d43; --field: #2c3035; --gold: #5b9bf8; }
+  :root:not([data-theme="light"]) .pop .seg button[aria-checked="true"], :root:not([data-theme="light"]) .pop button.wide, :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #ffffff } }
 @media (max-width: 760px) { main { grid-template-columns: 1fr; } header { flex-wrap: wrap; } .tb { flex-wrap: wrap; } }
 .hconf { display: grid; gap: 6px; margin-top: 4px; }
 .hconf button { background: var(--field); color: var(--ink); border-color: var(--line); text-align: left; }
@@ -281,7 +281,7 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
   .pop { position: fixed; left: 8px; right: 8px; top: 52px; width: auto; max-width: none; max-height: calc(100dvh - 64px); overflow: auto; }
   #tbp { width: auto; max-height: calc(100dvh - 64px); }
   main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
-  aside { border-left: 0; border-top: 1px solid #bdb7ab; max-height: 46dvh; padding-right: 0; }
+  aside { border-left: 0; border-top: 1px solid #bcc2c9; max-height: 46dvh; padding-right: 0; }
   aside.shut { max-height: none; }
   aside.shut .tabpanes { display: none; }
   .selcard { padding-top: 8px; padding-bottom: 8px; }
@@ -303,9 +303,9 @@ main { grid-template-columns: 44px 1fr 320px; }
 #rail button { width: 36px; height: 36px; padding: 0; background: transparent; border: 1px solid transparent; border-radius: 3px; color: var(--ink); display: grid; place-items: center; position: relative; }
 #rail button svg { width: 26px; height: 20px; }
 #rail button:hover { background: var(--field); border-color: var(--line); }
-#rail button.on { background: var(--brand); color: #f4efe6; }
+#rail button.on { background: var(--brand); color: #f2f4f6; }
 #rail button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 9px/1 var(--f-cap); color: var(--muted); }
-#rail button.on kbd { color: #d8cdb8; }
+#rail button.on kbd { color: #cfd5dc; }
 #rail hr { width: 24px; border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
 #rail .sp { flex: 1; }
 #sbar { display: flex; gap: 16px; align-items: center; background: var(--paper); border-top: 1px solid var(--line); padding: 3px 12px; font-size: 12px; color: var(--muted); min-height: 24px; }
@@ -341,6 +341,99 @@ aside #hint, aside .savebar #status { display: none; }
 #libOpen button svg { grid-row: auto; width: 36px; height: 26px; }
 #libOpen .wide { grid-column: 1 / -1; display: flex; justify-content: center; gap: 8px; }
 .caprow .cap, .cap { font-size: 11px; }
+
+/* === Neitrāla CAD palete (2026-11): grafīts + viens zils akcents ===
+   Brūnais/zelta tonis noņemts no saskarnes: tas konkurēja ar MM rakstlaukumu pašā rasējumā.
+   Zils = aktīvais rīks, izvēle saskarnē, galvenā darbība. Oranžs (--mark) = izvēlētais elements rasējumā. */
+:root {
+  --brand: #2a2e33; --accent: #2266d8; --gold: #2266d8; --acc-ink: #ffffff;
+  --acc-soft: #e4edfc; --acc-line: #9dbcf0;
+  --paper: #f4f5f7; --desk: #c3c8ce; --line: #d9dde2; --line2: #bcc2c9; --field: #ffffff;
+  --ink: #1d2125; --muted: #646b73; --hover: #eceef1;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --brand: #1b1e21; --accent: #3b7ddd; --gold: #3b7ddd; --acc-ink: #ffffff; --acc-soft: #1f3354; --acc-line: #3b5f99;
+  --paper: #23262a; --desk: #141619; --line: #353a40; --line2: #454b52; --field: #2c3035; --ink: #e6e9ec; --muted: #9aa1a9; --hover: #30353b; } }
+:root[data-theme="dark"] {
+  --brand: #1b1e21; --accent: #3b7ddd; --gold: #3b7ddd; --acc-ink: #ffffff; --acc-soft: #1f3354; --acc-line: #3b5f99;
+  --paper: #23262a; --desk: #141619; --line: #353a40; --line2: #454b52; --field: #2c3035; --ink: #e6e9ec; --muted: #9aa1a9; --hover: #30353b; }
+html, body { margin: 0; }
+:root { accent-color: var(--accent); }
+body { background: var(--desk); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline-color: var(--accent); }
+input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--acc-soft); }
+
+/* augšējā josla */
+header { background: var(--brand); min-height: 42px; border-bottom: 1px solid #111316; }
+header .mark { color: #8f979f; border-right-color: #3d4248; line-height: 42px; }
+header h1 { color: #f2f4f6; }
+header .tag { color: #8f979f; border-left-color: #3d4248; }
+header .tb > button, header .tb > .expw > button { color: #d7dce1; }
+header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: #3a3f45; color: #fff; }
+header .tb > #bFit, header .tb > #b3d { border-left-color: #3d4248; }
+header .tb > button.ico { width: 34px; height: 30px; padding: 0; display: inline-grid; place-items: center; }
+header .tb > button.ico svg { width: 18px; height: 18px; }
+header .tb > #bFit.ico { width: 46px; }
+header .tseg { background: #1f2226; border-color: #3d4248; border-radius: 4px; margin-left: 8px; }
+header .tseg button { color: #b9c0c7; border-radius: 3px; padding: 5px 10px; }
+header .tseg button:hover { color: #fff; }
+header .tseg button[aria-checked="true"] { background: #4a5057; color: #fff; }
+header button.pri { background: var(--accent); color: var(--acc-ink); border-color: var(--accent); }
+header button.pri:hover:not(:disabled) { background: #1a57bf; }
+#confirm { color: #f2f4f6; }
+
+/* izvēršamie paneļi */
+.pop { border-color: var(--line2); }
+.pop .seg button[aria-checked="true"], .pop button.wide { background: var(--accent); color: var(--acc-ink); border-color: var(--accent); }
+.pop .seg button[aria-checked="true"] small { color: #dce7fb; }
+.pop button.it:hover, .pop .chk label:hover { background: var(--hover); }
+
+/* noformējuma panelis */
+#ribbon { background: var(--paper); border-bottom: 1px solid var(--line2); box-shadow: 0 4px 10px -8px rgba(0,0,0,.35); padding: 12px 20px 10px; gap: 14px 28px; }
+#ribbon .rc button { height: 30px; border-color: var(--line2); }
+#ribbon .rc button:first-child { border-radius: 3px 0 0 3px; } #ribbon .rc button:last-child { border-radius: 0 3px 3px 0; } #ribbon .rc button:only-child { border-radius: 3px; }
+#ribbon .rc button:hover { background: var(--hover); }
+#ribbon .rc button.on { background: var(--acc-soft); color: var(--accent); border-color: var(--accent); }
+#ribbon .rc button.sv, #ribbon .rfoot button.sv { background: var(--accent); border-color: var(--accent); color: var(--acc-ink); }
+#ribbon .rfoot { padding-top: 10px; } #ribbon .rfoot button { height: 30px; border-radius: 3px; border-color: var(--line2); }
+#ribbon select, #ribbon input[type=color], #ribbon .fdi { border-radius: 3px; border-color: var(--line2); }
+
+/* kreisā rīku josla */
+main { grid-template-columns: 48px 1fr 320px; }
+#rail { background: var(--paper); border-right: 1px solid var(--line2); gap: 3px; padding: 6px 0; }
+#rail button { width: 40px; height: 40px; border-radius: 3px; color: var(--ink); }
+#rail button svg { width: 24px; height: 18px; }
+#rail button:hover { background: var(--hover); border-color: transparent; }
+#rail button.on { background: var(--acc-soft); color: var(--accent); border-color: var(--acc-line); }
+#rail button kbd { right: 2px; bottom: 2px; border: 0; background: none; padding: 0; font: 600 9px/1 var(--f-ui); color: #8a9199; }
+#rail button.on kbd { color: var(--accent); }
+#rail hr { width: 28px; border-top-color: var(--line2); }
+
+/* labā josla */
+aside { border-left: 1px solid var(--line2); }
+.selcard { background: var(--paper); border-bottom: 1px solid var(--line2); }
+.tabs { background: var(--paper); border-bottom: 1px solid var(--line2); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.cap { color: var(--muted); border-bottom-color: var(--line); }
+.seg { border-color: var(--line2); }
+.seg button[aria-pressed="true"] { background: var(--acc-soft); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.lib button { border-color: var(--line); }
+.lib button:hover { border-color: var(--acc-line); background: var(--hover); }
+.lib button svg { color: var(--ink); opacity: .85; }
+.lib button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--acc-soft); }
+.lib button.on svg { color: var(--accent); opacity: 1; }
+.group { border-color: var(--line); }
+.savebar { border-top-color: var(--line2); }
+input:hover, select:hover { border-color: var(--line2); }
+#gClr:hover { border-color: var(--accent); color: var(--accent); }
+
+/* statusa rinda */
+#sbar { border-top: 1px solid var(--line2); min-height: 22px; font-size: 11.5px; }
+
+/* Māja: pīrāgu tabulas teksts kā pārējā panelī; pievienošanas pogas */
+.spec table { font: inherit; }
+button.add { background: var(--field); color: var(--ink); border: 1px dashed var(--line2); border-radius: 3px; padding: 7px 10px; }
+button.add:hover { border-color: var(--accent); color: var(--accent); background: var(--acc-soft); }
 </style>
 
 <header>
@@ -349,9 +442,9 @@ aside #hint, aside .savebar #status { display: none; }
   <span class="tag" id="hTag">Skices labošana</span>
   <span class="sp"></span>
   <div class="tb">
-    <button id="bUndo" type="button" title="Ctrl+Z" disabled>Atsaukt</button>
-    <button id="bRedo" type="button" title="Ctrl+Y" disabled>Atkārtot</button>
-    <button id="bFit" type="button">Visa lapa</button>
+    <button id="bUndo" class="ico" type="button" title="Atsaukt (Ctrl+Z)" aria-label="Atsaukt" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 5 3.5 9l4 4"/><path d="M4 9h8a4.5 4.5 0 0 1 0 9h-2"/></svg></button>
+    <button id="bRedo" class="ico" type="button" title="Atkārtot (Ctrl+Y)" aria-label="Atkārtot" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.5 5 4 4-4 4"/><path d="M16 9H8a4.5 4.5 0 0 0 0 9h2"/></svg></button>
+    <button id="bFit" class="ico" type="button" title="Rādīt visu lapu" aria-label="Visa lapa"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/><rect x="6.5" y="6.5" width="7" height="7" rx=".5"/></svg></button>
     <button id="bReset" type="button">Atiestatīt</button>
     <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
     <button id="bRib" type="button" aria-expanded="false" title="Sienu, līniju un teksta noformējums">Noformējums</button>
@@ -561,6 +654,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (b > 0) h = h.slice(0, b) + ov + h.slice(b);
       if (X.arOn) h = h.replace("window.MODEL_SHEET=true", "window.MODEL_SHEET=false").replace("@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}",
         "@page{size:420mm 297mm;margin:0} svg.a3{width:420mm!important;height:297mm!important;display:inline-block;vertical-align:top;margin:0 14mm 14mm 0} body{width:870mm}");
+    }
+    if (edit || arView) { // galds aiz lapas: neitrāli pelēks, lapa balta ar vieglu ēnu (tikai ekrānā, PDF/druka nemainās)
+      const dk = (getComputedStyle(document.documentElement).getPropertyValue("--desk") || "#c3c8ce").trim();
+      const st = `<style>@media screen{html{background:${dk}!important}body{background:transparent!important}svg.a3{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 2px 10px rgba(0,0,0,.16)}}</style>`;
+      const i = h.lastIndexOf("</body>"); if (i > 0) h = h.slice(0, i) + st + h.slice(i);
     }
     if (edit) {
       const ed = JSON.stringify({ model: m, sel, place: placeNext, gwBase: gwBase(m), clip }).split("</").join("<\\/");
