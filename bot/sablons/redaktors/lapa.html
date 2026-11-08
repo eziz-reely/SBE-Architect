@@ -1,4 +1,5 @@
 <title>__MM_NAME__ rasējuma redaktors</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600&display=swap">
@@ -167,12 +168,110 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
 #v3side .v3b.pri, #v3views button[aria-pressed="true"] { color: #1f1b17; }
 #v3stage .v3msg { color: #fff; }
 @media (max-width: 800px) { #v3 { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; } }
+
+/* === Noformējuma pārskatīšana: plakans, blīvs, CAD līdzīgs izskats ===
+   Princips: viena akcenta krāsa tikai primārajai darbībai un izvēlei; 1px līnijas
+   nevis ēnas un apaļi stūri; mazi stūru rādiusi (3 px); ciparu tabulārā līdzināšana. */
+:root {
+  --r: 3px;
+  --gold: #8f7a54;           /* tumšāks, lai teksts uz tā un uz papīra ir lasāms */
+  --accent: #36312D;
+  --paper: #f5f4f1; --desk: #d9d6d0; --line: #d6d2ca; --field: #fff;
+}
+body { font-size: 13px; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+header { gap: 0; padding-block: 0; min-height: 44px; border-bottom: 1px solid #1f1c19; flex-wrap: nowrap; }
+header .mark { font-size: 12px; letter-spacing: .24em; color: #b9a67f; padding-right: 14px; margin-right: 14px; border-right: 1px solid #5a524a; line-height: 44px; }
+header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0; }
+header .tag { border: 0; border-radius: 0; padding: 0 0 0 12px; margin-left: 12px; border-left: 1px solid #5a524a; color: #a89d8c; font-size: 12px; }
+.tb { gap: 0; flex-wrap: nowrap; align-items: center; }
+button { border-radius: var(--r); padding: 7px 10px; font-size: 12.5px; }
+header .tb > button, header .tb > .expw > button { background: transparent; border-color: transparent; color: #e6dfd2; border-radius: var(--r); margin-right: 2px; }
+header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: #4a433d; }
+header .tb > #bFit { margin-left: 8px; padding-left: 12px; border-left: 1px solid #5a524a; border-radius: 0 var(--r) var(--r) 0; }
+header .tb > #b3d { margin-left: 8px; padding-left: 12px; border-left: 1px solid #5a524a; border-radius: 0 var(--r) var(--r) 0; }
+header button.pri { background: #e6dfd2; color: #1f1b17; border-color: #e6dfd2; margin-left: 10px; padding: 7px 16px; }
+header button.pri:hover:not(:disabled) { background: #fff; }
+.pop { border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.18); border-color: #bdb7ab; }
+.pop input[type=text], .pop .fg input { border-radius: var(--r); }
+.pop .seg { border-radius: var(--r); padding: 2px; }
+.pop .seg button { border-radius: 2px; }
+.pop .seg button[aria-checked="true"], .pop button.wide { background: var(--accent); color: #f4efe6; border-color: var(--accent); }
+.pop .seg button[aria-checked="true"] small { color: #c9bfae; }
+.pop button.it { border-radius: var(--r); }
+.pick input[type=color] { border-radius: var(--r); }
+main { grid-template-columns: 1fr 320px; }
+aside { border-left: 1px solid #bdb7ab; }
+.cap, .pop .pcap { font: 600 11px/1 var(--f-ui); letter-spacing: .08em; color: var(--muted); }
+.cap { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+input, select { border-radius: var(--r); padding: 5px 7px; font-size: 13px; }
+input:hover, select:hover { border-color: #b3ad9f; }
+.selcard { background: var(--paper); border-bottom: 1px solid #bdb7ab; }
+.selcard .sel-name { font-size: 15px; }
+.selcard .sel-name::before { border-radius: 0; width: 6px; height: 6px; }
+.selcard .empty::before { content: none; }
+.selcard .empty { font-size: 12.5px; }
+.tabs { padding-top: 0; gap: 0; border-bottom: 1px solid #bdb7ab; }
+.tabs button { font-size: 12.5px; padding: 11px 4px 10px; border-bottom-width: 2px; }
+.tabs button[aria-selected="true"] { border-bottom-color: var(--accent); }
+.badge { border-radius: 2px; min-width: 16px; line-height: 15px; padding: 0 4px; }
+.lib { gap: 4px; }
+.lib button { border-radius: var(--r); padding: 6px 8px; grid-template-columns: 30px 1fr; column-gap: 8px; background: var(--field); }
+.lib button svg { width: 30px; height: 24px; }
+.lib button:hover { border-color: var(--accent); background: #faf9f6; }
+.lib button.on { border-color: var(--mark); box-shadow: inset 2px 0 0 var(--mark); background: #fff7f2; }
+.row button { border-radius: var(--r); }
+.seg { border-radius: var(--r); }
+.seg button[aria-pressed="true"] { background: var(--accent); }
+.group { border-radius: var(--r); background: transparent; }
+.savebar { background: var(--paper); border-top: 1px solid #bdb7ab; }
+#check li { border-left-width: 2px; }
+kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
+#busy { border-radius: var(--r); }
+#v3side .v3b, #v3views button, #v3side select, #v3side input[type=number], #v3prompt { border-radius: var(--r); }
+#v3views button[aria-pressed="true"], #v3side .v3b.pri { background: var(--accent); border-color: var(--accent); color: #f4efe6; }
+#v3canvas { box-shadow: none; outline: 1px solid #4a433d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #d8cdb8; --paper: #242220; --desk: #161412; --line: #3a3631; --field: #2c2926; --gold: #b9a67f; }
+  :root:not([data-theme="light"]) .pop .seg button[aria-checked="true"], :root:not([data-theme="light"]) .pop button.wide, :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #1f1b17 } }
+@media (max-width: 760px) { main { grid-template-columns: 1fr; } header { flex-wrap: wrap; } .tb { flex-wrap: wrap; } }
+.hconf { display: grid; gap: 6px; margin-top: 4px; }
+.hconf button { background: var(--field); color: var(--ink); border-color: var(--line); text-align: left; }
+
+/* === Telefons: rasējums gandrīz visā ekrānā, apakšā izvelkams panelis === */
+@media (max-width: 760px) {
+  html, body { height: 100dvh; }
+  body { overflow: hidden; }
+  header { min-height: 0; padding-block: 4px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; gap: 6px; }
+  header::-webkit-scrollbar { display: none; }
+  header .mark, header .tag, header .sp { display: none; }
+  header h1 { font-size: 14px; white-space: nowrap; flex: none; padding-right: 8px; }
+  .tb { flex-wrap: nowrap; flex: none; }
+  header .tb > button, header .tb > .expw > button { white-space: nowrap; padding: 10px 10px; min-height: 40px; }
+  header .tb > #bFit, header .tb > #b3d { margin-left: 4px; padding-left: 10px; }
+  header button.pri { margin-left: 6px; position: sticky; right: 0; box-shadow: -10px 0 8px -4px var(--brand); }
+  .pop { position: fixed; left: 8px; right: 8px; top: 52px; width: auto; max-width: none; max-height: calc(100dvh - 64px); overflow: auto; }
+  #tbp { width: auto; max-height: calc(100dvh - 64px); }
+  main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+  aside { border-left: 0; border-top: 1px solid #bdb7ab; max-height: 46dvh; padding-right: 0; }
+  aside.shut { max-height: none; }
+  aside.shut .tabpanes { display: none; }
+  .selcard { padding-top: 8px; padding-bottom: 8px; }
+  .selcard .empty { font-size: 12px; }
+  .tabs button { padding: 12px 4px 11px; font-size: 14px; }
+  .tabs button[aria-selected="true"]::after { content: ""; }
+  .savebar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+  #status { font-size: 12px; min-height: 0; }
+  input, select { font-size: 16px; padding: 8px 9px; }
+  .lib button { padding: 8px 8px; min-height: 44px; }
+  .row button, .seg button { min-height: 40px; }
+  #v3 { grid-template-columns: 1fr; grid-template-rows: 40dvh 1fr; }
+  #busy { bottom: 8px; left: 8px; }
+}
 </style>
 
 <header>
   <span class="mark">MM HOMES</span>
   <h1 id="hName">__MM_NAME__</h1>
-  <span class="tag" id="hTag">Skices labošana · tests</span>
+  <span class="tag" id="hTag">Skices labošana</span>
   <span class="sp"></span>
   <div class="tb">
     <button id="bUndo" type="button" title="Ctrl+Z" disabled>Atsaukt</button>
@@ -180,7 +279,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     <button id="bFit" type="button">Visa lapa</button>
     <button id="bReset" type="button">Atiestatīt</button>
     <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
-    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false">Rakstlaukums ▾</button>
+    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false">Rakstlaukums</button>
       <div id="tbp" class="pop" hidden role="dialog" aria-label="Rakstlaukums">
         <p class="pcap">Lapas</p>
         <div class="seg seg2" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
@@ -197,7 +296,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <input id="tbFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden>
         <p class="pnote" id="tbNote">PNG, JPG vai SVG. Rakstlaukuma tumšais lauks paliek arī bez logo.</p>
       </div></span>
-    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false">Eksportēt ▾</button>
+    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false">Eksportēt</button>
       <div id="exp" class="pop" hidden role="dialog" aria-label="Eksports">
         <p class="pcap">PDF rasējums · A3</p>
         <div class="seg" role="radiogroup" aria-label="Kvalitāte">
@@ -432,7 +531,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   function doUndo() { if (!undo.length) return; redo.push(model); model = undo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function doRedo() { if (!redo.length) return; undo.push(model); model = redo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function check() { if (sel && !itemOf(model, sel)) sel = null; }
-  function buttons() { $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana · tests"; }
+  function buttons() { $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
   $("bFit").onclick = () => { view = null; try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
@@ -572,6 +671,19 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   const sLeft = w => w.side === "north" || w.side === "east" || (!w.side && (w.o === "h" ? w.y < 1 : w.x > 1));
 
   let fid = 0;
+  // viena loga augšmalu parasti maina kopīgajā laukā (Māja); atsevišķu logu atslēdz pēc apstiprinājuma
+  let headUnlock = null;
+  function headField(it, sel, set) {
+    const key = sel.lv + ":" + sel.i, cur = it.head ?? 2100, glob = +((model.projekts || {}).logu_augsa) || 2100;
+    const f = field("Augša, mm", cur, set, null, "full"), inp = f.querySelector("input");
+    if (headUnlock === key || cur !== glob || sel.lv === "loft") return f;
+    inp.disabled = true;
+    const box = document.createElement("div"); box.className = "hconf";
+    const t = document.createElement("small"); t.textContent = "Augšmala seko kopīgajam laukam (" + glob + " mm, sadaļa Māja). Mainīt tikai šo logu?";
+    const y = document.createElement("button"); y.type = "button"; y.textContent = "Jā, mainīt šo logu";
+    y.onclick = () => { headUnlock = key; inp.disabled = false; box.remove(); inp.focus(); };
+    box.append(t, y); f.appendChild(box); return f;
+  }
   function field(lab, val, set, opts, cls) {
     const id = "fld-" + (++fid);
     const l = document.createElement("label"); l.htmlFor = id; l.textContent = lab; if (cls) l.className = cls;
@@ -667,6 +779,16 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     const g2 = group("Visi logi", host);
     const all = [...(model.windows || []), ...(model.gableWins || [])], vals = [...new Set(all.map(casOf))];
     const co = vals.length === 1 ? vals[0] : "mix", copts = Object.assign(co === "mix" ? { mix: "Dažādas" } : {}, CAS);
+    { // logu augšmala visiem logiem vienā laukā; logi ar savu augstumu paliek, kā ir
+      const H0 = +((model.projekts || {}).logu_augsa) || 2100;
+      const hf = field("Logu augšmala visiem, mm", H0, (n, v) => {
+        v = Math.max(1800, Math.min(3000, Math.round(v / 10) * 10));
+        n.projekts = n.projekts || {}; const old = +n.projekts.logu_augsa || 2100; n.projekts.logu_augsa = v;
+        (n.windows || []).forEach(w => { if ((w.head ?? 2100) === old && (w.sill ?? 0) + 300 <= v) w.head = v; });
+      }, null, "full");
+      const nt = document.createElement("small"); nt.textContent = "Visiem logiem, kuriem augšmala nav mainīta atsevišķi, tā mainās līdzi. Jaunie logi arī sāk ar šo augstumu."; hf.appendChild(nt);
+      g2.appendChild(hf);
+    }
     g2.appendChild(field("Aplodas visiem logiem", co, (n, v) => { if (v === "mix") return; [...(n.windows || []), ...(n.gableWins || [])].forEach(w => setCas(w, v)); }, copts, "full"));
     { // mājas izmēri: garums, platums, kores augstums, jumta slīpums
       const I = model.ievade || {}, J = model.jumts || {}, gs = group("Mājas izmēri", host);
@@ -760,7 +882,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       g.append(field("Platums, mm", it.len, (n, v) => { const w = S(n), c = w[key] + w.len / 2, old = w.len; w.len = Math.max(300, v); w[key] = Math.round(c - w.len / 2); if (w.parts && w.parts.length === 2) { w.parts[1].len = Math.max(200, w.parts[1].len + (w.len - old)); } fix(n); }),
         field("No stūra, mm", it[key], (n, v) => { S(n)[key] = v; fix(n); }),
         field("Palodze, mm", it.sill ?? 0, (n, v) => { S(n).sill = Math.max(sel.lv === "loft" ? gwBase(n) : 0, v); fix(n); }),
-        field("Augša, mm", it.head ?? 2100, (n, v) => { S(n).head = v; fix(n); }),
+        headField(it, sel, (n, v) => { S(n).head = v; fix(n); }),
         field("Daļas", two ? "2" : "1", (n, v) => {
           const w = S(n);
           if (v === "2") { const a = Math.round(w.len * .4 / 10) * 10; w.parts = [{ len: a, kind: "tilt", hinge: "l" }, { len: w.len - a, kind: "fixed", hinge: "l" }]; w.kind = "parts"; }
@@ -866,7 +988,12 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== t; });
     try { localStorage.setItem("mmTab", t); } catch (_) {}
   }
-  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+    const as = document.querySelector("aside"), same = b.getAttribute("aria-selected") === "true";
+    // telefonā: atkārtots klikšķis uz aktīvās cilnes paslēpj/parāda paneli, cita cilne to atver
+    if (matchMedia("(max-width: 760px)").matches) as.classList.toggle("shut", same && !as.classList.contains("shut")); 
+    tab(b.dataset.tab);
+  });
   try { const t = localStorage.getItem("mmTab"); if (t && document.querySelector(`[data-pane="${t}"]`)) tab(t); } catch (_) {}
   function showCheck(out) {
     const ul = $("check"); ul.textContent = "";
