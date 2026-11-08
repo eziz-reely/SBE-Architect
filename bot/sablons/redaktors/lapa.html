@@ -292,6 +292,17 @@ aside #hint, aside .savebar #status { display: none; }
 #keys .ft { display: flex; justify-content: space-between; margin-top: 8px; }
 #keys .ft button { background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; padding: 5px 9px; }
 @media (max-width: 760px) { #rail, #sbar { display: none; } main { grid-template-columns: 1fr; } }
+
+#libFurn { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#libFurn .grp { grid-column: 1 / -1; margin: 10px 0 2px; font: 600 11px/1 var(--f-cap); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#libFurn button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; gap: 2px; border-radius: 3px; font-size: 11.5px; }
+#libFurn button svg { grid-row: auto; width: 36px; height: 26px; }
+#libFurn button small { grid-column: 1; margin: 0; font-size: 10px; }
+#libOpen { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#libOpen button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; font-size: 11.5px; gap: 2px; border-radius: 3px; }
+#libOpen button svg { grid-row: auto; width: 36px; height: 26px; }
+#libOpen .wide { grid-column: 1 / -1; display: flex; justify-content: center; gap: 8px; }
+.caprow .cap, .cap { font-size: 11px; }
 </style>
 
 <header>
@@ -355,13 +366,12 @@ aside #hint, aside .savebar #status { display: none; }
     </nav>
     <div class="tabpanes">
       <section data-pane="add">
-        <p class="cap">Atveres un mēri</p>
+        <p class="cap">Rīki</p>
         <div class="lib" id="libOpen"></div>
         <p id="hint"></p>
-        <div class="caprow"><p class="cap">Mēbeles</p></div>
+        <div class="caprow"><p class="cap">Mēbeles un kāpnes</p></div>
         <div class="seg" id="detail" role="group" aria-label="Mēbeļu detalizācija visai lapai"><button type="button" data-v="1" aria-pressed="false">Vienkāršs</button><button type="button" data-v="2" aria-pressed="true">Standarta</button><button type="button" data-v="3" aria-pressed="false">Detalizēts</button></div>
-        <p class="note">Detalizācija mainās visām mēbelēm lapā un jaunajām.</p>
-        <div class="lib" id="libFurn"></div>
+                <div class="lib" id="libFurn"></div>
       </section>
       <section data-pane="house" hidden>
         <div id="mats"></div>
@@ -675,7 +685,9 @@ aside #hint, aside .savebar #status { display: none; }
     b.onclick = () => { if (!((model.projekts || {}).guides || []).length) { status("Palīglīniju nav."); return; } const n = clone(model); n.projekts.guides = []; if (sel && sel.k === "guide") sel = null; commit(n); status("Visas palīglīnijas dzēstas."); };
     $("libOpen").appendChild(b); }
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
-  FURN_LIB.forEach(f => libButton($("libFurn"), f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy }));
+  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk"]], ["Virtuve un vannas istaba", ["ctr", "bas", "wc", "sh", "wm"]], ["Kāpnes", ["st", "stL"]]], host = $("libFurn");
+    GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
+      FURN_LIB.filter(f => ics.includes(f.ic)).forEach(f => libButton(host, f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy })); }); }
 
   // ---- CAD rīku josla, pielāgojami taustiņi, statusa rinda ----
   const ACTIONS = [
