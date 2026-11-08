@@ -173,7 +173,7 @@ def build(model_path, langs=None):
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)
         ('      R(s0, s1, z0 - 40, z0 + 10, { fill: cc, ...ln });', '      R(s0, s1, z0 - 40, z0 + 10, { fill: colHex((window.AR && AR.win && AR.win.sillColor) || WINC().cas, "#24282b"), ...ln });'),
         # [MM] logu vēršanās loks plānā raustīts
-        ('A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG)', 'A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5, "stroke-dasharray": "40 30" }, sashG)'),
+        ('A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG)', 'A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5, ...SWD(1) }, sashG)'),
         # [MM] durvju kārbas paliek sienā: baltais izgriezums tikai brīvajā ailā, sienas līnijas iet pāri kārbām
         ('gap(x - KB, y - 14, w + 2 * KB, th + 28);', 'gap(x, y - 14, w, th + 28);'),
         ('gap(x - 14, y - KB, th + 28, w + 2 * KB);', 'gap(x - 14, y, th + 28, w);'),
@@ -206,7 +206,7 @@ def build(model_path, langs=None):
          '    });\n'),
         # [MM] sienas plānā aizlietas ar vienu toni (projekts.sienas_hex), pīrāgu slāņi nav redzami
         ('function drawWalls(g, v, cid) {\n',
-         'function drawWalls(g, v, cid) {\n  const SOLID = window.AR && AR.projekts && AR.projekts.sienas_hex;   // [MM] sienas aizlietas ar vienu toni (bez pīrāgiem)\n'),
+         'function drawWalls(g, v, cid) {\n  const SOLID = (window.AR && AR.projekts && AR.projekts.sienas_hex) || ((window.AR && AR.projekts && AR.projekts.wall_style || {}).hatch === 0 ? "#ffffff" : null);   // [MM] sienas aizlietas ar vienu toni vai tīras (bez pīrāgiem)\n'),
         ('  EXT_LAYERS.forEach((l, i) => el("polygon", { points: ps(rings[i]), fill: l.fill || "#fff" }, g));',
          '  EXT_LAYERS.forEach((l, i) => el("polygon", { points: ps(rings[i]), fill: SOLID || l.fill || "#fff" }, g));'),
         ('  EXT_LAYERS.forEach((l, i) => {\n    if (!l.hatch) return;',
@@ -283,7 +283,7 @@ def build(model_path, langs=None):
          '      elevation(el("g", { "data-block": "elev-" + b, transform: `translate(266 150) scale(0.01)` }, svg), v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` });\n',
          '      { const La = v.W + 2 * ROOF.ov, Lb = v.D + 2 * ROOF.ov, wa = (k === "fas1" ? v.D : v.D) , xa = 40 + ROOF.ov * fs_, xb = Math.min(266, xa + La * fs_ + 60 + ROOF.ov * fs_);\n'
          '        const aLen = (a === "south" || a === "north") ? La : Lb, bLen = (b === "south" || b === "north") ? La : Lb; void wa; void bLen;\n'
-         '        const x1 = fs_ === 0.01 ? 52 : 40 + ROOF.ov * fs_, x2 = fs_ === 0.01 ? 266 : Math.min(266, x1 + aLen * fs_ + 70);\n'
+         '        const x1 = fs_ === 0.01 ? 52 : 62 + ROOF.ov * fs_, x2 = fs_ === 0.01 ? 266 : Math.min(266, x1 + aLen * fs_ + 70);\n'
          '        const gy_ = fs_ === 0.01 ? 150 : Math.min(150, 174.5 - 2450 * fs_);   // nosaukums paliek tajā pašā vietā lapā\n        window.AR_K = 0.01 / fs_; window.MM_SCALE = fd_;\n'
          '        const ga = el("g", { "data-block": "elev-" + a, transform: `translate(${x1} ${gy_}) scale(${fs_})` }, svg); elevation(ga, v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` }); arFix(ga, 0.01 / fs_);\n'
          '        const gb = el("g", { "data-block": "elev-" + b, transform: `translate(${x2} ${gy_}) scale(${fs_})` }, svg); elevation(gb, v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` }); arFix(gb, 0.01 / fs_);\n'

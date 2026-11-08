@@ -8,6 +8,7 @@ const RAL = { 7016: "#383E42", 7024: "#474A50", 7021: "#2F3234", 7035: "#CBD0CC"
 const colHex = (s, d = C.ral) => !s ? d : /^#/.test(s) ? s : /balt/i.test(s) && !/\d{4}/.test(s) ? RAL[9016] : RAL[(String(s).match(/\d{4}/) || [])[0]] || d;
 const WINC = () => { const w = (window.AR && window.AR.win) || {}, out = w.colorOut || w.color || "RAL 7016", inn = w.colorIn || out; return { out, inn, cas: w.casingColor || out }; };
 const FONT = '"Barlow", Arial, sans-serif';
+const FONTX = () => { const f = window.AR && AR.projekts && AR.projekts.fonts; return f ? `"${f}", ${FONT}` : FONT; };   // redaktora fonta izvēle (projekts.fonts)
 const PROJECT = { name: "", stage: "", client: "", author: "", date: "" };
 const FULL = { "Vannas ist.": "Vannas istaba", "Priekšnams, gaitenis": "Gaitenis, priekšnams", "Virtuve + viesistaba": "Virtuve, viesistaba", "Bērnu vannas ist.": "Bērnu vannas istaba" };
 const f2 = a => a.toFixed(2).replace(".", ",");
@@ -70,7 +71,7 @@ const defs = el("defs", {}, D);
   const gr = el("pattern", { id: "ground", patternUnits: "userSpaceOnUse", width: 200, height: 200 }, defs);
   el("line", { x1: 0, y1: 200, x2: 200, y2: 0, stroke: "#555", "stroke-width": 8 }, gr);
 }
-const T_ = (parent, x, y, txt, o = {}) => el("text", { x, y, "font-family": FONT, fill: o.fill || C.ink, "font-size": o.fs || 200, "font-weight": window.HUMANIZED && o.fw >= 600 ? 700 : o.fw || 400, "text-anchor": o.a || "start", ...(o.ls ? { "letter-spacing": o.ls } : {}), ...(o.tr ? { transform: o.tr } : {}) }, parent, txt);
+const T_ = (parent, x, y, txt, o = {}) => el("text", { x, y, "font-family": FONTX(), fill: o.fill || C.ink, "font-size": o.fs || 200, "font-weight": window.HUMANIZED && o.fw >= 600 ? 700 : o.fw || 400, "text-anchor": o.a || "start", ...(o.ls ? { "letter-spacing": o.ls } : {}), ...(o.tr ? { transform: o.tr } : {}) }, parent, txt);
 
 // ---------- wall build-ups (ArchiCAD-style loop insulation) ----------
 const EXT_LAYERS = [
@@ -114,6 +115,11 @@ function inset(poly, d) {
   const nrm = i => { const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % n], L = Math.hypot(x2 - x1, y2 - y1); return [-(y2 - y1) / L * s, (x2 - x1) / L * s]; };
   return poly.map((p, i) => { const a = nrm((i - 1 + n) % n), b = nrm(i); return [p[0] + d * (a[0] + b[0]), p[1] + d * (a[1] + b[1])]; });
 }
+// sienu kontūru biezuma reizinātājs no redaktora joslas (projekts.wall_style.outer / inner: 0 tieva … 3 bieza, 2 = parasts)
+const SWD = () => (((window.AR && AR.projekts && AR.projekts.wall_style) || {}).swing === "dash" ? { "stroke-dasharray": "70 45" } : {});   // vēršanās loks durvīm un logiem vienāds: pilns vai raustīts
+const DIMC = () => ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).dim || null;   // vienota mēru krāsa
+const FDIMC = () => ((window.AR && AR.projekts && AR.projekts.wall_style) || {}).fdim || C.ink;   // fasāžu lineāro mēru krāsa
+const WL = k => { const s = (window.AR && AR.projekts && AR.projekts.wall_style) || {}, i = s[k] == null ? 3 : s[k]; return [0.25, 0.55, 1, 1.8][i] || 1; };
 function drawWalls(g, v, cid) {
   const poly = v.poly, n = poly.length, ps = p => p.map(q => q.join(",")).join(" ");
   const offs = [0]; EXT_LAYERS.forEach(l => offs.push(offs[offs.length - 1] + l.t));
@@ -142,8 +148,8 @@ function drawWalls(g, v, cid) {
       el("path", { d: loops(p0[0], p0[1], ux, uy, inx, iny, L, l.t), ...INS, "clip-path": `url(#${id})` }, g);
     }
   });
-  rings.forEach((r, i) => el("polygon", { points: ps(r), ...LAYER_LINE, ...(i === rings.length - 1 ? { "stroke-width": 9, stroke: C.line } : {}) }, g));
-  el("polygon", { points: ps(rings[0]), fill: "none", stroke: C.ink, "stroke-width": 16 }, g);
+  rings.forEach((r, i) => el("polygon", { points: ps(r), ...LAYER_LINE, ...(i === rings.length - 1 ? { "stroke-width": 9 * WL("outer"), stroke: C.line } : {}) }, g));
+  el("polygon", { points: ps(rings[0]), fill: "none", stroke: C.ink, "stroke-width": 16 * WL("outer") }, g);
 
   // partitions: strips between neighbouring rooms
   const R = v.rooms.flatMap(rm => rm.r);
@@ -207,9 +213,26 @@ function drawWalls(g, v, cid) {
     el("path", { d, ...INS, "clip-path": `url(#${id})` }, g);
   });
   // outline then fill, so seams between rectangles of one room disappear
-  R.forEach(([x, y, w, h]) => el("rect", { x, y, width: w, height: h, fill: "none", stroke: C.line, "stroke-width": 32 }, g));
+  R.forEach(([x, y, w, h]) => el("rect", { x, y, width: w, height: h, fill: "none", stroke: C.line, "stroke-width": 2 * (8 + 14 * WL("inner")) }, g));
   // fills overlap by 8 mm: no anti-aliased hairline where two rectangles meet
   R.forEach(([x, y, w, h]) => el("rect", { x: x - 8, y: y - 8, width: w + 16, height: h + 16, fill: "#fff" }, g));
+  // a partition meeting the outer wall merges with it: no contour line across the joint, the hatching runs on
+  { const pf = (typeof SOLID !== "undefined" && SOLID) || "#fff", SK = typeof SOLID !== "undefined" && SOLID;
+    walls.forEach(wl => {
+      const [x, y, w, h, o] = wl, v = o === "v", c = 14, [cx, cy, cw, ch] = core(wl);
+      [-1, 1].forEach(dr => {
+        const e = v ? (dr < 0 ? y : y + h) : (dr < 0 ? x : x + w);
+        if (inPoly(v ? x + w / 2 : e + dr * 4, v ? e + dr * 4 : y + h / 2)) return;
+        const rx = v ? cx : (dr < 0 ? e - c : e - 1), ry = v ? (dr < 0 ? e - c : e - 1) : cy, rw = v ? cw : c + 1, rh = v ? c + 1 : ch;
+        el("rect", { x: rx, y: ry, width: rw, height: rh, fill: pf }, g);
+        if (SK) return;
+        const id = `${cid}-j${wl[4]}${wl[0]}-${wl[1]}-${dr}`;
+        el("rect", { x: rx, y: ry, width: rw, height: rh }, el("clipPath", { id }, g));
+        const L = (v ? ch : cw) + c, a0 = dr < 0 ? (v ? cy - c : cx - c) : (v ? cy : cx);
+        const d = v ? loops(cx, a0, 0, 1, 1, 0, L, cw) : loops(a0, cy, 1, 0, 0, 1, L, ch);
+        el("path", { d, ...INS, "clip-path": `url(#${id})` }, g);
+      });
+    }); }
 }
 // wall sample for the legend, drawn in model mm (scale it outside)
 function wallSample(g, layers, L) {
@@ -235,6 +258,7 @@ function wallSample(g, layers, L) {
 
 // ---------- plan ----------
 function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
+  const dn0 = g.childNodes.length;
   pts = [...new Set(pts.map(Math.round))].sort((a, b) => a - b);
   const a0 = pts[0], a1 = pts[pts.length - 1];
   const L = (x1, y1, x2, y2, sw = 7) => el("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": sw, "stroke-linecap": "butt" }, g);
@@ -256,6 +280,8 @@ function chainCad(g, pts, axis, at, ext = 0, inner = false, hideWall = false) {
     const t = axis === "x" ? T_(g, mm, at - 70 + off, txt, { a: "middle", fs: 190 }) : T_(g, at - 70 + off, mm, txt, { a: "middle", fs: 190, tr: `rotate(-90 ${at - 70 + off} ${mm})` });
     if (inner) { t.setAttribute("stroke", "#fff"); t.setAttribute("stroke-width", 60); t.setAttribute("paint-order", "stroke"); t.setAttribute("stroke-linejoin", "round"); }
   }
+  const dc = window.__dimC || DIMC();   // dimensiju ķēžu krāsa (noformējuma panelis)
+  if (dc) for (let k = dn0; k < g.childNodes.length; k++) { const q = g.childNodes[k]; if (q.tagName === "text") q.setAttribute("fill", dc); else q.setAttribute("stroke", dc); }
 }
 
 function furniture(g, list) {
@@ -405,7 +431,9 @@ function cadPlan(parent, v, opt = {}) {
   }
 
   const gap = (x, y, w, h) => el("rect", { x, y, width: w, height: h, fill: "#fff" }, g);
-  const jamb = (x1, y1, x2, y2) => el("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": 22 }, g);
+  const jamb = (x1, y1, x2, y2) => {   // ailas gala līnija: īsāka par sienas biezumu, lai neizvirzās pāri sienas kontūrai
+    const dx = Math.sign(x2 - x1), dy = Math.sign(y2 - y1), c = 4;
+    el("line", { x1: x1 + dx * c, y1: y1 + dy * c, x2: x2 - dx * c, y2: y2 - dy * c, stroke: C.line, "stroke-width": 5 }, g); };
   v.openings.forEach(o => {
     if (o.o === "h") { gap(o.x, o.y - 14, o.w, o.th + 28); jamb(o.x, o.y, o.x, o.y + o.th); jamb(o.x + o.w, o.y, o.x + o.w, o.y + o.th); }
     else { gap(o.x - 14, o.y, o.th + 28, o.w); jamb(o.x, o.y, o.x + o.th, o.y); jamb(o.x, o.y + o.w, o.x + o.th, o.y + o.w); }
@@ -444,7 +472,7 @@ function cadPlan(parent, v, opt = {}) {
       });
       leaves.forEach(([h, dir, lw]) => {
         const p = Pt(h, 0), tip = Pt(h + dir * lw * Math.cos(A), n * lw * Math.sin(A)), cl = Pt(h + dir * lw, 0);
-        el("line", { x1: p[0], y1: p[1], x2: tip[0], y2: tip[1], stroke: C.line, "stroke-width": 10 }, sashG);
+        el("line", { x1: p[0], y1: p[1], x2: tip[0], y2: tip[1], stroke: C.line, "stroke-width": 5 }, sashG);
         const cw = (w.o === "h") === (dir * n > 0) ? 1 : 0;
         el("path", { d: `M ${cl[0]} ${cl[1]} A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG);
       });
@@ -461,13 +489,13 @@ function cadPlan(parent, v, opt = {}) {
       const py = side > 0 ? y + th : y, px = hinge === "s" ? x : x + w, ox = hinge === "s" ? x + w : x, ly = py + side * w;
       el("rect", { x: hinge === "s" ? px : px - lt, y: Math.min(py, ly), width: lt, height: w, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       const sweep = (hinge === "s") === (side > 0) ? 0 : 1;
-      el("path", { d: `M ${px} ${ly} A ${w} ${w} 0 0 ${sweep} ${ox} ${py}`, fill: "none", stroke: C.thin, "stroke-width": 6 }, g);
+      el("path", { d: `M ${px} ${ly} A ${w} ${w} 0 0 ${sweep} ${ox} ${py}`, fill: "none", stroke: C.thin, "stroke-width": 6, ...SWD() }, g);
     } else {
       gap(x - 14, y, th + 28, w); jamb(x, y, x + th, y); jamb(x, y + w, x + th, y + w);
       const px = side > 0 ? x + th : x, py = hinge === "s" ? y : y + w, oy = hinge === "s" ? y + w : y, lx = px + side * w;
       el("rect", { x: Math.min(px, lx), y: hinge === "s" ? py : py - lt, width: w, height: lt, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       const sweep = (hinge === "s") === (side > 0) ? 1 : 0;
-      el("path", { d: `M ${lx} ${py} A ${w} ${w} 0 0 ${sweep} ${px} ${oy}`, fill: "none", stroke: C.thin, "stroke-width": 6 }, g);
+      el("path", { d: `M ${lx} ${py} A ${w} ${w} 0 0 ${sweep} ${px} ${oy}`, fill: "none", stroke: C.thin, "stroke-width": 6, ...SWD() }, g);
     }
   });
 
@@ -593,10 +621,10 @@ function elevation(parent, v, side, opt = { levels: true }) {
   el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);
   if (opt.houseH !== false && fT) {   // [MM] viena mēra ķēde: mājas augstums no grīdas paneļa apakšas (−G1) līdz jumta virsmai (kore)
     const hy0 = -ridgeTop, hy1 = fT, hx = span + 900, Ht = (window.AR && AR.projekts && AR.projekts.ievade && AR.projekts.ievade.augstums) || Math.round(ridgeTop + fT);
-    const dl = (x1, y1, x2, y2, sw = 7) => el("line", { x1, y1, x2, y2, stroke: C.line, "stroke-width": sw }, g);
+    const dl = (x1, y1, x2, y2, sw = 7) => el("line", { x1, y1, x2, y2, stroke: DIMC() || C.line, "stroke-width": sw }, g);
     dl(hx, hy0 - 120, hx, hy1 + 120);
     [hy0, hy1].forEach(y => { dl(hx - 130, y, hx + 130, y, 6); dl(hx - 75, y + 75, hx + 75, y - 75, 16); dl(span + 80, y, hx + 130, y, 4); });
-    T_(g, hx - 70, (hy0 + hy1) / 2, Math.round(Ht).toLocaleString("lv-LV").replace(/\s/g, " "), { a: "middle", fs: 190, tr: `rotate(-90 ${hx - 70} ${(hy0 + hy1) / 2})` });
+    T_(g, hx - 70, (hy0 + hy1) / 2, Math.round(Ht).toLocaleString("lv-LV").replace(/\s/g, " "), { a: "middle", fs: 190, fill: DIMC() || undefined, tr: `rotate(-90 ${hx - 70} ${(hy0 + hy1) / 2})` });
   }
   if (fT) {
     // post foundation: floor build-up clad like the wall, shaded gap with posts down to the ground
@@ -811,6 +839,29 @@ function elevation(parent, v, side, opt = { levels: true }) {
     if (fT) lvl(-fT, lv(-fT), 1);
     lvl(-ROOF.plinth, lv(-ROOF.plinth));
   }
+
+  // lietotāja fasādes mēri (projekts.fdims): augstuma atzīmes labajā pusē un lineārie mēri
+  ((window.AR && AR.projekts && AR.projekts.fdims) || []).filter(d => d.s === side).forEach(d => {
+    const dc = FDIMC();
+    if (d.k === "lvl") {
+      const lc = DIMC() || C.ink;   // augstuma atzīmes: mēru ķēžu krāsa
+      const x0 = span + ROOF.ov + 150, lx = span + ROOF.ov + 1300, ty = -d.z - 210, lab = lv(Math.round(d.z)), tw = lab.length * 152;
+      el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: lc, "stroke-width": 7 }, g);
+      el("path", { d: `M ${lx} ${-d.z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: lc }, g);
+      el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: lc, "stroke-width": 10 }, g);
+      const t = T_(g, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", lc);
+    } else if (d.k === "lin") {
+      const h = d.o === "h", pa = (d.p || [0, 0]), at = d.at;
+      // izvadlīnijas: īsas, no 100 mm atstarpes pie fasādes līdz 150 mm aiz mēra līnijas (neiet cauri fasādei un citiem mēriem)
+      const startOf = pv => { if (h) return at < Math.min(pv, 0) ? -100 : pv + (at > pv ? 100 : -100); return at > span ? span + 100 : at < 0 ? -100 : pv + (at > pv ? 100 : -100); };
+      const endOf = (st) => at + (st < at ? 150 : -150);
+      const ex = (c, pv) => { const st = startOf(pv), en = endOf(st); el("line", h ? { x1: c, y1: -st, x2: c, y2: -en, stroke: dc, "stroke-width": 5 } : { x1: st, y1: -c, x2: en, y2: -c, stroke: dc, "stroke-width": 5 }, g); };
+      ex(d.a, pa[0]); ex(d.b, pa[1]);
+      window.__dimC = dc;
+      if (h) chainCad(g, [d.a, d.b], "x", -at); else chainCad(g, [-d.b, -d.a], "y", at);
+      window.__dimC = null;
+    }
+  });
 
   postsU.forEach(([u, s]) => {
     // post stands on the lievenis deck (cokola augstums, −fT) up to the soffit
