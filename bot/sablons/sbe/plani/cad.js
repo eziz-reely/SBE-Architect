@@ -8,6 +8,7 @@ const RAL = { 7016: "#383E42", 7024: "#474A50", 7021: "#2F3234", 7035: "#CBD0CC"
 const colHex = (s, d = C.ral) => !s ? d : /^#/.test(s) ? s : /balt/i.test(s) && !/\d{4}/.test(s) ? RAL[9016] : RAL[(String(s).match(/\d{4}/) || [])[0]] || d;
 const WINC = () => { const w = (window.AR && window.AR.win) || {}, out = w.colorOut || w.color || "RAL 7016", inn = w.colorIn || out; return { out, inn, cas: w.casingColor || out }; };
 const FONT = '"Barlow", Arial, sans-serif';
+const FONTX = () => { const f = window.AR && AR.projekts && AR.projekts.fonts; return f ? `"${f}", ${FONT}` : FONT; };   // redaktora fonta izvēle (projekts.fonts)
 const PROJECT = { name: "", stage: "", client: "", author: "", date: "" };
 const FULL = { "Vannas ist.": "Vannas istaba", "Priekšnams, gaitenis": "Gaitenis, priekšnams", "Virtuve + viesistaba": "Virtuve, viesistaba", "Bērnu vannas ist.": "Bērnu vannas istaba" };
 const f2 = a => a.toFixed(2).replace(".", ",");
@@ -70,7 +71,7 @@ const defs = el("defs", {}, D);
   const gr = el("pattern", { id: "ground", patternUnits: "userSpaceOnUse", width: 200, height: 200 }, defs);
   el("line", { x1: 0, y1: 200, x2: 200, y2: 0, stroke: "#555", "stroke-width": 8 }, gr);
 }
-const T_ = (parent, x, y, txt, o = {}) => el("text", { x, y, "font-family": FONT, fill: o.fill || C.ink, "font-size": o.fs || 200, "font-weight": window.HUMANIZED && o.fw >= 600 ? 700 : o.fw || 400, "text-anchor": o.a || "start", ...(o.ls ? { "letter-spacing": o.ls } : {}), ...(o.tr ? { transform: o.tr } : {}) }, parent, txt);
+const T_ = (parent, x, y, txt, o = {}) => el("text", { x, y, "font-family": FONTX(), fill: o.fill || C.ink, "font-size": o.fs || 200, "font-weight": window.HUMANIZED && o.fw >= 600 ? 700 : o.fw || 400, "text-anchor": o.a || "start", ...(o.ls ? { "letter-spacing": o.ls } : {}), ...(o.tr ? { transform: o.tr } : {}) }, parent, txt);
 
 // ---------- wall build-ups (ArchiCAD-style loop insulation) ----------
 const EXT_LAYERS = [
@@ -114,6 +115,8 @@ function inset(poly, d) {
   const nrm = i => { const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % n], L = Math.hypot(x2 - x1, y2 - y1); return [-(y2 - y1) / L * s, (x2 - x1) / L * s]; };
   return poly.map((p, i) => { const a = nrm((i - 1 + n) % n), b = nrm(i); return [p[0] + d * (a[0] + b[0]), p[1] + d * (a[1] + b[1])]; });
 }
+// sienu kontūru biezuma reizinātājs no redaktora joslas (projekts.wall_style.outer / inner: 0 tieva … 3 bieza, 2 = parasts)
+const WL = k => { const s = (window.AR && AR.projekts && AR.projekts.wall_style) || {}, i = s[k] == null ? 2 : s[k]; return [0.25, 0.55, 1, 1.8][i] || 1; };
 function drawWalls(g, v, cid) {
   const poly = v.poly, n = poly.length, ps = p => p.map(q => q.join(",")).join(" ");
   const offs = [0]; EXT_LAYERS.forEach(l => offs.push(offs[offs.length - 1] + l.t));
@@ -142,8 +145,8 @@ function drawWalls(g, v, cid) {
       el("path", { d: loops(p0[0], p0[1], ux, uy, inx, iny, L, l.t), ...INS, "clip-path": `url(#${id})` }, g);
     }
   });
-  rings.forEach((r, i) => el("polygon", { points: ps(r), ...LAYER_LINE, ...(i === rings.length - 1 ? { "stroke-width": 9, stroke: C.line } : {}) }, g));
-  el("polygon", { points: ps(rings[0]), fill: "none", stroke: C.ink, "stroke-width": 16 }, g);
+  rings.forEach((r, i) => el("polygon", { points: ps(r), ...LAYER_LINE, ...(i === rings.length - 1 ? { "stroke-width": 9 * WL("outer"), stroke: C.line } : {}) }, g));
+  el("polygon", { points: ps(rings[0]), fill: "none", stroke: C.ink, "stroke-width": 16 * WL("outer") }, g);
 
   // partitions: strips between neighbouring rooms
   const R = v.rooms.flatMap(rm => rm.r);
@@ -207,7 +210,7 @@ function drawWalls(g, v, cid) {
     el("path", { d, ...INS, "clip-path": `url(#${id})` }, g);
   });
   // outline then fill, so seams between rectangles of one room disappear
-  R.forEach(([x, y, w, h]) => el("rect", { x, y, width: w, height: h, fill: "none", stroke: C.line, "stroke-width": 32 }, g));
+  R.forEach(([x, y, w, h]) => el("rect", { x, y, width: w, height: h, fill: "none", stroke: C.line, "stroke-width": 2 * (8 + 14 * WL("inner")) }, g));
   // fills overlap by 8 mm: no anti-aliased hairline where two rectangles meet
   R.forEach(([x, y, w, h]) => el("rect", { x: x - 8, y: y - 8, width: w + 16, height: h + 16, fill: "#fff" }, g));
 }

@@ -206,7 +206,7 @@ def build(model_path, langs=None):
          '    });\n'),
         # [MM] sienas plānā aizlietas ar vienu toni (projekts.sienas_hex), pīrāgu slāņi nav redzami
         ('function drawWalls(g, v, cid) {\n',
-         'function drawWalls(g, v, cid) {\n  const SOLID = window.AR && AR.projekts && AR.projekts.sienas_hex;   // [MM] sienas aizlietas ar vienu toni (bez pīrāgiem)\n'),
+         'function drawWalls(g, v, cid) {\n  const SOLID = (window.AR && AR.projekts && AR.projekts.sienas_hex) || ((window.AR && AR.projekts && AR.projekts.wall_style || {}).hatch === 0 ? "#ffffff" : null);   // [MM] sienas aizlietas ar vienu toni vai tīras (bez pīrāgiem)\n'),
         ('  EXT_LAYERS.forEach((l, i) => el("polygon", { points: ps(rings[i]), fill: l.fill || "#fff" }, g));',
          '  EXT_LAYERS.forEach((l, i) => el("polygon", { points: ps(rings[i]), fill: SOLID || l.fill || "#fff" }, g));'),
         ('  EXT_LAYERS.forEach((l, i) => {\n    if (!l.hatch) return;',

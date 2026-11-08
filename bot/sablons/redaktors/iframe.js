@@ -768,7 +768,7 @@
     if (z === "wx" || z === "wy") {
       let q = r10(z === "wx" ? dx : dy); const w = it.w, ax = z === "wx" ? "x" : "y", sn = gSnap(d, ax, [w.lo + q, w.hi + q, (w.lo + w.hi) / 2 + q]);
       let al = null;   // pievilkšana citai sienai: abas vienā taisnē
-      if (!w.ext) wallBands(w.axis, w).forEach(([l2, h2]) => [[l2 - w.lo], [h2 - w.hi], [(l2 + h2) / 2 - (w.lo + w.hi) / 2]].forEach(([df]) => { const t = (() => { const m = d.h.bl.g.getScreenCTM(); return m && m.a ? 12 / Math.abs(m.a) : 80; })(); const e = df - q; if (Math.abs(e) <= t && (!al || Math.abs(e) < Math.abs(al.e))) al = { e, at: (l2 + h2) / 2 }; }));
+      if (!w.ext && d.shift) wallBands(w.axis, w).forEach(([l2, h2]) => [[l2 - w.lo], [h2 - w.hi], [(l2 + h2) / 2 - (w.lo + w.hi) / 2]].forEach(([df]) => { const t = (() => { const m = d.h.bl.g.getScreenCTM(); return m && m.a ? 12 / Math.abs(m.a) : 80; })(); const e = df - q; if (Math.abs(e) <= t && (!al || Math.abs(e) < Math.abs(al.e))) al = { e, at: (l2 + h2) / 2 }; }));
       if (al && (!sn || Math.abs(al.e) <= Math.abs(sn.df))) { q = +(q + al.e).toFixed(1); d.wd = q; d.snapLine = [ax === "x" ? "y" : "x", al.at]; return moveWall(w, q); }
       if (sn) q = +(q + sn.df).toFixed(1);
       d.wd = q; d.snapLine = sn ? [ax === "x" ? "y" : "x", sn.at] : null;
@@ -1018,7 +1018,7 @@
       return;
     }
     const a = toLocal(drag.h.bl.g, e.clientX, e.clientY), b = toLocal(drag.h.bl.g, drag.x0, drag.y0);
-    drag.dx = a[0] - b[0]; drag.dy = a[1] - b[1]; drag.alt = e.altKey;
+    drag.dx = a[0] - b[0]; drag.dy = a[1] - b[1]; drag.alt = e.altKey; drag.shift = e.shiftKey;
     if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
     if (drag.zone === "rot") {
       let g = (Math.atan2(a[1] - drag.c[1], a[0] - drag.c[0]) - drag.a0) * 180 / Math.PI;
