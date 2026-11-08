@@ -148,16 +148,16 @@ function sectionLines(g, v, ext = 2300) {
     } else {
       // zīme galā: trijstūris skata virzienā (pamats uz griezuma līnijas) un aplis ar burtu / numuru
       line(P(a0), P(a1), 10, "380 110 50 110");
-      const r = 420, ar = 1.414 * r, d = s.look, sheet = arNo("griez");
+      const r = 300, ar = 1.414 * r, d = s.look, sheet = arNo("griez");
       [a0, a1].forEach(a => {
         const B = (u, w) => P(a + u, s.at + d * w), c = P(a), tri = [B(-ar, 0), B(ar, 0), B(0, ar)];
         el("polygon", { points: tri.map(t => t.join(",")).join(" "), fill: SV === 2 ? C.ink : "#c4c4c4", stroke: C.ink, "stroke-width": 10, "stroke-linejoin": "miter" }, sg);
-        el("circle", { cx: c[0], cy: c[1], r, fill: "#fff", stroke: C.ink, "stroke-width": 12 }, sg);
-        if (SV === 2) T_(sg, c[0], c[1] + 190, s.n, { fs: 540, fw: 500, a: "middle" });
+        el("circle", { cx: c[0], cy: c[1], r, fill: "#fff", stroke: C.ink, "stroke-width": 9 }, sg);
+        if (SV === 2) T_(sg, c[0], c[1] + 135, s.n, { fs: 385, fw: 500, a: "middle" });
         else {
           el("line", { x1: c[0] - r, y1: c[1], x2: c[0] + r, y2: c[1], stroke: C.ink, "stroke-width": 10 }, sg);
-          T_(sg, c[0], c[1] - 55, s.n, { fs: 360, fw: 500, a: "middle" });
-          if (sheet) T_(sg, c[0], c[1] + 250, sheet, { fs: 170, fw: 600, a: "middle" });
+          T_(sg, c[0], c[1] - 40, s.n, { fs: 260, fw: 500, a: "middle" });
+          if (sheet) T_(sg, c[0], c[1] + 180, sheet, { fs: 125, fw: 600, a: "middle" });
         }
       });
       return;

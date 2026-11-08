@@ -566,7 +566,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       h = h.slice(0, i) + inj + h.slice(i);
     }
     if (arView) {
-      const inj = `<script>window.MMZ_INIT=${JSON.stringify(view)};addEventListener("load",function(){setTimeout(function(){parent.postMessage({mmEd:1,t:"ready",check:[]},"*")},120)});<\/script>`;
+      const inj = `<script>window.MMZ_INIT=${JSON.stringify(view)};window.MMZ_ON=function(){clearTimeout(window._vt);window._vt=setTimeout(function(){window.MMZ&&parent.postMessage({mmEd:1,t:"view",view:window.MMZ.get()},"*")},120)};addEventListener("load",function(){setTimeout(function(){parent.postMessage({mmEd:1,t:"ready",check:[]},"*")},120)});<\/script>`;
       const i = h.lastIndexOf("</body>");
       h = h.slice(0, i) + inj + h.slice(i);
     }
