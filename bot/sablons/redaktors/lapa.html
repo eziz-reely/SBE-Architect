@@ -616,6 +616,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Vert. palīglīnija", s: "G · pielīp elementiem", p: { t: "guide", o: "v" }, ic: "gv" },
     { n: "Horiz. palīglīnija", s: "Shift+G", p: { t: "guide", o: "h" }, ic: "gh" },
     { n: "Slīpa palīglīnija", s: "jumta slīpumā", p: { t: "guide", o: "s" }, ic: "gs" },
+    { n: "Dzēšgumija", s: "klikšķis dzēš visu elementu", p: { t: "erase" }, ic: "er" },
   ];
   // vy: mēbelei ir 3 detalizācijas varianti (bed1 / bed / bed3)
   const FURN_LIB = [
@@ -644,6 +645,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     gwin: '<path d="M6 24V14l14-10 14 10v10z"/><path d="M6 19h28"/>',
     dim: '<path d="M4 14h32M4 9v10M36 9v10M1 17l6-6M33 17l6-6"/>',
     wall: '<path d="M3 9h34M3 19h34"/><path d="M8 9l-3 10M15 9l-3 10M22 9l-3 10M29 9l-3 10M36 9l-3 10"/>',
+    er: '<path d="M24 4l9 9-12 12H12l-5-5z"/><path d="M13 12l9 9M12 25h22"/>',
     cut: '<path d="M3 9h11M3 19h11M26 9h11M26 19h11"/><path d="M14 5l12 18M26 5L14 23" stroke-dasharray="2 2"/>',
     ga: '<path d="M20 2v24M2 14h36" stroke-dasharray="3 2"/><circle cx="20" cy="14" r="3"/>',
     gv: '<path d="M20 2v24" stroke-dasharray="3 2"/><rect x="8" y="8" width="8" height="12"/>',
@@ -693,7 +695,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (onBtn === b) { endPlace(); toFrame({ mmPlace: null }); return; }
       endPlace(); placing = clone(spec); onBtn = b; b.classList.add("on");
       if (placing.vy) placing.entry[0] = typeV(placing.entry[0], detail);
-      $("hint").textContent = spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Uzklikšķini plānā mēra pirmo galu (pielīp sienām)." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
+      $("hint").textContent = spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Uzklikšķini plānā mēra pirmo galu (pielīp sienām)." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
       toFrame({ mmPlace: spec }); railSync();
     };
     b.title = item.n + " · " + item.s;
@@ -719,9 +721,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { id: "hg", n: "Horiz. palīglīnija", k: "shift+g", ic: "gh", run: () => { startGuide("h"); railSync(); } },
     { id: "gv", n: "Vert. palīglīnija", k: "v", ic: "gv", run: () => { startGuide("v"); railSync(); } },
     { id: "gs", n: "Slīpa palīglīnija", k: "", ic: "gs", run: () => { const b = OPENB[9]; if (b) b.click(); railSync(); } },
+    { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gv", run: () => { $("bGuideClr").click(); } },
   ];
-  const RAIL = ["sel", "t3", "t4", "t5", "t6", "hg", "gv", "gs", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
+  const RAIL = ["sel", "t3", "t4", "er", "t5", "t6", "hg", "gv", "gs", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
   IC.sel = '<path d="M9 3l16 10-7 1.5 4 8-3 1.5-4-8-6 4z" fill="currentColor"/>';
   const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
   let keyMap = Object.assign({}, DEF), keyCap = null;
@@ -741,7 +744,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     railSync();
   }
   function railSync() {
-    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = on >= 0 ? ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "hg", "gs"][on] : onBtn ? null : "sel";
+    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = on >= 0 ? ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "hg", "gs", "er"][on] : onBtn ? null : "sel";
     document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
     syncBar();
   }

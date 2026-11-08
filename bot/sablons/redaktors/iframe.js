@@ -218,9 +218,9 @@
     const k = ek(h.bl), b = h.it.b.slice();
     if (h.it.k === "wall") { b[0] = Math.max(b[0], 0); b[2] = Math.min(b[2], M.W); b[1] = Math.max(b[1], 0); b[3] = Math.min(b[3], M.D); }
     if (h.it.k === "wall" && !h.it.w.ext && h.it.w.v0 != null) {
-      const w = h.it.w, X = w.axis === "x", u = X ? h.p[1] : h.p[0], segs = wallSegs(w); let best = -1, bd = 1e9;
+      const w = h.it.w, X = w.axis === "x", u = X ? h.p[1] : h.p[0], pairs = linePairs(w.axis, w.lo, w.hi), segs = wallChains(pairs); let best = -1, bd = 1e9;
       segs.forEach((q, i) => { const d = u < q[0] ? q[0] - u : u > q[1] ? u - q[1] : 0; if (d < bd) { bd = d; best = i; } });
-      if (best >= 0) { hovWall = { bl: h.bl, w, seg: segs[best] }; const c = (w.lo + w.hi) / 2, r = 2.4 / k;
+      if (best >= 0) { hovWall = { bl: h.bl, w, pairs, seg: segs[best] }; if (X) { b[1] = segs[best][0]; b[3] = segs[best][1]; } else { b[0] = segs[best][0]; b[2] = segs[best][1]; } const c = (w.lo + w.hi) / 2, r = 2.4 / k;
         segs[best].forEach(e => mk(overlay(h.bl.g), "rect", { class: "hv", x: (X ? c : e) - r, y: (X ? e : c) - r, width: 2 * r, height: 2 * r, fill: "#fff", stroke: "#3d8fe0", "stroke-width": 0.4 / k })); }
     }
     const pd = h.it.k === "furn" ? 0 : 0.8 / k;
@@ -444,6 +444,15 @@
     let x0, y0;
     if (side === "n" || side === "s") { x0 = cl(p[0] - bw / 2, r[0], r[2] - bw); y0 = side === "n" ? r[1] : r[3] - bh; if (x0 - r[0] < SNAP) x0 = r[0]; else if (r[2] - x0 - bw < SNAP) x0 = r[2] - bw; }
     else { y0 = cl(p[1] - bh / 2, r[1], r[3] - bh); x0 = side === "w" ? r[0] : r[2] - bw; if (y0 - r[1] < SNAP) y0 = r[1]; else if (r[3] - y0 - bh < SNAP) y0 = r[3] - bh; }
+    {   // pie sienas var slīdēt tikai pa sienu un neiebraukt citā mēbelē
+      const hz = side === "n" || side === "s", others = Object.entries(d.boxes || {}).filter(([j]) => !grp.includes(+j) && !NOCOL.includes((baseF(L.furniture[+j]) || [""])[0])).map(e => e[1]);
+      for (let pass = 0; pass < 4; pass++) {
+        const nb = [x0, y0, x0 + bw, y0 + bh], o = others.find(q => ovl(nb, q)); if (!o) break;
+        if (hz) { const c = [o[0] - bw, o[2]].filter(v => v >= r[0] - 1 && v + bw <= r[2] + 1).sort((m, n) => Math.abs(m - x0) - Math.abs(n - x0))[0]; if (c == null) return null; x0 = c; }
+        else { const c = [o[1] - bh, o[3]].filter(v => v >= r[1] - 1 && v + bh <= r[3] + 1).sort((m, n) => Math.abs(m - y0) - Math.abs(n - y0))[0]; if (c == null) return null; y0 = c; }
+        if (pass === 3) return null;
+      }
+    }
     let sx = r10(x0 - rb[0]), sy = r10(y0 - rb[1]);
     if (Math.abs(x0 - r[0]) < 1 || Math.abs(x0 + bw - r[2]) < 1) sx = +(x0 - rb[0]).toFixed(1);
     if (Math.abs(y0 - r[1]) < 1 || Math.abs(y0 + bh - r[3]) < 1) sy = +(y0 - rb[1]).toFixed(1);
@@ -879,6 +888,19 @@
   window.MMZ_HOOK = e => {
     if (e.button !== 0) return false;
     if (drag && drag.wend && drag.sticky) { commitWend(); return true; }
+    if (place && place.t === "erase") {
+      const gi = guideHit(e.clientX, e.clientY);
+      if (gi >= 0) { const N = clone(M); N.projekts.guides.splice(gi, 1); post({ t: "edit", model: N, sel: null }); return true; }
+      const h = hit(e.clientX, e.clientY); if (!h) return true;
+      if (h.wall) {
+        if (!hovWall || h.it.w.ext) { post({ t: "hint", text: "Ārsienu dzēst nevar. Starpsienu dzēs ar klikšķi uz tās." }); return true; }
+        const hw = hovWall, N = clone(M); let did = 0;
+        linePairs(hw.w.axis, hw.w.lo, hw.w.hi).forEach(q => { const a0 = Math.max(q.v0, hw.seg[0]), b0 = Math.min(q.v1, hw.seg[1]); if (b0 - a0 >= 100 && !cutWall(N, q, a0, b0).err) did++; });
+        if (did) post({ t: "edit", model: N, sel: null }); return true;
+      }
+      if (h.it.k === "stamp") return true;
+      sel = { k: h.it.k, i: h.it.i, lv: h.it.lv }; post({ t: "sel", sel }); post({ t: "delete" }); return true;
+    }
     if (place && place.t === "guide") {
       const gd = guideNow(place, e.clientX, e.clientY, e.shiftKey); delete gd.hit; delete gd.hp;
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.guides = (N.projekts.guides || []).concat([gd]);
@@ -918,7 +940,9 @@
     document.body.style.cursor = cur(drag.zone);
     return true;
   };
+  const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";
   addEventListener("pointermove", e => {
+    if (place && place.t === "erase") { document.body.style.cursor = ERC; const h = guideHit(e.clientX, e.clientY) >= 0 ? null : hit(e.clientX, e.clientY); hover(h); return; }
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
@@ -928,7 +952,7 @@
       drag.u = Math.max(0, Math.min(X ? M.D : M.W, snapAx("main", X ? "y" : "x", X ? p[1] : p[0], 150)));
       o.querySelectorAll(".gh").forEach(q => q.remove()); const g = mk(o, "g", { class: "gh" }), a = Math.min(drag.fixed, drag.u), b = Math.max(drag.fixed, drag.u);
       rect(g, X ? [hw.w.lo, a, hw.w.hi, b] : [a, hw.w.lo, b, hw.w.hi], true, k, 0); let msg = `${Math.round(b - a)} mm`;
-      if (Math.abs(drag.u - drag.e0) >= 10) { const rr = moveWallEnd(clone(M), Object.assign({}, hw.w, { endIdx: drag.ix }), drag.e0, drag.u, (drag.e0 + drag.fixed) / 2); if (rr.err) msg += "  ✕ " + rr.err; }
+      if (Math.abs(drag.u - drag.e0) >= 10) { const rr = moveWallEnd(clone(M), endPair(hw, drag.ix), drag.e0, drag.u, (drag.e0 + drag.fixed) / 2); if (rr.err) msg += "  ✕ " + rr.err; }
       label(g, X ? hw.w.hi : a, X ? a : hw.w.lo - 2.2 / k, msg, k); return;
     }
     if (drag && drag.gi != null) {
@@ -997,9 +1021,9 @@
     }
     if ((e.ctrlKey || e.metaKey) && /^[vV]$/.test(e.key) && clip && clip.length) { e.preventDefault(); const r = pasteGrp(clip); sel = r.sel; post({ t: "edit", model: r.N, sel }); return; }
     if (!sel && (e.key === "Delete" || e.key === "Backspace") && hovWall) {   // starpsienas posms zem kursora: Delete to izgriež
-      e.preventDefault(); const hw = hovWall, N = clone(M), wp = wallPair([(hw.w.lo + hw.w.hi) / 2, (hw.seg[0] + hw.seg[1]) / 2]);
-      const r = wp ? cutWall(N, wp, hw.seg[0], hw.seg[1]) : { err: "Siena nav atrasta." };
-      if (r.err) post({ t: "hint", text: r.err }); else post({ t: "edit", model: r.N || N, sel: null }); return;
+      e.preventDefault(); const hw = hovWall, N = clone(M); let did = 0;
+      linePairs(hw.w.axis, hw.w.lo, hw.w.hi).forEach(q => { const a0 = Math.max(q.v0, hw.seg[0]), b0 = Math.min(q.v1, hw.seg[1]); if (b0 - a0 >= 100 && !cutWall(N, q, a0, b0).err) did++; });
+      if (!did) post({ t: "hint", text: "Siena nav atrasta." }); else post({ t: "edit", model: N, sel: null }); return;
     }
     if (!sel) return;
     if (e.key === "Escape") { sel = null; drawSel(); post({ t: "sel", sel: null }); return; }
@@ -1184,6 +1208,29 @@
     if (cur < w.v1 - 1) out.push([cur, w.v1]);
     return out.filter(q => q[1] - q[0] > 1);
   }
+  // visa siena = visi vienas līnijas posmi, savienoti pāri krustojošām sienām (ne gabali starp krustojumiem)
+  function linePairs(axis, lo, hi) {
+    const R = roomRects(M), out = [], seen = new Set();
+    for (const a of R) for (const b of R) {
+      const A = a.b, B = b.b, X = axis === "x";
+      const g0 = X ? A[2] : A[3], g1 = X ? B[0] : B[1];
+      if (Math.abs(g0 - lo) > 1 || Math.abs(g1 - hi) > 1) continue;
+      const v0 = X ? Math.max(A[1], B[1]) : Math.max(A[0], B[0]), v1 = X ? Math.min(A[3], B[3]) : Math.min(A[2], B[2]);
+      if (v1 - v0 < 1) continue; const key = v0 + "|" + v1 + "|" + a.ri; if (seen.has(key)) continue; seen.add(key);
+      out.push({ axis, lo, hi, v0, v1, ri: a.ri });
+    }
+    return out;
+  }
+  function wallChains(pairs) {
+    const all = pairs.flatMap(p => wallSegs(p)).sort((p, q) => p[0] - q[0]), out = [];
+    all.forEach(q => { const l = out[out.length - 1]; if (l && q[0] - l[1] <= 300) l[1] = Math.max(l[1], q[1]); else out.push([q[0], q[1]]); });
+    return out;
+  }
+  function endPair(hw, ix) {   // posms, kurā beidzas sienas gals (no tā ņem robežu tālākai pagarināšanai)
+    let best = null, bd = 1e9; const e = hw.seg[ix];
+    hw.pairs.forEach(p => { const d = Math.abs((ix ? p.v1 : p.v0) - e); if (d < bd) { bd = d; best = p; } });
+    return Object.assign({}, best || hw.w, { endIdx: ix });
+  }
   function moveWallEnd(N, w, e0, uRaw, mid) {
     const X = w.axis === "x", cc = (w.lo + w.hi) / 2;
     uRaw = r10(uRaw); let u = Math.max(w.v0, Math.min(w.v1, uRaw)); if (Math.abs(uRaw - e0) < 10) return { err: "Nav ko mainīt." };
@@ -1197,8 +1244,10 @@
     const shrink = (w.endIdx === 1 && u < e0) || (w.endIdx === 0 && u > e0);
     const a = Math.min(e0, u), b = Math.max(e0, u);
     if (shrink) {
-      const wp = wallPair(X ? [(w.lo + w.hi) / 2, mid] : [mid, (w.lo + w.hi) / 2]); if (!wp) return { err: "Siena nav atrasta." };
-      return cutWall(N, wp, a, b);
+      const ps = linePairs(w.axis, w.lo, w.hi).filter(q => q.v1 > a + 1 && q.v0 < b - 1); if (!ps.length) return { err: "Siena nav atrasta." };
+      let did = 0, last = null;
+      for (const q of ps) { if (Math.min(q.v1, b) - Math.max(q.v0, a) < 100) continue; const r1 = cutWall(N, q, a, b); if (r1.err) last = r1; else did++; }
+      return did ? { N } : (last || { err: "Posms par īsu." });
     }
     let ch = 0;
     for (const rm of N.rooms || []) {
@@ -1227,7 +1276,7 @@
     const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
     post({ t: "hint", text: "" });
     if (!d || Math.abs(d.u - d.e0) < 10) return;
-    const N = clone(M), w = Object.assign({}, d.hw.w, { endIdx: d.ix }), r = moveWallEnd(N, w, d.e0, d.u, (d.e0 + d.fixed) / 2);
+    const N = clone(M), w = endPair(d.hw, d.ix), r = moveWallEnd(N, w, d.e0, d.u, (d.e0 + d.fixed) / 2);
     if (r.err) { post({ t: "hint", text: r.err }); return; }
     post({ t: "edit", model: r.N || N, sel: null });
   }
