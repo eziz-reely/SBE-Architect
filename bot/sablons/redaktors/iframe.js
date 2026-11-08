@@ -877,6 +877,7 @@
   })();
   window.MMZ_HOOK = e => {
     if (e.button !== 0) return false;
+    if (drag && drag.wend && drag.sticky) { commitWend(); return true; }
     if (place && place.t === "guide") {
       const gd = guideNow(place, e.clientX, e.clientY, e.shiftKey); delete gd.hit; delete gd.hp;
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.guides = (N.projekts.guides || []).concat([gd]);
@@ -924,7 +925,7 @@
     if (drag && drag.wend) {
       const hw = drag.hw, X = hw.w.axis === "x", p = toLocal(hw.bl.g, e.clientX, e.clientY), o = overlay(hw.bl.g), k = ek(hw.bl);
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
-      drag.u = Math.max(hw.w.v0, Math.min(hw.w.v1, snapAx("main", X ? "y" : "x", X ? p[1] : p[0], 150)));
+      drag.u = Math.max(0, Math.min(X ? M.D : M.W, snapAx("main", X ? "y" : "x", X ? p[1] : p[0], 150)));
       o.querySelectorAll(".gh").forEach(q => q.remove()); const g = mk(o, "g", { class: "gh" }), a = Math.min(drag.fixed, drag.u), b = Math.max(drag.fixed, drag.u);
       rect(g, X ? [hw.w.lo, a, hw.w.hi, b] : [a, hw.w.lo, b, hw.w.hi], true, k, 0); label(g, X ? hw.w.hi : a, X ? a : hw.w.lo - 2.2 / k, `${Math.round(b - a)} mm`, k); return;
     }
@@ -953,11 +954,10 @@
   addEventListener("pointerup", () => {
     if (!drag) return;
     if (drag.wend) {
-      const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
-      if (!d.moved) return;
-      const N = clone(M), w = Object.assign({}, d.hw.w, { endIdx: d.ix }), r = moveWallEnd(N, w, d.e0, d.u, (d.e0 + d.fixed) / 2);
-      if (r.err) { post({ t: "hint", text: r.err }); return; }
-      post({ t: "edit", model: r.N || N, sel: null }); return;
+      if (!drag.moved && !drag.sticky) { drag.sticky = true; post({ t: "hint", text: "Tagad uzklikšķini, kur siena beidzas. Esc atceļ." }); return; }   // klikšķis uz gala, tad klikšķis, cik gara
+      if (drag.sticky) return;
+      commitWend();
+      return;
     }
     if (drag.gi != null) {
       const d = drag; drag = null; document.body.style.cursor = "";
@@ -1176,9 +1176,16 @@
     if (cur < w.v1 - 1) out.push([cur, w.v1]);
     return out.filter(q => q[1] - q[0] > 1);
   }
-  function moveWallEnd(N, w, e0, u, mid) {
-    const X = w.axis === "x";
-    u = Math.max(w.v0, Math.min(w.v1, r10(u))); if (Math.abs(u - e0) < 10) return { err: "Nav ko mainīt." };
+  function moveWallEnd(N, w, e0, uRaw, mid) {
+    const X = w.axis === "x", cc = (w.lo + w.hi) / 2;
+    uRaw = r10(uRaw); let u = Math.max(w.v0, Math.min(w.v1, uRaw)); if (Math.abs(uRaw - e0) < 10) return { err: "Nav ko mainīt." };
+    const beyond = w.endIdx === 1 ? uRaw > w.v1 + 10 : uRaw < w.v0 - 10;   // aiz sienas robežas: turpina pa telpām un sienām
+    if (beyond) {
+      const lim = w.endIdx === 1 ? w.v1 : w.v0;
+      if (Math.abs(lim - e0) >= 10) { const r1 = moveWallEnd(N, Object.assign({}, w), e0, lim, mid); if (r1.err && r1.err !== "Šeit nav ko aizpildīt ar sienu.") return r1; }
+      return addPartitionAcross(N, X, cc, lim, uRaw);
+    }
+    if (Math.abs(u - e0) < 10) return { err: "Nav ko mainīt." };
     const shrink = (w.endIdx === 1 && u < e0) || (w.endIdx === 0 && u > e0);
     const a = Math.min(e0, u), b = Math.max(e0, u);
     if (shrink) {
@@ -1201,6 +1208,13 @@
     return ch ? { N } : { err: "Šeit nav ko aizpildīt ar sienu." };
   }
   let hovWall = null;
+  function commitWend() {
+    const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+    if (!d || Math.abs(d.u - d.e0) < 10) return;
+    const N = clone(M), w = Object.assign({}, d.hw.w, { endIdx: d.ix }), r = moveWallEnd(N, w, d.e0, d.u, (d.e0 + d.fixed) / 2);
+    if (r.err) { post({ t: "hint", text: r.err }); return; }
+    post({ t: "edit", model: r.N || N, sel: null });
+  }
   function wallPreview(cx, cy) {
     for (const bl of blocks()) {
       if (bl.type !== "plan" || bl.lv !== "main") continue;
