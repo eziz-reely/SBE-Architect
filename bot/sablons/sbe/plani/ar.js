@@ -378,8 +378,11 @@ function section(parent, v, s) {
 
 // ---- material hatches (units = real mm; u = paper mm per unit, keeps line weights constant) ----
 const MEMB = { d: { stroke: "#1f6fd1" }, v: { stroke: "#d0312d", dash: [3, 1.2] }, r: { stroke: "#5b5f62", dash: [2.4, .8, .5, .8] } };
-function membLine(g, x1, y1, x2, y2, f, u) {
-  const m = MEMB[f[1]] || { stroke: C.ink, dash: [3, 1.2] };
+// layers whose name contains a key word (set in the editor, projekts.layer_marks) are drawn as a coloured line
+const MARK_DEF = [{ k: "membrān", c: "#1f6fd1", d: 1 }, { k: "plēve", c: "#1f6fd1", d: 1 }, { k: "folij", c: "#1f6fd1", d: 1 }];
+const markOf = name => { const L = ((window.AR && window.AR.projekts && window.AR.projekts.layer_marks) || MARK_DEF), n = String(name || "").toLowerCase(); const r = L.find(q => q.k && n.includes(String(q.k).toLowerCase())); return r ? { stroke: r.c || "#1f6fd1", ...(r.d ? { dash: [3, 1.2] } : {}) } : null; };
+function membLine(g, x1, y1, x2, y2, f, u, ov) {
+  const m = ov || MEMB[f[1]] || { stroke: C.ink, dash: [3, 1.2] };
   el("line", { x1, y1, x2, y2, stroke: m.stroke, "stroke-width": .6 / u, ...(m.dash ? { "stroke-dasharray": m.dash.map(k => k / u).join(" ") } : {}) }, g);
 }
 function hatchBox(g, bx, by, bw, bh, f, u, clip) {
@@ -427,11 +430,12 @@ function buildUp(svg, x, y, id, spec) {
       if (f.includes("i")) el("path", { d: loops(0, yy, 1, 0, 0, 1, Lx / sc, th), ...INS, "stroke-width": 1.6, "clip-path": `url(#${cid})` }, d);
       if (f.includes("g")) for (let k = 0; k < Lx / sc; k += 40) el("circle", { cx: k + 20, cy: yy + th / 2 + ((k / 40) % 2 ? 8 : -8), r: 9, fill: "none", stroke: "#888", "stroke-width": 2 }, d);
       hatchBox(d, 0, yy, Lx / sc, th, f, sc, cid);
-    } else memb.push([yy, f]);
+    } else memb.push([yy, f, markOf(n)]);
+    if (th > 0 && markOf(n)) memb.push([yy + th / 2, f, markOf(n)]);
     const m = top + (yy + th / 2) * sc; yy += th; return m;
   });
   // membranes on top of the layer outlines, so the colour line stays visible
-  memb.forEach(([yy, f]) => membLine(d, 0, yy, Lx / sc, yy, f, sc));
+  memb.forEach(([yy, f, ov]) => membLine(d, 0, yy, Lx / sc, yy, f, sc, ov));
   el("rect", { x: 0, y: 0, width: Lx / sc, height: tot, fill: "none", stroke: C.ink, "stroke-width": 8 }, d);
   // side marks: ⊕ warm side (iekšpuse / telpa), ⊖ cold side (ārpuse / grunts)
   const side = (cy, lab) => {
@@ -469,20 +473,20 @@ function buildUp(svg, x, y, id, spec) {
 // windows: panes as seen from INSIDE; ĀD from outside; interior doors from the swing side (DK hinge left)
 function openingView(g, x, y, w, h, kind, door, sc, hl = true, PN = null, cas = 0) {
   const W = w * sc, H = h * sc, f = 60 * sc;
-  const R = (x0, y0, ww, hh, o = {}) => el("rect", { x: x0, y: y0, width: ww, height: hh, fill: "none", stroke: C.ink, "stroke-width": .2, ...o }, g);
+  const R = (x0, y0, ww, hh, o = {}) => el("rect", { x: x0, y: y0, width: ww, height: hh, fill: "none", stroke: C.ink, "stroke-width": .1, ...o }, g);
   const dsh = { fill: "none", stroke: C.ink, "stroke-width": .15, "stroke-dasharray": "1 .6" };
-  if (door) R(x - W / 2, y - H, W, H, { "stroke-width": .3 });
+  if (door) R(x - W / 2, y - H, W, H, { "stroke-width": .12 });
   if (door) {
     const x0 = x - W / 2 + f, lw = W - 2 * f, top = y - H + f, left = door === "ĀD" ? hl : door !== "DL";
     if (door === "ĀD") {
-      R(x - W / 2, y - H, W, H, { fill: C.ral, "stroke-width": .3 });   // frame / casing in the door colour
+      R(x - W / 2, y - H, W, H, { fill: C.ral, "stroke-width": .12 });   // frame / casing in the door colour
       R(x0, top, lw, H - f, { fill: C.ral });
       // as on the facade: narrow glass strip on the hinge side, long bar handle opposite
       R(left ? x0 + 120 * sc : x0 + lw - 280 * sc, y - 1950 * sc, 160 * sc, 1800 * sc, { fill: "url(#glass)" });
       R(left ? x0 + lw - 260 * sc : x0 + 220 * sc, y - 1600 * sc, 40 * sc, 1100 * sc, { fill: "#b9bcbe", "stroke-width": .1 });
     } else {
       // lacquered wood casing and leaf, lever handle with rosette on the lock side
-      R(x - W / 2, y - H, W, H, { fill: "#c9ad85", "stroke-width": .3 });
+      R(x - W / 2, y - H, W, H, { fill: "#c9ad85", "stroke-width": .12 });
       R(x0, top, lw, H - f, { fill: "#dcc6a3" });
       const hx = left ? x0 + lw - 70 * sc : x0 + 70 * sc, hy = y - 1050 * sc, dir = left ? -1 : 1;
       el("circle", { cx: hx, cy: hy, r: 28 * sc, fill: "#d9d9d9", stroke: C.ink, "stroke-width": .1 }, g);
