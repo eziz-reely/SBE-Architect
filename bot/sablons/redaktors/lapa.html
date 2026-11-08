@@ -1,4 +1,5 @@
 <title>__MM_NAME__ rasējuma redaktors</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600&display=swap">
@@ -234,6 +235,37 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
 @media (max-width: 760px) { main { grid-template-columns: 1fr; } header { flex-wrap: wrap; } .tb { flex-wrap: wrap; } }
 .hconf { display: grid; gap: 6px; margin-top: 4px; }
 .hconf button { background: var(--field); color: var(--ink); border-color: var(--line); text-align: left; }
+
+/* === Telefons: rasējums gandrīz visā ekrānā, apakšā izvelkams panelis === */
+@media (max-width: 760px) {
+  html, body { height: 100dvh; }
+  body { overflow: hidden; }
+  header { min-height: 0; padding-block: 4px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; gap: 6px; }
+  header::-webkit-scrollbar { display: none; }
+  header .mark, header .tag, header .sp { display: none; }
+  header h1 { font-size: 14px; white-space: nowrap; flex: none; padding-right: 8px; }
+  .tb { flex-wrap: nowrap; flex: none; }
+  header .tb > button, header .tb > .expw > button { white-space: nowrap; padding: 10px 10px; min-height: 40px; }
+  header .tb > #bFit, header .tb > #b3d { margin-left: 4px; padding-left: 10px; }
+  header button.pri { margin-left: 6px; position: sticky; right: 0; box-shadow: -10px 0 8px -4px var(--brand); }
+  .pop { position: fixed; left: 8px; right: 8px; top: 52px; width: auto; max-width: none; max-height: calc(100dvh - 64px); overflow: auto; }
+  #tbp { width: auto; max-height: calc(100dvh - 64px); }
+  main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+  aside { border-left: 0; border-top: 1px solid #bdb7ab; max-height: 46dvh; padding-right: 0; }
+  aside.shut { max-height: none; }
+  aside.shut .tabpanes { display: none; }
+  .selcard { padding-top: 8px; padding-bottom: 8px; }
+  .selcard .empty { font-size: 12px; }
+  .tabs button { padding: 12px 4px 11px; font-size: 14px; }
+  .tabs button[aria-selected="true"]::after { content: ""; }
+  .savebar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+  #status { font-size: 12px; min-height: 0; }
+  input, select { font-size: 16px; padding: 8px 9px; }
+  .lib button { padding: 8px 8px; min-height: 44px; }
+  .row button, .seg button { min-height: 40px; }
+  #v3 { grid-template-columns: 1fr; grid-template-rows: 40dvh 1fr; }
+  #busy { bottom: 8px; left: 8px; }
+}
 </style>
 
 <header>
@@ -956,7 +988,12 @@ kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
     document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== t; });
     try { localStorage.setItem("mmTab", t); } catch (_) {}
   }
-  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+    const as = document.querySelector("aside"), same = b.getAttribute("aria-selected") === "true";
+    // telefonā: atkārtots klikšķis uz aktīvās cilnes paslēpj/parāda paneli, cita cilne to atver
+    if (matchMedia("(max-width: 760px)").matches) as.classList.toggle("shut", same && !as.classList.contains("shut")); 
+    tab(b.dataset.tab);
+  });
   try { const t = localStorage.getItem("mmTab"); if (t && document.querySelector(`[data-pane="${t}"]`)) tab(t); } catch (_) {}
   function showCheck(out) {
     const ul = $("check"); ul.textContent = "";
