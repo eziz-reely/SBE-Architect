@@ -315,6 +315,10 @@ main { grid-template-columns: 44px 1fr 320px; }
 #sbar .dirty { color: var(--mark); }
 aside #hint, aside .savebar #status { display: none; }
 #libOpen small { display: none; }
+.mseg { display: flex; flex-wrap: wrap; gap: 3px; padding: 3px; margin: -6px 0 12px; background: var(--paper); border: 1px solid var(--line2); border-radius: var(--r); box-shadow: 0 4px 8px -6px rgba(0,0,0,.25); }
+.mseg button { flex: 1 1 auto; height: 28px; padding: 0 6px; border: 0; border-radius: 2px; background: none; color: var(--muted); font: 600 12px/1 var(--f-ui); }
+.mseg button:hover { color: var(--ink); background: var(--hover); }
+.mseg button[aria-selected="true"] { background: var(--accent-fill, var(--accent)); color: #fff; }
 details.fold { border: 1px solid var(--line); border-radius: var(--r); background: var(--field); margin: 0 0 6px; }
 details.fold > summary { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; list-style: none; font-weight: 600; font-size: 12.5px; color: var(--ink); }
 details.fold > summary::-webkit-details-marker { display: none; }
@@ -1356,10 +1360,31 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     }
   }
   const MAJA_ORDER = ["Mājas izmēri", "Pamati un grīda", "Sienas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Specifikācijas noformējums"];
+  // cilne Māja pa tēmām: viena tēma redzama, pārslēgs augšā; izvēle paliek arī pēc pārzīmēšanas
+  const MAJA_SEC = [
+    ["izmeri", "Izmēri", ["Mājas izmēri", "Stāvi"]],
+    ["jumts", "Jumts", ["Jumts", "Notekas"]],
+    ["izskats", "Izskats", ["Krāsas", "Visi logi"]],
+    ["konstr", "Konstrukcijas", ["Pamati un grīda", "Sienas (pīrāgi)", "Specifikācijas noformējums"]],
+  ];
+  let majaSec = "izmeri";
+  try { majaSec = localStorage.getItem("mmMajaSec") || majaSec; } catch (_) {}
   function majaOrder() {
-    const host = $("mats");
-    const gs = [...host.children].filter(e => e.classList.contains("group")), ix = e => { const t = (e.querySelector(":scope > .cap") || {}).textContent || ""; const i = MAJA_ORDER.indexOf(t); return i < 0 ? 50 : i; };
+    const host = $("mats"), capOf = e => (e.querySelector(":scope > .cap") || {}).textContent || "";
+    const gs = [...host.children].filter(e => e.classList.contains("group")), ix = e => { const i = MAJA_ORDER.indexOf(capOf(e)); return i < 0 ? 50 : i; };
     gs.sort((a, b) => ix(a) - ix(b)).forEach(e => host.appendChild(e));
+    const G = t => gs.find(e => capOf(e) === t);
+    // jumta slīpums pieder jumtam, ne izmēriem
+    const sl = host.querySelector('[data-lab="Jumta slīpums, °"]'), gj = G("Jumts");
+    if (sl && gj) { const lab = sl.closest("label"); gj.querySelector(":scope > .grid").prepend(lab); }
+    const secOf = e => (MAJA_SEC.find(x => x[2].includes(capOf(e))) || MAJA_SEC[0])[0];
+    if (!MAJA_SEC.some(x => x[0] === majaSec)) majaSec = "izmeri";
+    const nav = document.createElement("div"); nav.className = "mseg"; nav.setAttribute("role", "tablist"); nav.setAttribute("aria-label", "Māja");
+    MAJA_SEC.forEach(([id, nm]) => { const b = document.createElement("button"); b.type = "button"; b.setAttribute("role", "tab"); b.textContent = nm; b.dataset.sec = id; b.setAttribute("aria-selected", String(id === majaSec)); nav.appendChild(b); });
+    nav.addEventListener("click", ev => { const b = ev.target.closest("[data-sec]"); if (!b) return; majaSec = b.dataset.sec; try { localStorage.setItem("mmMajaSec", majaSec); } catch (_) {} show(); });
+    host.prepend(nav);
+    const show = () => { nav.querySelectorAll("[data-sec]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sec === majaSec))); gs.forEach(e => { e.hidden = secOf(e) !== majaSec; }); };
+    show();
   }
   function panel() {
     mats(); majaOrder();
