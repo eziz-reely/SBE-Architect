@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = 8737
 CFG_PATH = os.path.join(os.path.expanduser('~'), '.sbe-arhivs.json')
-SKIP = {'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref'}
+SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref'}
 LOCK = threading.Lock()
 KEYS = {}   # atslēga -> projekta mape
 
@@ -79,9 +79,14 @@ def scan():
                         'name': P.get('modela_nosaukums') or m.get('nosaukums') or m.get('id'),
                         'W': m.get('W', 0), 'D': m.get('D', 0), 'area': int(mm.group(0)) if mm else round(m.get('W', 0) * m.get('D', 0) / 1e6),
                         'loft': bool(m.get('loft')), 'rooms': rooms, 'poly': m.get('poly'), 'mtime': int(os.path.getmtime(mp)),
-                        'rel': os.path.relpath(dp, base)})
+                        'rel': os.path.relpath(dp, base), **_counts(dp)})
             dn[:] = []   # projekta apakšmapēs (varianti u.c.) citu model.json nemeklē
     return out
+
+
+def _counts(dp):
+    f = files_of(dp)
+    return {'nfiles': len(f['files']), 'lastSent': max((x.get('when', '') for x in f['sent']), default='')}
 
 
 def path_for(key):
@@ -104,7 +109,7 @@ def editor_html(pdir):
 SHIM = """<script>window.MM_LOCAL=%s;(function(){
 var K=MM_LOCAL.key;function post(u,b){return fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t||r.status)});return r.json()})}
 var db={doc:function(){return{get:function(){return Promise.resolve({exists:false})},set:function(v){return post('/api/save/'+K,JSON.parse(v.json))}}}};
-var dl={save:function(o){var d=o.data,b=d instanceof Blob?d:new Blob([d]);var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=o.filename;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},2000);return Promise.resolve()}};
+var dl={save:function(o){var d=o.data,b=d instanceof Blob?d:new Blob([d]);return fetch('/api/export/'+K+'?name='+encodeURIComponent(o.filename),{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:b}).then(function(r){if(!r.ok)return r.text().then(function(t){throw new Error(t||r.status)});return r.json()}).then(function(j){var s=document.getElementById('status');setTimeout(function(){if(s)s.textContent='Saglabāts projekta mapē: eksports/'+j.name},50);})}};
 window.claude={use:function(n){return n==='db'?Promise.resolve(db):n==='downloads'?Promise.resolve(dl):Promise.reject({code:'declined'})}};
 addEventListener('DOMContentLoaded',function(){var mk=document.querySelector('header .mark');if(!mk)return;var a=document.createElement('a');a.href='/';a.className='mark back';a.title='Atpakaļ uz projektu arhīvu';a.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Projekti';mk.replaceWith(a);});
 })();</script><style>header a.mark.back{display:inline-flex;align-items:center;gap:4px;color:#c9cfd6;text-decoration:none;letter-spacing:.04em;font:600 13px/42px var(--f-ui);padding-right:14px;margin-right:14px;border-right:1px solid #3d4248}header a.mark.back:hover{color:#fff}</style>"""
@@ -162,6 +167,20 @@ def new_project(b):
     return key_of(dest)
 
 
+def files_of(d):
+    ed = os.path.join(d, 'eksports'); out = []
+    if os.path.isdir(ed):
+        for f in sorted(os.listdir(ed), key=lambda f: -os.path.getmtime(os.path.join(ed, f))):
+            fp = os.path.join(ed, f)
+            if os.path.isfile(fp):
+                out.append({'name': f, 'size': os.path.getsize(fp), 'mtime': int(os.path.getmtime(fp))})
+    try:
+        sent = json.load(open(os.path.join(d, 'nosutits.json'), encoding='utf-8'))
+    except Exception:
+        sent = []
+    return {'files': out, 'sent': sent}
+
+
 def open_folder(p):
     if os.name == 'nt':
         os.startfile(p)
@@ -195,6 +214,16 @@ class H(BaseHTTPRequestHandler):
                 pr = scan(); c = load_cfg()
                 cos = [{'name': n, 'key': key_of(d), 'path': d, 'n': sum(1 for x in pr if x['company'] == n)} for n, d in companies(c).items()]
                 return self.send(200, {'projects': pr, 'companies': cos, 'root': c['root']})
+            if p.startswith('/api/files/'):
+                d = path_for(p[11:])
+                return self.send(200, files_of(d)) if d else self.send(404, 'Nav', 'text/plain; charset=utf-8')
+            if p.startswith('/file/'):   # /file/<key>/<nosaukums>: atver eksportēto failu pārlūkā
+                k, _, nm = p[6:].partition('/'); d = path_for(k); nm = os.path.basename(urllib.parse.unquote(nm))
+                fp = os.path.join(d or '', 'eksports', nm)
+                if not d or not os.path.isfile(fp):
+                    return self.send(404, 'Nav', 'text/plain; charset=utf-8')
+                import mimetypes
+                return self.send(200, open(fp, 'rb').read(), mimetypes.guess_type(nm)[0] or 'application/octet-stream')
             if p == '/api/ping':
                 return self.send(200, {'ok': True})
             if p.startswith('/edit/'):
@@ -215,7 +244,32 @@ class H(BaseHTTPRequestHandler):
         try:
             if self.headers.get('Origin') not in (None, f'http://127.0.0.1:{PORT}', f'http://localhost:{PORT}'):
                 return self.send(403, 'Aizliegts', 'text/plain; charset=utf-8')
+            if p.startswith('/api/export/'):
+                d = path_for(p[12:])
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                nm = safe_name(os.path.basename((q.get('name') or ['fails'])[0])) or 'fails'
+                if not d:
+                    return self.send(404, 'Projekts nav atrasts', 'text/plain; charset=utf-8')
+                data = self.rfile.read(int(self.headers.get('Content-Length') or 0))
+                ed = os.path.join(d, 'eksports'); os.makedirs(ed, exist_ok=True)
+                stem, ext = os.path.splitext(nm); fp = os.path.join(ed, nm)
+                if os.path.exists(fp):   # nepārraksta: iepriekšējie nosūtītie faili paliek
+                    nm = f"{stem}_{time.strftime('%Y-%m-%d_%H%M')}{ext}"; fp = os.path.join(ed, nm)
+                open(fp, 'wb').write(data)
+                return self.send(200, {'ok': True, 'name': nm})
             b = self.body()
+            if p.startswith('/api/sent/'):
+                d = path_for(p[10:])
+                if not d or not b.get('file'):
+                    return self.send(400, 'Norādi failu', 'text/plain; charset=utf-8')
+                sp = os.path.join(d, 'nosutits.json')
+                with LOCK:
+                    try: L = json.load(open(sp, encoding='utf-8'))
+                    except Exception: L = []
+                    L.append({'file': os.path.basename(b['file']), 'to': (b.get('to') or '').strip()[:200], 'note': (b.get('note') or '').strip()[:500],
+                              'when': time.strftime('%Y-%m-%dT%H:%M:%S')})
+                    json.dump(L, open(sp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+                return self.send(200, {'ok': True})
             if p.startswith('/api/save/'):
                 d = path_for(p[10:])
                 if not d or not isinstance(b, dict) or 'W' not in b:
