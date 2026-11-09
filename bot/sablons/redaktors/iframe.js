@@ -283,26 +283,31 @@
     const g = mk(sv, "g", { class: "mm-gd", "pointer-events": "none" });
     const [W, H] = vbS(); mk(g, "clipPath", { id: "mmGdClip" }).appendChild(Object.assign(document.createElementNS(NS, "rect"), {})).setAttribute("width", W);
     g.querySelector("#mmGdClip rect").setAttribute("height", H);
-    const line = (gd, col, w, dash) => { const [a, b] = guideEnds(gd); mk(g, "line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: col, "stroke-width": w, "vector-effect": "non-scaling-stroke", "clip-path": "url(#mmGdClip)", ...(dash ? { "stroke-dasharray": dash } : {}) }); };
-    GUIDES().forEach((gd, i) => { if (drag && drag.gi === i) return; line(gd, sel && sel.k === "guide" && sel.i === i ? ACC : GC, sel && sel.k === "guide" && sel.i === i ? 1.6 : 1); });
-    if (extra) { line(extra, GC, 1.2, "6 4"); if (extra.hit) mk(g, "circle", { cx: extra.hp[0], cy: extra.hp[1], r: 4 / pxU(), fill: GC }); }
+    // tālummaiņa ir CSS transform uz body, tāpēc vector-effect="non-scaling-stroke" Chrome nestrādā: biezumu pikseļos pārrēķina lapas mm
+    const u = 1 / pxU();
+    const line = (gd, col, w, dash, op) => { const [a, b] = guideEnds(gd); mk(g, "line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: col, "stroke-width": w * u, "stroke-opacity": op || 1, "clip-path": "url(#mmGdClip)", ...(dash ? { "stroke-dasharray": dash.map(v => v * u).join(" ") } : {}) }); };
+    GUIDES().forEach((gd, i) => { const on = sel && sel.k === "guide" && sel.i === i; if (drag && drag.gi === i) return; line(gd, on ? ACC : GC, on ? 1.5 : 1, null, on ? 1 : .75); });
+    if (extra) { line(extra, GC, 1, [5, 4]); if (extra.hit) mk(g, "circle", { cx: extra.hp[0], cy: extra.hp[1], r: 3.5 * u, fill: "#fff", stroke: GC, "stroke-width": 1.5 * u }); }
   }
   // pielipšanas punkti lapas koordinātās: visu elementu malas plānos un fasādēs, sienu un telpu malas, stūri
   function guidePts() {
     const sv = sheet(), RI = sv.getScreenCTM().inverse(), xs = [], ys = [], pts = [];
     blocks().forEach(bl => {
       const m = RI.multiply(bl.g.getScreenCTM()), T2 = (x, y) => { const q = new DOMPoint(x, y).matrixTransform(m); return [q.x, q.y]; };
-      const box = b => { if (b.some(v => !isFinite(v) || Math.abs(v) > 1e7)) return; const a = T2(b[0], b[1]), c = T2(b[2], b[3]); xs.push(a[0], c[0]); ys.push(a[1], c[1]); pts.push(a, c, [a[0], c[1]], [c[0], a[1]]); };
+      const box = b => { if (b.some(v => !isFinite(v) || Math.abs(v) > 1e7)) return; const a = T2(b[0], b[1]), c = T2(b[2], b[3]), y0 = Math.min(a[1], c[1]), y1 = Math.max(a[1], c[1]), x0 = Math.min(a[0], c[0]), x1 = Math.max(a[0], c[0]); xs.push([a[0], y0, y1], [c[0], y0, y1]); ys.push([a[1], x0, x1], [c[1], x0, x1]); pts.push(a, c, [a[0], c[1]], [c[0], a[1]]); };
       try { items(bl).forEach(it => it.b && box(it.b)); } catch (e) {}
-      if (bl.type === "plan") { rects(bl.lv).forEach(box); box([0, 0, M.W, M.D]); (M.poly || []).forEach(q => { const a = T2(q[0], q[1]); xs.push(a[0]); ys.push(a[1]); pts.push(a); }); }
-      else { const sp = span(bl.side), e = (M.jumts && M.jumts.eave) || 2600; box([0, -e, sp, 0]); const r = T2(sp / 2, -e - sp / 2 * Math.tan(((M.jumts && M.jumts.pitch) || 30) * Math.PI / 180)); pts.push(r); xs.push(r[0]); ys.push(r[1]); }
+      if (bl.type === "plan") { rects(bl.lv).forEach(box); box([0, 0, M.W, M.D]); (M.poly || []).forEach(q => { const a = T2(q[0], q[1]); xs.push([a[0], a[1], a[1]]); ys.push([a[1], a[0], a[0]]); pts.push(a); }); }
+      else { const sp = span(bl.side), e = (M.jumts && M.jumts.eave) || 2600; box([0, -e, sp, 0]); const r = T2(sp / 2, -e - sp / 2 * Math.tan(((M.jumts && M.jumts.pitch) || 30) * Math.PI / 180)); pts.push(r); xs.push([r[0], r[1], r[1]]); ys.push([r[1], r[0], r[0]]); }
     });
     return { xs, ys, pts };
   }
   function guideAt(o, cx, cy, P) {   // jaunā/pārvietotā palīglīnija pie kursora, ar pielipšanu
-    const [x, y] = toSheet(cx, cy), rad = 7 / pxU(), near = (arr, v) => { let b = null; arr.forEach(t => { if (Math.abs(t - v) < rad && (b == null || Math.abs(t - v) < Math.abs(b - v))) b = t; }); return b; };
-    if (o === "v") { const b = near(P.xs, x); return { o, at: +(b ?? x).toFixed(2), hit: b != null, hp: [b ?? x, y] }; }
-    if (o === "h") { const b = near(P.ys, y); return { o, at: +(b ?? y).toFixed(2), hit: b != null, hp: [x, b ?? y] }; }
+    // pielipšana: vispirms malas, kas sniedzas līdz kursoram (±40 px), rādiuss 8 px; tālākas malas tikai pavisam tuvu (3 px)
+    const [x, y] = toSheet(cx, cy), u = 1 / pxU(), reach = 40 * u, rad = 7 * u;
+    const near = (arr, v, w) => { let b = null, bd = 8 * u; arr.forEach(([t, a, c]) => { if (w < a - reach || w > c + reach) return; const d = Math.abs(t - v); if (d < bd) { bd = d; b = t; } });
+      if (b == null) { bd = 3 * u; arr.forEach(([t]) => { const d = Math.abs(t - v); if (d < bd) { bd = d; b = t; } }); } return b; };
+    if (o === "v") { const b = near(P.xs, x, y); return { o, at: +(b ?? x).toFixed(2), hit: b != null, hp: [b ?? x, y] }; }
+    if (o === "h") { const b = near(P.ys, y, x); return { o, at: +(b ?? y).toFixed(2), hit: b != null, hp: [x, b ?? y] }; }
     let bp = null, bd = rad * 1.5; P.pts.forEach(q => { const d = Math.hypot(q[0] - x, q[1] - y); if (d < bd) { bd = d; bp = q; } });
     const pt = bp || [x, y], pitch = (M.jumts && M.jumts.pitch) || 30, [W] = vbS();
     let side = -1; blocks().filter(b => b.type === "elev").forEach(bl => { const r = bl.g.getBoundingClientRect(); if (cx >= r.left && cx <= r.right) side = cx < r.left + r.width / 2 ? -1 : 1; }); void W;
