@@ -22,11 +22,23 @@ LOCK = threading.Lock()
 KEYS = {}   # atslēga -> projekta mape
 
 
+def drive_root():
+    """Google Drive mape SBE/PROJEKTI (jebkurā diska burtā), ja tāda ir: tad arhīvs uz katra datora ir tas pats."""
+    for L in 'GHIJKLMNOPQRSTUVWXYZDEF':
+        for md in ('My Drive', 'Mans disks', 'Mans Disks'):
+            p = os.path.join(L + ':' + chr(92), md, 'SBE', 'PROJEKTI')
+            if os.path.isdir(p):
+                return p
+    return None
+
+
 def default_cfg():
     desk = os.path.join(os.path.expanduser('~'), 'Desktop', 'MM System')
-    cfg = {'root': os.path.join(desk, 'PROJEKTI'), 'companies': {}}
-    if os.path.isdir(os.path.join(desk, 'MĀJAS')):
-        cfg['companies']['MM Homes'] = os.path.join(desk, 'MĀJAS')
+    cfg = {'root': drive_root() or os.path.join(desk, 'PROJEKTI'), 'companies': {}}
+    for mm in (os.path.join(desk, 'MĀJAS'), os.path.join(os.path.dirname(HERE), 'MĀJAS')):
+        if os.path.isdir(mm):
+            cfg['companies']['MM Homes'] = mm
+            break
     return cfg
 
 

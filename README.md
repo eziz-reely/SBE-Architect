@@ -23,6 +23,8 @@ Redaktorā: rīku josla kreisajā malā, taustiņus var mainīt ar tastatūras i
 - **Jauns uzņēmums** izveido mapi; mapes ikona atver uzņēmuma vai projekta mapi Explorer;
 - redaktorā **Saglabāt** ieraksta `model.json` projekta mapē (iepriekšējais paliek kā `model.json.bak`) un fonā pārbūvē LV/EN lapu; "‹ Projekti" ved atpakaļ uz arhīvu.
 
+Uz jauna datora (Google Drive jau sinhronizēts): `git clone https://github.com/eziz-reely/SBE-Architect`, tad `python bot/app_saisne.py`. Programma pati atrod Drive mapi `SBE\PROJEKTI` (jebkurā diska burtā) un rāda tos pašus projektus.
+
 Mapes: `<arhīvs>/<uzņēmums>/<projekts>/model.json`. Iestatījumi `%USERPROFILE%\.sbe-arhivs.json`: `root` (noklusējums `Desktop\MM System\PROJEKTI`) un `companies`, kur esošas mapes piesaista kā uzņēmumu (noklusējumā "MM Homes" = `Desktop\MM System\MĀJAS`).
 
 ## Projektu arhīvs
