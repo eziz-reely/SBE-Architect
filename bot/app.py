@@ -124,6 +124,36 @@ def rebuild_pages(mp):
         pass
 
 
+SPEC_KEYS = ('S1', 'S2', 'G1', 'J1')
+
+
+def default_layers():
+    c = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))['layers']
+    return {k: {'name': c[k]['name'], 'layers': c[k]['layers']} for k in SPEC_KEYS if k in c}
+
+
+def company_spec(cdir):
+    try:
+        return json.load(open(os.path.join(cdir, 'uznemums.json'), encoding='utf-8'))
+    except Exception:
+        return {}
+
+
+def clean_layers(L):
+    out = {}
+    for k in SPEC_KEYS:
+        rows = (L or {}).get(k)
+        if not isinstance(rows, list):
+            continue
+        ok = []
+        for r in rows[:30]:
+            if isinstance(r, list) and len(r) >= 2:
+                ok.append([str(r[0])[:120], max(0.0, min(2000.0, float(r[1] or 0))), str(r[2] if len(r) > 2 else '')[:2]])
+        if ok:
+            out[k] = ok
+    return out
+
+
 def safe_name(s):
     s = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', (s or '').strip()).strip('. ')
     return s[:80]
@@ -164,6 +194,12 @@ def new_project(b):
         shutil.move(src, dest)
         try: os.rmdir(os.path.dirname(src))   # tukšā <m²> mape repo MĀJAS
         except OSError: pass
+    sp = company_spec(cos[co]).get('piragi_layers')
+    if sp:   # uzņēmuma sienu specifikācijas kļūst par šī projekta pīrāgiem (projektā tās var mainīt redaktorā, cilnē Māja)
+        mp = os.path.join(dest, 'model.json'); mj = json.load(open(mp, encoding='utf-8'))
+        mj.setdefault('projekts', {})['piragi_layers'] = sp
+        json.dump(mj, open(mp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+        threading.Thread(target=rebuild_pages, args=(mp,), daemon=True).start()
     return key_of(dest)
 
 
@@ -212,7 +248,8 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, open(os.path.join(HERE, 'sablons', 'arhivs', 'app.html'), encoding='utf-8').read(), 'text/html; charset=utf-8')
             if p == '/api/projects':
                 pr = scan(); c = load_cfg()
-                cos = [{'name': n, 'key': key_of(d), 'path': d, 'n': sum(1 for x in pr if x['company'] == n)} for n, d in companies(c).items()]
+                cos = [{'name': n, 'key': key_of(d), 'path': d, 'n': sum(1 for x in pr if x['company'] == n),
+                        'spec': bool(company_spec(d).get('specifikacija_apstiprinata'))} for n, d in companies(c).items()]
                 return self.send(200, {'projects': pr, 'companies': cos, 'root': c['root']})
             if p.startswith('/api/files/'):
                 d = path_for(p[11:])
@@ -224,6 +261,12 @@ class H(BaseHTTPRequestHandler):
                     return self.send(404, 'Nav', 'text/plain; charset=utf-8')
                 import mimetypes
                 return self.send(200, open(fp, 'rb').read(), mimetypes.guess_type(nm)[0] or 'application/octet-stream')
+            if p == '/api/company-spec':
+                k = (urllib.parse.parse_qs(u.query).get('key') or [''])[0]; d = path_for(k)
+                if not d:
+                    return self.send(404, 'Uzņēmums nav atrasts', 'text/plain; charset=utf-8')
+                cs = company_spec(d).get('piragi_layers') or {}
+                return self.send(200, {'defaults': default_layers(), 'custom': cs, 'set': bool(cs)})
             if p == '/api/ping':
                 return self.send(200, {'ok': True})
             if p.startswith('/edit/'):
@@ -287,7 +330,19 @@ class H(BaseHTTPRequestHandler):
                 n = safe_name(b.get('name'))
                 if not n:
                     return self.send(400, 'Ievadi nosaukumu', 'text/plain; charset=utf-8')
-                c = load_cfg(); os.makedirs(os.path.join(c['root'], n), exist_ok=True)
+                c = load_cfg(); d = os.path.join(c['root'], n); os.makedirs(d, exist_ok=True)
+                return self.send(200, {'ok': True, 'key': key_of(d)})
+            if p == '/api/company-spec':
+                d = path_for(b.get('key', ''))
+                if not d:
+                    return self.send(404, 'Uzņēmums nav atrasts', 'text/plain; charset=utf-8')
+                cs = company_spec(d); L = clean_layers(b.get('piragi_layers'))
+                dfl = {k: v['layers'] for k, v in default_layers().items()}
+                L = {k: v for k, v in L.items() if v != dfl.get(k)}   # glabā tikai atšķirīgos
+                if L: cs['piragi_layers'] = L
+                else: cs.pop('piragi_layers', None)
+                cs['specifikacija_apstiprinata'] = True
+                json.dump(cs, open(os.path.join(d, 'uznemums.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
                 return self.send(200, {'ok': True})
             if p == '/api/new':
                 return self.send(200, {'key': new_project(b)})

@@ -95,6 +95,18 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 .sf { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; padding: 8px 10px; background: var(--paper); border-bottom: 1px solid var(--line); }
 .sl { display: grid; gap: 4px; font-size: 12.5px; }
 .card .mt.sent { color: #2f7d4f; }
+.spt { display: flex; gap: 0; border-bottom: 1px solid var(--line2); flex-wrap: wrap; }
+.spt button { border-radius: 0; border-bottom: 2px solid transparent; color: var(--muted); height: 34px; }
+.spt button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.spr { display: grid; grid-template-columns: 1fr 86px 150px 30px; gap: 6px; align-items: center; }
+.spr.h { font-size: 11.5px; color: var(--muted); }
+.spr input, .spr select { height: 30px; }
+.spr .x { width: 30px; padding: 0; justify-content: center; color: var(--muted); }
+.spr .x:hover { color: var(--bad); }
+.spl { display: grid; gap: 6px; max-height: 340px; overflow: auto; padding-right: 2px; }
+.sps { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
+.sps .sp { flex: 1; }
+.badge { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 2px; background: var(--acc-soft); color: var(--accent); }
 #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--brand); color: #f2f4f6; padding: 9px 14px; border-radius: var(--r); font-size: 12.5px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
 @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } nav { display: none; } .search input { width: 160px; } }
 @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
@@ -109,6 +121,8 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
   <symbol id="i-all" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></symbol>
   <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M21 3 10 14M21 3l-7 18-4-7-7-4z"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="1"/><path d="M8 4v16M11 4v16M16 4v16"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
   <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
 </svg>
 <header>
@@ -174,6 +188,18 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
     <div class="ft"><button class="sec" type="button" id="fOpen">Atvērt mapi</button><button class="pri" type="submit">Aizvērt</button></div>
   </form>
 </dialog>
+<dialog id="dSpec" class="wide">
+  <form method="dialog" id="fSpec">
+    <h3 id="sTitle">Sienu specifikācijas</h3>
+    <p class="note">Uzņēmuma noklusējums: ievadi vienreiz, un visi jaunie šī uzņēmuma projekti to saņems. Konkrētam projektam specifikāciju var mainīt redaktorā, cilnē <b>Māja</b>. Jau esošie projekti nemainās.</p>
+    <div class="spt" id="sTabs" role="tablist"></div>
+    <div class="spr h"><span>Slānis (no ārpuses uz iekšpusi)</span><span>Biezums, mm</span><span>Veids</span><span></span></div>
+    <div class="spl" id="sRows"></div>
+    <div class="sps"><button class="sec" type="button" id="sAdd">Pievienot slāni</button><span class="sp"></span><span id="sSum"></span></div>
+    <p class="err" id="sErr" hidden></p>
+    <div class="ft"><button class="sec" type="button" id="sReset" title="Visām četrām atjauno SBE noklusējumu">Atjaunot noklusējumu</button><span style="flex:1"></span><button class="sec" type="button" id="sCancel">Atcelt</button><button class="pri" type="submit" id="sOk">Saglabāt</button></div>
+  </form>
+</dialog>
 <div id="toast" hidden role="status"></div>
 
 <script>
@@ -200,7 +226,7 @@ function render() {
   const q = $("q").value.trim().toLowerCase(), so = $("sort").value;
   const co = D.companies.find(c => c.name === cur) ? cur : "";
   $("cos").innerHTML = [{ name: "", key: "", n: D.projects.length }, ...D.companies].map(c => `
-    <div class="co${c.name === co ? " on" : ""}"><button type="button" class="nm" data-co="${esc(c.name)}">${ico(c.name ? "co" : "all")}<span class="t">${esc(c.name || "Visi projekti")}</span><span class="n">${c.n}</span></button>${c.key ? `<button type="button" class="fo" data-open="${c.key}" title="Atvērt mapi Explorer" aria-label="Atvērt ${esc(c.name)} mapi">${ico("folder")}</button>` : ""}</div>`).join("");
+    <div class="co${c.name === co ? " on" : ""}"><button type="button" class="nm" data-co="${esc(c.name)}">${ico(c.name ? "co" : "all")}<span class="t">${esc(c.name || "Visi projekti")}</span><span class="n">${c.n}</span></button>${c.key ? `<button type="button" class="fo" data-spec="${c.key}" title="Uzņēmuma sienu specifikācijas" aria-label="${esc(c.name)} sienu specifikācijas">${ico("layers")}</button><button type="button" class="fo" data-open="${c.key}" title="Atvērt mapi Explorer" aria-label="Atvērt ${esc(c.name)} mapi">${ico("folder")}</button>` : ""}</div>`).join("");
   $("title").textContent = co || "Visi projekti";
   let r = D.projects.filter(p => (!co || p.company === co) && (!q || (p.name + " " + p.id + " " + p.company + " " + p.rel).toLowerCase().includes(q)));
   r.sort(so === "name" ? (a, b) => String(a.name).localeCompare(String(b.name), "lv") : so === "area" ? (a, b) => a.area - b.area : (a, b) => b.mtime - a.mtime);
@@ -250,11 +276,44 @@ $("fList").addEventListener("click", e => {
   f.querySelector("button").onclick = async () => { try { await api("/api/sent/" + fKey, { file: b.dataset.send, to: f.querySelector("[name=to]").value, note: f.querySelector("[name=note]").value }); await files(fKey); load(); } catch (er) { toast(er.message); } };
 });
 document.addEventListener("click", e => { const f = e.target.closest("[data-files]"); if (f) files(f.dataset.files).catch(er => toast(er.message)); });
+// ---- uzņēmuma sienu specifikācijas (S1 ārsiena, S2 starpsiena, G1 grīda, J1 jumts) ----
+const KIND = { "": "Cits", h: "Apdare", a: "Latojums / gaisa sprauga", m: "Membrāna", i: "Izolācija / karkass", o: "OSB / plātne", k: "Ģipškartons" };
+let SP = null, spTab = "S1", spAfter = null;
+async function specDlg(key, after) {
+  const co = D.companies.find(c => c.key === key), r = await api("/api/company-spec?key=" + key);
+  SP = { key, def: r.defaults, cur: {} }; spAfter = after || null;
+  Object.keys(r.defaults).forEach(k => SP.cur[k] = JSON.parse(JSON.stringify(r.custom[k] || r.defaults[k].layers)));
+  $("sTitle").textContent = "Sienu specifikācijas: " + (co ? co.name : "");
+  $("sOk").textContent = after ? "Saglabāt un turpināt" : "Saglabāt";
+  spTab = "S1"; $("sErr").hidden = true; spDraw(); $("dSpec").showModal();
+}
+function spRead() { SP.cur[spTab] = [...$("sRows").querySelectorAll(".spr")].map(r => [r.querySelector("[name=n]").value.trim(), +r.querySelector("[name=t]").value || 0, r.querySelector("[name=k]").value]).filter(l => l[0]); }
+function spSum() { const t = [...$("sRows").querySelectorAll("[name=t]")].reduce((a, i) => a + (+i.value || 0), 0); $("sSum").innerHTML = `Kopā <b>${Math.round(t * 10) / 10} mm</b>`; }
+function spDraw() {
+  $("sTabs").innerHTML = Object.entries(SP.def).map(([k, v]) => `<button type="button" role="tab" data-t="${k}" aria-selected="${k === spTab}">${esc(v.name)}${JSON.stringify(SP.cur[k]) !== JSON.stringify(v.layers) ? ' <span class="badge">mainīts</span>' : ""}</button>`).join("");
+  $("sRows").innerHTML = SP.cur[spTab].map(l => `<div class="spr"><input name="n" value="${esc(l[0])}" aria-label="Slānis"><input name="t" type="number" step="0.5" min="0" value="${l[1]}" aria-label="Biezums, mm"><select name="k" aria-label="Veids">${Object.entries(KIND).map(([c, t]) => `<option value="${c}"${c === (l[2] || "") ? " selected" : ""}>${t}</option>`).join("")}</select><button type="button" class="x" aria-label="Dzēst slāni">${ico("x")}</button></div>`).join("");
+  spSum();
+}
+$("sTabs").addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (!b) return; spRead(); spTab = b.dataset.t; spDraw(); });
+$("sRows").addEventListener("input", spSum);
+$("sRows").addEventListener("click", e => { if (e.target.closest(".x")) { e.target.closest(".spr").remove(); spSum(); } });
+$("sAdd").innerHTML = ico("plus") + "Pievienot slāni";
+$("sAdd").onclick = () => { spRead(); SP.cur[spTab].push(["", 0, ""]); spDraw(); const i = $("sRows").querySelectorAll("[name=n]"); i[i.length - 1].focus(); };
+$("sReset").onclick = () => { Object.keys(SP.def).forEach(k => SP.cur[k] = JSON.parse(JSON.stringify(SP.def[k].layers))); spDraw(); };
+$("sCancel").onclick = () => $("dSpec").close();
+$("fSpec").addEventListener("submit", async e => {
+  e.preventDefault(); spRead();
+  try { await api("/api/company-spec", { key: SP.key, piragi_layers: SP.cur }); $("dSpec").close(); await load(); toast("Sienu specifikācijas saglabātas."); if (spAfter) spAfter(); }
+  catch (er) { $("sErr").textContent = er.message; $("sErr").hidden = false; }
+});
+document.addEventListener("click", e => { const b = e.target.closest("[data-spec]"); if (b) specDlg(b.dataset.spec).catch(er => toast(er.message)); });
 $("q").addEventListener("input", render);
 $("sort").addEventListener("change", () => { try { localStorage.setItem("sbeSort", $("sort").value); } catch (_) {} render(); });
 function newDlg() {
   $("nCo").innerHTML = D.companies.map(c => `<option${c.name === cur ? " selected" : ""}>${esc(c.name)}</option>`).join("");
   if (!D.companies.length) { toast("Vispirms izveido uzņēmumu."); $("dCo").showModal(); return; }
+  const c = D.companies.find(x => x.name === (cur || D.companies[0].name));
+  if (c && !c.spec) { toast("Vispirms apstiprini uzņēmuma sienu specifikācijas."); specDlg(c.key, () => { $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus(); }); return; }
   $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus();
 }
 $("bNew").onclick = newDlg;
@@ -271,7 +330,7 @@ $("bCo").onclick = () => { $("cErr").hidden = true; $("cName").value = ""; $("dC
 $("cCancel").onclick = () => $("dCo").close();
 $("fCo").addEventListener("submit", async e => {
   e.preventDefault();
-  try { const n = $("cName").value.trim(); await api("/api/company", { name: n }); $("dCo").close(); cur = n; try { localStorage.setItem("sbeCo", cur); } catch (_) {} await load(); toast("Uzņēmums izveidots."); }
+  try { const n = $("cName").value.trim(), r = await api("/api/company", { name: n }); $("dCo").close(); cur = n; try { localStorage.setItem("sbeCo", cur); } catch (_) {} await load(); specDlg(r.key); }
   catch (er) { $("cErr").textContent = er.message; $("cErr").hidden = false; }
 });
 addEventListener("focus", load);
