@@ -324,6 +324,8 @@ details.fold > summary .fn { flex: 1; min-width: 0; overflow: hidden; text-overf
 details.fold > summary .fs { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
 details.fold > summary .fk.ok { color: var(--ok); } details.fold > summary .fk.bad { color: var(--bad); }
 details.fold > summary:hover { background: var(--hover); }
+details.fold > summary .fx { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--bad); font-size: 16px; line-height: 1; cursor: pointer; }
+details.fold > summary .fx:hover { background: color-mix(in srgb, var(--bad) 14%, transparent); }
 details.fold > .spec { margin: 0; padding: 4px 10px 10px; border-top: 1px solid var(--line); }
 #keysPane .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--line); }
 #keysPane .kr button, #keysPane .ft button { min-width: 72px; padding: 4px 8px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); }
@@ -1141,7 +1143,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     let d = document.getElementById("dCon");
     if (!d) {
       d = document.createElement("dialog"); d.id = "dCon"; document.body.appendChild(d);
-      const st = document.createElement("style"); st.textContent = `#dCon{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:hidden;border:1px solid var(--line2);border-radius:4px;padding:0;background:var(--paper);color:var(--ink);box-shadow:0 10px 40px rgba(0,0,0,.3)}#dCon::backdrop{background:rgba(20,22,25,.45)}#dCon form{display:flex;flex-direction:column;max-height:calc(100vh - 42px)}#dCon .hd{padding:16px 18px 8px}#dCon h3{margin:0 0 4px;font-size:16px}#dCon .bd{overflow:auto;padding:0 18px 8px}#dCon .sec{font:600 12px var(--f-ui);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line2)}#dCon .cn{border:1px solid var(--line);border-radius:3px;background:var(--field);padding:8px 10px;margin-bottom:8px}#dCon .nm{display:flex;gap:8px;align-items:center;margin-bottom:6px}#dCon .nm input{flex:1;font-weight:600}#dCon .nm .sm{color:var(--muted);font-size:12px;white-space:nowrap}#dCon .rw{display:grid;grid-template-columns:1fr 70px 150px 26px;gap:5px;margin-bottom:4px}#dCon .rw button,#dCon .ad{background:none;border:0;color:var(--muted);cursor:pointer;padding:0}#dCon .rw button:hover{color:var(--bad)}#dCon .ad{font-weight:600;font-size:12px;padding:2px 0}#dCon .ad:hover{color:var(--accent)}#dCon input,#dCon select{height:28px;padding:0 6px;font-size:12.5px}#dCon .ft{display:flex;gap:8px;justify-content:flex-end;padding:10px 18px 14px;border-top:1px solid var(--line)}#dCon .ft button{height:32px;padding:0 16px;border-radius:3px;border:1px solid var(--line2);background:var(--field);color:var(--ink);font-weight:600}#dCon .ft .pri{background:var(--accent);border-color:var(--accent);color:#fff}`;
+      const st = document.createElement("style"); st.textContent = `#dCon{width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:hidden;border:1px solid var(--line2);border-radius:4px;padding:0;background:var(--paper);color:var(--ink);box-shadow:0 10px 40px rgba(0,0,0,.3)}#dCon::backdrop{background:rgba(20,22,25,.45)}#dCon form{display:flex;flex-direction:column;max-height:calc(100vh - 42px)}#dCon .hd{padding:16px 18px 8px}#dCon h3{margin:0 0 4px;font-size:16px}#dCon .bd{overflow:auto;padding:0 18px 8px}#dCon .sec{font:600 12px var(--f-ui);color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:14px 0 6px;padding-bottom:4px;border-bottom:1px solid var(--line2)}#dCon .cn{border:1px solid var(--line);border-radius:3px;background:var(--field);padding:8px 10px;margin-bottom:8px}#dCon .nm{display:flex;gap:8px;align-items:center;margin-bottom:6px}#dCon .nm input{flex:1;font-weight:600}#dCon .nm .sm{color:var(--muted);font-size:12px;white-space:nowrap}#dCon .wx{border:0;background:none;color:var(--bad);font-size:18px;cursor:pointer;padding:0 4px}#dCon .rw{display:grid;grid-template-columns:1fr 70px 150px 26px;gap:5px;margin-bottom:4px}#dCon .rw button,#dCon .ad{background:none;border:0;color:var(--muted);cursor:pointer;padding:0}#dCon .rw button:hover{color:var(--bad)}#dCon .ad{font-weight:600;font-size:12px;padding:2px 0}#dCon .ad:hover{color:var(--accent)}#dCon input,#dCon select{height:28px;padding:0 6px;font-size:12.5px}#dCon .ft{display:flex;gap:8px;justify-content:flex-end;padding:10px 18px 14px;border-top:1px solid var(--line)}#dCon .ft button{height:32px;padding:0 16px;border-radius:3px;border:1px solid var(--line2);background:var(--field);color:var(--ink);font-weight:600}#dCon .ft .pri{background:var(--accent);border-color:var(--accent);color:#fff}`;
       document.head.appendChild(st);
     }
     const P = model.projekts || {}, PL = P.piragi_layers || {}, PN = P.piragi_names || {}, WT = (P.wall_types || []).map(w => ({ ...w, layers: w.layers.map(l => l.slice()) }));
@@ -1152,15 +1154,20 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const draw = () => {
       d.innerHTML = `<form method="dialog"><div class="hd"><h3>Konstrukcijas</h3><p class="note" style="margin:0">Visas sienas, jumts un grīda vienā logā. Nosaukumi un slāņi nonāk AR lapā "Sienu specifikācija". Slāņi no ārpuses uz iekšpusi.</p></div><div class="bd">` +
-        SEC.map(([sn, ks]) => `<div class="sec">${sn}</div>` + ks.filter(k => C[k]).map(k => `<div class="cn" data-k="${k}"><div class="nm"><input name="nm" value="${esc(C[k].name)}" aria-label="Nosaukums"><span class="sm">${k} · ${sum(C[k].layers)} mm</span></div>` +
+        SEC.map(([sn, ks]) => `<div class="sec">${sn}</div>` + ks.filter(k => C[k] && !C[k].gone).map(k => `<div class="cn" data-k="${k}"><div class="nm"><input name="nm" value="${esc(C[k].name)}" aria-label="Nosaukums"><span class="sm">${k} · ${sum(C[k].layers)} mm</span>${C[k].wt ? `<button type="button" class="wx" data-wdel title="Dzēst šo starpsienas veidu" aria-label="Dzēst starpsienas veidu">×</button>` : ""}</div>` +
           C[k].layers.map((l, i) => `<div class="rw" data-i="${i}"><input name="n" value="${esc(l[0])}" aria-label="Slānis"><input name="t" type="number" step="0.5" min="0" value="${l[1]}" aria-label="Biezums, mm"><select name="c" aria-label="Veids">${Object.entries(LKIND).map(([c, t]) => `<option value="${c}"${c === (l[2] || "") ? " selected" : ""}>${t}</option>`).join("")}</select><button type="button" data-del title="Dzēst slāni" aria-label="Dzēst slāni">×</button></div>`).join("") +
-          `<button type="button" class="ad" data-add>+ slānis</button></div>`).join("")).join("") +
+          `<button type="button" class="ad" data-add>+ slānis</button></div>`).join("") + (sn === "Sienas" ? `<button type="button" class="ad" data-wadd>+ Pievienot starpsienas veidu</button>` : "")).join("") +
         `</div><div class="ft"><button type="button" data-x>Atcelt</button><button type="submit" class="pri">Saglabāt visu</button></div></form>`;
     };
     const read = () => d.querySelectorAll(".cn").forEach(cn => { const c = C[cn.dataset.k]; c.name = cn.querySelector("[name=nm]").value.trim() || c.name; c.layers = [...cn.querySelectorAll(".rw")].map(r => [r.querySelector("[name=n]").value.trim(), +r.querySelector("[name=t]").value || 0, r.querySelector("[name=c]").value]).filter(l => l[0]); });
     draw();
     d.onclick = e => {
       if (e.target.closest("[data-x]")) { d.close(); return; }
+      const wd = e.target.closest("[data-wdel]"), wa = e.target.closest("[data-wadd]");
+      if (wd || wa) { read(); const sc = d.querySelector(".bd").scrollTop;
+        if (wd) C[wd.closest(".cn").dataset.k].gone = true;
+        else { let i = 1; while (C["P" + i]) i++; const id = "P" + i; C[id] = { name: "Starpsiena " + sum(C.S2.layers) + " (jauna)", layers: C.S2.layers.map(l => l.slice()), wt: true, isNew: true }; SEC[0][1].push(id); }
+        draw(); d.querySelector(".bd").scrollTop = sc; return; }
       const del = e.target.closest("[data-del]"), add = e.target.closest("[data-add]");
       if (del || add) { read(); const k = e.target.closest(".cn").dataset.k; if (del) C[k].layers.splice(+del.closest(".rw").dataset.i, 1); else C[k].layers.push(["", 0, ""]); const sc = d.querySelector(".bd").scrollTop; draw(); d.querySelector(".bd").scrollTop = sc; }
     };
@@ -1169,7 +1176,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       e.preventDefault(); read();
       const n = clone(model); n.projekts = n.projekts || {}; const pl = {}, pn = {};
       Object.entries(C).forEach(([k, c]) => {
-        if (c.wt) { const w = n.projekts.wall_types.find(x => x.id === k); if (w) { w.name = c.name; w.layers = c.layers; } return; }
+        if (c.wt) { const L = n.projekts.wall_types = n.projekts.wall_types || [], wi = L.findIndex(x => x.id === k);
+          if (c.gone) { if (wi >= 0) L.splice(wi, 1); } else if (wi >= 0) { L[wi].name = c.name; L[wi].layers = c.layers; } else L.push({ id: k, name: c.name, layers: c.layers });
+          if (!L.length) delete n.projekts.wall_types; return; }
         if (JSON.stringify(c.layers) !== JSON.stringify(LAYERS0[k].layers)) pl[k] = c.layers;
         if (c.name !== LAYERS0[k].name) pn[k] = c.name;
       });
@@ -1253,8 +1262,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         if (!msgs.length) msgs.push(["ok", "✓ Slāņi aizpildīti"]);
         msgs.forEach(([c, tx]) => { const p = document.createElement("div"); p.className = c; p.textContent = tx; box.appendChild(p); });
         const det = specFold(k, (en.custom != null ? en.name : base.name), sum, msgs.every(m => m[0] === "ok"), box);
+        if (en.custom != null) { const dx = document.createElement("button"); dx.type = "button"; dx.className = "fx"; dx.textContent = "×"; dx.title = "Dzēst šo starpsienas veidu"; dx.setAttribute("aria-label", "Dzēst starpsienas veidu " + en.name);
+          dx.addEventListener("click", ev => { ev.preventDefault(); ev.stopPropagation(); const n = clone(model); n.projekts.wall_types.splice(en.custom, 1); if (!n.projekts.wall_types.length) delete n.projekts.wall_types; commit(n); status("Starpsienas veids dzēsts."); });
+          det.querySelector("summary").appendChild(dx); }
         if (k === "G1" || k === "J1") SPECX[k] = det; else gs.appendChild(det);   // grīda un jumts savās sadaļās, ne zem sienām
-        if (k === "S2") { const as = document.createElement("button"); as.type = "button"; as.className = "add full"; as.textContent = "+ Pievienot starpsienu (pīrāgu)"; as.title = "Jauns starpsienas veids ar saviem slāņiem; tas automātiski parādās AR lapā Sienu specifikācija"; as.addEventListener("click", () => addWt.click()); gs.appendChild(as); }
       });
       { // atslēgvārdi: slānis ar šādu vārdu nosaukumā specifikācijā tiek zīmēts kā krāsaina līnija
         const MK0 = [{ k: "membrān", c: "#1f6fd1", d: 1 }, { k: "plēve", c: "#1f6fd1", d: 1 }, { k: "folij", c: "#1f6fd1", d: 1 }];
@@ -1277,10 +1288,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         ad.addEventListener("click", () => sv([...cur.map(z => ({ ...z })), { k: "jauns", c: "#1f6fd1", d: 1 }])); box.appendChild(ad);
         SPECX.KW = specFold("KW", "Slāņu atslēgvārdi (krāsainas līnijas)", 0, true, box); SPECX.KW.querySelector(".fs").textContent = cur.length + " gab.";
       }
-      const addWt = document.createElement("button"); addWt.type = "button"; addWt.className = "add full"; addWt.textContent = "+ starpsienas veids";
+      const addWt = document.createElement("button"); addWt.type = "button"; addWt.className = "add full"; addWt.textContent = "+ Pievienot starpsienas veidu"; addWt.title = "Jauns starpsienas veids ar saviem slāņiem; tas parādās AR lapā Sienu specifikācija";
       addWt.addEventListener("click", () => { const n = clone(model); n.projekts = n.projekts || {}; const L = n.projekts.wall_types = n.projekts.wall_types || []; let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; const base = (PLs.S2 || LAYERS0.S2.layers).map(l => l.slice()); L.push({ id: "P" + i, name: "Starpsiena " + Math.round(base.reduce((a, l) => a + (+l[1] || 0), 0)) + " (jauna)", layers: base }); commit(n); });
       gs.appendChild(addWt);
-      { const top = addWt.cloneNode(true); top.textContent = "+ Jauna starpsiena (pīrāgs)"; top.title = "Pievieno jaunu starpsienas veidu ar saviem slāņiem"; top.addEventListener("click", () => addWt.click()); gs.insertBefore(top, note0.nextSibling); }
     }
     const g2 = group("Visi logi", host);
     const all = [...(model.windows || []), ...(model.gableWins || [])], vals = [...new Set(all.map(casOf))];
