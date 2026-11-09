@@ -447,14 +447,14 @@ function cadPlan(parent, v, opt = {}) {
       jamb(w.x, w.y, w.x, w.y + th); jamb(w.x + L, w.y, w.x + L, w.y + th);
       el("rect", { x: w.x, y: w.y + th * .36, width: L, height: th * .28, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       line(w.x, w.y + th / 2, w.x + L, w.y + th / 2, 6);
-      if (w.sill) { const oy = w.y === 0 ? w.y : w.y + th; line(w.x - 40, oy, w.x + L + 40, oy, 10); }
+      if (w.sill) { const oy = w.y === 0 ? w.y : w.y + th, iy = w.y === 0 ? w.y + th : w.y; line(w.x - 40, oy, w.x + L + 40, oy, 10); line(w.x, iy, w.x + L, iy, 5); }   // [MM] smalka ailas līnija arī iekšpusē
       else { line(w.x, w.y + 6, w.x + L, w.y + 6, 8); line(w.x, w.y + th - 6, w.x + L, w.y + th - 6, 8); }
     } else {
       gap(w.x - 14, w.y, th + 28, L);
       jamb(w.x, w.y, w.x + th, w.y); jamb(w.x, w.y + L, w.x + th, w.y + L);
       el("rect", { x: w.x + th * .36, y: w.y, width: th * .28, height: L, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       line(w.x + th / 2, w.y, w.x + th / 2, w.y + L, 6);
-      if (w.sill) { const ox = w.x === 0 ? w.x : w.x + th; line(ox, w.y - 40, ox, w.y + L + 40, 10); }
+      if (w.sill) { const ox = w.x === 0 ? w.x : w.x + th, ix = w.x === 0 ? w.x + th : w.x; line(ox, w.y - 40, ox, w.y + L + 40, 10); line(ix, w.y, ix, w.y + L, 5); }   // [MM] smalka ailas līnija arī iekšpusē
       else { line(w.x + 6, w.y, w.x + 6, w.y + L, 8); line(w.x + th - 6, w.y, w.x + th - 6, w.y + L, 8); }
     }
     // operable sashes: leaf hinged at the frame's room face, opened ~25° into the room, swing arc (tilt-only / fixed / sliding: none)
