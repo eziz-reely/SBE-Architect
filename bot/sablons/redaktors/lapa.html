@@ -1471,7 +1471,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     $("bSave").disabled = true; status("Saglabā…");
     try {
       await db.doc(DOC).set({ id: model.id, json: JSON.stringify(model), saved: new Date().toISOString() });
-      dirty = false; status("Saglabāts " + new Date().toLocaleString("lv-LV") + ". Pasaki Claude, lai pārbūvē failus.");
+      dirty = false; status("Saglabāts " + new Date().toLocaleString("lv-LV") + (window.MM_LOCAL ? ". model.json ierakstīts projekta mapē, LV/EN lapas pārbūvējas fonā." : ". Pasaki Claude, lai pārbūvē failus."));
     } catch (e) { status("Neizdevās saglabāt: " + (e.message || e.code || e)); }
     $("bSave").disabled = false;
   };

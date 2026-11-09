@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="lv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SBE projekti</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Tā pati neitrālā grafīta palete un ikonu kopa kā redaktorā (24×24, līnija 1.6) */
+:root {
+  --brand: #2a2e33; --accent: #2266d8; --acc-soft: #e4edfc; --acc-line: #9dbcf0;
+  --paper: #f4f5f7; --desk: #e3e6ea; --line: #d9dde2; --line2: #bcc2c9; --field: #fff;
+  --ink: #1d2125; --muted: #646b73; --hover: #eceef1; --bad: #b3261e; --r: 3px;
+  --f-ui: "Barlow", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --brand: #1b1e21; --accent: #3b7ddd; --acc-soft: #1f3354; --acc-line: #3b5f99;
+  --paper: #23262a; --desk: #181a1d; --line: #353a40; --line2: #454b52; --field: #2c3035; --ink: #e6e9ec; --muted: #9aa1a9; --hover: #30353b; --bad: #f08a80; color-scheme: dark; } }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--desk); color: var(--ink); font: 13px/1.4 var(--f-ui); display: flex; flex-direction: column; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; accent-color: var(--accent); }
+svg.i { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+button { white-space: nowrap; font: 600 12.5px/1 var(--f-ui); border-radius: var(--r); cursor: pointer; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; color: inherit; background: none; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .5; cursor: progress; }
+.pri { background: var(--accent); color: #fff; border-color: var(--accent); }
+.pri:hover:not(:disabled) { background: #1a57bf; }
+.sec { background: var(--field); border-color: var(--line2); }
+.sec:hover { background: var(--hover); }
+header { background: var(--brand); color: #f2f4f6; min-height: 46px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid #111316; }
+header .mark { font: 600 12px/46px var(--f-ui); letter-spacing: .24em; color: #a6adb5; padding-right: 14px; border-right: 1px solid #3d4248; }
+header h1 { font-size: 15px; font-weight: 600; margin: 0; }
+header .sp { flex: 1; }
+.search { position: relative; display: flex; align-items: center; }
+.search svg { position: absolute; left: 9px; color: #a6adb5; width: 16px; height: 16px; }
+.search input { width: 260px; height: 30px; padding: 0 10px 0 32px; border-radius: var(--r); border: 1px solid #3d4248; background: #1f2226; color: #f2f4f6; font: 500 13px var(--f-ui); }
+.search input::placeholder { color: #a6adb5; }
+header select { width: auto; height: 30px; border-radius: var(--r); border: 1px solid #3d4248; background: #1f2226; color: #d7dce1; font: 500 12.5px var(--f-ui); padding: 0 8px; }
+.wrap { flex: 1; display: grid; grid-template-columns: 240px 1fr; min-height: 0; }
+nav { background: var(--paper); border-right: 1px solid var(--line2); overflow: auto; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; }
+nav .cap { font: 600 11.5px/1 var(--f-ui); color: var(--muted); letter-spacing: .02em; padding: 4px 8px 8px; }
+.co { display: flex; align-items: center; gap: 4px; border-radius: var(--r); }
+.co > button.nm { flex: 1; min-width: 0; justify-content: flex-start; height: 34px; font-weight: 500; color: var(--ink); }
+.co > button.nm span.t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co > button.nm .n { margin-left: auto; color: var(--muted); font-weight: 500; font-size: 12px; }
+.co:hover { background: var(--hover); }
+.co.on { background: var(--acc-soft); }
+.co.on > button.nm { color: var(--accent); font-weight: 600; }
+.co .fo { width: 30px; padding: 0; justify-content: center; color: var(--muted); opacity: 0; }
+.co:hover .fo, .co .fo:focus-visible { opacity: 1; }
+.co .fo:hover { color: var(--accent); }
+nav .add { margin: 8px 0 0; justify-content: flex-start; color: var(--muted); border: 1px dashed var(--line2); height: 32px; }
+nav .add:hover { color: var(--accent); border-color: var(--accent); background: var(--acc-soft); }
+nav .root { margin-top: auto; padding: 12px 8px 2px; font-size: 11.5px; color: var(--muted); word-break: break-all; }
+main { overflow: auto; padding: 18px 20px 28px; }
+.bar { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
+.bar h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.bar .c { color: var(--muted); }
+.bar .sp { flex: 1; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.card { background: var(--field); border: 1px solid var(--line); border-radius: var(--r); display: flex; flex-direction: column; transition: border-color .12s, box-shadow .12s; }
+.card:hover { border-color: var(--acc-line); box-shadow: 0 2px 10px rgba(0,0,0,.06); }
+.card a.th { display: grid; place-items: center; height: 150px; background: var(--paper); border-bottom: 1px solid var(--line); color: var(--ink); text-decoration: none; padding: 12px; }
+.card a.th svg { width: 100%; height: 100%; }
+.card .bd { padding: 10px 12px 4px; display: grid; gap: 2px; }
+.card .nm { font-weight: 600; font-size: 14px; }
+.card .mt { color: var(--muted); font-size: 12px; }
+.card .ac { display: flex; gap: 6px; padding: 8px 12px 12px; }
+.card .ac .pri { flex: 1; justify-content: center; }
+.card .ac .sec { width: 34px; padding: 0; justify-content: center; }
+.empty { border: 1px dashed var(--line2); border-radius: var(--r); padding: 40px 20px; text-align: center; color: var(--muted); display: grid; gap: 12px; justify-items: center; }
+dialog { border: 1px solid var(--line2); border-radius: 4px; padding: 0; width: min(440px, calc(100vw - 32px)); background: var(--paper); color: var(--ink); box-shadow: 0 10px 40px rgba(0,0,0,.25); }
+dialog::backdrop { background: rgba(20,22,25,.45); }
+dialog form { display: grid; gap: 12px; padding: 18px; }
+dialog h3 { margin: 0; font-size: 16px; }
+dialog .g2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+dialog .g2.two { grid-template-columns: 1fr 1fr; }
+label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+input, select { font: 500 13px var(--f-ui); color: var(--ink); background: var(--field); border: 1px solid var(--line2); border-radius: var(--r); height: 32px; padding: 0 9px; width: 100%; }
+input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--acc-soft); }
+dialog .note { margin: 0; font-size: 12px; color: var(--muted); }
+dialog .err { margin: 0; font-size: 12.5px; color: var(--bad); }
+dialog .ft { display: flex; justify-content: flex-end; gap: 8px; padding-top: 4px; }
+#toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--brand); color: #f2f4f6; padding: 9px 14px; border-radius: var(--r); font-size: 12.5px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+@media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } nav { display: none; } .search input { width: 160px; } }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6H9l2 2.5h8.5A1.5 1.5 0 0 1 21 10v8.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></symbol>
+  <symbol id="i-co" viewBox="0 0 24 24"><path d="M4 20.5V6l7-3v17.5M11 8.5l9 3v9M2.5 20.5h19M7 9h1M7 12.5h1M7 16h1M15 14h1M15 17h1"/></symbol>
+  <symbol id="i-all" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+</svg>
+<header>
+  <span class="mark">SBE</span>
+  <h1>Projekti</h1>
+  <span class="sp"></span>
+  <label class="search" aria-label="Meklēt"><svg class="i"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Meklēt pēc nosaukuma, ID…" autocomplete="off"></label>
+  <select id="sort" aria-label="Kārtot"><option value="mtime">Jaunākie augšā</option><option value="name">Pēc nosaukuma</option><option value="area">Pēc platības</option></select>
+  <button class="pri" id="bNew" type="button"><svg class="i"><use href="#i-plus"/></svg>Jauns projekts</button>
+</header>
+<div class="wrap">
+  <nav aria-label="Uzņēmumi">
+    <div class="cap">Uzņēmumi</div>
+    <div id="cos"></div>
+    <button class="add" id="bCo" type="button"><svg class="i"><use href="#i-plus"/></svg>Jauns uzņēmums</button>
+    <div class="root" id="root"></div>
+  </nav>
+  <main>
+    <div class="bar"><h2 id="title">Visi projekti</h2><span class="c" id="count"></span><span class="sp"></span></div>
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" hidden></div>
+  </main>
+</div>
+
+<dialog id="dNew">
+  <form method="dialog" id="fNew">
+    <h3>Jauns projekts</h3>
+    <label>Uzņēmums<select id="nCo" required></select></label>
+    <div class="g2">
+      <label>Garums, mm<input id="nL" type="number" inputmode="numeric" min="3000" max="40000" step="10" required placeholder="8570"></label>
+      <label>Platums, mm<input id="nB" type="number" inputmode="numeric" min="2500" max="15000" step="10" required placeholder="3500"></label>
+      <label>Kores augstums, mm<input id="nH" type="number" inputmode="numeric" min="2500" max="12000" step="10" required placeholder="4000"></label>
+    </div>
+    <div class="g2 two">
+      <label>Modeļa nosaukums<input id="nName" type="text" placeholder="piem. Freya"></label>
+      <label>ID (nav obligāts)<input id="nId" type="text" placeholder="automātiski MM-xx-nn"></label>
+    </div>
+    <div class="g2">
+      <label>Mansards<select id="nLoft"><option value="ja">Ar mansardu</option><option value="ne">Bez mansarda</option></select></label>
+      <label>Pamati<select id="nFnd"><option value="stabveida">Stabveida</option><option value="platne">Betona plātne</option></select></label>
+      <label>Fasādes tonis<select id="nTone"><option value="peleks">Pelēks</option><option value="koks">Koks</option><option value="sarkans">Sarkans</option><option value="zals">Zaļš</option><option value="balts">Balts</option></select></label>
+    </div>
+    <p class="note">Bots uzģenerē plānojumu un A3 lapu. Tas var aizņemt līdz minūtei. Pēc tam projekts atveras redaktorā.</p>
+    <p class="err" id="nErr" hidden></p>
+    <div class="ft"><button class="sec" type="button" value="cancel" id="nCancel">Atcelt</button><button class="pri" type="submit" id="nOk">Izveidot</button></div>
+  </form>
+</dialog>
+<dialog id="dCo">
+  <form method="dialog" id="fCo">
+    <h3>Jauns uzņēmums</h3>
+    <label>Nosaukums<input id="cName" type="text" required placeholder="piem. MM Homes"></label>
+    <p class="note">Arhīvā tiek izveidota mape ar šo nosaukumu.</p>
+    <p class="err" id="cErr" hidden></p>
+    <div class="ft"><button class="sec" type="button" id="cCancel">Atcelt</button><button class="pri" type="submit">Izveidot</button></div>
+  </form>
+</dialog>
+<div id="toast" hidden role="status"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ico = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+let D = { projects: [], companies: [] }, cur = "";
+try { cur = localStorage.getItem("sbeCo") || ""; $("sort").value = localStorage.getItem("sbeSort") || "mtime"; } catch (_) {}
+const toast = t => { const e = $("toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3500); };
+async function api(u, b) {
+  const r = await fetch(u, b ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) } : {});
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+// mazais plāns no telpu taisnstūriem
+function plan(p) {
+  if (!p.W || !p.D) return "";
+  const pad = 250, W = p.W + 2 * pad, H = p.D + 2 * pad;
+  const out = p.poly ? `<polygon points="${p.poly.map(q => q.join(",")).join(" ")}"/>` : `<rect x="0" y="0" width="${p.W}" height="${p.D}"/>`;
+  return `<svg viewBox="${-pad} ${-pad} ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g fill="var(--field)" stroke="currentColor" stroke-width="${Math.max(W, H) / 160}" stroke-linejoin="round">${out}</g><g fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="${Math.max(W, H) / 380}">${p.rooms.map(r => `<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}"/>`).join("")}</g></svg>`;
+}
+const dt = t => new Date(t * 1000).toLocaleDateString("lv-LV", { day: "2-digit", month: "2-digit", year: "numeric" });
+function render() {
+  const q = $("q").value.trim().toLowerCase(), so = $("sort").value;
+  const co = D.companies.find(c => c.name === cur) ? cur : "";
+  $("cos").innerHTML = [{ name: "", key: "", n: D.projects.length }, ...D.companies].map(c => `
+    <div class="co${c.name === co ? " on" : ""}"><button type="button" class="nm" data-co="${esc(c.name)}">${ico(c.name ? "co" : "all")}<span class="t">${esc(c.name || "Visi projekti")}</span><span class="n">${c.n}</span></button>${c.key ? `<button type="button" class="fo" data-open="${c.key}" title="Atvērt mapi Explorer" aria-label="Atvērt ${esc(c.name)} mapi">${ico("folder")}</button>` : ""}</div>`).join("");
+  $("title").textContent = co || "Visi projekti";
+  let r = D.projects.filter(p => (!co || p.company === co) && (!q || (p.name + " " + p.id + " " + p.company + " " + p.rel).toLowerCase().includes(q)));
+  r.sort(so === "name" ? (a, b) => String(a.name).localeCompare(String(b.name), "lv") : so === "area" ? (a, b) => a.area - b.area : (a, b) => b.mtime - a.mtime);
+  $("count").textContent = r.length + (r.length === 1 ? " projekts" : " projekti");
+  $("grid").innerHTML = r.map(p => `
+    <article class="card">
+      <a class="th" href="/edit/${p.key}" title="Atvērt redaktorā">${plan(p)}</a>
+      <div class="bd"><div class="nm">${esc(p.name)}</div><div class="mt">${esc(p.id)}${co ? "" : " · " + esc(p.company)}</div>
+        <div class="mt">${p.area} m² · ${(p.W / 1000).toFixed(1)} × ${(p.D / 1000).toFixed(1)} m${p.loft ? " · mansards" : ""} · ${dt(p.mtime)}</div></div>
+      <div class="ac"><a class="pri" href="/edit/${p.key}" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1;height:30px;border-radius:var(--r);text-decoration:none;font:600 12.5px var(--f-ui)">${ico("edit")}Atvērt redaktorā</a>
+        <button class="sec" type="button" data-open="${p.key}" title="Atvērt mapi Explorer" aria-label="Atvērt projekta mapi">${ico("folder")}</button></div>
+    </article>`).join("");
+  const em = $("empty");
+  em.hidden = r.length > 0;
+  if (!r.length) em.innerHTML = q ? `Nekas nav atrasts pēc „${esc(q)}”.` : `Šim uzņēmumam vēl nav projektu.<button class="pri" type="button" onclick="newDlg()">${ico("plus")}Jauns projekts</button>`;
+}
+async function load() {
+  try { D = await api("/api/projects"); $("root").textContent = "Arhīvs: " + D.root; render(); }
+  catch (e) { $("grid").innerHTML = ""; $("empty").hidden = false; $("empty").textContent = "Neizdevās nolasīt projektus: " + e.message; }
+}
+document.addEventListener("click", async e => {
+  const o = e.target.closest("[data-open]");
+  if (o) { try { await api("/api/open", { key: o.dataset.open }); } catch (er) { toast(er.message); } return; }
+  const c = e.target.closest("[data-co]");
+  if (c) { cur = c.dataset.co; try { localStorage.setItem("sbeCo", cur); } catch (_) {} render(); }
+});
+$("q").addEventListener("input", render);
+$("sort").addEventListener("change", () => { try { localStorage.setItem("sbeSort", $("sort").value); } catch (_) {} render(); });
+function newDlg() {
+  $("nCo").innerHTML = D.companies.map(c => `<option${c.name === cur ? " selected" : ""}>${esc(c.name)}</option>`).join("");
+  if (!D.companies.length) { toast("Vispirms izveido uzņēmumu."); $("dCo").showModal(); return; }
+  $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus();
+}
+$("bNew").onclick = newDlg;
+$("nCancel").onclick = () => $("dNew").close();
+$("fNew").addEventListener("submit", async e => {
+  e.preventDefault(); const b = $("nOk"); b.disabled = true; b.textContent = "Ģenerē…"; $("nErr").hidden = true;
+  try {
+    const r = await api("/api/new", { company: $("nCo").value, garums: +$("nL").value, platums: +$("nB").value, augstums: +$("nH").value,
+      nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value });
+    location.href = "/edit/" + r.key;
+  } catch (er) { $("nErr").textContent = er.message; $("nErr").hidden = false; b.disabled = false; b.textContent = "Izveidot"; }
+});
+$("bCo").onclick = () => { $("cErr").hidden = true; $("cName").value = ""; $("dCo").showModal(); };
+$("cCancel").onclick = () => $("dCo").close();
+$("fCo").addEventListener("submit", async e => {
+  e.preventDefault();
+  try { const n = $("cName").value.trim(); await api("/api/company", { name: n }); $("dCo").close(); cur = n; try { localStorage.setItem("sbeCo", cur); } catch (_) {} await load(); toast("Uzņēmums izveidots."); }
+  catch (er) { $("cErr").textContent = er.message; $("cErr").hidden = false; }
+});
+addEventListener("focus", load);
+load();
+</script>
+</body>
+</html>

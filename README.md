@@ -15,6 +15,16 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 
 Redaktorā: rīku josla kreisajā malā, taustiņus var mainīt ar tastatūras ikonu joslas apakšā. Palīglīnijas: G, vai velc no rasējuma kreisās/augšējās malas.
 
+## Darbvirsmas programma (arhīvs + redaktors)
+
+`python bot/app_saisne.py` uzliek uz darbvirsmas saīsni **SBE projekti** ar savu ikonu. Tā atver vienu logu (Edge/Chrome lietotnes režīmā, tikai šajā datorā, `http://127.0.0.1:8737`):
+- pirmā lapa ir arhīvs: uzņēmumu mapes kreisajā pusē, projekti kartītēs ar mazu plānu, meklēšana un kārtošana;
+- **Jauns projekts**: izvēlas uzņēmumu, ievada garumu, platumu, kores augstumu (un pēc vēlēšanās nosaukumu, mansardu, pamatus, toni), bots uzģenerē modeli un atver to redaktorā;
+- **Jauns uzņēmums** izveido mapi; mapes ikona atver uzņēmuma vai projekta mapi Explorer;
+- redaktorā **Saglabāt** ieraksta `model.json` projekta mapē (iepriekšējais paliek kā `model.json.bak`) un fonā pārbūvē LV/EN lapu; "‹ Projekti" ved atpakaļ uz arhīvu.
+
+Mapes: `<arhīvs>/<uzņēmums>/<projekts>/model.json`. Iestatījumi `%USERPROFILE%\.sbe-arhivs.json`: `root` (noklusējums `Desktop\MM System\PROJEKTI`) un `companies`, kur esošas mapes piesaista kā uzņēmumu (noklusējumā "MM Homes" = `Desktop\MM System\MĀJAS`).
+
 ## Projektu arhīvs
 
 `python3 bot/arhivs.py PROJEKTI` uzbūvē `PROJEKTI/arhivs.html`: viens logs ar visiem projektiem (nosaukums, laukums, plāna un fasādes miniatūra), meklēšana un filtrs pa uzņēmumiem. Klikšķis atver projekta redaktoru. Mapes: `PROJEKTI/<uzņēmums>/<projekts>/model.json`. Pievienot modeli: `python3 bot/arhivs.py PROJEKTI --pievienot model.json --uznemums "Uzņēmums"`. Miniatūras pārbūvējas pašas, ja `model.json` ir mainīts. Mape `PROJEKTI/` nonāk repo ignorēto sarakstā (klientu dati).
