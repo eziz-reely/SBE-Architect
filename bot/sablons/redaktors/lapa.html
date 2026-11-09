@@ -1,17 +1,18 @@
 <title>__MM_NAME__ rasējuma redaktors</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600&display=swap">
 <style>
 /* Layout: darba galds. Rasējums aizņem visu kreiso laukumu, labajā pusē šaura īpašību josla kā CAD programmā. */
 :root {
-  --ink: #2a2622;          /* teksts */
-  --brand: #36312D;        /* MM tumši brūnais */
-  --gold: #A8916A;         /* MM akcents */
-  --paper: #f3f1ec;        /* panelis */
-  --desk: #dcd8d0;         /* galds aiz lapas */
-  --line: #d3cdc2;
-  --muted: #6f675e;
+  --ink: #1d2125;          /* teksts */
+  --brand: #2a2e33;        /* MM tumši brūnais */
+  --gold: #2266d8;         /* MM akcents */
+  --paper: #f4f5f7;        /* panelis */
+  --desk: #c3c8ce;         /* galds aiz lapas */
+  --line: #d5d9de;
+  --muted: #5f666e;
   --mark: #d9480f;         /* izvēle rasējumā */
   --ok: #2f7d4f; --bad: #b3261e;
   --field: #ffffff;
@@ -20,19 +21,22 @@
   height: 100%;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --ink: #ece7df; --paper: #24211e; --desk: #171513; --line: #3b3631; --muted: #a59c90; --field: #2e2a26;
+  --ink: #e6e9ec; --paper: #23262a; --desk: #141619; --line: #383d43; --muted: #9aa1a9; --field: #2c3035;
   --ok: #6cc28f; --bad: #f08a80; color-scheme: dark } }
-:root[data-theme="dark"] { --ink: #ece7df; --paper: #24211e; --desk: #171513; --line: #3b3631; --muted: #a59c90; --field: #2e2a26;
+:root[data-theme="dark"] { --ink: #e6e9ec; --paper: #23262a; --desk: #141619; --line: #383d43; --muted: #9aa1a9; --field: #2c3035;
   --ok: #6cc28f; --bad: #f08a80; color-scheme: dark }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
 body { background: var(--desk); color: var(--ink); font: 14px/1.4 var(--f-ui); display: flex; flex-direction: column; overflow: hidden; }
-header { background: var(--brand); color: #f4efe6; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+header { background: var(--brand); color: #f2f4f6; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
   padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 header .mark { font: 600 13px/1 var(--f-cap); letter-spacing: .22em; color: var(--gold); }
 header h1 { font: 600 17px/1.1 var(--f-ui); margin: 0; letter-spacing: .02em; }
-header .tag { font-size: 12px; color: #cdbf9f; border: 1px solid #6b5f50; border-radius: 99px; padding: 2px 9px; }
+header .tag { font-size: 12px; color: #aab1b9; border: 1px solid #50565d; border-radius: 99px; padding: 2px 9px; }
 header .sp { flex: 1; }
+header .tseg { display: inline-flex; background: #202327; border: 1px solid #4a5057; border-radius: 9px; padding: 2px; gap: 2px; }
+header .tseg button { background: transparent; border: 0; padding: 5px 10px; border-radius: 7px; font-weight: 600; }
+header .tseg button[aria-checked="true"] { background: var(--gold); color: #ffffff; }
 .tb { display: flex; gap: 6px; flex-wrap: wrap; }
 button { font: 500 13px/1 var(--f-ui); border-radius: 6px; padding: 8px 11px; cursor: pointer; border: 1px solid transparent; }
 button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
@@ -58,22 +62,49 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .pop .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--field); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
 .pop .seg button { background: transparent; color: var(--ink); border: 0; padding: 7px 4px; display: grid; gap: 3px; justify-items: center; font-weight: 600; }
 .pop .seg button small { font-weight: 400; font-size: 10.5px; color: var(--muted); }
-.pop .seg button[aria-checked="true"] { background: var(--gold); color: #1f1b17; }
-.pop .seg button[aria-checked="true"] small { color: #3a3026; }
-.pop button.wide { width: 100%; padding: 10px; background: var(--gold); color: #1f1b17; border-color: var(--gold); font-weight: 600; }
+.pop .seg button[aria-checked="true"] { background: var(--gold); color: #ffffff; }
+.pop .seg button[aria-checked="true"] small { color: #dce7fb; }
+.pop button.wide { width: 100%; padding: 10px; background: var(--gold); color: #ffffff; border-color: var(--gold); font-weight: 600; }
 .pop button.it { background: transparent; color: var(--ink); border: 1px solid var(--line); text-align: left; display: grid; gap: 3px; padding: 9px 10px; }
 .pop button.it:hover { background: var(--field); }
 .pop button.it small { color: var(--muted); font-size: 11.5px; font-weight: 400; }
 .pick { display: flex; gap: 6px; align-items: center; }
-.pick input[type=color] { width: 40px; height: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--line, #d8d2c6); background: #fff; cursor: pointer; flex: none; }
+.pick input[type=color] { width: 40px; height: 34px; padding: 2px; border-radius: 8px; border: 1px solid var(--line, #d5d9de); background: #fff; cursor: pointer; flex: none; }
 .pick input[type=text] { flex: 1; min-width: 0; font-family: ui-monospace, monospace; }
-header button { background: #4a433d; color: #f4efe6; border-color: #5d554d; }
-header button:hover:not(:disabled) { background: #5a5148; }
-header button.pri { background: var(--gold); color: #1f1b17; border-color: var(--gold); font-weight: 600; }
+header button { background: #3a3f45; color: #f2f4f6; border-color: #4a5057; }
+header button:hover:not(:disabled) { background: #454b52; }
+header button.pri { background: var(--gold); color: #ffffff; border-color: var(--gold); font-weight: 600; }
 button:disabled { opacity: .45; cursor: default; }
 main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; }
 #stage { position: relative; min-width: 0; min-height: 0; }
 #stage iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--desk); }
+#gClr { position: absolute; right: 14px; top: 24px; z-index: 6; display: flex; align-items: center; gap: 6px; padding: 5px 9px 5px 7px; background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+#gClr svg { width: 26px; height: 18px; } #gClr:hover { border-color: var(--mark); color: var(--mark); }
+#ribbon[hidden] { display: none; }
+#ribbon { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, max-content)); gap: 18px 34px; align-items: start; background: var(--paper); border-bottom: 1px solid var(--line); box-shadow: 0 6px 14px -10px rgba(0,0,0,.35); padding: 16px 24px 12px; max-height: 46vh; overflow-y: auto; }
+#ribbon .rg { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 8px; padding: 0; border: 0; }
+#ribbon .rg > .rl { font: 600 10.5px/1 var(--f-cap); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#ribbon .rc { display: inline-flex; align-items: stretch; gap: 0; }
+#ribbon .rc button { min-width: 38px; height: 32px; padding: 0 12px; background: var(--field); color: var(--ink); border: 1px solid var(--line); margin-left: -1px; border-radius: 0; font: 600 12.5px/1 var(--f-ui); display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+#ribbon .rc button:first-child { border-radius: 7px 0 0 7px; margin-left: 0; }
+#ribbon .rc button:last-child { border-radius: 0 7px 7px 0; }
+#ribbon .rc button:only-child { border-radius: 7px; }
+#ribbon .rc button:hover { background: #fff; }
+#ribbon .rc button.on { background: var(--brand); color: #f2f4f6; border-color: var(--brand); z-index: 1; position: relative; }
+#ribbon .rc button svg { width: 34px; height: 16px; flex: none; }
+#ribbon .rc button.sv { background: var(--gold); border-color: var(--gold); color: #ffffff; padding: 0 20px; border-radius: 7px; }
+#ribbon .rc button.ca { margin-left: 8px; border-radius: 7px; }
+#ribbon .fdl { display: flex; flex-wrap: wrap; gap: 8px 14px; }
+#ribbon .fdi { display: inline-flex; align-items: center; gap: 6px; background: var(--field); border: 1px solid var(--line); border-radius: 7px; padding: 3px 4px 3px 10px; font: 600 12px/1 var(--f-ui); }
+#ribbon .fdi input[type=color] { width: 30px; height: 24px; margin: 0; }
+#ribbon .fdi button { height: 24px; width: 24px; border: 0; background: transparent; color: var(--muted); font-size: 16px; }
+#ribbon .rfoot { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 2px; }
+#ribbon .rfoot button { height: 34px; padding: 0 22px; border-radius: 7px; font: 600 13px/1 var(--f-ui); border: 1px solid var(--line); background: var(--field); color: var(--ink); }
+#ribbon .rfoot button.sv { background: var(--gold); border-color: var(--gold); color: #ffffff; }
+#ribbon select, #ribbon input[type=color] { height: 32px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 7px; font: 600 12.5px/1 var(--f-ui); padding: 0 8px; }
+#ribbon input[type=color] { width: 40px; padding: 2px; margin-left: 8px; }
+#ribbon input[type=color] { width: 30px; padding: 1px; }
+@media (max-width: 760px) { #ribbon { display: none; } }
 #stage iframe.wait { visibility: hidden; }
 #busy { position: absolute; left: 12px; bottom: 12px; font-size: 12px; color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; }
 aside { background: var(--paper); border-left: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
@@ -94,7 +125,7 @@ input, select { font: 500 14px var(--f-ui); color: var(--ink); background: var(-
 .help { font-size: 12.5px; color: var(--muted); margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
 kbd { font: 600 11px var(--f-ui); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; color: var(--ink); }
 #status { font-size: 12.5px; color: var(--muted); margin: 0; min-height: 1.4em; }
-#confirm { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: #f4efe6; }
+#confirm { display: flex; gap: 6px; align-items: center; font-size: 12.5px; color: #f2f4f6; }
 .lib { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 .lib button { background: var(--field); color: var(--ink); border-color: var(--line); text-align: left; padding: 7px 9px; font-size: 12.5px; line-height: 1.2; }
 .lib button small { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; font-variant-numeric: tabular-nums; }
@@ -106,7 +137,7 @@ kbd { font: 600 11px var(--f-ui); border: 1px solid var(--line); border-bottom-w
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
 .seg button { border: 0; border-radius: 0; background: var(--field); color: var(--muted); padding: 7px 4px; font-size: 12px; }
 .seg button + button { border-left: 1px solid var(--line); }
-.seg button[aria-pressed="true"] { background: var(--brand); color: #f4efe6; }
+.seg button[aria-pressed="true"] { background: var(--brand); color: #f2f4f6; }
 .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); vertical-align: -2px; margin-right: 6px; }
 .sub-cap { font-size: 12px; color: var(--muted); margin: 10px 0 6px; }
 #hint { font-size: 12.5px; color: var(--mark); margin: 8px 0 0; min-height: 1.3em; }
@@ -144,23 +175,335 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   aside { border-left: 0; border-top: 1px solid var(--line); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+#v3 { position: fixed; inset: 0; z-index: 60; display: grid; grid-template-columns: 1fr 340px; background: #2a2622; }
+#v3[hidden] { display: none; }
+#v3stage { display: grid; place-items: center; min-width: 0; min-height: 0; overflow: hidden; }
+#v3canvas { display: block; box-shadow: 0 6px 30px rgba(0,0,0,.45); cursor: grab; touch-action: none; background: #e8ecef; }
+#v3side { background: var(--paper, #f4efe6); color: var(--ink); padding: 12px 14px 18px; overflow: auto; display: grid; gap: 7px; align-content: start; font: 13px/1.35 var(--f-ui); }
+#v3side .v3h { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+#v3side .v3h button { border: 0; background: transparent; font-size: 18px; cursor: pointer; }
+#v3views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+#v3views button, #v3side .v3b { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 6px 4px; cursor: pointer; font: inherit; font-size: 12px; }
+#v3views button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: #1f1b17; font-weight: 600; }
+#v3side .v3b.pri { background: var(--gold); border-color: var(--gold); font-weight: 600; }
+#v3side label { display: grid; gap: 3px; font-size: 12px; color: var(--muted); }
+#v3side label.v3chk { display: flex; flex-direction: row; gap: 6px; align-items: center; color: var(--ink); }
+#v3side select, #v3side input[type=number] { padding: 6px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font: inherit; }
+#v3prompt { width: 100%; box-sizing: border-box; font: 12px/1.4 ui-monospace, monospace; padding: 8px; border: 1px solid var(--line); border-radius: 7px; resize: vertical; }
+#v3side .v3row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+#v3side .v3chk input { width: auto; flex: none; margin: 0; }
+#v3side .pnote, #v3side .pcap { margin: 4px 0 0; }
+#v3side { color-scheme: light; background: #f4efe6; color: #2a2622; --ink: #2a2622; --muted: #6f675e; --line: #d3cdc2; }
+#v3side button, #v3side select, #v3side input, #v3side textarea { color: #2a2622; }
+#v3side .v3b.pri, #v3views button[aria-pressed="true"] { color: #1f1b17; }
+#v3stage .v3msg { color: #fff; }
+@media (max-width: 800px) { #v3 { grid-template-columns: 1fr; grid-template-rows: 45vh 1fr; } }
+
+/* === Noformējuma pārskatīšana: plakans, blīvs, CAD līdzīgs izskats ===
+   Princips: viena akcenta krāsa tikai primārajai darbībai un izvēlei; 1px līnijas
+   nevis ēnas un apaļi stūri; mazi stūru rādiusi (3 px); ciparu tabulārā līdzināšana. */
+:root {
+  --r: 3px;
+  --gold: #2266d8;           /* tumšāks, lai teksts uz tā un uz papīra ir lasāms */
+  --accent: #2a2e33;
+  --paper: #f4f5f7; --desk: #c3c8ce; --line: #d5d9de; --field: #fff;
+}
+body { font-size: 13px; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+header { gap: 0; padding-block: 0; min-height: 44px; border-bottom: 1px solid #16181b; flex-wrap: nowrap; }
+header .mark { font-size: 12px; letter-spacing: .24em; color: #5b9bf8; padding-right: 14px; margin-right: 14px; border-right: 1px solid #454b52; line-height: 44px; }
+header h1 { font-size: 15px; font-weight: 600; letter-spacing: 0; }
+header .tag { border: 0; border-radius: 0; padding: 0 0 0 12px; margin-left: 12px; border-left: 1px solid #454b52; color: #9aa1a9; font-size: 12px; }
+.tb { gap: 0; flex-wrap: nowrap; align-items: center; }
+button { border-radius: var(--r); padding: 7px 10px; font-size: 12.5px; }
+header .tb > button, header .tb > .expw > button { background: transparent; border-color: transparent; color: #e8ebee; border-radius: var(--r); margin-right: 2px; }
+header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: #3a3f45; }
+header .tb > #bFit { margin-left: 8px; padding-left: 12px; border-left: 1px solid #454b52; border-radius: 0 var(--r) var(--r) 0; }
+header .tb > #b3d { margin-left: 8px; padding-left: 12px; border-left: 1px solid #454b52; border-radius: 0 var(--r) var(--r) 0; }
+header button.pri { background: #e8ebee; color: #ffffff; border-color: #e8ebee; margin-left: 10px; padding: 7px 16px; }
+header button.pri:hover:not(:disabled) { background: #fff; }
+.pop { border-radius: 4px; box-shadow: 0 4px 16px rgba(0,0,0,.18); border-color: #bcc2c9; }
+.pop input[type=text], .pop .fg input { border-radius: var(--r); }
+.pop .seg { border-radius: var(--r); padding: 2px; }
+.pop .seg button { border-radius: 2px; }
+.pop .seg button[aria-checked="true"], .pop button.wide { background: var(--accent); color: #f2f4f6; border-color: var(--accent); }
+.pop .seg button[aria-checked="true"] small { color: #dce7fb; }
+.pop button.it { border-radius: var(--r); }
+.pick input[type=color] { border-radius: var(--r); }
+main { grid-template-columns: 1fr 320px; }
+aside { border-left: 1px solid #bcc2c9; }
+.cap, .pop .pcap { font: 600 11px/1 var(--f-ui); letter-spacing: .08em; color: var(--muted); }
+.cap { margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+input, select { border-radius: var(--r); padding: 5px 7px; font-size: 13px; }
+input:hover, select:hover { border-color: #a9b0b8; }
+.selcard { background: var(--paper); border-bottom: 1px solid #bcc2c9; }
+.selcard .sel-name { font-size: 15px; }
+.selcard .sel-name::before { border-radius: 0; width: 6px; height: 6px; }
+.selcard .empty::before { content: none; }
+.selcard .empty { font-size: 12.5px; }
+.tabs { padding-top: 0; gap: 0; border-bottom: 1px solid #bcc2c9; }
+.tabs button { font-size: 12.5px; padding: 11px 4px 10px; border-bottom-width: 2px; }
+.tabs button[aria-selected="true"] { border-bottom-color: var(--accent); }
+.badge { border-radius: 2px; min-width: 16px; line-height: 15px; padding: 0 4px; }
+.lib { gap: 4px; }
+.lib button { border-radius: var(--r); padding: 6px 8px; grid-template-columns: 30px 1fr; column-gap: 8px; background: var(--field); }
+.lib button svg { width: 30px; height: 24px; }
+.lib button:hover { border-color: var(--accent); background: #f7f9fb; }
+.lib button.on { border-color: var(--mark); box-shadow: inset 2px 0 0 var(--mark); background: #fff7f2; }
+.row button { border-radius: var(--r); }
+.seg { border-radius: var(--r); }
+.seg button[aria-pressed="true"] { background: var(--accent); }
+.group { border-radius: var(--r); background: transparent; }
+.savebar { background: var(--paper); border-top: 1px solid #bcc2c9; }
+#check li { border-left-width: 2px; }
+kbd { border-radius: 2px; border-bottom-width: 1px; background: var(--field); }
+#busy { border-radius: var(--r); }
+#v3side .v3b, #v3views button, #v3side select, #v3side input[type=number], #v3prompt { border-radius: var(--r); }
+#v3views button[aria-pressed="true"], #v3side .v3b.pri { background: var(--accent); border-color: var(--accent); color: #f4efe6; }
+#v3canvas { box-shadow: none; outline: 1px solid #4a433d; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent: #cfd5dc; --paper: #23262a; --desk: #141619; --line: #383d43; --field: #2c3035; --gold: #5b9bf8; }
+  :root:not([data-theme="light"]) .pop .seg button[aria-checked="true"], :root:not([data-theme="light"]) .pop button.wide, :root:not([data-theme="light"]) .seg button[aria-pressed="true"] { color: #ffffff } }
+@media (max-width: 760px) { main { grid-template-columns: 1fr; } header { flex-wrap: wrap; } .tb { flex-wrap: wrap; } }
+.hconf { display: grid; gap: 6px; margin-top: 4px; }
+.hconf button { background: var(--field); color: var(--ink); border-color: var(--line); text-align: left; }
+
+/* === Telefons: rasējums gandrīz visā ekrānā, apakšā izvelkams panelis === */
+@media (max-width: 760px) {
+  html, body { height: 100dvh; }
+  body { overflow: hidden; }
+  header { min-height: 0; padding-block: 4px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; gap: 6px; }
+  header::-webkit-scrollbar { display: none; }
+  header .mark, header .tag, header .sp { display: none; }
+  header h1 { font-size: 14px; white-space: nowrap; flex: none; padding-right: 8px; }
+  .tb { flex-wrap: nowrap; flex: none; }
+  header .tb > button, header .tb > .expw > button { white-space: nowrap; padding: 10px 10px; min-height: 40px; }
+  header .tb > #bFit, header .tb > #b3d { margin-left: 4px; padding-left: 10px; }
+  header button.pri { margin-left: 6px; position: sticky; right: 0; box-shadow: -10px 0 8px -4px var(--brand); }
+  .pop { position: fixed; left: 8px; right: 8px; top: 52px; width: auto; max-width: none; max-height: calc(100dvh - 64px); overflow: auto; }
+  #tbp { width: auto; max-height: calc(100dvh - 64px); }
+  main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; min-height: 0; }
+  aside { border-left: 0; border-top: 1px solid #bcc2c9; max-height: 46dvh; padding-right: 0; }
+  aside.shut { max-height: none; }
+  aside.shut .tabpanes { display: none; }
+  .selcard { padding-top: 8px; padding-bottom: 8px; }
+  .selcard .empty { font-size: 12px; }
+  .tabs button { padding: 12px 4px 11px; font-size: 14px; }
+  .tabs button[aria-selected="true"]::after { content: ""; }
+  .savebar { padding-top: 6px; padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px)); }
+  #status { font-size: 12px; min-height: 0; }
+  input, select { font-size: 16px; padding: 8px 9px; }
+  .lib button { padding: 8px 8px; min-height: 44px; }
+  .row button, .seg button { min-height: 40px; }
+  #v3 { grid-template-columns: 1fr; grid-template-rows: 40dvh 1fr; }
+  #busy { bottom: 8px; left: 8px; }
+}
+
+/* ---- CAD izkārtojums: rīku josla, statusa rinda ---- */
+main { grid-template-columns: 44px 1fr 320px; }
+#rail { background: var(--paper); border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; }
+#rail button { width: 36px; height: 36px; padding: 0; background: transparent; border: 1px solid transparent; border-radius: 3px; color: var(--ink); display: grid; place-items: center; position: relative; }
+#rail button svg { width: 26px; height: 20px; }
+#rail button:hover { background: var(--field); border-color: var(--line); }
+#rail button.on { background: var(--brand); color: #f2f4f6; }
+#rail button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 9px/1 var(--f-cap); color: var(--muted); }
+#rail button.on kbd { color: #cfd5dc; }
+#rail hr { width: 24px; border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
+#rail .sp { flex: 1; }
+#sbar { display: flex; gap: 16px; align-items: center; background: var(--paper); border-top: 1px solid var(--line); padding: 3px 12px; font-size: 12px; color: var(--muted); min-height: 24px; }
+#sbar b { color: var(--ink); font-weight: 600; }
+#sbar .sp { flex: 1; }
+#sbar .dirty { color: var(--mark); }
+aside #hint, aside .savebar #status { display: none; }
+#libOpen small { display: none; }
+#keysPane .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--line); }
+#keysPane .kr button, #keysPane .ft button { min-width: 72px; padding: 4px 8px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); }
+#keysPane .kr button.cap { border-color: var(--mark); color: var(--mark); }
+#keysPane .ft { margin-top: 10px; } #keysPane .kh { color: var(--muted); font-size: 12px; }
+#keys { position: fixed; left: 52px; bottom: 34px; z-index: 60; width: 300px; max-height: 70vh; overflow: auto; background: var(--paper); border: 1px solid var(--line); padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+#keys h3 { margin: 0 0 6px; font: 600 11px/1 var(--f-cap); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+#keys .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 3px 0; font-size: 13px; }
+#keys .kr button { min-width: 72px; padding: 4px 8px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); }
+#keys .kr button.cap { border-color: var(--mark); color: var(--mark); }
+#keys .ft { display: flex; justify-content: space-between; margin-top: 8px; }
+#keys .ft button { background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; padding: 5px 9px; }
+@media (max-width: 760px) { #rail, #sbar { display: none; } main { grid-template-columns: 1fr; } }
+
+#libFurn { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#libFurn .grp { grid-column: 1 / -1; margin: 10px 0 2px; font: 600 11px/1 var(--f-cap); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+#libFurn button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; gap: 2px; border-radius: 3px; font-size: 11.5px; }
+#libFurn button svg { grid-row: auto; width: 36px; height: 26px; }
+#libFurn button small { grid-column: 1; margin: 0; font-size: 10px; }
+#libOpenings { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#libOpenings button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; font-size: 11.5px; gap: 2px; border-radius: 3px; }
+#libOpenings button svg { grid-row: auto; width: 36px; height: 26px; }
+#libOpenings small { display: none; }
+#libOpen { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+#libOpen button { display: grid; grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 6px 2px 5px; font-size: 11.5px; gap: 2px; border-radius: 3px; }
+#libOpen button svg { grid-row: auto; width: 36px; height: 26px; }
+#libOpen .wide { grid-column: 1 / -1; display: flex; justify-content: center; gap: 8px; }
+.caprow .cap, .cap { font-size: 11px; }
+
+/* === Neitrāla CAD palete (2026-11): grafīts + viens zils akcents ===
+   Brūnais/zelta tonis noņemts no saskarnes: tas konkurēja ar MM rakstlaukumu pašā rasējumā.
+   Zils = aktīvais rīks, izvēle saskarnē, galvenā darbība. Oranžs (--mark) = izvēlētais elements rasējumā. */
+:root {
+  --brand: #2a2e33; --accent: #2266d8; --gold: #2266d8; --acc-ink: #ffffff;
+  --acc-soft: #e4edfc; --acc-line: #9dbcf0;
+  --paper: #f4f5f7; --desk: #c3c8ce; --line: #d9dde2; --line2: #bcc2c9; --field: #ffffff;
+  --ink: #1d2125; --muted: #646b73; --hover: #eceef1;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --brand: #1b1e21; --accent: #3b7ddd; --gold: #3b7ddd; --acc-ink: #ffffff; --acc-soft: #1f3354; --acc-line: #3b5f99;
+  --paper: #23262a; --desk: #141619; --line: #353a40; --line2: #454b52; --field: #2c3035; --ink: #e6e9ec; --muted: #9aa1a9; --hover: #30353b; } }
+:root[data-theme="dark"] {
+  --brand: #1b1e21; --accent: #3b7ddd; --gold: #3b7ddd; --acc-ink: #ffffff; --acc-soft: #1f3354; --acc-line: #3b5f99;
+  --paper: #23262a; --desk: #141619; --line: #353a40; --line2: #454b52; --field: #2c3035; --ink: #e6e9ec; --muted: #9aa1a9; --hover: #30353b; }
+html, body { margin: 0; }
+:root { accent-color: var(--accent); }
+body { background: var(--desk); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline-color: var(--accent); }
+input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--acc-soft); }
+
+/* augšējā josla */
+header { background: var(--brand); min-height: 42px; border-bottom: 1px solid #111316; }
+header .mark { color: #8f979f; border-right-color: #3d4248; line-height: 42px; }
+header h1 { color: #f2f4f6; }
+header .tag { color: #8f979f; border-left-color: #3d4248; }
+header .tb > button, header .tb > .expw > button { color: #d7dce1; }
+header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: #3a3f45; color: #fff; }
+header .tb > #bFit, header .tb > #b3d { border-left-color: #3d4248; }
+header .tb > button.ico { width: 34px; height: 30px; padding: 0; display: inline-grid; place-items: center; }
+header .tb > button.ico svg { width: 18px; height: 18px; }
+header .tb > #bFit.ico { width: 46px; }
+header .tseg { background: #1f2226; border-color: #3d4248; border-radius: 4px; margin-left: 8px; }
+header .tseg button { color: #b9c0c7; border-radius: 3px; padding: 5px 10px; }
+header .tseg button:hover { color: #fff; }
+header .tseg button[aria-checked="true"] { background: #4a5057; color: #fff; }
+header button.pri { background: var(--accent); color: var(--acc-ink); border-color: var(--accent); }
+header button.pri:hover:not(:disabled) { background: #1a57bf; }
+#confirm { color: #f2f4f6; }
+
+/* izvēršamie paneļi */
+.pop { border-color: var(--line2); }
+.pop .seg button[aria-checked="true"], .pop button.wide { background: var(--accent); color: var(--acc-ink); border-color: var(--accent); }
+.pop .seg button[aria-checked="true"] small { color: #dce7fb; }
+.pop button.it:hover, .pop .chk label:hover { background: var(--hover); }
+
+/* noformējuma panelis */
+#ribbon { background: var(--paper); border-bottom: 1px solid var(--line2); box-shadow: 0 4px 10px -8px rgba(0,0,0,.35); padding: 12px 20px 10px; gap: 14px 28px; }
+#ribbon .rc button { height: 30px; border-color: var(--line2); }
+#ribbon .rc button:first-child { border-radius: 3px 0 0 3px; } #ribbon .rc button:last-child { border-radius: 0 3px 3px 0; } #ribbon .rc button:only-child { border-radius: 3px; }
+#ribbon .rc button:hover { background: var(--hover); }
+#ribbon .rc button.on { background: var(--acc-soft); color: var(--accent); border-color: var(--accent); }
+#ribbon .rc button.sv, #ribbon .rfoot button.sv { background: var(--accent); border-color: var(--accent); color: var(--acc-ink); }
+#ribbon .rfoot { padding-top: 10px; } #ribbon .rfoot button { height: 30px; border-radius: 3px; border-color: var(--line2); }
+#ribbon select, #ribbon input[type=color], #ribbon .fdi { border-radius: 3px; border-color: var(--line2); }
+
+/* kreisā rīku josla */
+main { grid-template-columns: 48px 1fr 320px; }
+#rail { background: var(--paper); border-right: 1px solid var(--line2); gap: 3px; padding: 6px 0; }
+#rail button { width: 40px; height: 40px; border-radius: 3px; color: var(--ink); }
+#rail button svg { width: 24px; height: 18px; }
+#rail button:hover { background: var(--hover); border-color: transparent; }
+#rail button.on { background: var(--acc-soft); color: var(--accent); border-color: var(--acc-line); }
+#rail button kbd { right: 2px; bottom: 2px; border: 0; background: none; padding: 0; font: 600 9px/1 var(--f-ui); color: #8a9199; }
+#rail button.on kbd { color: var(--accent); }
+#rail hr { width: 28px; border-top-color: var(--line2); }
+
+/* labā josla */
+aside { border-left: 1px solid var(--line2); }
+.selcard { background: var(--paper); border-bottom: 1px solid var(--line2); }
+.tabs { background: var(--paper); border-bottom: 1px solid var(--line2); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.cap { color: var(--muted); border-bottom-color: var(--line); }
+.seg { border-color: var(--line2); }
+.seg button[aria-pressed="true"] { background: var(--acc-soft); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.lib button { border-color: var(--line); }
+.lib button:hover { border-color: var(--acc-line); background: var(--hover); }
+.lib button svg { color: var(--ink); opacity: .85; }
+.lib button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--acc-soft); }
+.lib button.on svg { color: var(--accent); opacity: 1; }
+.group { border-color: var(--line); }
+.savebar { border-top-color: var(--line2); }
+input:hover, select:hover { border-color: var(--line2); }
+#gClr:hover { border-color: var(--accent); color: var(--accent); }
+
+/* statusa rinda */
+#sbar { border-top: 1px solid var(--line2); min-height: 22px; font-size: 11.5px; }
+
+/* Māja: pīrāgu tabulas teksts kā pārējā panelī; pievienošanas pogas */
+.spec table { font: inherit; }
+button.add { background: var(--field); color: var(--ink); border: 1px dashed var(--line2); border-radius: 3px; padding: 7px 10px; }
+button.add:hover { border-color: var(--accent); color: var(--accent); background: var(--acc-soft); }
+/* === Ikonu un saskarnes noslīpēšana (2026-11-09) === */
+#rail button svg { width: 28px; height: 20px; }
+#rail button { position: relative; transition: background .12s, color .12s; }
+#rail button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lib button svg { fill: color-mix(in srgb, currentColor 9%, transparent); }
+.lib button.on svg { fill: color-mix(in srgb, var(--accent) 16%, transparent); }
+.lib button svg { stroke-width: 1.5; }
+#libFurn .grp, .cap { text-transform: none; font-size: 11.5px; letter-spacing: .02em; }
+header .tb > button.ico svg { width: 20px; height: 20px; }
+header .tb > button.pri { display: inline-flex; align-items: center; gap: 7px; }
+header .tb > button.pri::before { content: ""; width: 14px; height: 14px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2.5 2.5h8l3 3v8h-11z'/%3E%3Cpath d='M5 2.5v4h5v-4M5 13.5v-4h6v4'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2.5 2.5h8l3 3v8h-11z'/%3E%3Cpath d='M5 2.5v4h5v-4M5 13.5v-4h6v4'/%3E%3C/svg%3E") center/contain no-repeat; }
+.tabs button { transition: color .12s, border-color .12s; }
+/* Impeccable (operate): kontrasts, stāvokļi, pārlūka virsmas */
+#rail button kbd, #rail button.on kbd { color: var(--muted); }
+#rail button.on kbd { color: var(--accent); }
+#check li { border-left: 0; padding-left: 16px; position: relative; }
+#check li::before { content: ""; position: absolute; left: 2px; top: .5em; width: 7px; height: 7px; border-radius: 50%; background: var(--bad); }
+#check li.ok::before { background: var(--ok); }
+::selection { background: var(--acc-soft); color: var(--ink); }
+input, select { caret-color: var(--accent); }
+aside, .pop, #keys { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+button:active:not(:disabled) { transform: translateY(1px); }
+#rail button:active:not(:disabled), .lib button:active { background: var(--acc-soft); }
+button:disabled, input:disabled, select:disabled { cursor: not-allowed; }
+.lib button:focus-visible, #rail button:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (prefers-reduced-motion: reduce) { #rail button, .tabs button { transition: none; } }
+
+/* === Impeccable kritika (2026-11-09): kontrasts, minimālais teksta izmērs, galvenes ikonas, grupēšana === */
+:root { --accent-fill: #2266d8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent-fill: #2f6bcb; } }
+:root[data-theme="dark"] { --accent-fill: #2f6bcb; }
+header button.pri, .pop button.wide, .pop .seg button[aria-checked="true"], #ribbon .rc button.sv, #ribbon .rfoot button.sv, header .tseg button[aria-checked="true"] { background: var(--accent-fill); border-color: var(--accent-fill); }
+header .tseg button[aria-checked="true"] { color: #fff; }
+header button.pri:hover:not(:disabled) { background: #2a5fc0; }
+header .tb { align-items: center; gap: 4px; }
+header .tb > button:not(.ico):not(.pri), header .tb > .expw > button { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; }
+header .bi { width: 16px; height: 16px; flex: none; opacity: .85; }
+header .tb > button.pri { height: 30px; padding: 0 14px; font-weight: 600; margin-left: 6px; }
+header .tseg { margin-left: 6px; margin-right: 2px; }
+header .tseg button { height: 26px; padding: 0 11px; font-weight: 600; letter-spacing: .02em; }
+header .tb > #bReset { margin-left: 4px; }
+header .tb > #bFit.ico { width: 34px; }
+header .tb > #bFit { border-left: 0; }
+header .tb > #bRedo { margin-right: 6px; }
+header .tb > #bRib { margin-left: 6px; padding-left: 11px; border-left: 1px solid #3d4248; border-radius: 0 4px 4px 0; }
+header .tb > #b3d { border-left: 0; }
+/* minimālais funkcionālā teksta izmērs 11px */
+.pop .seg small, .pop .seg button small, #libFurn button small, #ribbon .rl, #ribbon .rg > .rl, .pop .pcap, #busy, .sel-sub { font-size: 11px; }
+.pop .pnote, .pop .fg label, #sbar, #status, .lib button small, #libFurn button, #libOpenings button, #libOpen button, .help, #check, #check li { font-size: 12px; }
+#rail button kbd { font-size: 10px; right: 3px; bottom: 3px; }
 </style>
 
 <header>
-  <span class="mark">MM HOMES</span>
+  <span class="mark">SBE</span>
   <h1 id="hName">__MM_NAME__</h1>
-  <span class="tag" id="hTag">Skices labošana · tests</span>
+  <span class="tag" id="hTag">Skices labošana</span>
   <span class="sp"></span>
   <div class="tb">
-    <button id="bUndo" type="button" title="Ctrl+Z" disabled>Atsaukt</button>
-    <button id="bRedo" type="button" title="Ctrl+Y" disabled>Atkārtot</button>
-    <button id="bFit" type="button">Visa lapa</button>
-    <button id="bReset" type="button">Atiestatīt</button>
+    <button id="bUndo" class="ico" type="button" title="Atsaukt (Ctrl+Z)" aria-label="Atsaukt" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 5 3.5 9l4 4"/><path d="M4 9h8a4.5 4.5 0 0 1 0 9h-2"/></svg></button>
+    <button id="bRedo" class="ico" type="button" title="Atkārtot (Ctrl+Y)" aria-label="Atkārtot" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.5 5 4 4-4 4"/><path d="M16 9H8a4.5 4.5 0 0 0 0 9h2"/></svg></button>
+    <button id="bFit" class="ico" type="button" title="Rādīt visu lapu" aria-label="Visa lapa"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/><rect x="6.5" y="6.5" width="7" height="7" rx=".5"/></svg></button>
+    <button id="bReset" type="button" title="Atgriezt bota izveidoto versiju"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3.5v3.5h3.5"/></svg><span>Atiestatīt</span></button>
     <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
-    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false">Rakstlaukums ▾</button>
+    <button id="bRib" type="button" aria-expanded="false" title="Sienu, līniju un teksta noformējums"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16l2.5-.5L16 6l-2-2L4.5 13.5z"/><path d="M12 6l2 2"/></svg><span>Noformējums</span></button>
+    <span class="tseg modeseg" id="topMode" role="radiogroup" aria-label="Režīms"><button type="button" data-m="skice" role="radio">Skice</button><button type="button" data-m="ar" role="radio">AR</button></span>
+    <span class="tseg" id="topLang" role="radiogroup" aria-label="Valoda"><button type="button" data-lg="lv" role="radio">LV</button><button type="button" data-lg="en" role="radio">EN</button></span>
+    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3.5" width="14" height="13" rx="1"/><path d="M12 3.5v13M12 11h5"/></svg><span>Rakstlaukums</span></button>
       <div id="tbp" class="pop" hidden role="dialog" aria-label="Rakstlaukums">
         <p class="pcap">Lapas</p>
-        <div class="seg seg2" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
+        <div class="seg seg2 modeseg" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
         <div id="arBox" class="arbox" hidden>
           <p class="pcap">AR lapas · numurē pēc kārtas</p>
           <div id="arParts" class="chk"></div>
@@ -174,7 +517,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <input id="tbFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden>
         <p class="pnote" id="tbNote">PNG, JPG vai SVG. Rakstlaukuma tumšais lauks paliek arī bez logo.</p>
       </div></span>
-    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false">Eksportēt ▾</button>
+    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"/><path d="M4 14v2.5h12V14"/></svg><span>Eksportēt</span></button>
       <div id="exp" class="pop" hidden role="dialog" aria-label="Eksports">
         <p class="pcap">PDF rasējums · A3</p>
         <div class="seg" role="radiogroup" aria-label="Kvalitāte">
@@ -188,30 +531,34 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
         <button type="button" class="it" id="bJson"><b>model.json</b><small>Modeļa dati botam</small></button>
       </div></span>
+    <button id="b3d" type="button" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 16.5 6v8L10 17.5 3.5 14V6z"/><path d="M3.5 6 10 9.5 16.5 6M10 9.5v8"/></svg><span>3D un Gemini</span></button>
     <button id="bSave" class="pri" type="button">Saglabāt</button>
   </div>
 </header>
+<div id="ribbon" role="toolbar" aria-label="Noformējums"></div>
 <main>
-  <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span></div>
+  <nav id="rail" aria-label="Rīki"></nav>
+  <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 40 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 2v24" stroke-dasharray="3 2"/><path d="M4 14h32" stroke-dasharray="3 2"/><circle cx="20" cy="14" r="5" fill="var(--paper)"/><path d="M17.5 11.5l5 5M22.5 11.5l-5 5"/></svg><span>Dzēst palīglīnijas</span></button></div>
   <aside>
     <section class="selcard" aria-live="polite">
-      <div id="panel"><p class="empty">Uzklikšķini uz loga, durvīm, mēbeles vai notekas rasējumā.</p></div>
+      <div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Jaunu logu, durvis vai mēbeli izvēlies no saraksta zemāk.</p></div>
     </section>
     <nav class="tabs" role="tablist" aria-label="Rīki">
       <button type="button" role="tab" data-tab="add" aria-selected="true">Pievienot</button>
       <button type="button" role="tab" data-tab="house" aria-selected="false">Māja</button>
       <button type="button" role="tab" data-tab="check" aria-selected="false">Pārbaude <span class="badge" id="nCheck" hidden></span></button>
+      <button type="button" role="tab" data-tab="keys" aria-selected="false">Taustiņi</button>
       <button type="button" role="tab" data-tab="help" aria-selected="false" aria-label="Palīdzība">?</button>
     </nav>
     <div class="tabpanes">
       <section data-pane="add">
-        <p class="cap">Atveres un mēri</p>
-        <div class="lib" id="libOpen"></div>
+        <p class="cap">Logi un durvis</p>
+        <div class="lib" id="libOpenings"></div>
+        <div class="lib" id="libOpen" hidden></div>
         <p id="hint"></p>
-        <div class="caprow"><p class="cap">Mēbeles</p></div>
+        <div class="caprow"><p class="cap">Mēbeles un kāpnes</p></div>
         <div class="seg" id="detail" role="group" aria-label="Mēbeļu detalizācija visai lapai"><button type="button" data-v="1" aria-pressed="false">Vienkāršs</button><button type="button" data-v="2" aria-pressed="true">Standarta</button><button type="button" data-v="3" aria-pressed="false">Detalizēts</button></div>
-        <p class="note">Detalizācija mainās visām mēbelēm lapā un jaunajām.</p>
-        <div class="lib" id="libFurn"></div>
+                <div class="lib" id="libFurn"></div>
       </section>
       <section data-pane="house" hidden>
         <div id="mats"></div>
@@ -219,6 +566,10 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       <section data-pane="check" hidden>
         <p class="cap">MM noteikumi</p>
         <ul id="check"><li class="ok">Gaida rasējumu…</li></ul>
+      </section>
+      <section data-pane="keys" hidden>
+        <p class="cap">Īsinājumtaustiņi</p>
+        <div id="keysPane"></div>
       </section>
       <section data-pane="help" hidden>
         <p class="cap">Kā lietot</p>
@@ -238,6 +589,10 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
         <li>Pievienot: izvēlies elementu, tad uzklikšķini vietā, kur to likt (logu uz ārsienas plānā vai fasādē, slīpo logu gala fasādē virs dzegas). <kbd>Esc</kbd> atceļ.</li>
         <li>Fasādē loga sānu malas maina platumu, augšējā un apakšējā mala augstumu. Rāmja profils paliek tas pats.</li>
         <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> pārvieto par 10 mm, ar <kbd>Shift</kbd> par 100 mm. <kbd>Delete</kbd> dzēš, <kbd>Ctrl</kbd>+<kbd>Z</kbd> atsauc.</li>
+        <li>Vairākus elementus atlasa ar <kbd>Shift</kbd>+klikšķi (logus, durvis, mēbeles vienā stāvā); vilkšana pārvieto visus kopā. Ar <kbd>Ctrl</kbd> turot vilkšanu elements (vai visa atlasītā grupa) tiek nokopēts. <kbd>Ctrl</kbd>+<kbd>C</kbd> un <kbd>Ctrl</kbd>+<kbd>V</kbd> kopē un iekopē, <kbd>Delete</kbd> dzēš visu grupu.</li>
+        <li>Mēbele pielīp sienai tikai pavisam tuvu. Ar <kbd>Alt</kbd> vilkšanas laikā pielipšanu un pagriešanu pie sienas izslēdz. <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> pārvieto mēbeli precīzi, bez pielipšanas un pagriešanas.</li>
+        <li>Logs un durvis, velkot gar sienu, pielīp telpas sienas vidum (rāda raustītu līniju). <kbd>Alt</kbd> to izslēdz.</li>
+        <li>Starpsiena: "Starpsiena", uzklikšķini sākumu pie sienas un beigas pie citas sienas. Siena pielīp citu sienu virsmām. Pilna siena sadala telpu divās. "Izgriezt sienu": divi klikšķi uz iekšējās sienas izgriež posmu (durvis tajā pazūd); divi klikšķi vienā vietā izgriež visu posmu.</li>
         <li>Mēri, atzīmes un eksplikācija pārrēķinās pēc katra labojuma.</li>
       </ul>
       </section>
@@ -247,10 +602,41 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
           </footer>
   </aside>
 </main>
+<div id="sbar"><span id="sbTool"></span><span class="sp"></span><span id="sbSave"></span></div>
+<div id="keys" hidden></div>
 
+<div id="v3" hidden role="dialog" aria-label="3D skats un Gemini">
+  <div id="v3stage"><canvas id="v3canvas" width="900" height="600"></canvas></div>
+  <aside id="v3side">
+    <div class="v3h"><b>3D un Gemini</b><button id="v3close" type="button" aria-label="Aizvērt">✕</button></div>
+    <p class="pcap">Skats (fotogrāfa kadrs)</p>
+    <div id="v3views"></div>
+    <label>Objektīvs<select id="v3lens"><option value="35">35 mm (plats, spēcīga perspektīva)</option><option value="50">50 mm</option><option value="85">85 mm (ieteicams)</option><option value="135">135 mm (saplacināts)</option></select></label>
+    <label class="v3chk"><input type="checkbox" id="v3free"> Brīvā kamera (virzienu un augstumu var mainīt)</label>
+    <button id="v3reset" type="button" class="v3b">Atiestatīt kadru</button>
+    <p class="pnote">Velc ar peli, lai pagrieztu. Ritenis tuvina un tālina.</p>
+    <p class="pcap">Terase</p>
+    <label class="v3chk"><input type="checkbox" id="v3tOn"> Rādīt terasi</label>
+    <div id="v3tBox" hidden>
+      <label>Fasāde<select id="v3tSide"><option value="south">Dienvidi (ieeja)</option><option value="north">Ziemeļi</option><option value="east">Austrumi</option><option value="west">Rietumi</option></select></label>
+      <label>Dziļums, mm<input id="v3tDepth" type="number" step="50" min="300"></label>
+      <label>Pagarinājums sākumā, mm<input id="v3tA" type="number" step="50" min="0"></label>
+      <label>Pagarinājums beigās, mm<input id="v3tB" type="number" step="50" min="0"></label>
+      <p class="pnote">Klikšķis uz fasādes 3D skatā piesprauž terasi pie tās.</p>
+    </div>
+    <p class="pcap">Prompts Gemini</p>
+    <label>Fasādes tonis<select id="v3tone"></select></label>
+    <label>Apkārtne<select id="v3atm"></select></label>
+    <textarea id="v3prompt" rows="9" spellcheck="false"></textarea>
+    <div class="v3row"><button id="v3copy" type="button" class="v3b pri">Kopēt promptu</button><button id="v3png" type="button" class="v3b">Lejupielādēt PNG</button></div>
+    <p class="pnote">Gemini: pievieno lejupielādēto PNG kā bildi un ielīmē promptu. PNG ir 2400×1600, 3:2.</p>
+  </aside>
+</div>
+<script>__MM_THREE__</script>
 <script>
+addEventListener("error", e => { try { let b = document.getElementById("errbar"); if (!b) { b = document.createElement("div"); b.id = "errbar"; b.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99;background:#b3261e;color:#fff;padding:6px 12px;font:12px/1.3 monospace"; document.body.appendChild(b); } b.textContent = "Kļūda: " + e.message + " (rinda " + e.lineno + ")"; } catch (_) {} });
 (function () {
-  const TONES = __MM_TONES__, TPL = __MM_TEMPLATE__, BASE = __MM_MODEL__, FRAME_JS = __MM_FRAME_JS__, MARK = "/*@@MM_BLOCKS@@*/";
+  const LAYERS0 = __MM_LAYERS__, TONES = __MM_TONES__, TPL = __MM_TEMPLATE__, BASE = __MM_MODEL__, FRAME_JS = __MM_FRAME_JS__, MARK = "/*@@MM_BLOCKS@@*/";
   const clone = o => JSON.parse(JSON.stringify(o));
   const $ = id => document.getElementById(id);
   // 2. stāva (mansarda) logu bāzes punkts: mansarda pārseguma paneļa augša = griesti + paneļa biezums (MM pīrāgs P1)
@@ -273,7 +659,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     const b = gwBase(n);
     (n.gableWins || []).forEach(g => { if (g.z0 < b) { const lw = n.loft && (n.loft.windows || []).find(w => gwMatch(g, w)); if (g.z1) g.z1 = +(g.z1 + b - g.z0).toFixed(1); g.z0 = b; if (lw) { lw.head = +((lw.head || b) + b - (lw.sill || 0)).toFixed(1); lw.sill = b; } } });
   }
-  let model = clone(BASE), undo = [], redo = [], sel = null, view = null, dirty = false, placeNext = false;
+  let model = clone(BASE), undo = [], redo = [], clip = null, sel = null, view = null, dirty = false, placeNext = false;
 
   // ---- the same model block build_model.py writes, plus a map from each furniture entry to its drawn shapes ----
   const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "entryInChain"];
@@ -303,6 +689,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     if (arOn(m) && !(m.sections && m.sections.length >= 2)) m = Object.assign({}, m, { sections: autoSections(m) });
     const blocks = revBlock(m, 100) + (m.loft ? revBlock(Object.assign({}, m, m.loft, { id: m.id + " mansards" }), 101) : "");
     let h = TPL.split(MARK).join(blocks);
+    h = h.replace("window.MM_LANG='lv'", "window.MM_LANG='" + ((m.projekts || {}).lang === "en" ? "en" : "lv") + "'");
     // roof eave and footprint can change when an outer wall moves
     if (m.jumts && m.jumts.eave) h = h.replace(/("roof":\s*\{[^}]*?"eave":\s*)[-\d.]+/, "$1" + m.jumts.eave);
     if (m.jumts && m.jumts.pitch) h = h.replace(/("roof":\s*\{[^}]*?"pitch":\s*)[-\d.]+/, "$1" + m.jumts.pitch);
@@ -310,23 +697,28 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     void withRoof;
     { // aplodu tonis un notekas no modeļa (materiāli)
       const P = m.projekts || {}, tk = TONES[P.tonis] ? P.tonis : "peleks", tn = TONES[tk], lg = P.logu_tonis || tn.logi || "RAL 7016";
-      const X = { ievade: m.ievade || P.ievade || {}, pitch: (m.jumts || {}).pitch || P.pitch, sienas_hex: P.sienas_hex || null, ...("modela_nosaukums" in P ? { modela_nosaukums: P.modela_nosaukums } : {}), logo: P.logo || null, arOn: arOn(m), arParts: arOn(m) ? AR_ALL.map(x => x[0]).filter(k => !(P.ar.off || []).includes(k)) : null, arTb: (P.ar && P.ar.tb) || {}, arData: (P.ar && P.ar.data) || {}, vejkaste: (m.jumts || {}).vejkaste !== false, palodzes: P.palodzes || null, aplodas: P.aplodas || null, notekas: P.notekas || {}, tonis: tk, tonis_lv: tn.lv, tonis_en: tn.en, tonis_sw: tn.sw, sturi: P.sturi_opc ? (P.sturi_opc === "nav" ? 0 : 90) : (tn.sturi || 0), sturi_opc: P.sturi_opc || null, sturi_hex: P.sturi_opc ? ({ balts: "#F2F0EA", melns: "#1d1d1d", tonis: tn.sw }[P.sturi_opc] || "#F2F0EA") : null, fascia: tn.vejmala === "balta", logi: lg, logi_hex: (RAL[lg] || [0, "#383E42"])[1] };
-      const ov = `;(function(){var P=AR.projekts=AR.projekts||{},X=${JSON.stringify(X)};for(var k in X)P[k]=X[k];AR.win=AR.win||{};AR.win.colorOut=X.logi;var tc=function(c){return c==="tonis"?X.tonis_sw:c};AR.win.casingColor=tc(X.aplodas)||X.logi;AR.win.sillColor=tc(X.palodzes);if(X.arOn){AR.parts=X.arParts;AR.tb=Object.assign({},AR.tb,X.arTb);AR.data=Object.assign({},AR.data,X.arData);AR.tb.logo=X.logo==="none"?"":(X.logo||window.MM_LOGO||"");}})();`;
+      const X = { ievade: m.ievade || P.ievade || {}, pitch: (m.jumts || {}).pitch || P.pitch, sienas_hex: P.sienas_hex || null, wall_style: P.wall_style || null, fdims: P.fdims || null, layer_marks: P.layer_marks || null, fonts: P.fonts || null, ...("modela_nosaukums" in P ? { modela_nosaukums: P.modela_nosaukums } : {}), logo: P.logo || null, arOn: arOn(m), arParts: arOn(m) ? AR_ALL.map(x => x[0]).filter(k => !(P.ar.off || []).includes(k)) : null, arTb: (P.ar && P.ar.tb) || {}, arData: (P.ar && P.ar.data) || {}, vejkaste: (m.jumts || {}).vejkaste !== false, palodzes: P.palodzes || null, aplodas: P.aplodas || null, notekas: P.notekas || {}, tonis: tk, tonis_lv: tn.lv, tonis_en: tn.en, tonis_sw: tn.sw, sturi: P.sturi_opc ? (P.sturi_opc === "nav" ? 0 : 90) : (tn.sturi || 0), sturi_opc: P.sturi_opc || null, sturi_hex: P.sturi_opc ? ({ balts: "#F2F0EA", melns: "#1d1d1d", tonis: tn.sw }[P.sturi_opc] || "#F2F0EA") : null, fascia: tn.vejmala === "balta", logi: lg, logi_hex: (RAL[lg] || [0, "#383E42"])[1] };
+      const ov = `;(function(){var P=AR.projekts=AR.projekts||{},X=${JSON.stringify(X)};for(var k in X)P[k]=X[k];var PL=${JSON.stringify(P.piragi_layers||null)};if(PL&&AR.layers)for(var lk in PL){if(AR.layers[lk])AR.layers[lk].layers=PL[lk];}var WT=${JSON.stringify((P.wall_types||[]).map(function(w){return{id:w.id,name:w.name,layers:w.layers}}))};if(AR.layers)WT.forEach(function(w){if(w.id&&w.layers)AR.layers[w.id]={name:w.name||w.id,layers:w.layers};});AR.win=AR.win||{};AR.win.colorOut=X.logi;var tc=function(c){return c==="tonis"?X.tonis_sw:c};AR.win.casingColor=tc(X.aplodas)||X.logi;AR.win.sillColor=tc(X.palodzes);if(X.arOn){AR.parts=X.arParts;AR.tb=Object.assign({},AR.tb,X.arTb);AR.data=Object.assign({},AR.data,X.arData);AR.tb.logo=X.logo==="none"?"":(X.logo||window.MM_LOGO||"");}})();`;
       if (tk !== ((BASE.projekts || {}).tonis || "peleks")) h = h.replace(/const CLAD_TEX = "data:image\/jpeg;base64,[^"]*";/, () => `const CLAD_TEX = "data:image/jpeg;base64,${tn.tex}";`);
       const a = h.indexOf("window.AR="), b = a < 0 ? -1 : h.indexOf("</" + "script>", a);
       if (b > 0) h = h.slice(0, b) + ov + h.slice(b);
       if (X.arOn) h = h.replace("window.MODEL_SHEET=true", "window.MODEL_SHEET=false").replace("@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}",
         "@page{size:420mm 297mm;margin:0} svg.a3{width:420mm!important;height:297mm!important;display:inline-block;vertical-align:top;margin:0 14mm 14mm 0} body{width:870mm}");
     }
+    if (edit || arView) { // galds aiz lapas: neitrāli pelēks, lapa balta ar vieglu ēnu (tikai ekrānā, PDF/druka nemainās)
+      const dk = (getComputedStyle(document.documentElement).getPropertyValue("--desk") || "#c3c8ce").trim();
+      const st = `<style>@media screen{html{background:${dk}!important}body{background:transparent!important}svg.a3{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 2px 10px rgba(0,0,0,.16)}}</style>`;
+      const i = h.lastIndexOf("</body>"); if (i > 0) h = h.slice(0, i) + st + h.slice(i);
+    }
     if (edit) {
-      const ed = JSON.stringify({ model: m, sel, place: placeNext, gwBase: gwBase(m) }).split("</").join("<\\/");
+      const ed = JSON.stringify({ model: m, sel, place: placeNext, gwBase: gwBase(m), clip }).split("</").join("<\\/");
       placeNext = false;
       const inj = `<script>window.MM_ED=${ed};window.MMZ_INIT=${JSON.stringify(view)};<\/script><script>${FRAME_JS.split("</").join("<\\/")}<\/script>`;
       const i = h.lastIndexOf("</body>");
       h = h.slice(0, i) + inj + h.slice(i);
     }
     if (arView) {
-      const inj = `<script>window.MMZ_INIT=${JSON.stringify(view)};addEventListener("load",function(){setTimeout(function(){parent.postMessage({mmEd:1,t:"ready",check:[]},"*")},120)});<\/script>`;
+      const inj = `<script>window.MMZ_INIT=${JSON.stringify(view)};window.MMZ_ON=function(){clearTimeout(window._vt);window._vt=setTimeout(function(){window.MMZ&&parent.postMessage({mmEd:1,t:"view",view:window.MMZ.get()},"*")},120)};addEventListener("load",function(){setTimeout(function(){parent.postMessage({mmEd:1,t:"ready",check:[]},"*")},120)});<\/script>`;
       const i = h.lastIndexOf("</body>");
       h = h.slice(0, i) + inj + h.slice(i);
     }
@@ -354,17 +746,21 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       try { nf.contentWindow.focus(); } catch (_) {}
       showCheck(d.check || []);
       if (placing) toFrame({ mmPlace: placing });
+      if (moveOn) toFrame({ mmMove: true });
       return;
     }
     if (!fromLive) return;
-    if (d.t === "sel") { sel = d.sel; panel(); }
+    if (d.t === "clip") { clip = d.clip; $("hint").textContent = "Nokopēts: " + d.n + " gab. Ctrl+V iekopē."; }
+    else if (d.t === "sel") { sel = d.sel; panel(); }
     else if (d.t === "view") view = d.view;
     else if (d.t === "edit") { if (d.resized) roofFix(d.model); sel = d.sel || sel; if (d.placed) endPlace(); if (d.place) placeNext = true; commit(d.model); }
     else if (d.t === "undo") doUndo();
     else if (d.t === "redo") doRedo();
     else if (d.t === "delete") del();
-    else if (d.t === "hint") $("hint").textContent = d.text;
+    else if (d.t === "hint") { $("hint").textContent = d.text; if (d.text) status(d.text); }
     else if (d.t === "placed") endPlace();
+    else if (d.t === "mvoff") { moveOn = false; railSync(); }
+    else if (d.t === "key" && d.k === "combo") { const a = ACTIONS.find(x => keyMap[x.id] === d.c); if (a) a.run(); }
     else if (d.t === "key" && d.k === "dim") startDim();
     else if (d.t === "key" && d.k === "guide") startGuide(d.o);
   });
@@ -375,7 +771,62 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   function doUndo() { if (!undo.length) return; redo.push(model); model = undo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function doRedo() { if (!redo.length) return; undo.push(model); model = redo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function check() { if (sel && !itemOf(model, sel)) sel = null; }
-  function buttons() { $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana · tests"; }
+  // ---- noformējuma josla (ribbon): sienu izskats un fonts, saglabājas projektā ----
+  var ribOpen = false, ribSnap = null;
+  const RIB_KEYS = ["wall_style", "sienas_hex", "fonts"];
+  function ribToggle(o) {
+    if (o && !ribOpen) { const P = model.projekts || {}; ribSnap = {}; RIB_KEYS.forEach(k => { ribSnap[k] = P[k] === undefined ? undefined : JSON.parse(JSON.stringify(P[k])); }); }
+    ribOpen = o; $("bRib").setAttribute("aria-expanded", String(o)); ribbon();
+  }
+  function ribCancel() { const n = clone(model); n.projekts = n.projekts || {}; RIB_KEYS.forEach(k => { if (ribSnap && ribSnap[k] !== undefined) n.projekts[k] = ribSnap[k]; else delete n.projekts[k]; }); ribOpen = false; $("bRib").setAttribute("aria-expanded", "false"); commit(n); }
+  function ribbon() {
+    const R = $("ribbon"); if (!R) return; R.textContent = ""; R.hidden = !ribOpen; if (!ribOpen) return;
+    const P = model.projekts || {}, WS = P.wall_style || {}, hx = P.sienas_hex || "";
+    const wsSet = (n, k, v) => { n.projekts = n.projekts || {}; const w = n.projekts.wall_style = n.projekts.wall_style || {}; if (v == null) delete w[k]; else w[k] = v; if (!Object.keys(w).length) delete n.projekts.wall_style; };
+    const grp = (lab, ...els) => { const g = document.createElement("div"); g.className = "rg"; const l = document.createElement("span"); l.className = "rl"; l.textContent = lab; const c = document.createElement("div"); c.className = "rc"; els.forEach(e => c.appendChild(e)); g.append(c, l); R.appendChild(g); return c; };
+    const btn = (html, title, on, fn) => { const b = document.createElement("button"); b.type = "button"; b.innerHTML = html; b.title = title; if (on) b.className = "on"; b.onclick = fn; return b; };
+    const mode = hx ? "krasa" : WS.hatch === 0 ? "tirs" : "piragi";
+    const setMode = v => { const n = clone(model); n.projekts = n.projekts || {}; delete n.projekts.sienas_hex; wsSet(n, "hatch", null); if (v === "krasa") n.projekts.sienas_hex = localStorage.getItem("mmWallHex") || "#5a5a5a"; else if (v === "tirs") wsSet(n, "hatch", 0); commit(n); };
+    const els = [btn("Šrafēts", "Sienas ar pīrāgu šrafējumu", mode === "piragi", () => setMode("piragi")), btn("Tīrs", "Sienas bez šrafējuma", mode === "tirs", () => setMode("tirs")), btn("Tonis", "Sienas aizliktas ar toni", mode === "krasa", () => setMode("krasa"))];
+    if (hx) { const c = document.createElement("input"); c.type = "color"; c.value = hx; c.title = "Sienu tonis"; c.onchange = () => { try { localStorage.setItem("mmWallHex", c.value); } catch (e) {} const n = clone(model); n.projekts.sienas_hex = c.value.toLowerCase(); commit(n); }; els.push(c); }
+    grp("Sienu aizpildījums", ...els);
+    const W = [[0, 1], [1, 2], [2, 3.5], [3, 6]], wb = k => W.map(([v, w]) => btn(`<svg viewBox="0 0 22 12"><path d="M1 6h20" stroke="currentColor" stroke-width="${w}"/></svg>`, ["Tieva", "Plāna", "Vidēja", "Bieza"][v], (WS[k] == null ? 3 : WS[k]) === v, () => { const n = clone(model); wsSet(n, k, v === 3 ? null : v); commit(n); }));
+    grp("Ārsienu kontūra", ...wb("outer")); grp("Starpsienu kontūra", ...wb("inner"));
+    { const sw = WS.swing === "dash" ? "dash" : "solid", dsh = d => `<svg viewBox="0 0 28 14"><path d="M2 12 A10 10 0 0 1 12 2" fill="none" stroke="currentColor" stroke-width="1.6"${d ? ' stroke-dasharray="2.6 1.8"' : ""}/><path d="M12 2 V12 H2" fill="none" stroke="currentColor" stroke-width="1"/></svg>`;
+      const set = v => { const n = clone(model); wsSet(n, "swing", v === "dash" ? "dash" : null); commit(n); };
+      grp("Durvju un logu vēršanās", btn(dsh(false) + " Pilna", "Vēršanās loks ar pilnu līniju", sw === "solid", () => set("solid")), btn(dsh(true) + " Raustīta", "Vēršanās loks ar raustītu līniju", sw === "dash", () => set("dash"))); }
+    const sel = document.createElement("select"); [["", "Barlow (parasts)"], ["Arial", "Arial"], ["Calibri", "Calibri"], ["Segoe UI", "Segoe UI"], ["Verdana", "Verdana"], ["Times New Roman", "Times New Roman"], ["Courier New", "Courier New"], ["ISOCPEUR", "ISOCPEUR"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; sel.appendChild(o); });
+    sel.value = P.fonts || ""; sel.onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; if (sel.value) n.projekts.fonts = sel.value; else delete n.projekts.fonts; commit(n); };
+    grp("Teksta fonts", sel);
+    { const c = document.createElement("input"); c.type = "color"; c.value = WS.dim || "#000000"; c.title = "Mēru ķēžu krāsa";
+      c.onchange = () => { const n = clone(model); wsSet(n, "dim", c.value); commit(n); };
+      const rs = btn("Melna", "Atgriezt standarta krāsu", !WS.dim, () => { const n = clone(model); wsSet(n, "dim", null); commit(n); });
+      grp("Mēru ķēžu un atzīmju krāsa", rs, c);
+      const fc = document.createElement("input"); fc.type = "color"; fc.value = WS.fdim || "#000000"; fc.title = "Fasāžu lineāro mēru krāsa";
+      fc.onchange = () => { const n = clone(model); wsSet(n, "fdim", fc.value); commit(n); };
+      const fr = btn("Melna", "Atgriezt standarta krāsu", !WS.fdim, () => { const n = clone(model); wsSet(n, "fdim", null); commit(n); });
+      grp("Fasāžu lineārie mēri", fr, fc); }
+    { const sv = +(WS.section) || 1, sk = n => `<svg viewBox="0 0 30 14"><path d="M1 7h28" stroke="currentColor" stroke-width="1.2"${n === 2 ? "" : ' stroke-dasharray="5 1.5 1 1.5"'}/>${n === 3 ? '<path d="M15 3 L11 -0 H19Z" fill="#aaa" stroke="currentColor" stroke-width=".8" transform="translate(0 4)"/>' : '<path d="M1 3v8M29 3v8" stroke="currentColor" stroke-width="2.4"/>'}</svg>`;
+      const setS = v => { const n = clone(model); wsSet(n, "section", v === 1 ? null : v); commit(n); };
+      grp("Griezuma līnija", ...[1, 2, 3].map(v => btn(["Bultiņas", "Melna zīme", "Pelēka zīme"][v - 1], ["Raustīta ar bultiņām", "Melns trijstūris ar apli", "Pelēks trijstūris ar apli un lapas numuru"][v - 1], sv === v, () => setS(v)))); }
+    { const FD = P.fdims || [];
+      if (FD.length) {
+        const SN = { south: "Dienvidu", north: "Ziemeļu", east: "Austrumu", west: "Rietumu" }, zt = z => (z > 0 ? "+" : z < 0 ? "−" : "±") + (Math.abs(z) / 1000).toFixed(3).replace(".", ",");
+        const g = document.createElement("div"); g.className = "rg"; g.style.gridColumn = "1 / -1";
+        const rows = document.createElement("div"); rows.className = "fdl";
+        FD.forEach((d, i) => {
+          const r = document.createElement("div"); r.className = "fdi";
+          const t = document.createElement("span"); t.textContent = (SN[d.s] || d.s) + " fasāde · " + (d.k === "lvl" ? "atzīme " + zt(d.z) : "mērs " + Math.round(d.b - d.a) + " mm");
+          const x = document.createElement("button"); x.type = "button"; x.textContent = "×"; x.title = "Dzēst šo mēru";
+          x.onclick = () => { const n = clone(model); n.projekts.fdims.splice(i, 1); if (!n.projekts.fdims.length) delete n.projekts.fdims; commit(n); };
+          r.append(t, x); rows.appendChild(r);
+        });
+        const l = document.createElement("span"); l.className = "rl"; l.textContent = "Fasāžu mēri un atzīmes"; g.append(rows, l); R.appendChild(g);
+      } }
+    { const ft = document.createElement("div"); ft.className = "rfoot"; const ca = document.createElement("button"); ca.type = "button"; ca.textContent = "Atcelt"; ca.title = "Atcelt izmaiņas, kas veiktas šajā panelī"; ca.onclick = ribCancel; const sv = document.createElement("button"); sv.type = "button"; sv.className = "sv"; sv.textContent = "Saglabāt noformējumu"; sv.onclick = () => ribToggle(false); ft.append(ca, sv); R.appendChild(ft); }
+  }
+  function buttons() { ribbon(); try { topSync(); } catch (e) {} { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
+  $("bRib").onclick = e => { e.stopPropagation(); ribToggle(!ribOpen); };
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
   $("bFit").onclick = () => { view = null; try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
@@ -383,10 +834,13 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   $("bResetYes").onclick = () => { $("confirm").hidden = true; $("bReset").hidden = false; sel = null; commit(clone(BASE)); };
   addEventListener("keydown", e => {
     if (e.target.closest("input,select")) return;
+    if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && sel && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); toFrame({ mmKey: { key: e.key, shiftKey: e.shiftKey } }); return; }   // bultiņas strādā arī tad, ja fokuss nav rasējumā
+    if (e.key === "Escape" && moveOn) { setMove(false); railSync(); }
     if (e.key === "Escape" && placing) { endPlace(); toFrame({ mmPlace: null }); }
     else if (e.key === "Escape" && sel) { sel = null; panel(); toFrame({ mmDesel: 1 }); }
-    if ((e.key === "d" || e.key === "D") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); startDim(); }
-    if ((e.key === "g" || e.key === "G") && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); startGuide(e.shiftKey ? "h" : "v"); }
+    if (keyCap) return;
+    if ((e.key === "Delete" || e.key === "Backspace") && sel && !e.ctrlKey && !e.metaKey) { e.preventDefault(); del(); return; }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey) { const a = ACTIONS.find(x => keyMap[x.id] === comboOf(e)); if (a) { e.preventDefault(); a.run(); } }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? doRedo() : doUndo(); }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); doRedo(); }
   });
@@ -396,10 +850,14 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     { n: "Logs", s: "1000 × 1200, ārsienā", p: { t: "win" } },
     { n: "Slīpais logs", s: "gala fasādē, seko jumtam", p: { t: "gwin" } },
     { n: "Durvis", s: "800 iekšā, 1000 ārsienā", p: { t: "door" } },
-    { n: "Mērs", s: "divi klikšķi plānā", p: { t: "dim" }, ic: "dim" },
+    { n: "Starpsiena", s: "divi klikšķi, pielīp sienām", p: { t: "wall" }, ic: "wall" },
+    { n: "Izgriezt sienu", s: "divi klikšķi uz sienas", p: { t: "cut" }, ic: "cut" },
+    { n: "Mērs", s: "plānā divi klikšķi; fasādē klikšķis un izvēle", p: { t: "dim" }, ic: "dim" },
+    { n: "Palīglīnija", s: "G · pati izvēlas vert./horiz./slīpi", p: { t: "guide", o: "a" }, ic: "ga" },
     { n: "Vert. palīglīnija", s: "G · pielīp elementiem", p: { t: "guide", o: "v" }, ic: "gv" },
     { n: "Horiz. palīglīnija", s: "Shift+G", p: { t: "guide", o: "h" }, ic: "gh" },
     { n: "Slīpa palīglīnija", s: "jumta slīpumā", p: { t: "guide", o: "s" }, ic: "gs" },
+    { n: "Dzēšgumija", s: "klikšķis dzēš visu elementu", p: { t: "erase" }, ic: "er" },
   ];
   // vy: mēbelei ir 3 detalizācijas varianti (bed1 / bed / bed3)
   const FURN_LIB = [
@@ -423,10 +881,17 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     { n: "L kāpnes", s: "2700 × 2400, laukums", e: ["kapnesL", 0, 0, 2700, 2400, 900, "r", "lauk", 0], w: 2700, h: 2400, ic: "stL", vy: 1 },
   ];
   // mazie simboli bibliotēkā: tie paši plāna simboli, vienkāršoti
+  let moveOn = false;
+  function setMove(v) { moveOn = !!v; toFrame({ mmMove: moveOn }); }
   const IC = {
+    mv: '<path d="M20 3l5 6h-3.5v5H27v-3.5l6 5.5-6 5.5v-3.5h-5.5v5H25l-5 6-5-6h3.5v-5H13v3.5L7 17l6-5.5V15h5.5v-5H15z" fill="currentColor"/>',
     win: '<rect x="3" y="11" width="34" height="6"/><path d="M3 14h34"/>',
     gwin: '<path d="M6 24V14l14-10 14 10v10z"/><path d="M6 19h28"/>',
     dim: '<path d="M4 14h32M4 9v10M36 9v10M1 17l6-6M33 17l6-6"/>',
+    wall: '<path d="M3 9h34M3 19h34"/><path d="M8 9l-3 10M15 9l-3 10M22 9l-3 10M29 9l-3 10M36 9l-3 10"/>',
+    er: '<path d="M24 4l9 9-12 12H12l-5-5z"/><path d="M13 12l9 9M12 25h22"/>',
+    cut: '<path d="M3 9h11M3 19h11M26 9h11M26 19h11"/><path d="M14 5l12 18M26 5L14 23" stroke-dasharray="2 2"/>',
+    ga: '<path d="M20 2v24M2 14h36" stroke-dasharray="3 2"/><circle cx="20" cy="14" r="3"/>',
     gv: '<path d="M20 2v24" stroke-dasharray="3 2"/><rect x="8" y="8" width="8" height="12"/>',
     gh: '<path d="M2 14h36" stroke-dasharray="3 2"/><rect x="10" y="4" width="12" height="7"/>',
     gs: '<path d="M4 24L36 6" stroke-dasharray="3 2"/><path d="M6 24h28"/>',
@@ -450,7 +915,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     stL: '<path d="M4 17h20V4h12v22H4z"/><path d="M9 17v9M14 17v9M19 17v9M24 8h12M24 12h12"/><path d="M6 21.5h24V7"/><path d="M28 9l2-3 2 3z" fill="currentColor"/>',
     wm: '<rect x="10" y="4" width="20" height="20" rx="2"/><circle cx="20" cy="15" r="6"/><path d="M13 7h5"/>',
   };
-  const icon = k => `<svg viewBox="0 0 40 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">${IC[k] || ""}</svg>`;
+  const icon = k => `<svg viewBox="0 0 40 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">${IC[k] || ""}</svg>`;
   // detalizācija jaunajām mēbelēm: 1 vienkāršs, 2 standarta SBE simbols, 3 detalizēts
   let detail = 2;
   const VARY = ["bed", "nightstand", "sofa", "sofaL", "wardrobe", "armchair", "galds", "desk", "kapnes", "kapnesL"];
@@ -472,21 +937,84 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     b.append(item.n); const sm = document.createElement("small"); sm.textContent = item.s; b.appendChild(sm);
     b.onclick = () => {
       if (onBtn === b) { endPlace(); toFrame({ mmPlace: null }); return; }
-      endPlace(); placing = clone(spec); onBtn = b; b.classList.add("on");
+      endPlace(); if (moveOn) setMove(false); placing = clone(spec); onBtn = b; b.classList.add("on");
       if (placing.vy) placing.entry[0] = typeV(placing.entry[0], detail);
-      $("hint").textContent = spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "dim" ? "Uzklikšķini plānā mēra pirmo galu (pielīp sienām)." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
-      toFrame({ mmPlace: spec });
+      $("hint").textContent = spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Plānā: uzklikšķini mēra pirmo galu (pielīp sienām). Fasādē: uzklikšķini punktu un izvēlies augstuma atzīmi vai lineāru mēru." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
+      toFrame({ mmPlace: spec }); railSync();
     };
+    b.title = item.n + " · " + item.s;
     host.appendChild(b);
+    return b;
   }
   function startDim() { const b = [...document.querySelectorAll("#libOpen button")].find(x => /Mērs/.test(x.textContent)); if (b && onBtn !== b) b.click(); }
-  function endPlace() { placing = null; if (onBtn) onBtn.classList.remove("on"); onBtn = null; $("hint").textContent = ""; }
-  OPEN.forEach(o => libButton($("libOpen"), o, o.p));
+  function endPlace() { placing = null; if (onBtn) onBtn.classList.remove("on"); onBtn = null; $("hint").textContent = ""; try { railSync(); } catch (_) {} }
+  const OPENB = [];
+  OPEN.forEach((o, i) => OPENB.push(libButton($(i < 3 ? "libOpenings" : "libOpen"), o, o.p)));
   { const b = document.createElement("button"); b.type = "button"; b.id = "bGuideClr"; b.className = "wide"; b.innerHTML = icon("gv"); b.append("Dzēst visas palīglīnijas"); const sm = document.createElement("small"); sm.textContent = "lapā nav, tikai redaktorā"; b.appendChild(sm);
     b.onclick = () => { if (!((model.projekts || {}).guides || []).length) { status("Palīglīniju nav."); return; } const n = clone(model); n.projekts.guides = []; if (sel && sel.k === "guide") sel = null; commit(n); status("Visas palīglīnijas dzēstas."); };
     $("libOpen").appendChild(b); }
+  $("gClr").onclick = () => $("bGuideClr").click();
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
-  FURN_LIB.forEach(f => libButton($("libFurn"), f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy }));
+  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk"]], ["Virtuve un vannas istaba", ["ctr", "bas", "wc", "sh", "wm"]], ["Kāpnes", ["st", "stL"]]], host = $("libFurn");
+    GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
+      FURN_LIB.filter(f => ics.includes(f.ic)).forEach(f => libButton(host, f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy })); }); }
+
+  // ---- CAD rīku josla, pielāgojami taustiņi, statusa rinda ----
+  const ACTIONS = [
+    { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); setMove(false); railSync(); } },
+    ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
+    { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
+    { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gv", run: () => { $("bGuideClr").click(); } },
+  ];
+  const RAIL = ["sel", "t3", "t4", "er", "t5", "t6", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
+  IC.sel = '<path d="M14 3l1.5 20 4.3-5.2 6.7 1.2z" fill="currentColor" fill-opacity=".15" transform="rotate(-20 20 14) translate(2 -1)"/>';
+  const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
+  let keyMap = Object.assign({}, DEF), keyCap = null;
+  try { Object.assign(keyMap, JSON.parse(localStorage.getItem("mmKeys") || "{}")); } catch (_) {}
+  const saveKeys = () => { try { localStorage.setItem("mmKeys", JSON.stringify(keyMap)); } catch (_) {} };
+  const comboOf = e => (e.shiftKey ? "shift+" : "") + e.key.toLowerCase().replace(/^shift\+/, "");
+  const keyLbl = k => k ? k.replace("shift+", "⇧").toUpperCase() : "—";
+  function railBuild() {
+    const r = $("rail"); r.innerHTML = "";
+    ACTIONS.filter(a => RAIL.includes(a.id)).forEach((a, i) => {
+      if (a.id === "t3" || a.id === "t5" || a.id === "t6") r.appendChild(document.createElement("hr"));
+      const b = document.createElement("button"); b.type = "button"; b.dataset.id = a.id; b.title = a.n + (keyMap[a.id] ? " (" + keyLbl(keyMap[a.id]) + ")" : "");
+      b.innerHTML = icon(a.ic) + (keyMap[a.id] ? "<kbd>" + keyLbl(keyMap[a.id]) + "</kbd>" : ""); b.onclick = a.run; r.appendChild(b);
+    });
+    const sp = document.createElement("span"); sp.className = "sp"; r.appendChild(sp);
+    const kb = document.createElement("button"); kb.type = "button"; kb.title = "Taustiņi"; kb.innerHTML = '<svg viewBox="0 0 40 28" fill="none" stroke="currentColor" stroke-width="1.3"><rect x="3" y="6" width="34" height="16" rx="2"/><path d="M8 11h2M13 11h2M18 11h2M23 11h2M28 11h2M10 17h20"/></svg>'; kb.onclick = () => { tab("keys"); keysDraw(); }; r.appendChild(kb);
+    railSync();
+  }
+  function railSync() {
+    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = moveOn && on < 0 ? "mv" : on >= 0 ? ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "", "", "", "er"][on] : onBtn ? null : "sel";
+    document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
+    syncBar();
+  }
+  function syncBar() {
+    const a = onBtn ? onBtn.childNodes[1] && onBtn.childNodes[1].textContent : "Atlasīt", h = $("hint").textContent;
+    $("sbTool").innerHTML = "<b>" + (a || "Rīks") + "</b>" + (h ? " · " + h : onBtn ? "" : " · uzklikšķini uz elementa vai izvēlies rīku");
+    const st = $("status").textContent; $("sbSave").textContent = st; $("sbSave").className = /nesaglab/i.test(st) ? "dirty" : "";
+  }
+  new MutationObserver(syncBar).observe($("hint"), { childList: true, characterData: true, subtree: true });
+  new MutationObserver(syncBar).observe($("status"), { childList: true, characterData: true, subtree: true });
+  function keysDraw() {
+    const k = $("keysPane"); k.innerHTML = "";
+    ACTIONS.forEach(a => { const r = document.createElement("div"); r.className = "kr"; r.innerHTML = "<span>" + a.n + "</span>"; const b = document.createElement("button"); b.type = "button"; b.textContent = keyCap === a.id ? "spied taustiņu…" : keyLbl(keyMap[a.id]); if (keyCap === a.id) b.className = "cap";
+      b.onclick = () => { keyCap = keyCap === a.id ? null : a.id; keysDraw(); }; r.appendChild(b); k.appendChild(r); });
+    const f = document.createElement("div"); f.className = "ft"; const rs = document.createElement("button"); rs.type = "button"; rs.textContent = "Atiestatīt"; rs.onclick = () => { keyMap = Object.assign({}, DEF); saveKeys(); keyCap = null; railBuild(); keysDraw(); };
+    f.appendChild(rs); k.appendChild(f);
+    const h = document.createElement("p"); h.className = "kh"; h.textContent = "Uzklikšķini uz taustiņa, tad nospied jauno. Backspace noņem, Esc atceļ."; k.appendChild(h);
+  }
+  function keyCapture(e) {
+    e.preventDefault(); e.stopPropagation();
+    if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return;
+    if (e.key === "Escape") { keyCap = null; keysDraw(); return; }
+    const c = e.key === "Backspace" || e.key === "Delete" ? "" : comboOf(e);
+    if (c) Object.keys(keyMap).forEach(id => { if (keyMap[id] === c) keyMap[id] = ""; });
+    keyMap[keyCap] = c; keyCap = null; saveKeys(); railBuild(); keysDraw();
+  }
+  addEventListener("keydown", e => { if (keyCap) keyCapture(e); }, true);
+  railBuild(); keysDraw(); ribbon();
 
   // ---- selected item ----
   const lvOf = (m, s) => (s.lv === "loft" ? m.loft : m);
@@ -512,6 +1040,19 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   const sLeft = w => w.side === "north" || w.side === "east" || (!w.side && (w.o === "h" ? w.y < 1 : w.x > 1));
 
   let fid = 0;
+  // viena loga augšmalu parasti maina kopīgajā laukā (Māja); atsevišķu logu atslēdz pēc apstiprinājuma
+  let headUnlock = null;
+  function headField(it, sel, set) {
+    const key = sel.lv + ":" + sel.i, cur = it.head ?? 2100, glob = +((model.projekts || {}).logu_augsa) || 2100;
+    const f = field("Augša, mm", cur, set, null, "full"), inp = f.querySelector("input");
+    if (headUnlock === key || cur !== glob || sel.lv === "loft") return f;
+    inp.disabled = true;
+    const box = document.createElement("div"); box.className = "hconf";
+    const t = document.createElement("small"); t.textContent = "Augšmala seko kopīgajam laukam (" + glob + " mm, sadaļa Māja). Mainīt tikai šo logu?";
+    const y = document.createElement("button"); y.type = "button"; y.textContent = "Jā, mainīt šo logu";
+    y.onclick = () => { headUnlock = key; inp.disabled = false; box.remove(); inp.focus(); };
+    box.append(t, y); f.appendChild(box); return f;
+  }
   function field(lab, val, set, opts, cls) {
     const id = "fld-" + (++fid);
     const l = document.createElement("label"); l.htmlFor = id; l.textContent = lab; if (cls) l.className = cls;
@@ -555,25 +1096,93 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     const sDef = TONES[tk].sturi ? "balts" : "nav", sCur = P.sturi_opc || sDef;
     g1.appendChild(colorField("Dekoratīvie stūra dēļi", sCur, { balts: "#F2F0EA", melns: "#1d1d1d", tonis: TONES[tk].sw, nav: "transparent" }[sCur], (n, v) => { n.projekts = n.projekts || {}; const d = (TONES[n.projekts.tonis || "peleks"] || {}).sturi ? "balts" : "nav"; if (v === d) delete n.projekts.sturi_opc; else n.projekts.sturi_opc = v; },
       { nav: "Nav", balts: "Balti", melns: "Melni", tonis: "Mājas tonī" }));
-    { // sienas plānā: pīrāgu slāņi vai aizlietas ar vienu toni (krāsu aplis)
-      const gp = group("Sienas plānā", host), hx = P.sienas_hex || "";
-      const f = field("Attēlojums", hx ? "krasa" : "piragi", (n, v) => { n.projekts = n.projekts || {}; if (v === "krasa") n.projekts.sienas_hex = n.projekts.sienas_hex || localStorage.getItem("mmWallHex") || "#5a5a5a"; else delete n.projekts.sienas_hex; }, { piragi: "Rādīt pīrāgus", krasa: "Aizliet ar toni" }, hx ? "" : "full");
-      gp.appendChild(f);
-      if (hx) {
-        const l = document.createElement("label"); l.textContent = "Tonis";
-        const w = document.createElement("span"); w.className = "pick";
-        const c = document.createElement("input"); c.type = "color"; c.value = hx; c.title = "Izvēlies toni";
-        const t = document.createElement("input"); t.type = "text"; t.value = hx.toUpperCase(); t.maxLength = 7; t.spellcheck = false;
-        const put = v => { if (!/^#[0-9a-f]{6}$/i.test(v) || v.toLowerCase() === hx.toLowerCase()) return; try { localStorage.setItem("mmWallHex", v); } catch (e) {} const n = clone(model); n.projekts.sienas_hex = v.toLowerCase(); commit(n); };
-        c.addEventListener("input", () => { t.value = c.value.toUpperCase(); });
-        c.addEventListener("change", () => put(c.value));
-        t.addEventListener("change", () => put(t.value.trim().startsWith("#") ? t.value.trim() : "#" + t.value.trim()));
-        w.append(c, t); l.appendChild(w); gp.appendChild(l);
+    { // sienu specifikācija: pīrāgu slāņi, pārbaude pret plāna sienu biezumiem; labojumus saglabā modelī (projekts.piragi_layers)
+      if (!document.getElementById("specCss")) { const st = document.createElement("style"); st.id = "specCss"; st.textContent = ".spec{margin:6px 0 10px;font-size:12px}.spec b{display:block;margin:4px 0}.spec table{width:100%;border-collapse:collapse}.spec td{padding:1px 2px}.spec td.grip{width:14px;cursor:grab;color:var(--muted);user-select:none;text-align:center;font-size:12px;letter-spacing:-2px}.spec tr.dragging{opacity:.45}.spec tr.dropb td{box-shadow:inset 0 2px 0 var(--mark)}.spec tr.dropa td{box-shadow:inset 0 -2px 0 var(--mark)}.spec input{width:100%;box-sizing:border-box;font:inherit;padding:2px 4px}.spec input.n{text-align:right}.spec .x{width:22px;cursor:pointer;border:0;background:none;color:#a33}.spec .ok{color:#2b7a3d}.spec .bad{color:#b3261e}.spec .sum td{border-top:1px solid #bbb;font-weight:600}.spec button.add{margin-top:3px;font:inherit}"; document.head.appendChild(st); }
+      const gs = group("Sienu specifikācija (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
+      const Tw = Math.min(...(model.rooms || []).flatMap(r => r.r.map(q => q[0]))), EXP = { S1: [Tw, "ārsienas biezums plānā"], S2: [195, "starpsienas biezums plānā"] };
+      const note0 = document.createElement("p"); note0.className = "note full"; note0.textContent = "Pārbaudi slāņus un biezumus (mm). Ja kaut kas nav pareizi vai trūkst, labo laukos: izmaiņas iet uz AR projekta lapu \"Sienu specifikācija\" un model.json."; gs.appendChild(note0);
+      const WT = (model.projekts || {}).wall_types || [];   // papildu starpsienu veidi: [{id, name, layers}]
+      const ENT = ["S1", "S2", "G1", "J1"].filter(k => LAYERS0[k]).map(k => ({ k, name: LAYERS0[k].name, cur: PLs[k] || LAYERS0[k].layers, edited: !!PLs[k], exp: EXP[k],
+        save: arr => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.piragi_layers = n.projekts.piragi_layers || {}; if (JSON.stringify(arr) === JSON.stringify(LAYERS0[k].layers)) delete n.projekts.piragi_layers[k]; else n.projekts.piragi_layers[k] = arr; if (!Object.keys(n.projekts.piragi_layers).length) delete n.projekts.piragi_layers; commit(n); } }));
+      WT.forEach((w, wi) => ENT.push({ k: w.id, name: w.name, cur: w.layers, custom: wi, exp: null,
+        save: arr => { const n = clone(model); n.projekts.wall_types[wi].layers = arr; commit(n); } }));
+      ENT.forEach(en => {
+        const k = en.k, base = { name: en.name }, cur = en.cur.map(l => l.slice()), sum = cur.reduce((a, l) => a + (+l[1] || 0), 0), save = en.save, PL1 = en.edited;
+        const box = document.createElement("div"); box.className = "full spec";
+        const t = document.createElement("b");
+        if (en.custom != null) {
+          const ni = document.createElement("input"); ni.value = en.name; ni.style.width = "calc(100% - 28px)"; ni.addEventListener("change", () => { const n = clone(model); n.projekts.wall_types[en.custom].name = ni.value.trim() || en.name; commit(n); });
+          const dx = document.createElement("button"); dx.type = "button"; dx.className = "x"; dx.textContent = "×"; dx.title = "Dzēst starpsienas veidu"; dx.addEventListener("click", () => { const n = clone(model); n.projekts.wall_types.splice(en.custom, 1); commit(n); });
+          t.append(ni, dx);
+        } else t.textContent = base.name + (PL1 ? "  (labots)" : "");
+        box.appendChild(t);
+        const tb = document.createElement("table");
+        cur.forEach((l, i) => {
+          const tr = document.createElement("tr"), a = document.createElement("td"), b = document.createElement("td"), c = document.createElement("td"), ia = document.createElement("input"), ib = document.createElement("input"), x = document.createElement("button");
+          ia.value = l[0]; ib.value = l[1]; ib.className = "n"; ib.inputMode = "decimal"; ib.style.width = "52px"; x.type = "button"; x.className = "x"; x.textContent = "×"; x.title = "Dzēst slāni";
+          ia.addEventListener("change", () => { const arr = cur.map(q => q.slice()); arr[i][0] = ia.value.trim() || l[0]; save(arr); });
+          ib.addEventListener("change", () => { const v = parseFloat(String(ib.value).replace(",", ".")); if (!isFinite(v) || v < 0) return; const arr = cur.map(q => q.slice()); arr[i][1] = v; save(arr); });
+          x.addEventListener("click", () => { const arr = cur.map(q => q.slice()); arr.splice(i, 1); save(arr); });
+          const gh = document.createElement("td"); gh.className = "grip"; gh.textContent = "⋮⋮"; gh.title = "Velc uz augšu vai leju, lai mainītu slāņa vietu";
+          gh.addEventListener("mousedown", () => { tr.draggable = true; }); gh.addEventListener("mouseup", () => { tr.draggable = false; });
+          tr.addEventListener("dragstart", ev => { ev.dataTransfer.effectAllowed = "move"; try { ev.dataTransfer.setData("text/plain", String(i)); } catch (_) {} tr.classList.add("dragging"); });
+          tr.addEventListener("dragend", () => { tr.draggable = false; tr.classList.remove("dragging"); tb.querySelectorAll(".dropb,.dropa").forEach(q => q.classList.remove("dropb", "dropa")); });
+          tr.addEventListener("dragover", ev => { ev.preventDefault(); const rc = tr.getBoundingClientRect(), up = ev.clientY < rc.top + rc.height / 2; tb.querySelectorAll(".dropb,.dropa").forEach(q => q.classList.remove("dropb", "dropa")); tr.classList.add(up ? "dropb" : "dropa"); tr._up = up; });
+          tr.addEventListener("drop", ev => { ev.preventDefault(); const from = parseInt(ev.dataTransfer.getData("text/plain"), 10); if (isNaN(from)) return; let to = i + (tr._up ? 0 : 1); if (from < to) to--; if (to === from) return; const arr = cur.map(q => q.slice()); const [m1] = arr.splice(from, 1); arr.splice(to, 0, m1); save(arr); });
+          a.appendChild(ia); b.appendChild(ib); c.appendChild(x); tr.append(gh, a, b, c); tb.appendChild(tr);
+        });
+        const ts = document.createElement("tr"); ts.className = "sum"; ts.innerHTML = `<td></td><td>Kopā</td><td style="text-align:right">${Math.round(sum * 10) / 10}</td><td></td>`; tb.appendChild(ts);
+        box.appendChild(tb);
+        const add = document.createElement("button"); add.type = "button"; add.className = "add"; add.textContent = "+ slānis";
+        add.addEventListener("click", () => { const arr = cur.map(q => q.slice()); arr.push(["Jauns slānis", 0, ""]); save(arr); }); box.appendChild(add);
+        const msgs = [], e = en.exp;
+        if (e) msgs.push(Math.abs(sum - e[0]) <= 0.6 ? ["ok", `✓ ${Math.round(sum * 10) / 10} mm sakrīt ar ${e[1]} (${e[0]} mm)`] : ["bad", `⚠ Σ ${Math.round(sum * 10) / 10} mm, bet ${e[1]} ir ${e[0]} mm. Plāns zīmē sienu ar ${e[0]} mm: izlabo slāņus vai sienas biezumu`]);
+        if (!cur.some(l => l[2] === "i")) msgs.push(["bad", "⚠ Nav siltumizolācijas slāņa"]);
+        if (cur.some(l => !String(l[0]).trim())) msgs.push(["bad", "⚠ Slānim nav nosaukuma"]);
+        if (!msgs.length) msgs.push(["ok", "✓ Slāņi aizpildīti"]);
+        msgs.forEach(([c, tx]) => { const p = document.createElement("div"); p.className = c; p.textContent = tx; box.appendChild(p); });
+        gs.appendChild(box);
+        if (k === "S2") { const as = document.createElement("button"); as.type = "button"; as.className = "add full"; as.textContent = "+ Pievienot starpsienu (pīrāgu)"; as.title = "Jauns starpsienas veids ar saviem slāņiem; tas automātiski parādās AR lapā Sienu specifikācija"; as.addEventListener("click", () => addWt.click()); gs.appendChild(as); }
+      });
+      { // atslēgvārdi: slānis ar šādu vārdu nosaukumā specifikācijā tiek zīmēts kā krāsaina līnija
+        const MK0 = [{ k: "membrān", c: "#1f6fd1", d: 1 }, { k: "plēve", c: "#1f6fd1", d: 1 }, { k: "folij", c: "#1f6fd1", d: 1 }];
+        const cur = ((model.projekts || {}).layer_marks || MK0).map(q => ({ ...q })), box = document.createElement("div"); box.className = "full spec";
+        const t = document.createElement("b"); t.textContent = "Slāņu atslēgvārdi (krāsaina līnija specifikācijā)"; box.appendChild(t);
+        const sv = arr => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.layer_marks = arr; commit(n); };
+        cur.forEach((q, i) => {
+          const r = document.createElement("div"); r.style.cssText = "display:flex;gap:4px;align-items:center;margin:3px 0";
+          const k = document.createElement("input"); k.value = q.k; k.style.flex = "1"; k.title = "Vārds slāņa nosaukumā (neatkarīgi no lielajiem burtiem)";
+          const c = document.createElement("input"); c.type = "color"; c.value = q.c || "#1f6fd1"; c.style.width = "34px";
+          const d = document.createElement("input"); d.type = "checkbox"; d.checked = !!q.d; d.title = "Raustīta līnija";
+          const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "×";
+          const up = () => { const a = cur.map(z => ({ ...z })); a[i] = { k: k.value.trim(), c: c.value, d: d.checked ? 1 : 0 }; sv(a.filter(z => z.k)); };
+          k.addEventListener("change", up); c.addEventListener("change", up); d.addEventListener("change", up);
+          x.addEventListener("click", () => { const a = cur.map(z => ({ ...z })); a.splice(i, 1); sv(a); });
+          const dl = document.createElement("span"); dl.textContent = "raust."; dl.style.fontSize = "10px";
+          r.append(k, c, d, dl, x); box.appendChild(r);
+        });
+        const ad = document.createElement("button"); ad.type = "button"; ad.className = "add"; ad.textContent = "+ atslēgvārds";
+        ad.addEventListener("click", () => sv([...cur.map(z => ({ ...z })), { k: "jauns", c: "#1f6fd1", d: 1 }])); box.appendChild(ad);
+        gs.appendChild(box);
       }
+      const addWt = document.createElement("button"); addWt.type = "button"; addWt.className = "add full"; addWt.textContent = "+ starpsienas veids";
+      addWt.addEventListener("click", () => { const n = clone(model); n.projekts = n.projekts || {}; const L = n.projekts.wall_types = n.projekts.wall_types || []; let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; const base = (PLs.S2 || LAYERS0.S2.layers).map(l => l.slice()); L.push({ id: "P" + i, name: "Starpsiena " + Math.round(base.reduce((a, l) => a + (+l[1] || 0), 0)) + " (jauna)", layers: base }); commit(n); });
+      gs.appendChild(addWt);
+      { const top = addWt.cloneNode(true); top.textContent = "+ Jauna starpsiena (pīrāgs)"; top.title = "Pievieno jaunu starpsienas veidu ar saviem slāņiem"; top.addEventListener("click", () => addWt.click()); gs.insertBefore(top, note0.nextSibling); }
     }
     const g2 = group("Visi logi", host);
     const all = [...(model.windows || []), ...(model.gableWins || [])], vals = [...new Set(all.map(casOf))];
     const co = vals.length === 1 ? vals[0] : "mix", copts = Object.assign(co === "mix" ? { mix: "Dažādas" } : {}, CAS);
+    { // logu augšmala visiem logiem vienā laukā; logi ar savu augstumu paliek, kā ir
+      const H0 = +((model.projekts || {}).logu_augsa) || 2100;
+      const hf = field("Logu augšmala visiem, mm", H0, (n, v) => {
+        v = Math.max(1800, Math.min(3000, Math.round(v / 10) * 10));
+        n.projekts = n.projekts || {}; const old = +n.projekts.logu_augsa || 2100; n.projekts.logu_augsa = v;
+        (n.windows || []).forEach(w => { if ((w.head ?? 2100) === old && (w.sill ?? 0) + 300 <= v) w.head = v; });
+      }, null, "full");
+      const nt = document.createElement("small"); nt.textContent = "Visiem logiem, kuriem augšmala nav mainīta atsevišķi, tā mainās līdzi. Jaunie logi arī sāk ar šo augstumu."; hf.appendChild(nt);
+      g2.appendChild(hf);
+    }
     g2.appendChild(field("Aplodas visiem logiem", co, (n, v) => { if (v === "mix") return; [...(n.windows || []), ...(n.gableWins || [])].forEach(w => setCas(w, v)); }, copts, "full"));
     { // mājas izmēri: garums, platums, kores augstums, jumta slīpums
       const I = model.ievade || {}, J = model.jumts || {}, gs = group("Mājas izmēri", host);
@@ -618,7 +1227,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     mats();
     const p = $("panel"); p.textContent = ""; fid = 0;
     const it = itemOf(model, sel);
-    if (!it) { const e = document.createElement("p"); e.className = "empty"; e.textContent = "Uzklikšķini uz loga, durvīm vai mēbeles rasējumā."; p.appendChild(e); return; }
+    if (!it) { const e = document.createElement("p"); e.className = "empty"; e.textContent = "Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Jaunu logu, durvis vai mēbeli izvēlies no saraksta zemāk."; p.appendChild(e); return; }
     const h = document.createElement("p"), sub = document.createElement("p"), g = document.createElement("div");
     h.className = "sel-name"; sub.className = "sel-sub"; g.className = "grid";
     const where = sel.lv === "loft" ? "Mansards" : "1. stāvs";
@@ -667,7 +1276,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       g.append(field("Platums, mm", it.len, (n, v) => { const w = S(n), c = w[key] + w.len / 2, old = w.len; w.len = Math.max(300, v); w[key] = Math.round(c - w.len / 2); if (w.parts && w.parts.length === 2) { w.parts[1].len = Math.max(200, w.parts[1].len + (w.len - old)); } fix(n); }),
         field("No stūra, mm", it[key], (n, v) => { S(n)[key] = v; fix(n); }),
         field("Palodze, mm", it.sill ?? 0, (n, v) => { S(n).sill = Math.max(sel.lv === "loft" ? gwBase(n) : 0, v); fix(n); }),
-        field("Augša, mm", it.head ?? 2100, (n, v) => { S(n).head = v; fix(n); }),
+        headField(it, sel, (n, v) => { S(n).head = v; fix(n); }),
         field("Daļas", two ? "2" : "1", (n, v) => {
           const w = S(n);
           if (v === "2") { const a = Math.round(w.len * .4 / 10) * 10; w.parts = [{ len: a, kind: "tilt", hinge: "l" }, { len: w.len - a, kind: "fixed", hinge: "l" }]; w.kind = "parts"; }
@@ -739,7 +1348,27 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
           g.append(field("Pagriezienā", base[7] === "vij" ? "vij" : "lauk", (n, v) => { B(n)[7] = v; }, { lauk: "Starplaukums", vij: "Vītņu pakāpieni" }));
           g.append(field("Kāpšanas virziens", base[8] ? "1" : "0", (n, v) => { B(n)[8] = +v; }, { 0: "No apakšējā marša", 1: "No augšējā marša" }, "full"));
         }
-        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Pakāpiens plānā 250 mm. Bulta rāda kāpšanas virzienu, aplītis ir sākums."; g.appendChild(nt);
+        // kāpņu formula (Blondel): 2R + G = 600-650 mm; R 150-200, G 250-350. Tikai brīdinājums, nekas netiek aizliegts.
+        {
+          const H = model.loft && model.loft.level ? model.loft.level : (model.ceiling || 0) + PANEL;
+          let runs;   // pakāpienu dziļumi (G) katrā posmā + paceltuvju skaits
+          if (nm === "kapnes") { const n = Math.max(2, Math.round(H / 180)); runs = { n, g: [base[3] / n] }; }
+          else {
+            const b = Math.min(base[5] || 900, base[3] - 300, base[4] - 300);
+            const n1 = Math.max(2, Math.round((base[3] - b) / 250)), n2 = Math.max(2, Math.round((base[4] - b) / 250));
+            runs = { n: n1 + n2 + 1, g: [(base[3] - b) / n1, (base[4] - b) / n2] };
+          }
+          const R = H / runs.n, Gs = runs.g, Gm = Math.min(...Gs), GM = Math.max(...Gs);
+          const bad = [], f0 = x => Math.round(x);
+          if (R < 150 || R > 200) bad.push("pacēlums R ārpus 150–200");
+          if (Gm < 250 || GM > 350) bad.push("pakāpiens G ārpus 250–350");
+          [Gm, GM].forEach(G => { const s = 2 * R + G; if ((s < 600 || s > 650) && !bad.some(x => x.startsWith("2R"))) bad.push("2R+G ārpus 600–650"); });
+          const fm = document.createElement("p"); fm.className = "note full";
+          fm.style.cssText = "margin:4px 0;padding:6px 8px;border-radius:6px;font-weight:500;background:" + (bad.length ? "#fdecea;color:#8a1f11" : "#e8f3ea;color:#1d5b2c");
+          fm.textContent = `Pakāpieni: ${runs.n} × R ${f0(R)} mm, G ${Gm === GM ? f0(Gm) : f0(Gm) + "–" + f0(GM)} mm. Formula 2R+G = ${Gm === GM ? f0(2 * R + Gm) : f0(2 * R + Gm) + "–" + f0(2 * R + GM)} mm (optimums ~630, norma 600–650). ` + (bad.length ? "⚠ Nav optimāls: " + bad.join(", ") + ". Atstāts jūsu ziņā." : "✓ Optimāls.");
+          g.appendChild(fm);
+        }
+        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Bulta rāda kāpšanas virzienu, aplītis ir sākums."; g.appendChild(nt);
       }
       if (vary) g.append(field("Detalizācija", String(vOf(nm0)), (n, v) => { const f = B(n); f[0] = typeV(f[0], +v); }, { 1: "Vienkāršs", 2: "Standarta", 3: "Detalizēts" }, "full"));
       if (nm === "Ci") g.append(field("Rādiuss, mm", base[3], (n, v) => { B(n)[3] = v; }));
@@ -773,7 +1402,12 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== t; });
     try { localStorage.setItem("mmTab", t); } catch (_) {}
   }
-  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+    const as = document.querySelector("aside"), same = b.getAttribute("aria-selected") === "true";
+    // telefonā: atkārtots klikšķis uz aktīvās cilnes paslēpj/parāda paneli, cita cilne to atver
+    if (matchMedia("(max-width: 760px)").matches) as.classList.toggle("shut", same && !as.classList.contains("shut")); 
+    tab(b.dataset.tab);
+  });
   try { const t = localStorage.getItem("mmTab"); if (t && document.querySelector(`[data-pane="${t}"]`)) tab(t); } catch (_) {}
   function showCheck(out) {
     const ul = $("check"); ul.textContent = "";
@@ -888,10 +1522,16 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   // ---- rakstlaukums: modeļa nosaukums un logo vienā vietā ----
   const tbp = $("tbp"), openTb = o => { tbp.hidden = !o; $("bTb").setAttribute("aria-expanded", String(o)); if (o) syncTb(); };
   const tbName = m => { const P = m.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (m.nosaukums || ""); };
+  function topSync() {
+    const P = model.projekts || {}, ar = !!(P.ar && P.ar.on), lg = P.lang === "en" ? "en" : "lv";
+    document.querySelectorAll(".modeseg button").forEach(b => b.setAttribute("aria-checked", String((b.dataset.m === "ar") === ar)));
+    document.querySelectorAll("#topLang button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.lg === lg)));
+  }
   function syncTb() {
     $("tbName").value = tbName(model);
     const L = (model.projekts || {}).logo, k = !L ? "mm" : L === "none" ? "none" : "own";
     document.querySelectorAll("#tbLogo button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.l === k)));
+    document.querySelectorAll("#topLang button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.lg === ((model.projekts || {}).lang === "en" ? "en" : "lv"))));
     syncAr();
   }
   $("bTb").onclick = e => { e.stopPropagation(); openPop(false); openTb(tbp.hidden); };
@@ -907,7 +1547,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   }
   function syncAr() {
     const A = (model.projekts || {}).ar, on = !!(A && A.on);
-    document.querySelectorAll("#tbMode button").forEach(b => b.setAttribute("aria-checked", String((b.dataset.m === "ar") === on)));
+    document.querySelectorAll(".modeseg button").forEach(b => b.setAttribute("aria-checked", String((b.dataset.m === "ar") === on)));
     $("arBox").hidden = !on; if (!on) return;
     const off = A.off || []; let no = 0;
     $("arParts").innerHTML = "";
@@ -925,11 +1565,12 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       l.append(i); $("arForm").append(l);
     });
   }
-  document.querySelectorAll("#tbMode button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".modeseg button").forEach(b => b.onclick = () => {
     const n = clone(model); n.projekts = n.projekts || {};
     if (b.dataset.m === "ar") n.projekts.ar = Object.assign(n.projekts.ar || arDefaults(n), { on: true }); else if (n.projekts.ar) n.projekts.ar.on = false;
     view = null; commit(n); syncTb();
   });
+  document.querySelectorAll("#topLang button").forEach(b => b.onclick = () => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.lang = b.dataset.lg; view = null; commit(n); syncTb(); });
   $("tbName").onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.modela_nosaukums = $("tbName").value.trim(); commit(n); syncTb(); };
   const setLogo = v => { const n = clone(model); n.projekts = n.projekts || {}; if (v) n.projekts.logo = v; else delete n.projekts.logo; commit(n); syncTb(); };
   document.querySelectorAll("#tbLogo button").forEach(b => b.onclick = () => { if (b.dataset.l === "own") $("tbFile").click(); else setLogo(b.dataset.l === "none" ? "none" : null); });
@@ -944,7 +1585,7 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
   };
 
   // ---- SketchUp: lapa pati uzraksta Ruby skriptu (.rb), kas SketchUp uzbūvē 3D modeli; iepakots .zip ----
-  function skpRb(m) {
+  function skpRb(m, geo) {
     const W = m.W, D = m.D, J = m.jumts || {}, pitch = J.pitch || 30, tan = Math.tan(pitch * Math.PI / 180), eave = J.eave || 2600, ov = +J.ov || 0;
     const TT = (TPL.match(/const T = ([\d.]+), t = ([\d.]+);/) || [0, 283.5, 195]).map(Number), T = TT[1], t = TT[2];
     let th = 300; try { const j = TPL.match(/"J1":\s*\{[^[]*"layers":\s*(\[\[[^\]]*\](?:,\s*\[[^\]]*\])*\])/); if (j) th = JSON.parse(j[1]).reduce((s, l) => s + (+l[1] || 0), 0) || 300; } catch (e) {}
@@ -953,8 +1594,8 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
     const f1 = v => +(+v).toFixed(1), SU = ([x, y, z]) => `[${f1(x)},${f1(D - y)},${f1(z)}]`, L = a => "[" + a.map(SU).join(",") + "]";
     const out = [], put = s => out.push(s);
     const dd = a => a.filter((p, i) => { const q = a[(i + a.length - 1) % a.length]; return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) > 0.5; });
-    const solid = (name, mat, outer, holes, d, dir) => (outer = dd(outer)).length > 2 && put(`solid(ents, ${JSON.stringify(name)}, ${mat}, ${L(outer)}, [${holes.map(L).join(",")}], ${f1(d)}, [${f1(dir[0])},${f1(-dir[1])},${f1(dir[2])}])`);
-    const glass = pts => put(`glass(ents, ${L(pts)})`);
+    const solid = (name, mat, outer, holes, d, dir) => (outer = dd(outer)).length > 2 && (geo && geo.push({ k: "s", name, mat, outer, holes, d, dir }), put(`solid(ents, ${JSON.stringify(name)}, ${mat}, ${L(outer)}, [${holes.map(L).join(",")}], ${f1(d)}, [${f1(dir[0])},${f1(-dir[1])},${f1(dir[2])}])`));
+    const glass = pts => (geo && geo.push({ k: "g", pts }), put(`glass(ents, ${L(pts)})`));
     // ārsienas pa plāna kontūru (arī L un T): katra mala ir vertikāla siena līdz jumta apakšai, ar logu un durvju ailām
     const hipDeg = +J.hip || (/^(cetr|četr)/i.test(J.forma || "") ? pitch : 0) || +((TPL.match(/"roof":\s*\{[^}]*?"hip":\s*([\d.]+)/) || [])[1] || 0), tanH = hipDeg ? Math.tan(hipDeg * Math.PI / 180) : 0;
     const ridgeU = eave + D / 2 * tan, roofZ = (x, y) => eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity), roofAt = y => roofZ(W / 2, y);
@@ -977,17 +1618,18 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       const [ax, ay] = e.a, [bx, by] = e.b, N = Math.max(2, Math.ceil(e.L / 100));
       let top = []; for (let k = N; k >= 0; k--) { const x = ax + (bx - ax) * k / N, y = ay + (by - ay) * k / N; top.push([x, y, roofZ(x, y)]); }
       top = top.filter((p, i) => { if (i === 0 || i === top.length - 1) return true; const q = top[i - 1], r = top[i + 1]; return Math.abs((p[2] - q[2]) - (r[2] - p[2])) > 0.5; });
-      const holes = [], glz = [], at = (u, z) => (e.o === "h" ? [u, ay, z] : [ax, u, z]);
+      const holes = [], glz = [], drs = [], at = (u, z) => (e.o === "h" ? [u, ay, z] : [ax, u, z]);
       if (e.o !== "d") {
         (m.windows || []).filter(w => w.o === e.o && !w.shape && onEdge(e.o, e.o === "h" ? w.y : w.x, e.o === "h" ? w.x : w.y, (e.o === "h" ? w.x : w.y) + w.len) === e).forEach(w => {
           const u = e.o === "h" ? w.x : w.y, h = [at(u, w.sill), at(u + w.len, w.sill), at(u + w.len, w.head), at(u, w.head)]; holes.push(h); glz.push(h); });
         exDoors.filter(d => d.o === e.o && onEdge(d.o, d.o === "h" ? d.y : d.x, d.o === "h" ? d.x : d.y, (d.o === "h" ? d.x : d.y) + d.w) === e).forEach(d => {
-          const u = e.o === "h" ? d.x : d.y; holes.push([at(u, 0), at(u + d.w, 0), at(u + d.w, 2100), at(u, 2100)]); });
+          const u = e.o === "h" ? d.x : d.y; const dh = [at(u, 0), at(u + d.w, 0), at(u + d.w, 2100), at(u, 2100)]; holes.push(dh); drs.push({ h: dh, d }); });
         if (e.o === "v" && (Math.abs(ax) < 1 || Math.abs(ax - W) < 1)) (m.gableWins || []).filter(g => g.side === (Math.abs(ax) < 1 ? "west" : "east")).forEach(g => {
           const pp = gwPts(g); if (pp.every(([y]) => y >= e.lo - 1 && y <= e.hi + 1)) { const h = pp.map(([y, z]) => [ax, y, z]); holes.push(h); glz.push(h); } });
       }
       solid("Ārsiena " + (ei + 1), "M_WALL", [[ax, ay, 0], [bx, by, 0], ...top], holes, T, [e.n[0], e.n[1], 0]);
       glz.forEach(h => glass(h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z])));
+      if (geo) drs.forEach(({ h, d }) => geo.push({ k: "d", pts: h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z]), hinge: d.hinge }));
     });
     // starpsienas starp telpām (sprauga 100..200 mm), pagarinātas caur mezgliem; durvju ailas 2100
     const R = (m.rooms || []).flatMap(r => r.r), walls = [];
@@ -1285,5 +1927,6 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
       model = m; status("Atvērta saglabātā versija (" + new Date(v.saved).toLocaleString("lv-LV") + ")."); panel(); render();
     } catch (_) { clearTimeout(tm); }
   })();
+/*@@VIZ3D@@*/
 })();
 </script>

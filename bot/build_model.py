@@ -78,6 +78,12 @@ def build(model_path, langs=None):
     cfg.setdefault('win', {}).update(colorOut=pr['logi'], casingColor=tc(pr.get('aplodas')) or pr['logi'], sillColor=tc(pr.get('palodzes')))   # aplodu tonis var atšķirties (projekts.aplodas)   # logu rāmji un apmales pēc toņa (sarkanajam balti RAL 9016)
     pr['vejkaste'] = m.get('jumts', {}).get('vejkaste', True) is not False   # jumta pārkare ar vēja kasti (slēgta)
     cfg['projekts'] = pr
+    for k_, v_ in (pr.get('piragi_layers') or {}).items():   # redaktorā labotie pīrāgu slāņi (projekts.piragi_layers)
+        if k_ in cfg['layers']:
+            cfg['layers'][k_]['layers'] = v_
+    for w_ in pr.get('wall_types') or []:   # redaktorā pievienotie starpsienu veidi (projekts.wall_types) nonāk AR sienu specifikācijā
+        if w_.get('id') and w_.get('layers'):
+            cfg['layers'][w_['id']] = {'name': w_.get('name') or w_['id'], 'layers': w_['layers']}
     T = sum(l[1] for l in cfg['layers']['S1']['layers'])
     t = sum(l[1] for l in cfg['layers']['S2']['layers'])
 
@@ -103,7 +109,7 @@ def build(model_path, langs=None):
                   '  } else if ((window.AR && AR.projekts && AR.projekts.pamati) === "platne") el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "#9b9c98", stroke: C.ink, "stroke-width": 14 }, g);\n  else { el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "rgba(0,0,0,.25)" }, g); el("rect", { x: -20, y: 0, width: span + 40, height: ROOF.plinth - 40, fill: (AR.projekts.cokols_hex || "#1d1d1d"), stroke: C.ink, "stroke-width": 10 }, g); el("line", { x1: -20, y1: 22, x2: span + 20, y2: 22, stroke: "rgba(255,255,255,.18)", "stroke-width": 8 }, g); }'),
                  # stūru dēļi (sarkanais tonis): balti, 90 mm, no grīdas apakšas līdz dzegai
                  ('  el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);',
-                  '  el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);\n  { const CB = (window.AR && AR.projekts && AR.projekts.sturi) || 0, zt = u => (gable ? roofTopW + (ridgeTop - roofTopW) * Math.min(u, span - u) / (span / 2) : eEdge); if (CB) [0, span - CB].forEach(u => { el("polygon", { points: [P(u, -fT), P(u + CB, -fT), P(u + CB, zt(u + CB)), P(u, zt(u))].join(" "), fill: (AR.projekts.sturi_hex || "#F2F0EA"), stroke: C.ink, "stroke-width": 6 }, g); const lx = u + (u ? 12 : CB - 12); el("line", { x1: lx, y1: -zt(lx) + 10, x2: lx, y2: fT - 10, stroke: "rgba(0,0,0,.18)", "stroke-width": 6 }, g); }); }   // [MM] gala fasādē stūra dēļi līdz vējmalai (pa jumta slīpumu)'),
+                  '  el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);\n  { const CB = (window.AR && AR.projekts && AR.projekts.sturi) || 0, zt = u => (gable ? roofTopW + (ridgeTop - roofTopW) * Math.min(u, span - u) / (span / 2) : (FAS ? eEdge : eEdge + thV - 20)); if (CB) [0, span - CB].forEach(u => { el("polygon", { points: [P(u, -fT), P(u + CB, -fT), P(u + CB, zt(u + CB)), P(u, zt(u))].join(" "), fill: (AR.projekts.sturi_hex || "#F2F0EA"), stroke: C.ink, "stroke-width": 6 }, g); const lx = u + (u ? 12 : CB - 12); el("line", { x1: lx, y1: -zt(lx) + 10, x2: lx, y2: fT - 10, stroke: "rgba(0,0,0,.18)", "stroke-width": 6 }, g); }); }   // [MM] gala fasādē stūra dēļi līdz vējmalai (pa jumta slīpumu)'),
                  # stabveida pamatu cokols RAL 9005
                  ('    el("rect", { x: -20, y: fT, width: span + 40, height: ROOF.plinth - 40 - fT, fill: "#3a3f43", stroke: C.ink, "stroke-width": 10 }, g);',
                   '    el("rect", { x: -20, y: fT, width: span + 40, height: ROOF.plinth - 40 - fT, fill: (AR.projekts.cokols_hex || "#1d1d1d"), stroke: C.ink, "stroke-width": 10 }, g);'),
@@ -170,7 +176,7 @@ def build(model_path, langs=None):
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)
         ('      R(s0, s1, z0 - 40, z0 + 10, { fill: cc, ...ln });', '      R(s0, s1, z0 - 40, z0 + 10, { fill: colHex((window.AR && AR.win && AR.win.sillColor) || WINC().cas, "#24282b"), ...ln });'),
         # [MM] logu vēršanās loks plānā raustīts
-        ('A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG)', 'A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5, "stroke-dasharray": "40 30" }, sashG)'),
+        ('A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5 }, sashG)', 'A ${lw} ${lw} 0 0 ${cw} ${tip[0]} ${tip[1]}`, fill: "none", stroke: C.thin, "stroke-width": 5, ...SWD(1) }, sashG)'),
         # [MM] durvju kārbas paliek sienā: baltais izgriezums tikai brīvajā ailā, sienas līnijas iet pāri kārbām
         ('gap(x - KB, y - 14, w + 2 * KB, th + 28);', 'gap(x, y - 14, w, th + 28);'),
         ('gap(x - 14, y - KB, th + 28, w + 2 * KB);', 'gap(x - 14, y, th + 28, w);'),
@@ -203,7 +209,7 @@ def build(model_path, langs=None):
          '    });\n'),
         # [MM] sienas plānā aizlietas ar vienu toni (projekts.sienas_hex), pīrāgu slāņi nav redzami
         ('function drawWalls(g, v, cid) {\n',
-         'function drawWalls(g, v, cid) {\n  const SOLID = window.AR && AR.projekts && AR.projekts.sienas_hex;   // [MM] sienas aizlietas ar vienu toni (bez pīrāgiem)\n'),
+         'function drawWalls(g, v, cid) {\n  const SOLID = (window.AR && AR.projekts && AR.projekts.sienas_hex) || ((window.AR && AR.projekts && AR.projekts.wall_style || {}).hatch === 0 ? "#ffffff" : null);   // [MM] sienas aizlietas ar vienu toni vai tīras (bez pīrāgiem)\n'),
         ('  EXT_LAYERS.forEach((l, i) => el("polygon", { points: ps(rings[i]), fill: l.fill || "#fff" }, g));',
          '  EXT_LAYERS.forEach((l, i) => el("polygon", { points: ps(rings[i]), fill: SOLID || l.fill || "#fff" }, g));'),
         ('  EXT_LAYERS.forEach((l, i) => {\n    if (!l.hatch) return;',
@@ -251,6 +257,51 @@ def build(model_path, langs=None):
     sh = '    { // shadow of the head and the left jamb on the glass (as on the other windows)'
     assert sh in cad, 'SBE cad.js: nav atrasta gala loga ēna'
     cad = cad.replace(sh, '    if (mid > a0 + 1 && mid < a1 - 1) { // shadow of the head and the left jamb on the glass (as on the other windows)', 1)
+    # [MM] AR lapas: mazām mājām fasādes (un plāni) lielākā mērogā 1:75 vai 1:50; līnijas un teksts paliek tāda paša lieluma
+    ARFIX = (
+        'function arFix(g, k) {\n'
+        '  if (!g || k === 1) return;\n'
+        '  g.querySelectorAll("*").forEach(e => {\n'
+        '    ["stroke-width", "font-size", "letter-spacing"].forEach(a => { const x = e.getAttribute(a); if (x != null && x !== "" && !isNaN(+x)) e.setAttribute(a, (+x * k).toFixed(3)); });\n'
+        '    const d = e.getAttribute("stroke-dasharray"); if (d && d !== "none") e.setAttribute("stroke-dasharray", d.split(/[ ,]+/).map(x => (+x * k).toFixed(2)).join(" "));\n'
+        '  });\n'
+        '}\n'
+        'function arScaleFas(v, H) {   // [s, d] lielākais standarta mērogs, kurā abas fasādes ietilpst lapā\n'
+        '  const L = v.W + 2 * ROOF.ov, D = v.D + 2 * ROOF.ov;\n'
+        '  for (const d of [50, 75]) { const s = 1 / d; if ((L + D) * s <= 315 && H * s <= 120) return [s, d]; }\n'
+        '  return [0.01, 100];\n'
+        '}\n'
+        'function arScalePlan(v) {\n'
+        '  for (const d of [50, 75]) { const s = 1 / d; if ((v.W + 6900) * s <= 222 && (v.D + 6900) * s <= 148) return [s, d]; }\n'
+        '  return [0.01, 100];\n'
+        '}\n')
+    n0 = ar.index('function wrap(t, n) {')
+    ar = ar[:n0] + ARFIX + ar[n0:]
+    for a_, b_ in [
+        ('      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:100"),',
+         '      const [ps_, pd_] = arScalePlan(v); window.AR_PK = ps_ === 0.01 ? null : ps_; window.AR_PD = pd_; window.MM_SCALE = pd_;\n      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:" + pd_),'),
+        ('      out.push(svg); return;\n    }\n    const svg = sheet(k, title, k === "mezgli"',
+         '      window.AR_PK = null; window.AR_PD = 100; window.MM_SCALE = 100;\n      out.push(svg); return;\n    }\n    const [fs_, fd_] = (k === "fas1" || k === "fas2") ? arScaleFas(v, H) : [0.01, 100];\n    const svg = sheet(k, title, k === "fas1" || k === "fas2" ? "1:" + fd_ : k === "mezgli"'),
+        ('      elevation(el("g", { "data-block": "elev-" + a, transform: `translate(52 150) scale(0.01)` }, svg), v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` });\n'
+         '      elevation(el("g", { "data-block": "elev-" + b, transform: `translate(266 150) scale(0.01)` }, svg), v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` });\n',
+         '      { const La = v.W + 2 * ROOF.ov, Lb = v.D + 2 * ROOF.ov, wa = (k === "fas1" ? v.D : v.D) , xa = 40 + ROOF.ov * fs_, xb = Math.min(266, xa + La * fs_ + 60 + ROOF.ov * fs_);\n'
+         '        const aLen = (a === "south" || a === "north") ? La : Lb, bLen = (b === "south" || b === "north") ? La : Lb; void wa; void bLen;\n'
+         '        const x1 = fs_ === 0.01 ? 52 : 62 + ROOF.ov * fs_, x2 = fs_ === 0.01 ? 266 : Math.min(266, x1 + aLen * fs_ + 70);\n'
+         '        const gy_ = fs_ === 0.01 ? 150 : Math.min(150, 174.5 - 2450 * fs_);   // nosaukums paliek tajā pašā vietā lapā\n        window.AR_K = 0.01 / fs_; window.MM_SCALE = fd_;\n'
+         '        const ga = el("g", { "data-block": "elev-" + a, transform: `translate(${x1} ${gy_}) scale(${fs_})` }, svg); elevation(ga, v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` }); arFix(ga, 0.01 / fs_);\n'
+         '        const gb = el("g", { "data-block": "elev-" + b, transform: `translate(${x2} ${gy_}) scale(${fs_})` }, svg); elevation(gb, v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` }); arFix(gb, 0.01 / fs_);\n'
+         '        window.AR_K = 1; window.MM_SCALE = 100; void xa; void xb; }\n'),
+    ]:
+        assert a_ in ar, 'SBE ar.js: nav atrasts ' + a_[:50]
+        ar = ar.replace(a_, b_, 1)
+    for a_, b_ in [
+        ('  const g = el("g", { transform: "translate(61 50) scale(0.01)" }, svg);\n  cadPlan(g, v, { furniture: o.furniture ?? true, axes: true, levels: true, tag: o.tag || "-a3", tags: o.tags ?? !!v.marks, wallTags: o.wallTags, sections: o.sections });',
+         '  const g = el("g", { transform: window.AR_PK ? `translate(${27 + 3450 * window.AR_PK} ${22 + 3450 * window.AR_PK}) scale(${window.AR_PK})` : "translate(61 50) scale(0.01)" }, svg);\n  cadPlan(g, v, { furniture: o.furniture ?? true, axes: true, levels: true, tag: o.tag || "-a3", tags: o.tags ?? !!v.marks, wallTags: o.wallTags, sections: o.sections });\n  if (window.AR_PK) arFix(g, 0.01 / window.AR_PK);'),
+        ('  T_(svg, 26 + hd.length * 2.75 + 6, 197, "M 1:100", { fs: 3.4, fill: "#444" });\n  el("line", { x1: 26, y1: 199,', '  T_(svg, 26 + hd.length * 2.75 + 6, 197, "M 1:" + (window.AR_PD || 100), { fs: 3.4, fill: "#444" });\n  el("line", { x1: 26, y1: 199,'),
+        ('ttl.length * 262 + 350', '(ttl.length * 262 + 350) * (window.AR_K || 1)'),
+    ]:
+        if a_ in cad: cad = cad.replace(a_, b_, 1)
+        else: print('BRĪDINĀJUMS: cad.js neatrasts:', a_[:50])
     cad = cad.replace('/*AR*/', ar + '\n' + sheet, 1)
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
@@ -279,7 +330,7 @@ def build(model_path, langs=None):
             logo = 'data:image/png;base64,' + base64.b64encode(open(lp, 'rb').read()).decode()
             break
     css = '<style>@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}</style>'
-    css += """<style>html{overflow:hidden;background:#e9e7e2}body{transform-origin:0 0;margin:0;cursor:grab}body.mmdrag{cursor:grabbing}
+    css += """<style>html{overflow:hidden;background:#e9e7e2;touch-action:none}body{touch-action:none;transform-origin:0 0;margin:0;cursor:grab}body.mmdrag{cursor:grabbing}
 @media print{html{overflow:visible!important;background:none}body{transform:none!important;cursor:auto}}</style>
 <script>(function(){var b=document.body,s=1,x=0,y=0,d=null,fit=1;
 function ap(){b.style.transform='translate('+x+'px,'+y+'px) scale('+s+')';if(window.MMZ_ON)MMZ_ON()}
@@ -291,9 +342,16 @@ window.MMZ.reset=function(){MMZ_INIT=null;reset()};
 addEventListener('load',function(){setTimeout(reset,50)});addEventListener('resize',function(){if(!window.MM_ED)reset()});
 addEventListener('wheel',function(e){e.preventDefault();var k=Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),n=Math.min(Math.max(s*k,fit*.5),fit*12);k=n/s;
 x=e.clientX-(e.clientX-x)*k;y=e.clientY-(e.clientY-y)*k;s=n;ap()},{passive:false});
-addEventListener('pointerdown',function(e){if(window.MMZ_HOOK&&MMZ_HOOK(e))return;d=[e.clientX-x,e.clientY-y];b.classList.add('mmdrag')});
-addEventListener('pointermove',function(e){if(d){x=e.clientX-d[0];y=e.clientY-d[1];ap()}});
-addEventListener('pointerup',function(){d=null;b.classList.remove('mmdrag')});
+var P={},pc=null;   /* [MM] telefons: divu pirkstu tuvināšana un bīdīšana */
+function two(){var k=Object.keys(P);return k.length>=2?[P[k[0]],P[k[1]]]:null}
+function mid(t){return{x:(t[0][0]+t[1][0])/2,y:(t[0][1]+t[1][1])/2,r:Math.hypot(t[0][0]-t[1][0],t[0][1]-t[1][1])||1}}
+addEventListener('pointerdown',function(e){P[e.pointerId]=[e.clientX,e.clientY];var t=two();if(t){d=null;b.classList.remove('mmdrag');if(window.MMZ_CANCEL)MMZ_CANCEL();pc=mid(t);return}
+if(window.MMZ_HOOK&&MMZ_HOOK(e))return;d=[e.clientX-x,e.clientY-y];b.classList.add('mmdrag')});
+addEventListener('pointermove',function(e){if(P[e.pointerId])P[e.pointerId]=[e.clientX,e.clientY];var t=two();
+if(t&&pc){var m=mid(t),n=Math.min(Math.max(s*m.r/pc.r,fit*.5),fit*12),k=n/s;x=m.x-(pc.x-x)*k;y=m.y-(pc.y-y)*k;s=n;pc=m;ap();return}
+if(d){x=e.clientX-d[0];y=e.clientY-d[1];ap()}});
+function up(e){delete P[e.pointerId];if(Object.keys(P).length<2)pc=null;d=null;b.classList.remove('mmdrag')}
+addEventListener('pointerup',up);addEventListener('pointercancel',up);
 addEventListener('dblclick',function(e){if(window.MM_ED)return;reset()})})()</script>"""
     out_dir = os.path.join(os.path.dirname(os.path.abspath(model_path)), 'rasejumi')
     os.makedirs(out_dir, exist_ok=True)
