@@ -107,6 +107,24 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 .sps { display: flex; align-items: center; gap: 10px; font-size: 12.5px; }
 .sps .sp { flex: 1; }
 .badge { font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 2px; background: var(--acc-soft); color: var(--accent); }
+.cv { position: relative; border-bottom: 1px solid var(--line); background: var(--paper); }
+.cv a.th { border-bottom: 0; }
+.cv a.th.img { padding: 0; height: 170px; overflow: hidden; }
+.cv a.th.img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cv a.th.two { padding: 6px; gap: 4px; grid-template-columns: 1fr; grid-template-rows: 1.15fr 1fr; place-items: stretch; height: 200px; }
+.cv a.th.img { height: 200px; }
+.cv a.th.two span { background: #fff; border: 1px solid var(--line); display: grid; place-items: center; overflow: hidden; border-radius: 2px; }
+.cv a.th.two img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.tn { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 5px; padding: 4px 5px; border-radius: 99px; background: rgba(20,22,25,.55); }
+.tn button { width: 16px; height: 16px; padding: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.7); }
+.tn button[aria-pressed="true"] { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+.st { display: flex; gap: 4px; padding: 6px 8px 0; overflow-x: auto; scrollbar-width: thin; }
+.st button { flex: none; width: 46px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
+.st button img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.st button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card.drop { border-color: var(--accent); box-shadow: 0 0 0 2px var(--acc-soft); }
+.card.drop .cv::after { content: "Ievelc šeit vizualizācijas"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(34,102,216,.82); color: #fff; font-weight: 600; }
+.wait { position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--muted); background: var(--field); border: 1px solid var(--line); border-radius: 2px; padding: 1px 6px; }
 #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--brand); color: #f2f4f6; padding: 9px 14px; border-radius: var(--r); font-size: 12.5px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
 @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } nav { display: none; } .search input { width: 160px; } }
 @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
@@ -221,6 +239,80 @@ function plan(p) {
   const out = p.poly ? `<polygon points="${p.poly.map(q => q.join(",")).join(" ")}"/>` : `<rect x="0" y="0" width="${p.W}" height="${p.D}"/>`;
   return `<svg viewBox="${-pad} ${-pad} ${W} ${H}" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><g fill="var(--field)" stroke="currentColor" stroke-width="${Math.max(W, H) / 160}" stroke-linejoin="round">${out}</g><g fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="${Math.max(W, H) / 380}">${p.rooms.map(r => `<rect x="${r[0]}" y="${r[1]}" width="${r[2]}" height="${r[3]}"/>`).join("")}</g></svg>`;
 }
+// kartītes attēls: paša bildes > bota vizualizācijas izvēlētajā tonī > plāns un fasāde no rasējuma > shēma
+const TONES = { peleks: ["Pelēks", "#3B3C40"], sarkans: ["Sarkans", "#7A382A"], koks: ["Koks", "#A56D37"], zals: ["Zaļš", "#46564A"], balts: ["Balts", "#BABBC0"] };
+const VS = {};   // projekta key -> { t: tonis, i: bildes nr }
+function coverHtml(p) {
+  const st = VS[p.key] = VS[p.key] || { t: null, i: 0 }, href = `/edit/${p.key}`;
+  const tones = Object.keys(TONES).filter(t => p.vizBot[t]);
+  let imgs = p.vizOwn, toneBar = "";
+  if (!imgs.length && tones.length) {
+    if (!tones.includes(st.t)) st.t = tones.includes(p.tone) ? p.tone : tones[0];
+    imgs = p.vizBot[st.t];
+    toneBar = `<div class="tn">${tones.map(t => `<button type="button" data-tone="${t}" data-k="${p.key}" title="${TONES[t][0]}" aria-label="Tonis: ${TONES[t][0]}" aria-pressed="${t === st.t}" style="background:${TONES[t][1]}"></button>`).join("")}</div>`;
+  }
+  if (imgs.length) {
+    const i = Math.min(st.i, imgs.length - 1);
+    return `<div class="cv"><a class="th img" href="${href}" title="Atvērt redaktorā"><img loading="lazy" src="${esc(imgs[i])}" alt=""></a>${toneBar}</div>` +
+      (imgs.length > 1 ? `<div class="st">${imgs.map((u, j) => `<button type="button" data-img="${j}" data-k="${p.key}" aria-pressed="${j === i}" aria-label="Bilde ${j + 1}"><img loading="lazy" src="${esc(u)}" alt=""></button>`).join("")}</div>` : "");
+  }
+  if (p.thumbs.plans || p.thumbs.fasade)
+    return `<div class="cv"><a class="th two" href="${href}" title="Atvērt redaktorā"><span>${p.thumbs.plans ? `<img loading="lazy" src="${esc(p.thumbs.plans)}" alt="Plāns">` : ""}</span><span>${p.thumbs.fasade ? `<img loading="lazy" src="${esc(p.thumbs.fasade)}" alt="Fasāde">` : ""}</span></a>${p.thumbOk ? "" : '<span class="wait">atjauno…</span>'}</div>`;
+  return `<div class="cv"><a class="th" href="${href}" title="Atvērt redaktorā">${plan(p)}</a><span class="wait">gatavo plānu…</span></div>`;
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-tone]"), im = e.target.closest("[data-img]");
+  if (t) { VS[t.dataset.k] = { t: t.dataset.tone, i: 0 }; render(); }
+  if (im) { VS[im.dataset.k].i = +im.dataset.img; render(); }
+});
+// vizualizāciju ievilkšana uz kartītes: bildes nonāk projekta mapē viz\ un kļūst par kartītes attēlu
+let dragCard = null;
+document.addEventListener("dragover", e => { e.preventDefault(); const c = e.target.closest(".card"); if (c !== dragCard) { dragCard && dragCard.classList.remove("drop"); dragCard = c; c && c.classList.add("drop"); } });
+document.addEventListener("dragleave", e => { if (!e.relatedTarget && dragCard) { dragCard.classList.remove("drop"); dragCard = null; } });
+document.addEventListener("drop", async e => {
+  e.preventDefault(); const c = e.target.closest(".card"); dragCard && dragCard.classList.remove("drop"); dragCard = null;
+  if (!c) return;
+  const fs = [...e.dataTransfer.files].filter(f => /\.(png|jpe?g|webp)$/i.test(f.name));
+  if (!fs.length) { toast("Ievelc PNG, JPG vai WEBP bildes."); return; }
+  let n = 0;
+  for (const f of fs) { const r = await fetch(`/api/viz/${c.dataset.key}?name=${encodeURIComponent(f.name)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f }); if (r.ok) n++; }
+  toast(n + (n === 1 ? " bilde pievienota" : " bildes pievienotas") + " projekta mapei viz"); VS[c.dataset.key] = { t: null, i: 0 }; load();
+});
+// miniatūras no īstās A3 lapas: plāns (ar telpu nosaukumiem un laukumiem) un dienvidu fasāde
+let thumbBusy = false;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function thumbs() {
+  if (thumbBusy) return; thumbBusy = true;
+  try {
+    for (const p of D.projects.filter(x => !x.thumbOk)) { try { await capture(p); } catch (e) { console.warn("miniatūra", p.id, e); } }
+  } finally { thumbBusy = false; }
+  if (D.projects.some(x => !x.thumbOk)) { const r = await api("/api/projects"); D = r; render(); }
+}
+async function capture(p) {
+  const f = document.createElement("iframe"); f.setAttribute("aria-hidden", "true"); f.tabIndex = -1;
+  f.style.cssText = "position:fixed;left:-20000px;top:0;width:1700px;height:2300px;border:0;visibility:hidden";
+  f.src = "/lv/" + p.key; document.body.appendChild(f);
+  await new Promise(r => { f.onload = r; setTimeout(r, 60000); }); await sleep(1500);
+  const doc = f.contentDocument;
+  for (const [name, sel] of [["plans", '[data-block="plan"]'], ["fasade", '[data-block="elev-south"]']]) {
+    const el = doc && doc.querySelector(sel); if (!el) continue;
+    let svg = el.ownerSVGElement; while (svg && svg.ownerSVGElement) svg = svg.ownerSVGElement;
+    const vb = svg.viewBox.baseVal, sr = svg.getBoundingClientRect(), er = el.getBoundingClientRect();
+    if (!vb || !vb.width || !er.width) continue;
+    const kx = vb.width / sr.width, ky = vb.height / sr.height, pd = 3;
+    const x = vb.x + (er.left - sr.left) * kx - pd, y = vb.y + (er.top - sr.top) * ky - pd, w = er.width * kx + 2 * pd, h = er.height * ky + 2 * pd;
+    const c = svg.cloneNode(true); c.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
+    const W = 1000, H = Math.round(W * h / w); c.setAttribute("width", W); c.setAttribute("height", H); c.removeAttribute("style"); c.removeAttribute("class");
+    c.setAttribute("xmlns", "http://www.w3.org/2000/svg"); c.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    const bg = doc.createElementNS("http://www.w3.org/2000/svg", "rect"); [["x", x], ["y", y], ["width", w], ["height", h], ["fill", "#fff"]].forEach(([a, v]) => bg.setAttribute(a, v)); c.insertBefore(bg, c.firstChild);
+    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(c)], { type: "image/svg+xml" }));
+    const img = new Image(); img.src = url; await img.decode();
+    const cv = document.createElement("canvas"); cv.width = W; cv.height = H; cv.getContext("2d").drawImage(img, 0, 0, W, H); URL.revokeObjectURL(url);
+    const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+    await fetch(`/api/thumb/${p.key}?name=${name}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: blob });
+  }
+  f.remove();
+}
 const dt = t => new Date(t * 1000).toLocaleDateString("lv-LV", { day: "2-digit", month: "2-digit", year: "numeric" });
 function render() {
   const q = $("q").value.trim().toLowerCase(), so = $("sort").value;
@@ -232,8 +324,8 @@ function render() {
   r.sort(so === "name" ? (a, b) => String(a.name).localeCompare(String(b.name), "lv") : so === "area" ? (a, b) => a.area - b.area : (a, b) => b.mtime - a.mtime);
   $("count").textContent = r.length + (r.length === 1 ? " projekts" : " projekti");
   $("grid").innerHTML = r.map(p => `
-    <article class="card">
-      <a class="th" href="/edit/${p.key}" title="Atvērt redaktorā">${plan(p)}</a>
+    <article class="card" data-key="${p.key}">
+      ${coverHtml(p)}
       <div class="bd"><div class="nm">${esc(p.name)}</div><div class="mt">${esc(p.id)}${co ? "" : " · " + esc(p.company)}</div>
         <div class="mt">${p.area} m² · ${(p.W / 1000).toFixed(1)} × ${(p.D / 1000).toFixed(1)} m${p.loft ? " · mansards" : ""} · ${dt(p.mtime)}</div>
         <div class="mt${p.lastSent ? " sent" : ""}">${p.nfiles ? p.nfiles + (p.nfiles === 1 ? " fails" : " faili") : "Nav eksportu"}${p.lastSent ? " · klientam nosūtīts " + new Date(p.lastSent).toLocaleDateString("lv-LV") : ""}</div></div>
@@ -246,7 +338,7 @@ function render() {
   if (!r.length) em.innerHTML = q ? `Nekas nav atrasts pēc „${esc(q)}”.` : `Šim uzņēmumam vēl nav projektu.<button class="pri" type="button" onclick="newDlg()">${ico("plus")}Jauns projekts</button>`;
 }
 async function load() {
-  try { D = await api("/api/projects"); $("root").textContent = "Arhīvs: " + D.root; render(); }
+  try { D = await api("/api/projects"); $("root").textContent = "Arhīvs: " + D.root; render(); thumbs(); }
   catch (e) { $("grid").innerHTML = ""; $("empty").hidden = false; $("empty").textContent = "Neizdevās nolasīt projektus: " + e.message; }
 }
 document.addEventListener("click", async e => {

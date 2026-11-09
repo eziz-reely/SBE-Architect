@@ -15,7 +15,7 @@ import hashlib, html, json, os, re, shutil, subprocess, sys, threading, time, ur
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PORT = 8737
+PORT = int(os.environ.get("SBE_PORT") or 8737)
 CFG_PATH = os.path.join(os.path.expanduser('~'), '.sbe-arhivs.json')
 SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref'}
 LOCK = threading.Lock()
@@ -79,9 +79,38 @@ def scan():
                         'name': P.get('modela_nosaukums') or m.get('nosaukums') or m.get('id'),
                         'W': m.get('W', 0), 'D': m.get('D', 0), 'area': int(mm.group(0)) if mm else round(m.get('W', 0) * m.get('D', 0) / 1e6),
                         'loft': bool(m.get('loft')), 'rooms': rooms, 'poly': m.get('poly'), 'mtime': int(os.path.getmtime(mp)),
-                        'rel': os.path.relpath(dp, base), **_counts(dp)})
+                        'rel': os.path.relpath(dp, base), 'tone': P.get('tonis') or 'peleks', **_counts(dp),
+                        **media(dp, key_of(dp), os.path.getmtime(mp))})
             dn[:] = []   # projekta apakšmapēs (varianti u.c.) citu model.json nemeklē
     return out
+
+
+IMG = ('.png', '.jpg', '.jpeg', '.webp')
+TONES = ('peleks', 'sarkans', 'koks', 'zals', 'balts')
+
+
+def media(dp, key, mtime):
+    """Projekta bildes kartītei: miniatūras (plāns, fasāde), bota vizualizācijas pa toņiem (viz/V<n>_<tonis>.png) un paša ieliktās bildes."""
+    url = lambda rel: f"/pf/{key}/{rel.replace(os.sep, '/')}?v={int(os.path.getmtime(os.path.join(dp, rel)))}"
+    th = {}
+    for n in ('plans', 'fasade'):
+        rel = os.path.join('miniaturas', n + '.png')
+        if os.path.exists(os.path.join(dp, rel)):
+            th[n] = url(rel)
+    fresh = bool(th) and all(os.path.getmtime(os.path.join(dp, 'miniaturas', n + '.png')) >= mtime for n in ('plans', 'fasade') if n in th) and len(th) == 2
+    bot, own = {}, []
+    vd = os.path.join(dp, 'viz')
+    if os.path.isdir(vd):
+        for f in sorted(os.listdir(vd)):
+            if not f.lower().endswith(IMG) or f.startswith('ref_'):
+                continue
+            m = re.match(r'V(\d+)_([a-z]+)\.png$', f)
+            if m and m.group(2) in TONES:
+                bot.setdefault(m.group(2), []).append(url(os.path.join('viz', f)))
+            else:
+                own.append({'url': url(os.path.join('viz', f)), 'mtime': os.path.getmtime(os.path.join(vd, f))})
+    own.sort(key=lambda x: -x['mtime'])
+    return {'thumbs': th, 'thumbOk': fresh, 'vizBot': bot, 'vizOwn': [x['url'] for x in own]}
 
 
 def _counts(dp):
@@ -113,6 +142,15 @@ var dl={save:function(o){var d=o.data,b=d instanceof Blob?d:new Blob([d]);return
 window.claude={use:function(n){return n==='db'?Promise.resolve(db):n==='downloads'?Promise.resolve(dl):Promise.reject({code:'declined'})}};
 addEventListener('DOMContentLoaded',function(){var mk=document.querySelector('header .mark');if(!mk)return;var a=document.createElement('a');a.href='/';a.className='mark back';a.title='Atpakaļ uz projektu arhīvu';a.innerHTML='<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Projekti';mk.replaceWith(a);});
 })();</script><style>header a.mark.back{display:inline-flex;align-items:center;gap:4px;color:#c9cfd6;text-decoration:none;letter-spacing:.04em;font:600 13px/42px var(--f-ui);padding-right:14px;margin-right:14px;border-right:1px solid #3d4248}header a.mark.back:hover{color:#fff}</style>"""
+
+
+def lv_page(pdir):
+    """Parastā LV A3 lapa (miniatūrām): uzbūvē, ja tās nav vai tā ir vecāka par model.json."""
+    mp = os.path.join(pdir, 'model.json'); m = json.load(open(mp, encoding='utf-8'))
+    f = os.path.join(pdir, 'rasejumi', f"{m['id']}_LV.html")
+    if not os.path.exists(f) or os.path.getmtime(f) < os.path.getmtime(mp):
+        rebuild_pages(mp)
+    return open(f, encoding='utf-8').read()
 
 
 def rebuild_pages(mp):
@@ -267,6 +305,19 @@ class H(BaseHTTPRequestHandler):
                     return self.send(404, 'Uzņēmums nav atrasts', 'text/plain; charset=utf-8')
                 cs = company_spec(d).get('piragi_layers') or {}
                 return self.send(200, {'defaults': default_layers(), 'custom': cs, 'set': bool(cs)})
+            if p.startswith('/lv/'):
+                d = path_for(p[4:])
+                return self.send(200, lv_page(d), 'text/html; charset=utf-8') if d else self.send(404, 'Nav', 'text/plain; charset=utf-8')
+            if p.startswith('/pf/'):   # projekta faili (bildes) kartītēm: tikai miniaturas/ un viz/
+                k, _, rel = p[4:].partition('/'); d = path_for(k); rel = urllib.parse.unquote(rel)
+                fp = os.path.normpath(os.path.join(d or '', rel))
+                if not d or not fp.startswith(os.path.join(d, '')) or rel.split('/')[0] not in ('miniaturas', 'viz') or not os.path.isfile(fp):
+                    return self.send(404, 'Nav', 'text/plain; charset=utf-8')
+                import mimetypes
+                body = open(fp, 'rb').read()
+                self.send_response(200); self.send_header('Content-Type', mimetypes.guess_type(fp)[0] or 'application/octet-stream')
+                self.send_header('Content-Length', str(len(body))); self.send_header('Cache-Control', 'max-age=31536000'); self.end_headers(); self.wfile.write(body)
+                return
             if p == '/api/ping':
                 return self.send(200, {'ok': True})
             if p.startswith('/edit/'):
@@ -300,6 +351,29 @@ class H(BaseHTTPRequestHandler):
                     nm = f"{stem}_{time.strftime('%Y-%m-%d_%H%M')}{ext}"; fp = os.path.join(ed, nm)
                 open(fp, 'wb').write(data)
                 return self.send(200, {'ok': True, 'name': nm})
+            if p.startswith('/api/thumb/') or p.startswith('/api/viz/'):
+                isT = p.startswith('/api/thumb/'); d = path_for(p[11 if isT else 9:])
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+                nm = os.path.basename((q.get('name') or [''])[0])
+                data = self.rfile.read(int(self.headers.get('Content-Length') or 0))
+                if not d or not data:
+                    return self.send(400, 'Nav datu', 'text/plain; charset=utf-8')
+                if isT:
+                    if nm not in ('plans', 'fasade'):
+                        return self.send(400, 'Nederīgs nosaukums', 'text/plain; charset=utf-8')
+                    od = os.path.join(d, 'miniaturas'); os.makedirs(od, exist_ok=True)
+                    open(os.path.join(od, nm + '.png'), 'wb').write(data)
+                    return self.send(200, {'ok': True})
+                nm = safe_name(nm) or 'bilde.jpg'; stem, ext = os.path.splitext(nm)
+                if ext.lower() not in IMG:
+                    return self.send(400, 'Tikai bildes (PNG, JPG, WEBP)', 'text/plain; charset=utf-8')
+                if re.match(r'(V\d+_|ref_)', stem):   # neaizstāj bota failus
+                    stem = 'mana_' + stem
+                od = os.path.join(d, 'viz'); os.makedirs(od, exist_ok=True); fp = os.path.join(od, stem + ext); n = 2
+                while os.path.exists(fp):
+                    fp = os.path.join(od, f'{stem}-{n}{ext}'); n += 1
+                open(fp, 'wb').write(data)
+                return self.send(200, {'ok': True, 'name': os.path.basename(fp)})
             b = self.body()
             if p.startswith('/api/sent/'):
                 d = path_for(p[10:])
