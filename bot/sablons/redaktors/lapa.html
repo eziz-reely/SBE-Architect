@@ -315,6 +315,8 @@ main { grid-template-columns: 44px 1fr 320px; }
 #sbar .dirty { color: var(--mark); }
 aside #hint, aside .savebar #status { display: none; }
 #libOpen small { display: none; }
+#mats .grid > .sub-cap { margin: 10px 0 4px; font: 600 11px/1 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+#mats .grid > button.add + .sub-cap { margin-top: 6px; }
 .mseg { display: flex; flex-wrap: wrap; gap: 3px; padding: 3px; margin: -6px 0 12px; background: var(--paper); border: 1px solid var(--line2); border-radius: var(--r); box-shadow: 0 4px 8px -6px rgba(0,0,0,.25); }
 .mseg button { flex: 1 1 auto; height: 28px; padding: 0 6px; border: 0; border-radius: 2px; background: none; color: var(--muted); font: 600 12px/1 var(--f-ui); }
 .mseg button:hover { color: var(--ink); background: var(--hover); }
@@ -1220,9 +1222,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     };
     { // sienu specifikācija: pīrāgu slāņi, pārbaude pret plāna sienu biezumiem; labojumus saglabā modelī (projekts.piragi_layers)
       if (!document.getElementById("specCss")) { const st = document.createElement("style"); st.id = "specCss"; st.textContent = ".spec{margin:6px 0 10px;font-size:12px}.spec b{display:block;margin:4px 0}.spec table{width:100%;border-collapse:collapse}.spec td{padding:1px 2px}.spec td.grip{width:14px;cursor:grab;color:var(--muted);user-select:none;text-align:center;font-size:12px;letter-spacing:-2px}.spec tr.dragging{opacity:.45}.spec tr.dropb td{box-shadow:inset 0 2px 0 var(--mark)}.spec tr.dropa td{box-shadow:inset 0 -2px 0 var(--mark)}.spec input{width:100%;box-sizing:border-box;font:inherit;padding:2px 4px}.spec input.n{text-align:right}.spec .x{width:22px;cursor:pointer;border:0;background:none;color:#a33}.spec .ok{color:#2b7a3d}.spec .bad{color:#b3261e}.spec .sum td{border-top:1px solid #bbb;font-weight:600}.spec button.add{margin-top:3px;font:inherit}"; document.head.appendChild(st); }
-      const gs = group("Sienas (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
+      const gs = group("Konstrukcijas (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
       const Tw = Math.min(...(model.rooms || []).flatMap(r => r.r.map(q => q[0]))), EXP = { S1: [Tw, "ārsienas biezums plānā"], S2: [195, "starpsienas biezums plānā"] };
-      { const ob = document.createElement("button"); ob.type = "button"; ob.className = "add full"; ob.style.cssText = "border-style:solid;font-weight:600"; ob.textContent = "Visas konstrukcijas vienā logā…"; ob.title = "Sienas, jumts un grīda kopā; var mainīt arī nosaukumus"; ob.addEventListener("click", conDlg); gs.appendChild(ob); }
+      { const ob = document.createElement("button"); ob.type = "button"; ob.className = "add full"; ob.style.cssText = "border-style:solid;font-weight:600"; ob.textContent = "Rediģēt visas konstrukcijas vienā logā…"; ob.title = "Grīda, sienas un jumts kopā; var mainīt slāņus, biezumus un nosaukumus. Izmaiņas iet uz AR lapu Sienu specifikācija un model.json."; ob.addEventListener("click", conDlg); gs.appendChild(ob); }
       const note0 = document.createElement("p"); note0.className = "note full"; note0.textContent = "Pārbaudi slāņus un biezumus (mm). Ja kaut kas nav pareizi vai trūkst, labo laukos: izmaiņas iet uz AR projekta lapu \"Sienu specifikācija\" un model.json."; gs.appendChild(note0);
       const WT = (model.projekts || {}).wall_types || [];   // papildu starpsienu veidi: [{id, name, layers}]
       const PNm = (model.projekts || {}).piragi_names || {};
@@ -1295,6 +1297,15 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const addWt = document.createElement("button"); addWt.type = "button"; addWt.className = "add full"; addWt.textContent = "+ Pievienot starpsienas veidu"; addWt.title = "Jauns starpsienas veids ar saviem slāņiem; tas parādās AR lapā Sienu specifikācija";
       addWt.addEventListener("click", () => { const n = clone(model); n.projekts = n.projekts || {}; const L = n.projekts.wall_types = n.projekts.wall_types || []; let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; const base = (PLs.S2 || LAYERS0.S2.layers).map(l => l.slice()); L.push({ id: "P" + i, name: "Starpsiena " + Math.round(base.reduce((a, l) => a + (+l[1] || 0), 0)) + " (jauna)", layers: base }); commit(n); });
       gs.appendChild(addWt);
+      { // viens saraksts: Grīda → Sienas → Jumts → noformējums; visi pīrāgi vienādās saliekamās rindās
+        const lab = t => { const q = document.createElement("p"); q.className = "sub-cap full"; q.textContent = t; return q; };
+        const ob = gs.querySelector(":scope > button.add"), walls = [...gs.querySelectorAll(":scope > details.fold")];
+        gs.textContent = "";
+        gs.append(ob, lab("Grīda")); if (SPECX.G1) gs.append(SPECX.G1);
+        gs.append(lab("Sienas"), ...walls, addWt, lab("Jumts")); if (SPECX.J1) gs.append(SPECX.J1);
+        if (SPECX.KW) gs.append(lab("Specifikācijas noformējums"), SPECX.KW);
+        SPECX.G1 = SPECX.J1 = SPECX.KW = null;
+      }
     }
     const g2 = group("Visi logi", host);
     const all = [...(model.windows || []), ...(model.gableWins || [])], vals = [...new Set(all.map(casOf))];
@@ -1330,7 +1341,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     }
 
     { // pamatu veids: klients var pārdomāt; mainās fasādes cokols, ±0,000 līmenis pret kori un piezīmes rakstlaukumā
-      const P = model.projekts || {}, pam = P.pamati === "platne" ? "platne" : "stabveida", gp = group("Pamati un grīda", host);
+      const P = model.projekts || {}, pam = P.pamati === "platne" ? "platne" : "stabveida", gp = group("Pamati", host);
       gp.appendChild(field("Pamatu veids", pam, (n, v) => { n.projekts = n.projekts || {}; n.projekts.pamati = v === "platne" ? "platne" : "stabveida"; roofFix(n); }, { stabveida: "Stabveida pamati", platne: "Pamatu plātne" }, "full"));
       if (pam === "stabveida") gp.appendChild(field("Cokola apdare", P.cokols || "RAL 9005", (n, v) => { n.projekts = n.projekts || {}; n.projekts.cokols = v; }, { "RAL 9005": "Metāls RAL 9005 (melns)", "RAL 7016": "Metāls RAL 7016 (antracīts)" }, "full"));
       const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = pam === "stabveida" ? "Grīdas panelis virs zemes uz stabiem, metāla cokols. Kores augstums skaitās no grīdas paneļa apakšas." : "Māja uz betona plātnes, betona cokols, grīdas paneļa nav."; gp.appendChild(nt);
@@ -1359,13 +1370,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       g4.appendChild(r);
     }
   }
-  const MAJA_ORDER = ["Mājas izmēri", "Pamati un grīda", "Sienas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Specifikācijas noformējums"];
+  const MAJA_ORDER = ["Mājas izmēri", "Pamati", "Konstrukcijas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Specifikācijas noformējums"];
   // cilne Māja pa tēmām: viena tēma redzama, pārslēgs augšā; izvēle paliek arī pēc pārzīmēšanas
   const MAJA_SEC = [
     ["izmeri", "Izmēri", ["Mājas izmēri", "Stāvi"]],
     ["jumts", "Jumts", ["Jumts", "Notekas"]],
     ["izskats", "Izskats", ["Krāsas", "Visi logi"]],
-    ["konstr", "Konstrukcijas", ["Pamati un grīda", "Sienas (pīrāgi)", "Specifikācijas noformējums"]],
+    ["konstr", "Konstrukcijas", ["Pamati", "Konstrukcijas (pīrāgi)", "Specifikācijas noformējums"]],
   ];
   let majaSec = "izmeri";
   try { majaSec = localStorage.getItem("mmMajaSec") || majaSec; } catch (_) {}
