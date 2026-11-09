@@ -722,8 +722,8 @@ function arSheets(v) {
       notesBlock(svg, 118, 196, 100, [...arNotes([]).slice(0, 2), "Fasāžu materiālu krāsu toņus saskaņot ar pasūtītāju.", ...(arNo("logi") ? [`Logu, durvju specifikāciju skatīt lapā ${arNo("logi")}.`] : [])]);
     }
     if (k === "sienas") {
-      const specs = ["S1", "S2", "G1", "J1"].filter(LAYERS);
-      specs.forEach((id, i) => buildUp(svg, i % 2 ? 222 : 26, 22 + Math.floor(i / 2) * 112, id, { ...LAYERS(id), top: id === "G1" ? "telpa" : id === "S2" ? "iekšpuse" : "ārpuse", bottom: id === "G1" ? "grunts" : "iekšpuse" }));
+      const BASEK = ["S1", "S2", "G1", "J1"], specs = [...BASEK, ...Object.keys((ARC && ARC.layers) || {}).filter(k => !BASEK.includes(k))].filter(LAYERS), RS = specs.length > 4 ? 82 : 112;   // redaktorā pievienotie starpsienu veidi seko pēc S1, S2, G1, J1
+      specs.forEach((id, i) => buildUp(svg, i % 2 ? 222 : 26, 22 + Math.floor(i / 2) * RS, id, { ...LAYERS(id), top: id === "G1" ? "telpa" : id === "S1" || id === "J1" ? "ārpuse" : "iekšpuse", bottom: id === "G1" ? "grunts" : "iekšpuse" }));
       if (arNo("plan")) T_(svg, 26, 282, `Sienu tipu S1, S2 novietojumu skatīt lapā ${arNo("plan")}.`, { fs: 2.6, fill: "#333" });
     }
     if (k === "logi") {
