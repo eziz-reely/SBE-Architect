@@ -1139,9 +1139,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const sDef = TONES[tk].sturi ? "balts" : "nav", sCur = P.sturi_opc || sDef;
     g1.appendChild(colorField("Dekoratīvie stūra dēļi", sCur, { balts: "#F2F0EA", melns: "#1d1d1d", tonis: TONES[tk].sw, nav: "transparent" }[sCur], (n, v) => { n.projekts = n.projekts || {}; const d = (TONES[n.projekts.tonis || "peleks"] || {}).sturi ? "balts" : "nav"; if (v === d) delete n.projekts.sturi_opc; else n.projekts.sturi_opc = v; },
       { nav: "Nav", balts: "Balti", melns: "Melni", tonis: "Mājas tonī" }));
+    const SPECX = {};
     { // sienu specifikācija: pīrāgu slāņi, pārbaude pret plāna sienu biezumiem; labojumus saglabā modelī (projekts.piragi_layers)
       if (!document.getElementById("specCss")) { const st = document.createElement("style"); st.id = "specCss"; st.textContent = ".spec{margin:6px 0 10px;font-size:12px}.spec b{display:block;margin:4px 0}.spec table{width:100%;border-collapse:collapse}.spec td{padding:1px 2px}.spec td.grip{width:14px;cursor:grab;color:var(--muted);user-select:none;text-align:center;font-size:12px;letter-spacing:-2px}.spec tr.dragging{opacity:.45}.spec tr.dropb td{box-shadow:inset 0 2px 0 var(--mark)}.spec tr.dropa td{box-shadow:inset 0 -2px 0 var(--mark)}.spec input{width:100%;box-sizing:border-box;font:inherit;padding:2px 4px}.spec input.n{text-align:right}.spec .x{width:22px;cursor:pointer;border:0;background:none;color:#a33}.spec .ok{color:#2b7a3d}.spec .bad{color:#b3261e}.spec .sum td{border-top:1px solid #bbb;font-weight:600}.spec button.add{margin-top:3px;font:inherit}"; document.head.appendChild(st); }
-      const gs = group("Sienu specifikācija (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
+      const gs = group("Sienas (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
       const Tw = Math.min(...(model.rooms || []).flatMap(r => r.r.map(q => q[0]))), EXP = { S1: [Tw, "ārsienas biezums plānā"], S2: [195, "starpsienas biezums plānā"] };
       const note0 = document.createElement("p"); note0.className = "note full"; note0.textContent = "Pārbaudi slāņus un biezumus (mm). Ja kaut kas nav pareizi vai trūkst, labo laukos: izmaiņas iet uz AR projekta lapu \"Sienu specifikācija\" un model.json."; gs.appendChild(note0);
       const WT = (model.projekts || {}).wall_types || [];   // papildu starpsienu veidi: [{id, name, layers}]
@@ -1184,7 +1185,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         if (cur.some(l => !String(l[0]).trim())) msgs.push(["bad", "⚠ Slānim nav nosaukuma"]);
         if (!msgs.length) msgs.push(["ok", "✓ Slāņi aizpildīti"]);
         msgs.forEach(([c, tx]) => { const p = document.createElement("div"); p.className = c; p.textContent = tx; box.appendChild(p); });
-        gs.appendChild(box);
+        if (k === "G1" || k === "J1") SPECX[k] = box; else gs.appendChild(box);   // grīda un jumts savās sadaļās, ne zem sienām
         if (k === "S2") { const as = document.createElement("button"); as.type = "button"; as.className = "add full"; as.textContent = "+ Pievienot starpsienu (pīrāgu)"; as.title = "Jauns starpsienas veids ar saviem slāņiem; tas automātiski parādās AR lapā Sienu specifikācija"; as.addEventListener("click", () => addWt.click()); gs.appendChild(as); }
       });
       { // atslēgvārdi: slānis ar šādu vārdu nosaukumā specifikācijā tiek zīmēts kā krāsaina līnija
@@ -1244,6 +1245,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       gj.appendChild(k);
       const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = ov ? "Mēra horizontāli no sienas ārējās virsmas līdz jumta malai." : "Pārkare 0: jumts beidzas pie sienas, vēja kastes nav."; gj.appendChild(nt);
     }
+    if (SPECX.J1) group("Jumta konstrukcija (pīrāgs)", host).appendChild(SPECX.J1);
+    if (SPECX.G1) group("Grīdas konstrukcija (pīrāgs)", host).appendChild(SPECX.G1);
     if (model.loft && model.ceiling) {
       const g3 = group("Stāvi", host);
       const c = field("1. stāva griesti, mm", model.ceiling, (n, v) => {

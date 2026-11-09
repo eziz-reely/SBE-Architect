@@ -95,6 +95,10 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 .sf { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; padding: 8px 10px; background: var(--paper); border-bottom: 1px solid var(--line); }
 .sl { display: grid; gap: 4px; font-size: 12.5px; }
 .card .mt.sent { color: #2f7d4f; }
+.spg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--field); border: 1px solid var(--line2); border-radius: var(--r); padding: 3px; }
+.spg button { justify-content: center; height: 34px; font-size: 13px; color: var(--muted); }
+.spg button[aria-selected="true"] { background: var(--accent); color: #fff; }
+.spt:empty { display: none; }
 .spt { display: flex; gap: 0; border-bottom: 1px solid var(--line2); flex-wrap: wrap; }
 .spt button { border-radius: 0; border-bottom: 2px solid transparent; color: var(--muted); height: 34px; }
 .spt button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
@@ -233,8 +237,9 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 </dialog>
 <dialog id="dSpec" class="wide">
   <form method="dialog" id="fSpec">
-    <h3 id="sTitle">Sienu specifikācijas</h3>
-    <p class="note">Uzņēmuma noklusējums: ievadi vienreiz, un visi jaunie šī uzņēmuma projekti to saņems. Konkrētam projektam specifikāciju var mainīt redaktorā, cilnē <b>Māja</b>. Jau esošie projekti nemainās.</p>
+    <h3 id="sTitle">Konstrukcijas</h3>
+    <p class="note">Uzņēmuma noklusējums sienām, jumtam un grīdai: ievadi vienreiz, un visi jaunie šī uzņēmuma projekti to saņems. Konkrētam projektam to var mainīt redaktorā, cilnē <b>Māja</b>. Jau esošie projekti nemainās.</p>
+    <div class="spg" id="sGroups" role="tablist" aria-label="Konstrukcija"></div>
     <div class="spt" id="sTabs" role="tablist"></div>
     <div class="spr h"><span>Slānis (no ārpuses uz iekšpusi)</span><span>Biezums, mm</span><span>Veids</span><span></span></div>
     <div class="spl" id="sRows"></div>
@@ -356,7 +361,7 @@ function render() {
   const q = $("q").value.trim().toLowerCase(), so = $("sort").value;
   const co = D.companies.find(c => c.name === cur) ? cur : "";
   $("cos").innerHTML = [{ name: "", key: "", n: D.projects.length }, ...D.companies].map(c => `
-    <div class="co${c.name === co ? " on" : ""}"><button type="button" class="nm" data-co="${esc(c.name)}">${ico(c.name ? "co" : "all")}<span class="t">${esc(c.name || "Visi projekti")}</span><span class="n">${c.n}</span></button>${c.key ? `<button type="button" class="fo" data-spec="${c.key}" title="Uzņēmuma sienu specifikācijas" aria-label="${esc(c.name)} sienu specifikācijas">${ico("layers")}</button><button type="button" class="fo" data-open="${c.key}" title="Atvērt mapi Explorer" aria-label="Atvērt ${esc(c.name)} mapi">${ico("folder")}</button>` : ""}</div>`).join("");
+    <div class="co${c.name === co ? " on" : ""}"><button type="button" class="nm" data-co="${esc(c.name)}">${ico(c.name ? "co" : "all")}<span class="t">${esc(c.name || "Visi projekti")}</span><span class="n">${c.n}</span></button>${c.key ? `<button type="button" class="fo" data-spec="${c.key}" title="Uzņēmuma konstrukcijas: sienas, jumts, grīda" aria-label="${esc(c.name)} konstrukcijas">${ico("layers")}</button><button type="button" class="fo" data-open="${c.key}" title="Atvērt mapi Explorer" aria-label="Atvērt ${esc(c.name)} mapi">${ico("folder")}</button>` : ""}</div>`).join("");
   $("title").textContent = co || "Visi projekti";
   const base = D.projects.filter(p => !co || p.company === co);
   const areas = [...new Set(base.map(p => p.area))].sort((a, b) => a - b);
@@ -422,17 +427,23 @@ async function specDlg(key, after) {
   const co = D.companies.find(c => c.key === key), r = await api("/api/company-spec?key=" + key);
   SP = { key, def: r.defaults, cur: {} }; spAfter = after || null;
   Object.keys(r.defaults).forEach(k => SP.cur[k] = JSON.parse(JSON.stringify(r.custom[k] || r.defaults[k].layers)));
-  $("sTitle").textContent = "Sienu specifikācijas: " + (co ? co.name : "");
+  $("sTitle").textContent = "Konstrukcijas: " + (co ? co.name : "");
   $("sOk").textContent = after ? "Saglabāt un turpināt" : "Saglabāt";
   spTab = "S1"; $("sErr").hidden = true; spDraw(); $("dSpec").showModal();
 }
 function spRead() { SP.cur[spTab] = [...$("sRows").querySelectorAll(".spr")].map(r => [r.querySelector("[name=n]").value.trim(), +r.querySelector("[name=t]").value || 0, r.querySelector("[name=k]").value]).filter(l => l[0]); }
 function spSum() { const t = [...$("sRows").querySelectorAll("[name=t]")].reduce((a, i) => a + (+i.value || 0), 0); $("sSum").innerHTML = `Kopā <b>${Math.round(t * 10) / 10} mm</b>`; }
+// trīs atsevišķas konstrukcijas: sienas (ārsiena, starpsiena), jumts, grīda
+const SPG = [["sienas", "Sienas", ["S1", "S2"]], ["jumts", "Jumts", ["J1"]], ["grida", "Grīda", ["G1"]]];
+const spGroup = () => SPG.find(g => g[2].includes(spTab));
 function spDraw() {
-  $("sTabs").innerHTML = Object.entries(SP.def).map(([k, v]) => `<button type="button" role="tab" data-t="${k}" aria-selected="${k === spTab}">${esc(v.name)}${JSON.stringify(SP.cur[k]) !== JSON.stringify(v.layers) ? ' <span class="badge">mainīts</span>' : ""}</button>`).join("");
+  const grp = spGroup();
+  $("sGroups").innerHTML = SPG.map(([id, nm, ks]) => `<button type="button" role="tab" data-g="${id}" aria-selected="${grp[0] === id}">${nm}${ks.some(k => SP.def[k] && JSON.stringify(SP.cur[k]) !== JSON.stringify(SP.def[k].layers)) ? ' <span class="badge">mainīts</span>' : ""}</button>`).join("");
+  $("sTabs").innerHTML = grp[2].length < 2 ? "" : Object.entries(SP.def).filter(([k]) => grp[2].includes(k)).map(([k, v]) => `<button type="button" role="tab" data-t="${k}" aria-selected="${k === spTab}">${esc(v.name)}${JSON.stringify(SP.cur[k]) !== JSON.stringify(v.layers) ? ' <span class="badge">mainīts</span>' : ""}</button>`).join("");
   $("sRows").innerHTML = SP.cur[spTab].map(l => `<div class="spr"><input name="n" value="${esc(l[0])}" aria-label="Slānis"><input name="t" type="number" step="0.5" min="0" value="${l[1]}" aria-label="Biezums, mm"><select name="k" aria-label="Veids">${Object.entries(KIND).map(([c, t]) => `<option value="${c}"${c === (l[2] || "") ? " selected" : ""}>${t}</option>`).join("")}</select><button type="button" class="x" aria-label="Dzēst slāni">${ico("x")}</button></div>`).join("");
   spSum();
 }
+$("sGroups").addEventListener("click", e => { const b = e.target.closest("[data-g]"); if (!b) return; spRead(); spTab = SPG.find(g => g[0] === b.dataset.g)[2][0]; spDraw(); });
 $("sTabs").addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (!b) return; spRead(); spTab = b.dataset.t; spDraw(); });
 $("sRows").addEventListener("input", spSum);
 $("sRows").addEventListener("click", e => { if (e.target.closest(".x")) { e.target.closest(".spr").remove(); spSum(); } });
@@ -442,7 +453,7 @@ $("sReset").onclick = () => { Object.keys(SP.def).forEach(k => SP.cur[k] = JSON.
 $("sCancel").onclick = () => $("dSpec").close();
 $("fSpec").addEventListener("submit", async e => {
   e.preventDefault(); spRead();
-  try { await api("/api/company-spec", { key: SP.key, piragi_layers: SP.cur }); $("dSpec").close(); await load(); toast("Sienu specifikācijas saglabātas."); if (spAfter) spAfter(); }
+  try { await api("/api/company-spec", { key: SP.key, piragi_layers: SP.cur }); $("dSpec").close(); await load(); toast("Konstrukcijas saglabātas."); if (spAfter) spAfter(); }
   catch (er) { $("sErr").textContent = er.message; $("sErr").hidden = false; }
 });
 document.addEventListener("click", e => { const b = e.target.closest("[data-spec]"); if (b) specDlg(b.dataset.spec).catch(er => toast(er.message)); });
@@ -458,7 +469,7 @@ function newDlg() {
   $("nCo").innerHTML = D.companies.map(c => `<option${c.name === cur ? " selected" : ""}>${esc(c.name)}</option>`).join("");
   if (!D.companies.length) { toast("Vispirms izveido uzņēmumu."); $("dCo").showModal(); return; }
   const c = D.companies.find(x => x.name === (cur || D.companies[0].name));
-  if (c && !c.spec) { toast("Vispirms apstiprini uzņēmuma sienu specifikācijas."); specDlg(c.key, () => { $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus(); }); return; }
+  if (c && !c.spec) { toast("Vispirms apstiprini uzņēmuma konstrukcijas: sienas, jumtu un grīdu."); specDlg(c.key, () => { $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus(); }); return; }
   $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus();
 }
 $("bNew").onclick = newDlg;
