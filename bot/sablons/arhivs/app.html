@@ -125,6 +125,16 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 .card.drop { border-color: var(--accent); box-shadow: 0 0 0 2px var(--acc-soft); }
 .card.drop .cv::after { content: "Ievelc šeit vizualizācijas"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(34,102,216,.82); color: #fff; font-weight: 600; }
 .wait { position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--muted); background: var(--field); border: 1px solid var(--line); border-radius: 2px; padding: 1px 6px; }
+.af { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: -4px 0 14px; }
+.af .lb { color: var(--muted); font-size: 12px; margin-right: 2px; }
+.af .chip { height: 28px; padding: 0 11px; border: 1px solid var(--line2); background: var(--field); border-radius: 99px; font-weight: 600; color: var(--ink); }
+.af .chip:hover { border-color: var(--acc-line); }
+.af .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.af .rg { display: inline-flex; align-items: center; gap: 5px; margin-left: 10px; color: var(--muted); font-size: 12px; }
+.af .rg input { width: 64px; height: 28px; padding: 0 7px; }
+.af .clr { height: 28px; color: var(--muted); }
+.af .clr:hover { color: var(--accent); }
+.grp { grid-column: 1 / -1; font: 600 13px var(--f-ui); color: var(--muted); padding: 6px 0 0; border-bottom: 1px solid var(--line); }
 #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--brand); color: #f2f4f6; padding: 9px 14px; border-radius: var(--r); font-size: 12.5px; box-shadow: 0 4px 16px rgba(0,0,0,.25); }
 @media (max-width: 760px) { .wrap { grid-template-columns: 1fr; } nav { display: none; } .search input { width: 160px; } }
 @media (prefers-reduced-motion: reduce) { .card { transition: none; } }
@@ -148,7 +158,7 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
   <h1>Projekti</h1>
   <span class="sp"></span>
   <label class="search" aria-label="Meklēt"><svg class="i"><use href="#i-search"/></svg><input id="q" type="search" placeholder="Meklēt pēc nosaukuma, ID…" autocomplete="off"></label>
-  <select id="sort" aria-label="Kārtot"><option value="mtime">Jaunākie augšā</option><option value="name">Pēc nosaukuma</option><option value="area">Pēc platības</option></select>
+  <select id="sort" aria-label="Kārtot"><option value="mtime">Jaunākie augšā</option><option value="name">Pēc nosaukuma</option><option value="area">Platība: mazākās augšā</option><option value="area-">Platība: lielākās augšā</option></select>
   <button class="pri" id="bNew" type="button"><svg class="i"><use href="#i-plus"/></svg>Jauns projekts</button>
 </header>
 <div class="wrap">
@@ -160,6 +170,7 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
   </nav>
   <main>
     <div class="bar"><h2 id="title">Visi projekti</h2><span class="c" id="count"></span><span class="sp"></span></div>
+    <div class="af" id="af" role="group" aria-label="Platības filtrs"></div>
     <div class="grid" id="grid"></div>
     <div class="empty" id="empty" hidden></div>
   </main>
@@ -224,7 +235,9 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const ico = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
-let D = { projects: [], companies: [] }, cur = "";
+let D = { projects: [], companies: [] }, cur = "", AF = { sel: [], lo: "", hi: "" };
+try { Object.assign(AF, JSON.parse(localStorage.getItem("sbeAF") || "{}")); } catch (_) {}
+const afSave = () => { try { localStorage.setItem("sbeAF", JSON.stringify(AF)); } catch (_) {} };
 try { cur = localStorage.getItem("sbeCo") || ""; $("sort").value = localStorage.getItem("sbeSort") || "mtime"; } catch (_) {}
 const toast = t => { const e = $("toast"); e.textContent = t; e.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => e.hidden = true, 3500); };
 async function api(u, b) {
@@ -320,10 +333,19 @@ function render() {
   $("cos").innerHTML = [{ name: "", key: "", n: D.projects.length }, ...D.companies].map(c => `
     <div class="co${c.name === co ? " on" : ""}"><button type="button" class="nm" data-co="${esc(c.name)}">${ico(c.name ? "co" : "all")}<span class="t">${esc(c.name || "Visi projekti")}</span><span class="n">${c.n}</span></button>${c.key ? `<button type="button" class="fo" data-spec="${c.key}" title="Uzņēmuma sienu specifikācijas" aria-label="${esc(c.name)} sienu specifikācijas">${ico("layers")}</button><button type="button" class="fo" data-open="${c.key}" title="Atvērt mapi Explorer" aria-label="Atvērt ${esc(c.name)} mapi">${ico("folder")}</button>` : ""}</div>`).join("");
   $("title").textContent = co || "Visi projekti";
-  let r = D.projects.filter(p => (!co || p.company === co) && (!q || (p.name + " " + p.id + " " + p.company + " " + p.rel).toLowerCase().includes(q)));
-  r.sort(so === "name" ? (a, b) => String(a.name).localeCompare(String(b.name), "lv") : so === "area" ? (a, b) => a.area - b.area : (a, b) => b.mtime - a.mtime);
+  const base = D.projects.filter(p => !co || p.company === co);
+  const areas = [...new Set(base.map(p => p.area))].sort((a, b) => a - b);
+  AF.sel = AF.sel.filter(a => areas.includes(a));
+  const lo = AF.lo === "" ? -Infinity : +AF.lo, hi = AF.hi === "" ? Infinity : +AF.hi;
+  $("af").innerHTML = `<span class="lb">Platība</span><button type="button" class="chip" data-area="" aria-pressed="${!AF.sel.length}">Visas</button>` +
+    areas.map(a => `<button type="button" class="chip" data-area="${a}" aria-pressed="${AF.sel.includes(a)}">${a} m²</button>`).join("") +
+    `<span class="rg">no <input type="number" id="afLo" min="0" step="5" inputmode="numeric" value="${esc(AF.lo)}" aria-label="Platība no, m²"> līdz <input type="number" id="afHi" min="0" step="5" inputmode="numeric" value="${esc(AF.hi)}" aria-label="Platība līdz, m²"> m²</span>` +
+    (AF.sel.length || AF.lo !== "" || AF.hi !== "" ? `<button type="button" class="clr" id="afClr">Notīrīt</button>` : "");
+  let r = base.filter(p => (!AF.sel.length || AF.sel.includes(p.area)) && p.area >= lo && p.area <= hi && (!q || (p.name + " " + p.id + " " + p.company + " " + p.rel).toLowerCase().includes(q)));
+  r.sort(so === "name" ? (a, b) => String(a.name).localeCompare(String(b.name), "lv") : so === "area" ? (a, b) => a.area - b.area || String(a.name).localeCompare(String(b.name), "lv") : so === "area-" ? (a, b) => b.area - a.area || String(a.name).localeCompare(String(b.name), "lv") : (a, b) => b.mtime - a.mtime);
   $("count").textContent = r.length + (r.length === 1 ? " projekts" : " projekti");
-  $("grid").innerHTML = r.map(p => `
+  const byArea = so === "area" || so === "area-";
+  $("grid").innerHTML = r.map((p, i) => (byArea && (i === 0 || r[i - 1].area !== p.area) ? `<div class="grp">${p.area} m²</div>` : "") + `
     <article class="card" data-key="${p.key}">
       ${coverHtml(p)}
       <div class="bd"><div class="nm">${esc(p.name)}</div><div class="mt">${esc(p.id)}${co ? "" : " · " + esc(p.company)}</div>
@@ -399,6 +421,12 @@ $("fSpec").addEventListener("submit", async e => {
   catch (er) { $("sErr").textContent = er.message; $("sErr").hidden = false; }
 });
 document.addEventListener("click", e => { const b = e.target.closest("[data-spec]"); if (b) specDlg(b.dataset.spec).catch(er => toast(er.message)); });
+$("af").addEventListener("click", e => {
+  const c = e.target.closest("[data-area]");
+  if (c) { const a = c.dataset.area; if (a === "") AF.sel = []; else { const n = +a; AF.sel = AF.sel.includes(n) ? AF.sel.filter(x => x !== n) : [...AF.sel, n]; } afSave(); render(); }
+  if (e.target.closest("#afClr")) { AF = { sel: [], lo: "", hi: "" }; afSave(); render(); }
+});
+$("af").addEventListener("change", e => { if (e.target.id === "afLo" || e.target.id === "afHi") { AF[e.target.id === "afLo" ? "lo" : "hi"] = e.target.value; afSave(); render(); } });
 $("q").addEventListener("input", render);
 $("sort").addEventListener("change", () => { try { localStorage.setItem("sbeSort", $("sort").value); } catch (_) {} render(); });
 function newDlg() {
