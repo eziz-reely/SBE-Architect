@@ -315,6 +315,16 @@ main { grid-template-columns: 44px 1fr 320px; }
 #sbar .dirty { color: var(--mark); }
 aside #hint, aside .savebar #status { display: none; }
 #libOpen small { display: none; }
+details.fold { border: 1px solid var(--line); border-radius: var(--r); background: var(--field); margin: 0 0 6px; }
+details.fold > summary { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; list-style: none; font-weight: 600; font-size: 12.5px; color: var(--ink); }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted); transform: rotate(-45deg); transition: transform .12s; flex: none; }
+details.fold[open] > summary::before { transform: rotate(45deg); }
+details.fold > summary .fn { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+details.fold > summary .fs { color: var(--muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+details.fold > summary .fk.ok { color: var(--ok); } details.fold > summary .fk.bad { color: var(--bad); }
+details.fold > summary:hover { background: var(--hover); }
+details.fold > .spec { margin: 0; padding: 4px 10px 10px; border-top: 1px solid var(--line); }
 #keysPane .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--line); }
 #keysPane .kr button, #keysPane .ft button { min-width: 72px; padding: 4px 8px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); }
 #keysPane .kr button.cap { border-color: var(--mark); color: var(--mark); }
@@ -1124,6 +1134,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const casOf = w => (w.casing === 0 ? "0" : w.casingAll ? "all" : "1");
   const setCas = (w, v) => { delete w.casing; delete w.casingAll; if (v === "0") w.casing = 0; if (v === "all") w.casingAll = true; };
   function group(title, host) { const d = document.createElement("div"); d.className = "group"; const c = document.createElement("p"); c.className = "cap"; c.textContent = title; const g = document.createElement("div"); g.className = "grid"; d.append(c, g); host.appendChild(d); return g; }
+  const SPEC_OPEN = new Set();
   function mats() {
     const host = $("mats"); host.textContent = "";
     const P = model.projekts || {}, tk = TONES[P.tonis] ? P.tonis : "peleks", wt = winTone(P), cur = P.aplodas || wt, sil = P.palodzes || cur, opts = {};
@@ -1141,6 +1152,15 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     g1.appendChild(colorField("Dekoratīvie stūra dēļi", sCur, { balts: "#F2F0EA", melns: "#1d1d1d", tonis: TONES[tk].sw, nav: "transparent" }[sCur], (n, v) => { n.projekts = n.projekts || {}; const d = (TONES[n.projekts.tonis || "peleks"] || {}).sturi ? "balts" : "nav"; if (v === d) delete n.projekts.sturi_opc; else n.projekts.sturi_opc = v; },
       { nav: "Nav", balts: "Balti", melns: "Melni", tonis: "Mājas tonī" }));
     const SPECX = {};
+    // saliekams pīrāgs: virsrakstā nosaukums, kopējais biezums un stāvoklis; atvērtie paliek atvērti arī pēc pārzīmēšanas
+    const specFold = (k, name, sum, ok, box) => {
+      const d = document.createElement("details"); d.className = "full fold"; d.open = SPEC_OPEN.has(k);
+      const sm = document.createElement("summary"); sm.innerHTML = `<span class="fn"></span><span class="fs"></span><span class="fk ${ok ? "ok" : "bad"}">${ok ? "✓" : "⚠"}</span>`;
+      sm.querySelector(".fn").textContent = name; sm.querySelector(".fs").textContent = (Math.round(sum * 10) / 10).toLocaleString("lv-LV") + " mm";
+      d.addEventListener("toggle", () => { if (d.open) SPEC_OPEN.add(k); else SPEC_OPEN.delete(k); });
+      const t = box.querySelector(":scope > b"); if (t && !t.querySelector("input")) t.remove();
+      d.append(sm, box); return d;
+    };
     { // sienu specifikācija: pīrāgu slāņi, pārbaude pret plāna sienu biezumiem; labojumus saglabā modelī (projekts.piragi_layers)
       if (!document.getElementById("specCss")) { const st = document.createElement("style"); st.id = "specCss"; st.textContent = ".spec{margin:6px 0 10px;font-size:12px}.spec b{display:block;margin:4px 0}.spec table{width:100%;border-collapse:collapse}.spec td{padding:1px 2px}.spec td.grip{width:14px;cursor:grab;color:var(--muted);user-select:none;text-align:center;font-size:12px;letter-spacing:-2px}.spec tr.dragging{opacity:.45}.spec tr.dropb td{box-shadow:inset 0 2px 0 var(--mark)}.spec tr.dropa td{box-shadow:inset 0 -2px 0 var(--mark)}.spec input{width:100%;box-sizing:border-box;font:inherit;padding:2px 4px}.spec input.n{text-align:right}.spec .x{width:22px;cursor:pointer;border:0;background:none;color:#a33}.spec .ok{color:#2b7a3d}.spec .bad{color:#b3261e}.spec .sum td{border-top:1px solid #bbb;font-weight:600}.spec button.add{margin-top:3px;font:inherit}"; document.head.appendChild(st); }
       const gs = group("Sienas (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
@@ -1186,7 +1206,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         if (cur.some(l => !String(l[0]).trim())) msgs.push(["bad", "⚠ Slānim nav nosaukuma"]);
         if (!msgs.length) msgs.push(["ok", "✓ Slāņi aizpildīti"]);
         msgs.forEach(([c, tx]) => { const p = document.createElement("div"); p.className = c; p.textContent = tx; box.appendChild(p); });
-        if (k === "G1" || k === "J1") SPECX[k] = box; else gs.appendChild(box);   // grīda un jumts savās sadaļās, ne zem sienām
+        const det = specFold(k, (en.custom != null ? en.name : base.name), sum, msgs.every(m => m[0] === "ok"), box);
+        if (k === "G1" || k === "J1") SPECX[k] = det; else gs.appendChild(det);   // grīda un jumts savās sadaļās, ne zem sienām
         if (k === "S2") { const as = document.createElement("button"); as.type = "button"; as.className = "add full"; as.textContent = "+ Pievienot starpsienu (pīrāgu)"; as.title = "Jauns starpsienas veids ar saviem slāņiem; tas automātiski parādās AR lapā Sienu specifikācija"; as.addEventListener("click", () => addWt.click()); gs.appendChild(as); }
       });
       { // atslēgvārdi: slānis ar šādu vārdu nosaukumā specifikācijā tiek zīmēts kā krāsaina līnija
@@ -1208,7 +1229,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         });
         const ad = document.createElement("button"); ad.type = "button"; ad.className = "add"; ad.textContent = "+ atslēgvārds";
         ad.addEventListener("click", () => sv([...cur.map(z => ({ ...z })), { k: "jauns", c: "#1f6fd1", d: 1 }])); box.appendChild(ad);
-        gs.appendChild(box);
+        SPECX.KW = specFold("KW", "Slāņu atslēgvārdi (krāsainas līnijas)", 0, true, box); SPECX.KW.querySelector(".fs").textContent = cur.length + " gab.";
       }
       const addWt = document.createElement("button"); addWt.type = "button"; addWt.className = "add full"; addWt.textContent = "+ starpsienas veids";
       addWt.addEventListener("click", () => { const n = clone(model); n.projekts = n.projekts || {}; const L = n.projekts.wall_types = n.projekts.wall_types || []; let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; const base = (PLs.S2 || LAYERS0.S2.layers).map(l => l.slice()); L.push({ id: "P" + i, name: "Starpsiena " + Math.round(base.reduce((a, l) => a + (+l[1] || 0), 0)) + " (jauna)", layers: base }); commit(n); });
@@ -1245,15 +1266,17 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (!ov) k.querySelector("select").disabled = true;
       gj.appendChild(k);
       const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = ov ? "Mēra horizontāli no sienas ārējās virsmas līdz jumta malai." : "Pārkare 0: jumts beidzas pie sienas, vēja kastes nav."; gj.appendChild(nt);
+      if (SPECX.J1) { const c = document.createElement("p"); c.className = "sub-cap full"; c.textContent = "Jumta konstrukcija (pīrāgs)"; gj.append(c, SPECX.J1); }
     }
-    if (SPECX.J1) group("Jumta konstrukcija (pīrāgs)", host).appendChild(SPECX.J1);
-    if (SPECX.G1) group("Grīdas konstrukcija (pīrāgs)", host).appendChild(SPECX.G1);
+
     { // pamatu veids: klients var pārdomāt; mainās fasādes cokols, ±0,000 līmenis pret kori un piezīmes rakstlaukumā
-      const P = model.projekts || {}, pam = P.pamati === "platne" ? "platne" : "stabveida", gp = group("Pamati", host);
+      const P = model.projekts || {}, pam = P.pamati === "platne" ? "platne" : "stabveida", gp = group("Pamati un grīda", host);
       gp.appendChild(field("Pamatu veids", pam, (n, v) => { n.projekts = n.projekts || {}; n.projekts.pamati = v === "platne" ? "platne" : "stabveida"; roofFix(n); }, { stabveida: "Stabveida pamati", platne: "Pamatu plātne" }, "full"));
       if (pam === "stabveida") gp.appendChild(field("Cokola apdare", P.cokols || "RAL 9005", (n, v) => { n.projekts = n.projekts || {}; n.projekts.cokols = v; }, { "RAL 9005": "Metāls RAL 9005 (melns)", "RAL 7016": "Metāls RAL 7016 (antracīts)" }, "full"));
       const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = pam === "stabveida" ? "Grīdas panelis virs zemes uz stabiem, metāla cokols. Kores augstums skaitās no grīdas paneļa apakšas." : "Māja uz betona plātnes, betona cokols, grīdas paneļa nav."; gp.appendChild(nt);
+      if (SPECX.G1) { const c = document.createElement("p"); c.className = "sub-cap full"; c.textContent = "Grīdas konstrukcija (pīrāgs)"; gp.append(c, SPECX.G1); }
     }
+    if (SPECX.KW) group("Specifikācijas noformējums", host).appendChild(SPECX.KW);
     if (model.loft && model.ceiling) {
       const g3 = group("Stāvi", host);
       const c = field("1. stāva griesti, mm", model.ceiling, (n, v) => {
@@ -1276,8 +1299,14 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       g4.appendChild(r);
     }
   }
+  const MAJA_ORDER = ["Mājas izmēri", "Pamati un grīda", "Sienas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Specifikācijas noformējums"];
+  function majaOrder() {
+    const host = $("mats");
+    const gs = [...host.children].filter(e => e.classList.contains("group")), ix = e => { const t = (e.querySelector(":scope > .cap") || {}).textContent || ""; const i = MAJA_ORDER.indexOf(t); return i < 0 ? 50 : i; };
+    gs.sort((a, b) => ix(a) - ix(b)).forEach(e => host.appendChild(e));
+  }
   function panel() {
-    mats();
+    mats(); majaOrder();
     const p = $("panel"); p.textContent = ""; fid = 0;
     const it = itemOf(model, sel);
     if (!it) { const e = document.createElement("p"); e.className = "empty"; e.textContent = "Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Jaunu logu, durvis vai mēbeli izvēlies no saraksta zemāk."; p.appendChild(e); return; }
