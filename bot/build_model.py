@@ -81,6 +81,9 @@ def build(model_path, langs=None):
     for k_, v_ in (pr.get('piragi_layers') or {}).items():   # redaktorā labotie pīrāgu slāņi (projekts.piragi_layers)
         if k_ in cfg['layers']:
             cfg['layers'][k_]['layers'] = v_
+    for k_, v_ in (pr.get('piragi_names') or {}).items():   # pārdēvētas konstrukcijas (projekts.piragi_names)
+        if k_ in cfg['layers'] and v_:
+            cfg['layers'][k_]['name'] = v_
     for w_ in pr.get('wall_types') or []:   # redaktorā pievienotie starpsienu veidi (projekts.wall_types) nonāk AR sienu specifikācijā
         if w_.get('id') and w_.get('layers'):
             cfg['layers'][w_['id']] = {'name': w_.get('name') or w_['id'], 'layers': w_['layers']}

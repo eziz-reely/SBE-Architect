@@ -118,9 +118,23 @@ function sheetHeading(svg, x, y, w, title, scale = "M 1:100") {
 }
 
 // ---- wall-type marks (S1, S2) and section lines on the plan ----
+// [MM] ja modelī sienu tipu atzīmju nav: S1 uz ziemeļu ārsienas garākajā posmā bez ailām, S2 uz pirmās iekšsienas ārpus durvīm
+function autoWallTags(v) {
+  const out = [], W = v.W, ops = [...(v.windows || []).filter(w => w.o === "h" && w.y < 1).map(w => [w.x, w.x + w.len]), ...(v.doors || []).filter(d => d.o === "h" && d.y < 1).map(d => [d.x, d.x + d.w])].sort((a, b) => a[0] - b[0]);
+  let best = null, cur = T;
+  [...ops, [W - T, W - T]].forEach(([a, b]) => { if (a - cur > (best ? best[1] - best[0] : 600)) best = [cur, a]; cur = Math.max(cur, b); });
+  if (best) out.push({ t: "S1", x: Math.round((best[0] + best[1]) / 2), y: 0, o: "h", side: -1 });
+  for (const rm of v.rooms || []) for (const r of rm.r || []) {
+    const x1 = r[0] + r[2]; if (x1 > W - T - 50 || x1 < T + 50) continue;
+    const busy = y => (v.doors || []).some(d => d.o === "v" && Math.abs(d.x - x1) < 60 && y > d.y - 150 && y < d.y + d.w + 150);
+    const y = [.25, .75, .5].map(f => r[1] + r[3] * f).find(q => !busy(q));
+    if (y != null) { out.push({ t: "S2", x: x1, y: Math.round(y), o: "v", side: 1 }); return out; }
+  }
+  return out;
+}
 function wallTags(g, v) {
   const tg = el("g", {}, g);
-  (v.wallTags || []).forEach((w, i) => {
+  ((v.wallTags && v.wallTags.length) ? v.wallTags : autoWallTags(v)).forEach((w, i) => {
     const n0 = tg.childNodes.length, th = w.t === "S1" ? T : t, s = w.side || 1, ext = 420;
     const L = (x1, y1, x2, y2) => el("line", { x1, y1, x2, y2, stroke: C.ink, "stroke-width": 28 }, tg);
     if (w.o === "h") {

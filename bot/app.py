@@ -243,7 +243,11 @@ def new_project(b):
         shutil.move(src, dest)
         try: os.rmdir(os.path.dirname(src))   # tukšā <m²> mape repo MĀJAS
         except OSError: pass
-    sp = company_spec(cos[co]).get('piragi_layers')
+    cs0 = company_spec(cos[co]); sp = cs0.get('piragi_layers')
+    if cs0.get('piragi_names'):
+        mp = os.path.join(dest, 'model.json'); mj = json.load(open(mp, encoding='utf-8'))
+        mj.setdefault('projekts', {})['piragi_names'] = cs0['piragi_names']
+        json.dump(mj, open(mp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     if sp:   # uzņēmuma sienu specifikācijas kļūst par šī projekta pīrāgiem (projektā tās var mainīt redaktorā, cilnē Māja)
         mp = os.path.join(dest, 'model.json'); mj = json.load(open(mp, encoding='utf-8'))
         mj.setdefault('projekts', {})['piragi_layers'] = sp
@@ -315,7 +319,7 @@ class H(BaseHTTPRequestHandler):
                 if not d:
                     return self.send(404, 'Uzņēmums nav atrasts', 'text/plain; charset=utf-8')
                 cs = company_spec(d).get('piragi_layers') or {}
-                return self.send(200, {'defaults': default_layers(), 'custom': cs, 'set': bool(cs)})
+                return self.send(200, {'defaults': default_layers(), 'custom': cs, 'names': company_spec(d).get('piragi_names') or {}, 'set': bool(cs)})
             if p.startswith('/lv/'):
                 d = path_for(p[4:])
                 return self.send(200, lv_page(d), 'text/html; charset=utf-8') if d else self.send(404, 'Nav', 'text/plain; charset=utf-8')
@@ -433,6 +437,10 @@ class H(BaseHTTPRequestHandler):
                 if not d:
                     return self.send(404, 'Uzņēmums nav atrasts', 'text/plain; charset=utf-8')
                 cs = company_spec(d); L = clean_layers(b.get('piragi_layers'))
+                dn = {k: v['name'] for k, v in default_layers().items()}
+                nm = {k: str(v).strip()[:80] for k, v in (b.get('piragi_names') or {}).items() if k in SPEC_KEYS and str(v).strip() and str(v).strip() != dn.get(k)}
+                if nm: cs['piragi_names'] = nm
+                else: cs.pop('piragi_names', None)
                 dfl = {k: v['layers'] for k, v in default_layers().items()}
                 L = {k: v for k, v in L.items() if v != dfl.get(k)}   # glabā tikai atšķirīgos
                 if L: cs['piragi_layers'] = L
