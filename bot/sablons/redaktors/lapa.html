@@ -460,6 +460,30 @@ button:active:not(:disabled) { transform: translateY(1px); }
 button:disabled, input:disabled, select:disabled { cursor: not-allowed; }
 .lib button:focus-visible, #rail button:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { #rail button, .tabs button { transition: none; } }
+
+/* === Impeccable kritika (2026-11-09): kontrasts, minimālais teksta izmērs, galvenes ikonas, grupēšana === */
+:root { --accent-fill: #2266d8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --accent-fill: #2f6bcb; } }
+:root[data-theme="dark"] { --accent-fill: #2f6bcb; }
+header button.pri, .pop button.wide, .pop .seg button[aria-checked="true"], #ribbon .rc button.sv, #ribbon .rfoot button.sv, header .tseg button[aria-checked="true"] { background: var(--accent-fill); border-color: var(--accent-fill); }
+header .tseg button[aria-checked="true"] { color: #fff; }
+header button.pri:hover:not(:disabled) { background: #2a5fc0; }
+header .tb { align-items: center; gap: 4px; }
+header .tb > button:not(.ico):not(.pri), header .tb > .expw > button { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px; }
+header .bi { width: 16px; height: 16px; flex: none; opacity: .85; }
+header .tb > button.pri { height: 30px; padding: 0 14px; font-weight: 600; margin-left: 6px; }
+header .tseg { margin-left: 6px; margin-right: 2px; }
+header .tseg button { height: 26px; padding: 0 11px; font-weight: 600; letter-spacing: .02em; }
+header .tb > #bReset { margin-left: 4px; }
+header .tb > #bFit.ico { width: 34px; }
+header .tb > #bFit { border-left: 0; }
+header .tb > #bRedo { margin-right: 6px; }
+header .tb > #bRib { margin-left: 6px; padding-left: 11px; border-left: 1px solid #3d4248; border-radius: 0 4px 4px 0; }
+header .tb > #b3d { border-left: 0; }
+/* minimālais funkcionālā teksta izmērs 11px */
+.pop .seg small, .pop .seg button small, #libFurn button small, #ribbon .rl, #ribbon .rg > .rl, .pop .pcap, #busy, .sel-sub { font-size: 11px; }
+.pop .pnote, .pop .fg label, #sbar, #status, .lib button small, #libFurn button, #libOpenings button, #libOpen button, .help, #check, #check li { font-size: 12px; }
+#rail button kbd { font-size: 10px; right: 3px; bottom: 3px; }
 </style>
 
 <header>
@@ -471,12 +495,12 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; }
     <button id="bUndo" class="ico" type="button" title="Atsaukt (Ctrl+Z)" aria-label="Atsaukt" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 5 3.5 9l4 4"/><path d="M4 9h8a4.5 4.5 0 0 1 0 9h-2"/></svg></button>
     <button id="bRedo" class="ico" type="button" title="Atkārtot (Ctrl+Y)" aria-label="Atkārtot" disabled><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12.5 5 4 4-4 4"/><path d="M16 9H8a4.5 4.5 0 0 0 0 9h2"/></svg></button>
     <button id="bFit" class="ico" type="button" title="Rādīt visu lapu" aria-label="Visa lapa"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/><rect x="6.5" y="6.5" width="7" height="7" rx=".5"/></svg></button>
-    <button id="bReset" type="button">Atiestatīt</button>
+    <button id="bReset" type="button" title="Atgriezt bota izveidoto versiju"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10a6 6 0 1 0 2-4.5"/><path d="M4 3.5v3.5h3.5"/></svg><span>Atiestatīt</span></button>
     <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
-    <button id="bRib" type="button" aria-expanded="false" title="Sienu, līniju un teksta noformējums">Noformējums</button>
+    <button id="bRib" type="button" aria-expanded="false" title="Sienu, līniju un teksta noformējums"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 16l2.5-.5L16 6l-2-2L4.5 13.5z"/><path d="M12 6l2 2"/></svg><span>Noformējums</span></button>
     <span class="tseg modeseg" id="topMode" role="radiogroup" aria-label="Režīms"><button type="button" data-m="skice" role="radio">Skice</button><button type="button" data-m="ar" role="radio">AR</button></span>
     <span class="tseg" id="topLang" role="radiogroup" aria-label="Valoda"><button type="button" data-lg="lv" role="radio">LV</button><button type="button" data-lg="en" role="radio">EN</button></span>
-    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false">Rakstlaukums</button>
+    <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3.5" width="14" height="13" rx="1"/><path d="M12 3.5v13M12 11h5"/></svg><span>Rakstlaukums</span></button>
       <div id="tbp" class="pop" hidden role="dialog" aria-label="Rakstlaukums">
         <p class="pcap">Lapas</p>
         <div class="seg seg2 modeseg" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
@@ -493,7 +517,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; }
         <input id="tbFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden>
         <p class="pnote" id="tbNote">PNG, JPG vai SVG. Rakstlaukuma tumšais lauks paliek arī bez logo.</p>
       </div></span>
-    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false">Eksportēt</button>
+    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"/><path d="M4 14v2.5h12V14"/></svg><span>Eksportēt</span></button>
       <div id="exp" class="pop" hidden role="dialog" aria-label="Eksports">
         <p class="pcap">PDF rasējums · A3</p>
         <div class="seg" role="radiogroup" aria-label="Kvalitāte">
@@ -507,7 +531,7 @@ button:disabled, input:disabled, select:disabled { cursor: not-allowed; }
         <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
         <button type="button" class="it" id="bJson"><b>model.json</b><small>Modeļa dati botam</small></button>
       </div></span>
-    <button id="b3d" type="button" title="3D skats, references PNG un Gemini prompts">3D un Gemini</button>
+    <button id="b3d" type="button" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2.5 16.5 6v8L10 17.5 3.5 14V6z"/><path d="M3.5 6 10 9.5 16.5 6M10 9.5v8"/></svg><span>3D un Gemini</span></button>
     <button id="bSave" class="pri" type="button">Saglabāt</button>
   </div>
 </header>
