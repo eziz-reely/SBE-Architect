@@ -437,7 +437,6 @@ button.add:hover { border-color: var(--accent); color: var(--accent); background
 /* === Ikonu un saskarnes noslīpēšana (2026-11-09) === */
 #rail button svg { width: 28px; height: 20px; }
 #rail button { position: relative; transition: background .12s, color .12s; }
-#rail button.on::before { content: ""; position: absolute; left: -4px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 2px 2px 0; background: var(--accent); }
 #rail button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .lib button svg { fill: color-mix(in srgb, currentColor 9%, transparent); }
 .lib button.on svg { fill: color-mix(in srgb, var(--accent) 16%, transparent); }
@@ -447,6 +446,19 @@ header .tb > button.ico svg { width: 20px; height: 20px; }
 header .tb > button.pri { display: inline-flex; align-items: center; gap: 7px; }
 header .tb > button.pri::before { content: ""; width: 14px; height: 14px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2.5 2.5h8l3 3v8h-11z'/%3E%3Cpath d='M5 2.5v4h5v-4M5 13.5v-4h6v4'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2.5 2.5h8l3 3v8h-11z'/%3E%3Cpath d='M5 2.5v4h5v-4M5 13.5v-4h6v4'/%3E%3C/svg%3E") center/contain no-repeat; }
 .tabs button { transition: color .12s, border-color .12s; }
+/* Impeccable (operate): kontrasts, stāvokļi, pārlūka virsmas */
+#rail button kbd, #rail button.on kbd { color: var(--muted); }
+#rail button.on kbd { color: var(--accent); }
+#check li { border-left: 0; padding-left: 16px; position: relative; }
+#check li::before { content: ""; position: absolute; left: 2px; top: .5em; width: 7px; height: 7px; border-radius: 50%; background: var(--bad); }
+#check li.ok::before { background: var(--ok); }
+::selection { background: var(--acc-soft); color: var(--ink); }
+input, select { caret-color: var(--accent); }
+aside, .pop, #keys { scrollbar-width: thin; scrollbar-color: var(--line2) transparent; }
+button:active:not(:disabled) { transform: translateY(1px); }
+#rail button:active:not(:disabled), .lib button:active { background: var(--acc-soft); }
+button:disabled, input:disabled, select:disabled { cursor: not-allowed; }
+.lib button:focus-visible, #rail button:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (prefers-reduced-motion: reduce) { #rail button, .tabs button { transition: none; } }
 </style>
 
@@ -505,7 +517,7 @@ header .tb > button.pri::before { content: ""; width: 14px; height: 14px; backgr
   <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 40 28" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 2v24" stroke-dasharray="3 2"/><path d="M4 14h32" stroke-dasharray="3 2"/><circle cx="20" cy="14" r="5" fill="var(--paper)"/><path d="M17.5 11.5l5 5M22.5 11.5l-5 5"/></svg><span>Dzēst palīglīnijas</span></button></div>
   <aside>
     <section class="selcard" aria-live="polite">
-      <div id="panel"><p class="empty">Uzklikšķini uz loga, durvīm, mēbeles vai notekas rasējumā.</p></div>
+      <div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Jaunu logu, durvis vai mēbeli izvēlies no saraksta zemāk.</p></div>
     </section>
     <nav class="tabs" role="tablist" aria-label="Rīki">
       <button type="button" role="tab" data-tab="add" aria-selected="true">Pievienot</button>
@@ -1190,7 +1202,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     mats();
     const p = $("panel"); p.textContent = ""; fid = 0;
     const it = itemOf(model, sel);
-    if (!it) { const e = document.createElement("p"); e.className = "empty"; e.textContent = "Uzklikšķini uz loga, durvīm vai mēbeles rasējumā."; p.appendChild(e); return; }
+    if (!it) { const e = document.createElement("p"); e.className = "empty"; e.textContent = "Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Jaunu logu, durvis vai mēbeli izvēlies no saraksta zemāk."; p.appendChild(e); return; }
     const h = document.createElement("p"), sub = document.createElement("p"), g = document.createElement("div");
     h.className = "sel-name"; sub.className = "sel-sub"; g.className = "grid";
     const where = sel.lv === "loft" ? "Mansards" : "1. stāvs";
