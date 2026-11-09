@@ -122,6 +122,16 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 .st button { flex: none; width: 46px; height: 32px; padding: 0; border: 1px solid var(--line); border-radius: 2px; overflow: hidden; }
 .st button img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .st button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.cv .del { position: absolute; right: 8px; top: 8px; width: 28px; height: 28px; padding: 0; justify-content: center; border-radius: 50%; background: rgba(20,22,25,.6); color: #fff; opacity: .7; transition: opacity .12s; }
+.card:hover .cv .del, .cv .del:focus-visible { opacity: 1; }
+.cv .del:hover { background: #c92a2a; }
+.st .sw { position: relative; flex: none; }
+.st .sw .x { position: absolute; right: -4px; top: -4px; width: 16px; height: 16px; padding: 0; justify-content: center; border-radius: 50%; background: #c92a2a; color: #fff; border: 1.5px solid #fff; opacity: 0; }
+.st .sw:hover .x, .st .sw .x:focus-visible { opacity: 1; }
+.st .sw .x svg { width: 10px; height: 10px; stroke-width: 2.4; }
+.st .add { flex: none; width: 46px; height: 32px; padding: 0; justify-content: center; border: 1px dashed var(--line2); border-radius: 2px; color: var(--muted); }
+.st .add:hover { color: var(--accent); border-color: var(--accent); }
+@media (hover: none) { .cv .del, .st .sw .x { opacity: 1; } }
 .card.drop { border-color: var(--accent); box-shadow: 0 0 0 2px var(--acc-soft); }
 .card.drop .cv::after { content: "Ievelc šeit vizualizācijas"; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(34,102,216,.82); color: #fff; font-weight: 600; }
 .wait { position: absolute; right: 8px; top: 8px; font-size: 11px; color: var(--muted); background: var(--field); border: 1px solid var(--line); border-radius: 2px; padding: 1px 6px; }
@@ -265,14 +275,29 @@ function coverHtml(p) {
     toneBar = `<div class="tn">${tones.map(t => `<button type="button" data-tone="${t}" data-k="${p.key}" title="${TONES[t][0]}" aria-label="Tonis: ${TONES[t][0]}" aria-pressed="${t === st.t}" style="background:${TONES[t][1]}"></button>`).join("")}</div>`;
   }
   if (imgs.length) {
-    const i = Math.min(st.i, imgs.length - 1);
-    return `<div class="cv"><a class="th img" href="${href}" title="Atvērt redaktorā"><img loading="lazy" src="${esc(imgs[i])}" alt=""></a>${toneBar}</div>` +
-      (imgs.length > 1 ? `<div class="st">${imgs.map((u, j) => `<button type="button" data-img="${j}" data-k="${p.key}" aria-pressed="${j === i}" aria-label="Bilde ${j + 1}"><img loading="lazy" src="${esc(u)}" alt=""></button>`).join("")}</div>` : "");
+    const i = Math.min(st.i, imgs.length - 1), own = !toneBar, nm = u => decodeURIComponent(u.split("?")[0].split("/").pop());
+    const del = u => `data-del="${esc(nm(u))}" data-k="${p.key}"`;
+    return `<div class="cv"><a class="th img" href="${href}" title="Atvērt redaktorā"><img loading="lazy" src="${esc(imgs[i])}" alt=""></a>${toneBar}` +
+      (own ? `<button type="button" class="del" ${del(imgs[i])} title="Izņemt šo bildi" aria-label="Izņemt bildi">${ico("x")}</button>` : "") + `</div>` +
+      (imgs.length > 1 || own ? `<div class="st">${imgs.map((u, j) => `<span class="sw"><button type="button" data-img="${j}" data-k="${p.key}" aria-pressed="${j === i}" aria-label="Bilde ${j + 1}"><img loading="lazy" src="${esc(u)}" alt=""></button>${own ? `<button type="button" class="x" ${del(u)} title="Izņemt" aria-label="Izņemt bildi ${j + 1}">${ico("x")}</button>` : ""}</span>`).join("")}` +
+        (own ? `<button type="button" class="add" data-addimg="${p.key}" title="Pievienot bildes" aria-label="Pievienot bildes">${ico("plus")}</button>` : "") + `</div>` : "");
   }
   if (p.thumbs.plans || p.thumbs.fasade)
     return `<div class="cv"><a class="th two" href="${href}" title="Atvērt redaktorā"><span>${p.thumbs.plans ? `<img loading="lazy" src="${esc(p.thumbs.plans)}" alt="Plāns">` : ""}</span><span>${p.thumbs.fasade ? `<img loading="lazy" src="${esc(p.thumbs.fasade)}" alt="Fasāde">` : ""}</span></a>${p.thumbOk ? "" : '<span class="wait">atjauno…</span>'}</div>`;
   return `<div class="cv"><a class="th" href="${href}" title="Atvērt redaktorā">${plan(p)}</a><span class="wait">gatavo plānu…</span></div>`;
 }
+async function upImgs(key, files) {
+  const fs = [...files].filter(f => /\.(png|jpe?g|webp)$/i.test(f.name));
+  if (!fs.length) { toast("Izvēlies PNG, JPG vai WEBP bildes."); return; }
+  let n = 0;
+  for (const f of fs) { const r = await fetch(`/api/viz/${key}?name=${encodeURIComponent(f.name)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f }); if (r.ok) n++; }
+  toast(n + (n === 1 ? " bilde pievienota" : " bildes pievienotas") + " projekta mapei viz"); VS[key] = { t: null, i: 0 }; load();
+}
+document.addEventListener("click", async e => {
+  const d = e.target.closest("[data-del]"), a = e.target.closest("[data-addimg]");
+  if (d) { e.preventDefault(); try { await api("/api/viz-del/" + d.dataset.k, { name: d.dataset.del }); VS[d.dataset.k] = { t: null, i: 0 }; toast("Bilde izņemta (atgūstama mapē viz\\_dzestas)."); load(); } catch (er) { toast(er.message); } return; }
+  if (a) { const inp = document.createElement("input"); inp.type = "file"; inp.multiple = true; inp.accept = "image/png,image/jpeg,image/webp"; inp.onchange = () => upImgs(a.dataset.addimg, inp.files); inp.click(); return; }
+});
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-tone]"), im = e.target.closest("[data-img]");
   if (t) { VS[t.dataset.k] = { t: t.dataset.tone, i: 0 }; render(); }
@@ -285,11 +310,7 @@ document.addEventListener("dragleave", e => { if (!e.relatedTarget && dragCard) 
 document.addEventListener("drop", async e => {
   e.preventDefault(); const c = e.target.closest(".card"); dragCard && dragCard.classList.remove("drop"); dragCard = null;
   if (!c) return;
-  const fs = [...e.dataTransfer.files].filter(f => /\.(png|jpe?g|webp)$/i.test(f.name));
-  if (!fs.length) { toast("Ievelc PNG, JPG vai WEBP bildes."); return; }
-  let n = 0;
-  for (const f of fs) { const r = await fetch(`/api/viz/${c.dataset.key}?name=${encodeURIComponent(f.name)}`, { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body: f }); if (r.ok) n++; }
-  toast(n + (n === 1 ? " bilde pievienota" : " bildes pievienotas") + " projekta mapei viz"); VS[c.dataset.key] = { t: null, i: 0 }; load();
+  upImgs(c.dataset.key, e.dataTransfer.files);
 });
 // miniatūras no īstās A3 lapas: plāns (ar telpu nosaukumiem un laukumiem) un dienvidu fasāde
 let thumbBusy = false;

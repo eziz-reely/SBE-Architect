@@ -375,6 +375,17 @@ class H(BaseHTTPRequestHandler):
                 open(fp, 'wb').write(data)
                 return self.send(200, {'ok': True, 'name': os.path.basename(fp)})
             b = self.body()
+            if p.startswith('/api/viz-del/'):   # paša ielikto bildi pārvieto uz viz/_dzestas (var atgūt no mapes)
+                d = path_for(p[13:]); nm = os.path.basename(str(b.get('name') or ''))
+                fp = os.path.join(d or '', 'viz', nm)
+                if not d or not nm or re.match(r'(V\d+_|ref_)', nm) or not os.path.isfile(fp):
+                    return self.send(400, 'Šo bildi nevar dzēst', 'text/plain; charset=utf-8')
+                td = os.path.join(d, 'viz', '_dzestas'); os.makedirs(td, exist_ok=True)
+                dst = os.path.join(td, nm); stem, ext = os.path.splitext(nm); n = 2
+                while os.path.exists(dst):
+                    dst = os.path.join(td, f'{stem}-{n}{ext}'); n += 1
+                shutil.move(fp, dst)
+                return self.send(200, {'ok': True})
             if p.startswith('/api/sent/'):
                 d = path_for(p[10:])
                 if not d or not b.get('file'):
