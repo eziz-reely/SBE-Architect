@@ -4,7 +4,7 @@ MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums,
 
 ## Jauns dators (sāc šeit)
 
-1. Uzliec Python 3 un Google Drive for desktop (konts stamers.andris@gmail.com), pagaidi, kamēr sinhronizējas.
+1. Uzliec Python 3 (python.org, atzīmē "Add Python to PATH"), Git (git-scm.com) un Google Drive for desktop (konts stamers.andris@gmail.com), un pagaidi, kamēr sinhronizējas mape `My Drive\SBE\PROJEKTI`.
 2. Terminālī:
 
     git clone https://github.com/eziz-reely/SBE-Architect
