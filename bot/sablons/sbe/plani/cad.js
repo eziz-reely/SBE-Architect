@@ -1139,10 +1139,16 @@ if (r5) {
   const toilet = (cx, wy, dir, side) => {
     // side = "e" / "w": pan against the east / west wall, facing into the room (cx = wall x, wy = pan axis y)
     const tr = side ? `translate(${cx} ${wy}) rotate(${side === "e" ? 90 : -90})` : `translate(${cx} ${wy}) scale(1 ${dir})`;
-    // wall-hung pan: flush cistern cover, bowl with straight sides and round front
-    Pth("M -215 0 L 215 0 Q 214 95 185 112 Q 175 118 160 118 L -160 118 Q -175 118 -185 112 Q -214 95 -215 0 Z", { tr });
-    Pth("M -180 118 Q -182 140 -180 160 V 360 A 180 180 0 0 0 180 360 V 160 Q 182 140 180 118", { tr });
-    F.push({ t: "e", cx: 0, cy: 60, rx: 20, ry: 13, fill: C.furn, sw: 1, tr });
+    // wall-hung pan (430 × 540, same footprint as before): installation cover with dual flush plate,
+    // egg-shaped bowl, seat rim, water surface, seat hinge bar
+    R(-215, 0, 430, 112, { rx: 28, tr });
+    R(-80, 30, 160, 52, { rx: 12, sw: 3, tr });
+    Ln(0, 30, 0, 82, { sw: 2.5, tr });
+    Pth("M -188 112 C -198 262 -172 418 -112 488 Q -62 540 0 540 Q 62 540 112 488 C 172 418 198 262 188 112 Z", { tr });
+    Pth("M -128 168 C -138 272 -122 392 -78 450 Q -42 492 0 492 Q 42 492 78 450 C 122 392 138 272 128 168 Q 0 146 -128 168 Z", { sw: 4, tr });
+    F.push({ t: "e", cx: 0, cy: 345, rx: 66, ry: 92, fill: "none", sw: 2.5, tr });
+    Ln(-150, 138, 150, 138, { sw: 3, tr });
+    Ci(-112, 138, 13, { sw: 2.5, tr }); Ci(112, 138, 13, { sw: 2.5, tr });
   };
   // vanity / basin against a wall ("n","s","e","w")
   const basin = (x, y, w, h, wall) => {
