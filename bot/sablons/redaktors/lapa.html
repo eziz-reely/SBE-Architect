@@ -434,6 +434,20 @@ input:hover, select:hover { border-color: var(--line2); }
 .spec table { font: inherit; }
 button.add { background: var(--field); color: var(--ink); border: 1px dashed var(--line2); border-radius: 3px; padding: 7px 10px; }
 button.add:hover { border-color: var(--accent); color: var(--accent); background: var(--acc-soft); }
+/* === Ikonu un saskarnes noslīpēšana (2026-11-09) === */
+#rail button svg { width: 28px; height: 20px; }
+#rail button { position: relative; transition: background .12s, color .12s; }
+#rail button.on::before { content: ""; position: absolute; left: -4px; top: 8px; bottom: 8px; width: 3px; border-radius: 0 2px 2px 0; background: var(--accent); }
+#rail button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lib button svg { fill: color-mix(in srgb, currentColor 9%, transparent); }
+.lib button.on svg { fill: color-mix(in srgb, var(--accent) 16%, transparent); }
+.lib button svg { stroke-width: 1.5; }
+#libFurn .grp, .cap { text-transform: none; font-size: 11.5px; letter-spacing: .02em; }
+header .tb > button.ico svg { width: 20px; height: 20px; }
+header .tb > button.pri { display: inline-flex; align-items: center; gap: 7px; }
+header .tb > button.pri::before { content: ""; width: 14px; height: 14px; background: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2.5 2.5h8l3 3v8h-11z'/%3E%3Cpath d='M5 2.5v4h5v-4M5 13.5v-4h6v4'/%3E%3C/svg%3E") center/contain no-repeat; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M2.5 2.5h8l3 3v8h-11z'/%3E%3Cpath d='M5 2.5v4h5v-4M5 13.5v-4h6v4'/%3E%3C/svg%3E") center/contain no-repeat; }
+.tabs button { transition: color .12s, border-color .12s; }
+@media (prefers-reduced-motion: reduce) { #rail button, .tabs button { transition: none; } }
 </style>
 
 <header>
@@ -865,7 +879,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     stL: '<path d="M4 17h20V4h12v22H4z"/><path d="M9 17v9M14 17v9M19 17v9M24 8h12M24 12h12"/><path d="M6 21.5h24V7"/><path d="M28 9l2-3 2 3z" fill="currentColor"/>',
     wm: '<rect x="10" y="4" width="20" height="20" rx="2"/><circle cx="20" cy="15" r="6"/><path d="M13 7h5"/>',
   };
-  const icon = k => `<svg viewBox="0 0 40 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">${IC[k] || ""}</svg>`;
+  const icon = k => `<svg viewBox="0 0 40 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">${IC[k] || ""}</svg>`;
   // detalizācija jaunajām mēbelēm: 1 vienkāršs, 2 standarta SBE simbols, 3 detalizēts
   let detail = 2;
   const VARY = ["bed", "nightstand", "sofa", "sofaL", "wardrobe", "armchair", "galds", "desk", "kapnes", "kapnesL"];
@@ -917,7 +931,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gv", run: () => { $("bGuideClr").click(); } },
   ];
   const RAIL = ["sel", "t3", "t4", "er", "t5", "t6", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
-  IC.sel = '<path d="M9 3l16 10-7 1.5 4 8-3 1.5-4-8-6 4z" fill="currentColor"/>';
+  IC.sel = '<path d="M14 3l1.5 20 4.3-5.2 6.7 1.2z" fill="currentColor" fill-opacity=".15" transform="rotate(-20 20 14) translate(2 -1)"/>';
   const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
   let keyMap = Object.assign({}, DEF), keyCap = null;
   try { Object.assign(keyMap, JSON.parse(localStorage.getItem("mmKeys") || "{}")); } catch (_) {}
