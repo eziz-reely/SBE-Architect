@@ -332,6 +332,8 @@ details.fold > summary .fk.ok { color: var(--ok); } details.fold > summary .fk.b
 details.fold > summary:hover { background: var(--hover); }
 details.fold > summary .fx { width: 22px; height: 22px; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--bad); font-size: 16px; line-height: 1; cursor: pointer; }
 details.fold > summary .fx:hover { background: color-mix(in srgb, var(--bad) 14%, transparent); }
+details.fold .fnm { display: grid; gap: 3px; font-size: 11.5px; color: var(--muted); margin: 6px 0 8px; }
+details.fold .fnm input { font-weight: 600; }
 details.fold > .spec { margin: 0; padding: 4px 10px 10px; border-top: 1px solid var(--line); }
 #keysPane .kr { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; border-bottom: 1px solid var(--line); }
 #keysPane .kr button, #keysPane .ft button { min-width: 72px; padding: 4px 8px; background: var(--field); color: var(--ink); border: 1px solid var(--line); border-radius: 3px; font: 600 12px/1 var(--f-ui); }
@@ -1217,7 +1219,20 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const sm = document.createElement("summary"); sm.innerHTML = `<span class="fn"></span><span class="fs"></span><span class="fk ${ok ? "ok" : "bad"}">${ok ? "✓" : "⚠"}</span>`;
       sm.querySelector(".fn").textContent = name; sm.querySelector(".fs").textContent = (Math.round(sum * 10) / 10).toLocaleString("lv-LV") + " mm";
       d.addEventListener("toggle", () => { if (d.open) SPEC_OPEN.add(k); else SPEC_OPEN.delete(k); });
-      const t = box.querySelector(":scope > b"); if (t && !t.querySelector("input")) t.remove();
+      const t = box.querySelector(":scope > b"); if (t) t.remove();
+      if (k !== "KW") {   // nosaukums maināms tieši šeit (arī S1, S2, grīdai un jumtam); redzams AR lapā Sienu specifikācija
+        const wi = ((model.projekts || {}).wall_types || []).findIndex(w => w.id === k);
+        const lb = document.createElement("label"); lb.className = "fnm"; lb.textContent = "Nosaukums";
+        const ni = document.createElement("input"); ni.type = "text"; ni.value = name; ni.dataset.lab = "Nosaukums " + k; lb.appendChild(ni);
+        ni.addEventListener("change", () => {
+          const v = ni.value.trim(); if (!v || v === name) { ni.value = name; return; }
+          const n = clone(model); n.projekts = n.projekts || {};
+          if (wi >= 0) n.projekts.wall_types[wi].name = v;
+          else { const pn = n.projekts.piragi_names = n.projekts.piragi_names || {}; if (LAYERS0[k] && v === LAYERS0[k].name) delete pn[k]; else pn[k] = v; if (!Object.keys(pn).length) delete n.projekts.piragi_names; }
+          commit(n); status("Nosaukums nomainīts.");
+        });
+        box.prepend(lb);
+      }
       d.append(sm, box); return d;
     };
     { // sienu specifikācija: pīrāgu slāņi, pārbaude pret plāna sienu biezumiem; labojumus saglabā modelī (projekts.piragi_layers)
