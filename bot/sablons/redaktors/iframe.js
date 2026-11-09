@@ -249,6 +249,25 @@
       const m = P((u0 + u1) / 2, at - (H ? 1.2 / k : 0)); label(o, m[0] - (H ? 3 / k : -1.2 / k), m[1], `${Math.round(u1 - u0)}`, k);
     });
   }
+  // logiem fasādē: pagaidu mēri līdz fasādes malām un no loga apakšas līdz grīdas līmenim (±0,000); tikai kamēr izvēlēts vai velk
+  function elevDims(o, bl, it, k, X = M) {
+    const b = it.b, sp = span(bl.side), u0 = b[0], u1 = b[2], zb = -b[3]; if (!(u1 > u0)) return;
+    o = mk(o, "g", { class: "od" });
+    const ln = { stroke: ACC, "stroke-width": 0.35 / k }, ext = { stroke: ACC, "stroke-width": 0.2 / k, "stroke-dasharray": `${0.8 / k} ${0.6 / k}` };
+    const tick = (x, y) => mk(o, "line", Object.assign({ x1: x - 90, y1: y + 90, x2: x + 90, y2: y - 90 }, ln));
+    const yh = (b[1] + b[3]) / 2;
+    [[0, u0], [u1, sp]].forEach(([a, c]) => {
+      if (c - a < 1) return;
+      mk(o, "line", Object.assign({ x1: a, y1: yh, x2: c, y2: yh }, ln)); tick(a, yh); tick(c, yh);
+      label(o, (a + c) / 2 - 3 / k, yh - 1.2 / k, `${Math.round(c - a)}`, k);
+    });
+    if (zb > 1) {
+      const x = u0 + (u1 - u0) * .78;
+      mk(o, "line", Object.assign({ x1: x, y1: b[3], x2: x, y2: 0 }, ln)); tick(x, b[3]); tick(x, 0);
+      mk(o, "line", Object.assign({ x1: x - 400, y1: 0, x2: x + 400, y2: 0 }, ext));
+      label(o, x + 1.2 / k, b[3] / 2, `${Math.round(zb)}`, k);
+    }
+  }
   function rotHandle(o, b, k) {   // ↻ aplis pie mēbeles augšējā labā stūra: viens klikšķis = 90°
     const [x, y] = handlePos(b, k), r = 2.3 / k;
     mk(o, "circle", { cx: x, cy: y, r, fill: ACC, stroke: "#fff", "stroke-width": 0.35 / k });
@@ -339,6 +358,7 @@
       rect(o, it.b, false, k, it.k === "furn" ? 0 : undefined);
       if (it.k !== "stamp") delHandle(o, it.b, k);
       if (bl.type === "plan" && (it.k === "door" || it.k === "win")) openDims(o, bl.lv, it, k);
+      if (bl.type === "elev" && (it.k === "win" || it.k === "gw")) elevDims(o, bl, it, k);
       if (it.k === "furn") { rotHandle(o, it.b, k); if (canSize(lv(it.lv).furniture[it.i])) sizeHandles(o, it.b, k); }
       const t = sizeText(it);
       if (t) { const at = selPt && selPt.g === bl.g ? [selPt.p[0] + 4 / k, selPt.p[1] - 4 / k] : [it.b[0] + 7 / k, it.b[1] - 2.5 / k]; label(o, at[0], at[1], t, k); }
@@ -856,15 +876,29 @@
     if (z === "move") { u0 += q; u1 += q; } else if (z === "l") u0 = Math.min(u0 + q, u1 - 300); else if (z === "r") u1 = Math.max(u1 + q, u0 + 300);
     const sp = span(s);
     if (u0 < T) { u1 += T - u0; u0 = T; } if (u1 > sp - T) { u0 -= u1 - (sp - T); u1 = sp - T; }
-    const a0 = Math.min(mapU(s, u0), mapU(s, u1)), a1 = Math.max(mapU(s, u0), mapU(s, u1));
+    d.gwMid = false;
     if (isG) {
-      o.u0 = a0; o.u1 = a1;
       if (z === "b" || (z === "move" && o.win)) o.z0 = o.z0 + r10(dz);
       if (o.z0 < GWB) { if (o.z1) o.z1 += GWB - o.z0; o.z0 = GWB; }   // 2. stāva logs nav zemāk par mansarda paneļa augšu
       if (o.z1 && (z === "t" || z === "move")) o.z1 = o.z1 + r10(dz);
       if (o.z1 && o.z1 < o.z0 + 300) o.z1 = o.z0 + 300;
+      if (!o.win) {
+        // slīpais logs paliek gala trijstūrī (stūros var kļūt trijstūrains, ārā neiziet) un pielīp kores vidus līnijai
+        const ev = (M.jumts && M.jumts.eave) || 2600, tn = Math.tan(((M.jumts && M.jumts.pitch) || 30) * Math.PI / 180), um = Math.max(T, (o.z0 + 200 - ev) / tn);
+        if (um >= sp / 2 - 150) { o.z0 = Math.round(ev - 200 + (sp / 2 - 150) * tn); }
+        const lo = Math.max(T, (o.z0 + 200 - ev) / tn), hi = sp - lo, mid = sp / 2, SN = 150;
+        if (z === "move") { const w = Math.min(u1 - u0, hi - lo); let c = (u0 + u1) / 2; if (Math.abs(c - mid) < SN) c = mid; c = Math.max(lo + w / 2, Math.min(hi - w / 2, c)); u0 = c - w / 2; u1 = c + w / 2; }
+        else if (z === "l") { if (Math.abs(u0 + u1 - sp) < 2 * SN) u0 = sp - u1; u0 = Math.max(lo, u0); }
+        else if (z === "r") { if (Math.abs(u0 + u1 - sp) < 2 * SN) u1 = sp - u0; u1 = Math.min(hi, u1); }
+        else { u0 = Math.max(lo, u0); u1 = Math.min(hi, u1); }
+        u0 = +u0.toFixed(1); u1 = +u1.toFixed(1);
+        d.gwMid = Math.abs(u0 + u1 - sp) < 1;
+      }
+      const a0 = Math.min(mapU(s, u0), mapU(s, u1)), a1 = Math.max(mapU(s, u0), mapU(s, u1));
+      o.u0 = a0; o.u1 = a1;
       syncGw(N, it.i);
     } else {
+      const a0 = Math.min(mapU(s, u0), mapU(s, u1)), a1 = Math.max(mapU(s, u0), mapU(s, u1));
       if (o.o === "h") o.x = a0; else o.y = a0; o.len = a1 - a0;
       if (o.parts && o.parts.length === 2) o.parts[1].len = Math.max(200, o.len - o.parts[0].len);
       const sill = o.sill ?? 0, head = o.head ?? 2100;
@@ -925,6 +959,13 @@
     else t = `Δx ${d.fdx}  Δy ${d.fdy}`;
     label(g, b[0], b[1] - 2.2 / k, t, k);
     if (bl.type === "plan" && (it.k === "door" || it.k === "win")) { o.querySelectorAll(".od").forEach(e => e.remove()); openDims(g, it.lv, it, k, N); }
+    if (bl.type === "elev" && (it.k === "win" || it.k === "gw")) {
+      o.querySelectorAll(".od").forEach(e => e.remove());
+      const nb = (items(bl, N).find(x => same(x, it)) || it); elevDims(g, bl, nb, k, N);
+      if (d.gwMid) { const sp = span(bl.side), ev = (M.jumts && M.jumts.eave) || 2600, top = ev + sp / 2 * Math.tan(((M.jumts && M.jumts.pitch) || 30) * Math.PI / 180);
+        mk(g, "line", { x1: sp / 2, y1: -top - 300, x2: sp / 2, y2: 300, stroke: ACC, "stroke-width": 0.3 / k, "stroke-dasharray": `${1.2 / k} ${0.8 / k}` });
+        label(g, sp / 2 + 1.2 / k, -top - 150, "kores vidus", k); }
+    }
   }
 
   const cur = z => (z === "l" || z === "r" || z === "wx" ? "ew-resize" : z === "t" || z === "b" || z === "wy" ? "ns-resize" : z === "rot" ? "grab" : z === "del" ? "pointer" : "move");

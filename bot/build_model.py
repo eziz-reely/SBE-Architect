@@ -251,12 +251,7 @@ def build(model_path, langs=None):
     ]:
         assert a in cad, 'SBE cad.js: nav atrasts ' + a[:50]
         cad = cad.replace(a, b, 1)
-    gm = '    const a0 = b0, a1 = b1, mid = (a0 + a1) / 2;'
-    assert gm in cad, 'SBE cad.js: nav atrasts gala loga centrs'
-    cad = cad.replace(gm, '    const a0 = b0, a1 = b1, mid = Math.min(Math.max(span / 2, a0), a1);   // [MM] slīpais logs seko jumtam: pāri korei piecstūris, sānos četrstūris', 1)
-    sh = '    { // shadow of the head and the left jamb on the glass (as on the other windows)'
-    assert sh in cad, 'SBE cad.js: nav atrasta gala loga ēna'
-    cad = cad.replace(sh, '    if (mid > a0 + 1 && mid < a1 - 1) { // shadow of the head and the left jamb on the glass (as on the other windows)', 1)
+    # [MM] slīpais logs: kores virsotne fasādes vidū un apgriešana pie jumta līnijām tagad ir pašā cad.js (gableWins)
     # [MM] AR lapas: mazām mājām fasādes (un plāni) lielākā mērogā 1:75 vai 1:50; līnijas un teksts paliek tāda paša lieluma
     ARFIX = (
         'function arFix(g, k) {\n'

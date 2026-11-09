@@ -731,21 +731,32 @@ function elevation(parent, v, side, opt = { levels: true }) {
     }
     // fixed gable window with two sloping edges (pentagon), outside casing like the standard windows
     const gg = el("g", {}, g), z0 = gw.z0 || 2450, off = 200, k = 1 / Math.cos(ROOF.pitch * Math.PI / 180), cas = (window.AR && window.AR.win && window.AR.win.casing) ?? 0;
-    const a0 = b0, a1 = b1, mid = (a0 + a1) / 2;
-    const zTop = u => ROOF.eave + Math.min(u, span - u) * tan - off;
-    const shape = (i, o = 0) => {
-      const pts = [[a0 + i - o, z0 + i - (i ? 0 : 0)], [a1 - i + o, z0 + i]];
-      const L0 = a0 + i - o, R0 = a1 - i + o;
-      return [P(L0, z0 + i), P(R0, z0 + i), P(R0, zTop(R0) - i * k + o * k), P(mid, zTop(mid) - i * k + o * k), P(L0, zTop(L0) - i * k + o * k)].join(" ");
+    // logs nekad neiziet ārpus gala trijstūra: malas apgriež pie jumta līnijām (stūros tas var kļūt trijstūrains); kores virsotne ir fasādes vidū, ne loga vidū
+    const uMin = Math.max(0, (z0 + off - ROOF.eave) / tan), a0 = Math.max(b0, uMin), a1 = Math.min(b1, span - uMin);
+    if (a1 - a0 < 50) return;
+    // izliekts daudzstūris: taisnstūris [L, R] × [apakša, ∞), apgriezts ar abām jumta pusplaknēm (nobīde dz uz leju)
+    const poly = (L, R, zb, dz) => {
+      const h = [[tan, ROOF.eave - off - dz], [-tan, ROOF.eave - off - dz + span * tan]];   // z <= m·u + c
+      let pg = [[L, zb], [R, zb], [R, 1e6], [L, 1e6]];
+      h.forEach(([m, c]) => { const f = q => c + m * q[0] - q[1], out = [];
+        pg.forEach((q, j) => { const r = pg[(j + 1) % pg.length], fq = f(q), fr = f(r);
+          if (fq >= 0) out.push(q); if ((fq >= 0) !== (fr >= 0)) { const t = fq / (fq - fr); out.push([q[0] + (r[0] - q[0]) * t, q[1] + (r[1] - q[1]) * t]); } });
+        pg = out; });
+      return pg;
     };
+    const pts = pg => pg.map(q => P(q[0], q[1])).join(" ");
+    const shape = (i, o = 0) => pts(poly(a0 + i - o, a1 - i + o, z0 + i, i * k - o * k));
     if (cas) el("polygon", { points: shape(0, cas), fill: (typeof colHex === "function" ? colHex(WINC().cas, "#24282b") : "#24282b"), stroke: "#111", "stroke-width": 8 }, gg);
     // frame in the window colour directly (no black layer), thin rebate line, glass
     el("polygon", { points: shape(0), fill: colHex(WINC().out), stroke: "#111", "stroke-width": 7 }, gg);
     el("polygon", { points: shape(18), fill: "none", stroke: "#111", "stroke-width": 4 }, gg);
-    el("polygon", { points: shape(95), fill: "#8fadbb", stroke: "#111", "stroke-width": 4 }, gg);
-    { // shadow of the head and the left jamb on the glass (as on the other windows)
-      const i = 95, sh = 300, sv = 180, tl = a0 + i, tr = a1 - i, zt = u => zTop(u) - i * k;
-      el("polygon", { points: [P(tl, zt(tl)), P(mid, zt(mid)), P(tr, zt(tr)), P(tr, zt(tr) - sh), P(mid, zt(mid) - sh), P(tl + sv, zt(tl + sv) - sh), P(tl + sv, z0 + i), P(tl, z0 + i)].join(" "), fill: "rgba(20,40,52,.38)" }, gg);
+    const gl = poly(a0 + 95, a1 - 95, z0 + 95, 95 * k);
+    if (gl.length > 2) {
+      el("polygon", { points: pts(gl), fill: "#8fadbb", stroke: "#111", "stroke-width": 4 }, gg);
+      // shadow of the head and the left jamb on the glass (as on the other windows): glass minus the inset area, always inside the glass
+      const lit = poly(a0 + 95 + 180, a1 - 95, z0 + 95, 95 * k + 300);
+      const dd = q => `M ${q.map(p => P(p[0], p[1]).replace(",", " ")).join(" L ")} Z`;
+      el("path", { d: dd(gl) + (lit.length > 2 ? " " + dd(lit) : ""), "fill-rule": "evenodd", fill: "rgba(20,40,52,.38)" }, gg);
     }
     el("rect", { x: a0 - 40 - cas, y: -z0, width: a1 - a0 + 80 + 2 * cas, height: 45, fill: "#2b2f32" }, gg);
   });
