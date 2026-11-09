@@ -2,6 +2,18 @@
 
 MM Homes modeļu bots kā Claude plugin. No mājas gabarītiem (garums, platums, kores augstums) uztaisa skiču projekta A3 lapu LV un EN (plāni, mansards, fasādes, eksplikācija, rakstlaukums) un Gemini vizualizācijas.
 
+## Jauns dators (sāc šeit)
+
+1. Uzliec Python 3 un Google Drive for desktop (konts stamers.andris@gmail.com), pagaidi, kamēr sinhronizējas.
+2. Terminālī:
+
+    git clone https://github.com/eziz-reely/SBE-Architect
+    cd SBE-Architect
+    python bot/app_saisne.py
+
+3. Darbvirsmā atver ikonu **SBE projekti**. Visi projekti ir, jo tie ir Drive mapē `SBE\PROJEKTI`.
+4. AI aģentam (Claude, Codex, Grok) saki: "izlasi AGENTS.md un docs/arhitektura.md".
+
 ## Instalēšana
 
     /plugin marketplace add eziz-reely/SBE-Architect
