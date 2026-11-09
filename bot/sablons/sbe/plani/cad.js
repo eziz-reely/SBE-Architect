@@ -797,6 +797,25 @@ function elevation(parent, v, side, opt = { levels: true }) {
   } else {
     // verge: sarkanajam balta ~220 mm dēļu mala ar jumta toņa lentu, pārējiem tikai ~100 mm skārda vējmala
     const eT = eEdge + thV, cov = FAS ? 60 : 0;
+    if (ROOF.ov > 0 && !FAS) {
+      // [MM] gala pārkare: spāres gals (jumta pīrāgs līdz siltumizolācijai) visā slīpumā, apšuvuma dēļi paralēli jumtam (pa diagonāli)
+      const RL = (typeof LAYERS === "function" && LAYERS("J1") && LAYERS("J1").layers) || [], ki = RL.findIndex(l => l[2] === "i");
+      const tPV = ((ki >= 0 ? RL.slice(0, ki + 1).reduce((s, l) => s + l[1], 0) : ROOF.th) + 20) / Math.cos(ROOF.pitch * Math.PI / 180);
+      const fill = (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";
+      [[-ROOF.ov, span / 2, -1], [span / 2, span + ROOF.ov, 1]].forEach(([u0, u1, sd]) => {
+        const zA = sd < 0 ? eT : ridgeTop, zB = sd < 0 ? ridgeTop : eT;
+        const pts = [[u0, -zA], [u1, -zB], [u1, -(zB - tPV)], [u0, -(zA - tPV)]];
+        const cid = "gov-" + side + sd + Math.random().toString(36).slice(2, 6), ang = sd < 0 ? -90 - ROOF.pitch : -90 + ROOF.pitch;
+        el("polygon", { points: pts.map(q => q.join(",")).join(" "), fill }, g);
+        el("polygon", { points: pts.map(q => q.join(",")).join(" ") }, el("clipPath", { id: cid }, g));
+        const tg = el("g", { transform: `rotate(${ang})` }, el("g", { "clip-path": `url(#${cid})` }, g));
+        const r = -ang * Math.PI / 180, inv = pts.map(([x, y]) => [x * Math.cos(r) - y * Math.sin(r), x * Math.sin(r) + y * Math.cos(r)]);
+        const xs = inv.map(q => q[0]), ys = inv.map(q => q[1]);
+        for (let x = Math.floor(Math.min(...xs) / 2000) * 2000; x < Math.max(...xs); x += 2000)
+          for (let y = Math.floor(Math.min(...ys) / 2000) * 2000; y < Math.max(...ys); y += 2000) el("use", { href: "#cladTex", x, y }, tg);
+        el("polygon", { points: pts.map(q => q.join(",")).join(" "), fill: "none", stroke: C.ink, "stroke-width": 12 }, g);
+      });
+    }
     el("polygon", { points: [P(-ROOF.ov, eT - vt), P(-ROOF.ov, eT), P(span / 2, ridgeTop), P(span + ROOF.ov, eT), P(span + ROOF.ov, eT - vt), P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? "#F2F0EA" : "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
     if (cov) el("polygon", { points: [P(-ROOF.ov - 20, eT + 5), P(span / 2, ridgeTop + 5), P(span + ROOF.ov + 20, eT + 5), P(span + ROOF.ov + 20, eT - cov), P(span / 2, ridgeTop - cov), P(-ROOF.ov - 20, eT - cov)].join(" "), fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
   }

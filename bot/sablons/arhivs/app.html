@@ -193,7 +193,11 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
     <div class="g2">
       <label>Garums, mm<input id="nL" type="number" inputmode="numeric" min="3000" max="40000" step="10" required placeholder="8570"></label>
       <label>Platums, mm<input id="nB" type="number" inputmode="numeric" min="2500" max="15000" step="10" required placeholder="3500"></label>
-      <label>Kores augstums, mm<input id="nH" type="number" inputmode="numeric" min="2500" max="12000" step="10" required placeholder="4000"></label>
+      <label>Jumta slīpums, °<input id="nP" type="number" inputmode="decimal" min="5" max="60" step="0.5" value="25"></label>
+    </div>
+    <div class="g2 two">
+      <label>Kores augstums, mm (nav obligāts)<input id="nH" type="number" inputmode="numeric" min="2500" max="12000" step="10" placeholder="aprēķina no slīpuma"></label>
+      <label>Dzegas augstums, mm<input id="nE" type="number" inputmode="numeric" min="2000" max="6000" step="10" value="2600" title="Izmanto tikai tad, ja kores augstums nav ievadīts"></label>
     </div>
     <div class="g2 two">
       <label>Modeļa nosaukums<input id="nName" type="text" placeholder="piem. Freya"></label>
@@ -459,10 +463,12 @@ function newDlg() {
 }
 $("bNew").onclick = newDlg;
 $("nCancel").onclick = () => $("dNew").close();
+const ridgeHint = () => { const P = +$("nP").value, Bw = +$("nB").value; $("nE").disabled = !!$("nH").value; if (!$("nH").value && P && Bw) $("nH").placeholder = "≈ " + Math.round((+$("nE").value || 2600) + 295 / Math.cos(P * Math.PI / 180) + Bw / 2 * Math.tan(P * Math.PI / 180) + ($("nFnd").value === "platne" ? 0 : 275)) + " no slīpuma"; };
+["nP", "nB", "nH", "nE", "nFnd"].forEach(id => $(id).addEventListener("input", ridgeHint));
 $("fNew").addEventListener("submit", async e => {
   e.preventDefault(); const b = $("nOk"); b.disabled = true; b.textContent = "Ģenerē…"; $("nErr").hidden = true;
   try {
-    const r = await api("/api/new", { company: $("nCo").value, garums: +$("nL").value, platums: +$("nB").value, augstums: +$("nH").value,
+    const r = await api("/api/new", { company: $("nCo").value, garums: +$("nL").value, platums: +$("nB").value, augstums: $("nH").value ? +$("nH").value : "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
       nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value });
     location.href = "/edit/" + r.key;
   } catch (er) { $("nErr").textContent = er.message; $("nErr").hidden = false; b.disabled = false; b.textContent = "Izveidot"; }

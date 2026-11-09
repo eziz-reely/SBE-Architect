@@ -322,12 +322,17 @@ if __name__ == '__main__':
     ap.add_argument('--piezime', action='append', default=[], help='papildu piezīme par projektu rakstlaukumā, var atkārtot')
     ap.add_argument('--viz', action='store_true', help='pēc rasējumiem uzreiz uztaisīt Gemini vizualizācijas (3 toņi)')
     ap.add_argument('--faze', default='klients', choices=['klients', 'razosana'])
+    ap.add_argument('--slipums', type=float, help='jumta slīpums grādos (noklusējums mm-config roof.pitch, 25)')
     ap.add_argument('--mansards', default='ja', choices=['ja', 'ne'], help='vai mājai ir mansarda stāvs (noklusējums ja)')
     ap.add_argument('--varianti', type=int, default=0, help='N > 0: plānotājs uztaisa N plānojuma variantus, katram sava lapa')
     ap.add_argument('--gulamistabas', type=int, help='variantiem: guļamistabu skaits (noklusējums pēc laukuma)')
     ap.add_argument('--vannas', type=int, help='variantiem: vannasistabu skaits (noklusējums pēc laukuma)')
     ap.add_argument('--forma', default='II,L,T', help='variantiem: formas II, L, T (komatiem)')
     a = ap.parse_args()
+    if a.slipums:   # jumta slīpums: tas pats globālais PITCH, ko izmanto model() un planner.py
+        globals()['PITCH'] = a.slipums
+        import planner as _pl
+        _pl.PITCH = a.slipums
     if a.atmosfera and a.atmosfera not in CFG['atmosferas']:
         raise SystemExit('Nezināma atmosfēra: %s. Ir: %s' % (a.atmosfera, ', '.join(CFG['atmosferas'])))
     if a.faze != 'klients':

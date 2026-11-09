@@ -11,7 +11,7 @@ Iestatījumi: %USERPROFILE%\\.sbe-arhivs.json  {"root": "...", "companies": {"No
 Redaktorā "Saglabāt" ieraksta model.json projekta mapē (iepriekšējo saglabā kā model.json.bak)
 un fonā pārbūvē LV/EN lapas. Eksporti (PDF, DXF, …) lejupielādējas kā parasti pārlūkā.
 """
-import hashlib, html, json, os, re, shutil, subprocess, sys, threading, time, urllib.parse, webbrowser
+import hashlib, html, json, math, os, re, shutil, subprocess, sys, threading, time, urllib.parse, webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -202,10 +202,21 @@ def new_project(b):
     co = b.get('company') or ''
     if co not in cos:
         raise ValueError('Nav tāda uzņēmuma.')
-    L, B, H = (float(b[k]) for k in ('garums', 'platums', 'augstums'))
+    L, B = float(b['garums']), float(b['platums'])
+    pitch = float(b.get('slipums') or 0) or None
+    if pitch is not None and not 5 <= pitch <= 60:
+        raise ValueError('Jumta slīpums 5–60°.')
+    if b.get('augstums') not in (None, '', 0):
+        H = float(b['augstums'])
+    else:   # kore no slīpuma: dzega 2600 virs ±0,000 + jumta pīrāgs + grīdas panelis (stabveida pamatiem), lai mansardam pietiek augstuma
+        cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
+        p = math.radians(pitch or cfg['roof']['pitch']); RT = sum(l[1] for l in cfg['layers']['J1']['layers'])
+        flT = sum(l[1] for l in cfg['layers']['G1']['layers']) if b.get('pamati') != 'platne' else 0
+        H = math.ceil(float(b.get('dzega') or 2600) + RT / math.cos(p) + B / 2 * math.tan(p) + flT)
     if not (3000 <= L <= 40000 and 2500 <= B <= 15000 and 2500 <= H <= 12000):
         raise ValueError('Izmēri ārpus robežām (garums 3–40 m, platums 2,5–15 m, kore 2,5–12 m).')
     args = [sys.executable, os.path.join(HERE, 'generate.py'), str(L), str(B), str(H), '--valodas', 'LV']
+    if pitch: args += ['--slipums', f'{pitch:g}']
     pid = safe_name(b.get('id'))
     if not pid:   # nākamais brīvais MM-<m²>-NN visā arhīvā (generate.py pats skatās tikai repo MĀJAS mapi)
         g = int(round(L * B / 1e6 / 5.0) * 5); used = {x['id'] for x in scan()}; n = 1
