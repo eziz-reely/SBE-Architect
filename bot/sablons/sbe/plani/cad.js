@@ -1136,19 +1136,18 @@ if (r5) {
   };
   const nightstand = (x, y) => { R(x, y, 450, 420, { rx: 15 }); R(x + 40, y + 40, 370, 340, { rx: 10, sw: 3 }); };
   const desk = (x, y, w, h, side) => { R(x, y, w, h, { rx: 10 }); officeChair(side === "w" ? x - 330 : x + w + 330, y + h / 2, side === "w" ? "w" : "e"); };
-  const toilet = (cx, wy, dir, side) => {
+  const toilet = (cx, wy, dir, side, style) => {
     // side = "e" / "w": pan against the east / west wall, facing into the room (cx = wall x, wy = pan axis y)
+    // style: null = iebūvējams (piekarams, 430 × 540), "k" = klasisks ar tvertni (450 × 660)
     const tr = side ? `translate(${cx} ${wy}) rotate(${side === "e" ? 90 : -90})` : `translate(${cx} ${wy}) scale(1 ${dir})`;
-    // wall-hung pan (430 × 540, same footprint as before): installation cover with dual flush plate,
-    // egg-shaped bowl, seat rim, water surface, seat hinge bar
-    R(-215, 0, 430, 112, { rx: 28, tr });
-    R(-80, 30, 160, 52, { rx: 12, sw: 3, tr });
-    Ln(0, 30, 0, 82, { sw: 2.5, tr });
-    Pth("M -188 112 C -198 262 -172 418 -112 488 Q -62 540 0 540 Q 62 540 112 488 C 172 418 198 262 188 112 Z", { tr });
-    Pth("M -128 168 C -138 272 -122 392 -78 450 Q -42 492 0 492 Q 42 492 78 450 C 122 392 138 272 128 168 Q 0 146 -128 168 Z", { sw: 4, tr });
-    F.push({ t: "e", cx: 0, cy: 345, rx: 66, ry: 92, fill: "none", sw: 2.5, tr });
-    Ln(-150, 138, 150, 138, { sw: 3, tr });
-    Ci(-112, 138, 13, { sw: 2.5, tr }); Ci(112, 138, 13, { sw: 2.5, tr });
+    const k = style === "k", y0 = k ? 190 : 44, y1 = k ? 660 : 540, Y = t => +(y0 + t * (y1 - y0)).toFixed(1);
+    if (k) { R(-225, 0, 450, 190, { rx: 22, tr }); Ci(0, 95, 24, { sw: 3, tr }); }   // tvertne ar skalošanas pogu
+    else R(-190, 0, 380, 44, { rx: 12, tr });                                          // sienas plāksne (instalācija sienā)
+    // pods: olveida ārmala, sēdekļa iekšmala, eņģu ass
+    Pth(`M -188 ${Y(0)} C -198 ${Y(.35)} -172 ${Y(.71)} -112 ${Y(.88)} Q -62 ${Y(1)} 0 ${Y(1)} Q 62 ${Y(1)} 112 ${Y(.88)} C 172 ${Y(.71)} 198 ${Y(.35)} 188 ${Y(0)} Z`, { tr });
+    Pth(`M -128 ${Y(.13)} C -138 ${Y(.375)} -122 ${Y(.655)} -78 ${Y(.79)} Q -42 ${Y(.89)} 0 ${Y(.89)} Q 42 ${Y(.89)} 78 ${Y(.79)} C 122 ${Y(.655)} 138 ${Y(.375)} 128 ${Y(.13)} Q 0 ${Y(.08)} -128 ${Y(.13)} Z`, { sw: 4, tr });
+    Ln(-150, Y(.06), 150, Y(.06), { sw: 3, tr });
+    Ci(-112, Y(.06), 13, { sw: 2.5, tr }); Ci(112, Y(.06), 13, { sw: 2.5, tr });
   };
   // vanity / basin against a wall ("n","s","e","w")
   const basin = (x, y, w, h, wall) => {

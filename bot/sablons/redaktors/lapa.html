@@ -912,7 +912,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Rakstāmgalds", s: "1200 × 600", e: ["desk", 0, 0, 1200, 600, "e"], w: 1200, h: 600, ic: "desk", vy: 1 },
     { n: "Virtuves virsma", s: "2400 × 600", e: ["R", 0, 0, 2400, 600], w: 2400, h: 600, ic: "ctr" },
     { n: "Izlietne", s: "600 × 450", e: ["basin", 0, 0, 600, 450, "n"], w: 600, h: 450, ic: "bas" },
-    { n: "Pods", s: "pie sienas", e: ["toilet", 0, 0, 1], center: true, ic: "wc" },
+    { n: "Pods iebūvējams", s: "piekarams, 430 × 540", e: ["toilet", 0, 0, 1], center: true, ic: "wc" },
+    { n: "Pods klasisks", s: "ar tvertni, 450 × 660", e: ["toilet", 0, 0, 1, null, "k"], center: true, ic: "wck" },
     { n: "Duša", s: "900 × 900", e: ["shower", 0, 0, 900, ["n", "w"]], w: 900, h: 900, ic: "sh" },
     { n: "Veļasmašīna", s: "600 × 600", e: ["washer", 0, 0], w: 600, h: 600, ic: "wm" },
     { n: "Taisnas kāpnes", s: "3600 × 900", e: ["kapnes", 0, 0, 3600, 900, "e"], w: 3600, h: 900, ic: "st", vy: 1 },
@@ -950,7 +951,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     desk: '<rect x="2.5" y="5" width="19" height="9" rx="1"/><circle cx="12" cy="18" r="2.5"/>',
     ctr: '<rect x="2" y="7.5" width="20" height="9"/><circle cx="6" cy="12" r="1.8"/><circle cx="10.5" cy="12" r="1.8"/><rect x="14" y="9.5" width="6" height="5" rx="1"/>',
     bas: '<rect x="4.5" y="5.5" width="15" height="13" rx="2"/><ellipse cx="12" cy="13" rx="4.5" ry="3.2"/><path d="M12 7.5v2"/>',
-    wc: '<rect x="7" y="2.5" width="10" height="4.5" rx="1"/><ellipse cx="12" cy="14.5" rx="4.5" ry="6"/>',
+    wc: '<rect x="7.5" y="3" width="9" height="2" rx=".8"/><path d="M7.5 5c-.4 5 .3 10.5 2.2 13.3Q10.8 20.5 12 20.5t2.3-2.2C16.2 15.5 16.9 10 16.5 5z"/><path d="M9.7 8.5c-.3 3.5.3 7.5 2.3 9 2-1.5 2.6-5.5 2.3-9z"/>',
+    wck: '<rect x="6.5" y="2.5" width="11" height="5" rx="1"/><circle cx="12" cy="5" r=".8"/><path d="M8 7.5c-.3 4.3.3 9 1.9 11.3Q10.9 21 12 21t2.1-2.2C15.7 16.5 16.3 11.8 16 7.5z"/><path d="M9.9 10.2c-.2 3 .3 6.3 2.1 7.6 1.8-1.3 2.3-4.6 2.1-7.6z"/>',
     sh: '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 4l6.6 6.6M20 4l-6.6 6.6M4 20l6.6-6.6M20 20l-6.6-6.6"/><circle cx="12" cy="12" r="2"/>',
     wm: '<rect x="5" y="3.5" width="14" height="17" rx="1.5"/><circle cx="12" cy="13" r="4.5"/><path d="M8 6.5h3"/>',
     st: '<rect x="2" y="7" width="20" height="10"/><path d="M6 7v10M10 7v10M14 7v10M18 7v10"/><path d="M3.5 12h15M16.5 10l2.5 2-2.5 2"/>',
@@ -996,7 +998,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     $("libOpen").appendChild(b); }
   $("gClr").onclick = () => $("bGuideClr").click();
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
-  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk"]], ["Virtuve un vannas istaba", ["ctr", "bas", "wc", "sh", "wm"]], ["Kāpnes", ["st", "stL"]]], host = $("libFurn");
+  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk"]], ["Virtuve un vannas istaba", ["ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]]], host = $("libFurn");
     GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
       FURN_LIB.filter(f => ics.includes(f.ic)).forEach(f => libButton(host, f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy })); }); }
 
@@ -1411,6 +1413,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         }
         const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Bulta rāda kāpšanas virzienu, aplītis ir sākums."; g.appendChild(nt);
       }
+      if (nm === "toilet") g.append(field("Veids", base[5] === "k" ? "k" : "i", (n, v) => { const f = B(n); while (f.length < 5) f.push(null); if (v === "k") f[5] = "k"; else { f.length = 5; while (f.length > 4 && f[f.length - 1] == null) f.pop(); } }, { i: "Iebūvējams (piekarams)", k: "Klasisks ar tvertni" }, "full"));
       if (vary) g.append(field("Detalizācija", String(vOf(nm0)), (n, v) => { const f = B(n); f[0] = typeV(f[0], +v); }, { 1: "Vienkāršs", 2: "Standarta", 3: "Detalizēts" }, "full"));
       if (nm === "Ci") g.append(field("Rādiuss, mm", base[3], (n, v) => { B(n)[3] = v; }));
       if (nm === "armchair" || nm === "shower") g.append(field("Izmērs, mm", base[3], (n, v) => { B(n)[3] = v; }));

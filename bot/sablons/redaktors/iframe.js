@@ -472,7 +472,7 @@
     let rot = 0, q = f;
     if (f[0] === "_rot") { if (!f[4] || String(f[4][0]).replace(/[13]$/, "") !== "washer") return null; rot = f[1]; q = f[4]; }
     const t = String(q[0]).replace(/[13]$/, ""); if (!BATH.includes(t)) return null;
-    if (t === "toilet") { const w = q[4] || (q[3] < 0 ? "s" : "n"); return { t, q, al: 700, dp: 540, wall: w, c: w === "e" ? [q[1] - 270, q[2]] : w === "w" ? [q[1] + 270, q[2]] : w === "n" ? [q[1], q[2] + 270] : [q[1], q[2] - 270] }; }
+    if (t === "toilet") { const w = q[4] || (q[3] < 0 ? "s" : "n"), dp = q[5] === "k" ? 660 : 540; return { t, q, al: 700, dp, wall: w, c: w === "e" ? [q[1] - dp / 2, q[2]] : w === "w" ? [q[1] + dp / 2, q[2]] : w === "n" ? [q[1], q[2] + dp / 2] : [q[1], q[2] - dp / 2] }; }
     if (t === "basin") { const w = q[5] || "n", H = w === "n" || w === "s"; return { t, q, al: H ? q[3] : q[4], dp: H ? q[4] : q[3], wall: w, c: [q[1] + q[3] / 2, q[2] + q[4] / 2] }; }
     if (t === "shower") { const g = q[4] || []; return { t, q, al: q[3], dp: q[3], wall: DIRS.find(d => !g.includes(d)) || "n", c: [q[1] + q[3] / 2, q[2] + q[3] / 2] }; }
     return { t, q, al: 600, dp: 600, wall: DIRS[((Math.round(rot / 90) % 4) + 4) % 4], c: [q[1] + 300, q[2] + 300] };
@@ -526,7 +526,7 @@
   }
   function bathEntry(P, r) {
     const { sp, w, box } = P, q = sp.q, cx = (box[0] + box[2]) / 2, cy = (box[1] + box[3]) / 2, n = q[0], f1 = v => +v.toFixed(1);
-    if (sp.t === "toilet") return w === "e" ? [n, f1(r[2]), f1(cy), 1, "e"] : w === "w" ? [n, f1(r[0]), f1(cy), 1, "w"] : w === "n" ? [n, f1(cx), f1(r[1]), 1] : [n, f1(cx), f1(r[3]), -1];
+    if (sp.t === "toilet") { const e = w === "e" ? [n, f1(r[2]), f1(cy), 1, "e"] : w === "w" ? [n, f1(r[0]), f1(cy), 1, "w"] : w === "n" ? [n, f1(cx), f1(r[1]), 1] : [n, f1(cx), f1(r[3]), -1]; if (q[5] === "k") { while (e.length < 5) e.push(null); e.push("k"); } return e; }
     if (sp.t === "basin") return [n, f1(box[0]), f1(box[1]), f1(box[2] - box[0]), f1(box[3] - box[1]), w, ...q.slice(6)];
     if (sp.t === "shower") { const g = []; if (box[1] > r[1] + 1) g.push("n"); if (box[3] < r[3] - 1) g.push("s"); if (box[0] > r[0] + 1) g.push("w"); if (box[2] < r[2] - 1) g.push("e"); return [n, f1(box[0]), f1(box[1]), q[3], g, ...q.slice(5)]; }
     const inner = [n, f1(cx - 300), f1(cy - 300), ...q.slice(3)], deg = { n: 0, e: 90, s: 180, w: 270 }[w];
