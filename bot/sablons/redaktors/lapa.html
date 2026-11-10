@@ -544,7 +544,8 @@ header .tb > button.pri .bi { opacity: 1; }
 @media (prefers-reduced-motion: reduce) { .lib button svg { transition: none; } }
 
 /* pamatu plāns */
-.pmrow { display: flex; align-items: center; gap: 8px; }
+.pmtools { display: flex; flex-wrap: wrap; gap: 6px; } .pmtools button { flex: 1 1 30%; min-width: 0; } .pmtools button.on { background: #2266d8; color: #fff; border-color: #2266d8; }
+  .pmrow { display: flex; align-items: center; gap: 8px; }
 .pmrow > span { flex: 1; font-size: 12px; color: var(--muted); }
 .pmrow > b { min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
 .pmrow button { width: 28px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--field); color: var(--ink); cursor: pointer; }
@@ -849,6 +850,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "sel") { sel = d.sel; if (sel) pst = null; panel(); }
     else if (d.t === "pst") { pst = d.key; sel = null; panel(); }
     else if (d.t === "pstKey") pstKey(d.key, d.shiftKey);
+    else if (d.t === "pstDrag") { pst = d.key; pstMove(d.dx, d.dy); }
     else if (d.t === "view") view = d.view;
     else if (d.t === "edit") { if (d.resized) roofFix(d.model); if (d.pst !== undefined) pst = d.pst; pamSetMode(d.pamMode || null); sel = d.sel || sel; if (d.placed) endPlace(); if (d.place) placeNext = true; commit(d.model); }
     else if (d.t === "undo") doUndo();
@@ -1601,13 +1603,25 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const PAM_MODE_TXT = { rect: "Velc kontūru (paneli) stabu plānā: pielīp stūriem un malām. Esc beidz.", rect0: "Velc pirmo kontūru: tā aizstās visas esošās. Pēc tam velc nākamos paneļus. Esc beidz.",
     axx: "Klikšķini, kur likt vertikālu būvasi (pielīp kontūru malām un stabu līnijām). Esc atceļ.", axy: "Klikšķini, kur likt horizontālu būvasi (pielīp kontūru malām un stabu līnijām). Esc atceļ.",
     post: "Klikšķini, kur likt stabu: pielīp stabu līnijām, centriem un kontūru malām. Esc beidz.", dim: "Mērs: klikšķini pirmo punktu (pielīp stabu centriem un malām). Esc atceļ.", kom: "Klikšķini vietu, kur pievads ienāk mājā. Esc atceļ." };
-  function pamSetMode(m, send) { pamMode = /^(dim|kom|axx|axy)$/.test(m || "") ? null : m; $("hint").textContent = m ? PAM_MODE_TXT[m] || "" : ""; if (m) status(PAM_MODE_TXT[m] || ""); if (send) toFrame({ mmPamPlace: m }); }
+  let pamTool = null;
+  function pamSetMode(m, send) { pamTool = m || null; pamMode = /^(dim|kom|axx|axy)$/.test(m || "") ? null : m; $("hint").textContent = m ? PAM_MODE_TXT[m] || "" : ""; if (m) status(PAM_MODE_TXT[m] || ""); if (send) toFrame({ mmPamPlace: m }); }
   const pamSet = f => { const n = clone(model); f(pamPP(n), n); commit(n); };
   function pamPanel(host) {
     const P = model.projekts || {};
     if (P.pamati === "platne") return;
     const PP = P.pamatu_plans || null, on = !!PP, I = pamInfo || {};
     const g = group("Pamatu plāns", host);
+    if (PP) {   // rīku josla: viss, ko liek ar klikšķi lapā; Esc beidz
+      const tb = document.createElement("div"); tb.className = "pmtools full";
+      const T = [...(P.tikai_pamati ? [["rect", "▭ Kontūra", "Velc taisnstūri vai klikšķini stūri un ieraksti garums;platums, Enter"]] : []),
+        ["post", "● Stabs", "Klikšķini lapā: pielīp stabu rindām, kontūras malām un malu vidum"],
+        ...(P.tikai_pamati ? [["axx", "↕ Ass", "Vertikāla būvass (1, 2, 3): klikšķis lapā"], ["axy", "↔ Ass", "Horizontāla būvass (A, B, C): klikšķis lapā"]] : []),
+        ["dim", "⟷ Mērs", "Divi punkti (pielīp stabiem), trešais klikšķis: mēra līnijas vieta"], ["kom", "⊕ Pievads", "Klikšķini, kur komunikācija ienāk mājā"]];
+      T.forEach(([m, t, ti]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = ti; if (pamTool === m) b.className = "on";
+        b.onclick = () => { if (pamTool === m) { pamSetMode(null, true); panel(); return; } pamSetMode(m, true); panel(); }; tb.appendChild(b); });
+      g.appendChild(tb);
+      const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Izvēlies rīku un klikšķini lapā. Stabu, asi, mēru vai pievadu var izvēlēties ar klikšķi un vilkt ar peli; Delete dzēš, Esc beidz rīku."; g.appendChild(nt);
+    }
     g.appendChild(field("Skiču projektā", PP && PP.skice ? "1" : "0", (n, v) => { pamPP(n).skice = v === "1"; }, { 0: "Izslēgts", 1: "Ieslēgts (jauna lapa)" }));
     g.appendChild(field("AR daļā", PP && PP.ar ? "1" : "0", (n, v) => { pamPP(n).ar = v === "1"; }, { 0: "Izslēgts", 1: "Ieslēgts" }));
     if (!on) { const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Stabu plāns, vainaga plāns un stabi ar 1. stāva plānojumu un komunikāciju pievadiem. Ieslēdz, ja projektam vajag."; g.appendChild(nt); return; }
@@ -1655,6 +1669,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       nt.textContent = `Solis pa centriem ${I.sx} × ${I.sy} mm, stabu skaits ${I.n}.` + (I.sx > 1200 || I.sy > 1200 ? " Solis lielāks par 1200 mm: pieliec kolonu vai rindu." : ""); gs.appendChild(nt); }
     if ((PP.parts || []).length > 1) gs.appendChild(field("Paneļu salaidumā", PP.kopigi === false ? "0" : "1", (n, v) => { pamPP(n).kopigi = v === "1"; }, { 1: "Kopīgi stabi (viena rinda)", 0: "Katram panelim savi" }, "full"));
     gs.appendChild(field("Papildu stabi perimetrā", PP.stu === false ? "0" : "1", (n, v) => { pamPP(n).stu = v === "1"; }, { 1: "Malējos laidumos (pa vidu)", 0: "Nav" }, "full"));
+    gs.appendChild(field("Sienas pīrāgs aiz C24 (raustīts), mm", +PP.pir || 0, (n, v) => { const t = Math.max(0, Math.min(600, Math.round(v))); if (t) pamPP(n).pir = t; else delete pamPP(n).pir; }));
     gs.appendChild(field("C24 karkasa ārmala no fasādes, mm", PP.c24 != null ? PP.c24 : (I.c24 != null ? I.c24 : 71), (n, v) => { pamPP(n).c24 = Math.max(0, Math.min(400, Math.round(v))); }));
     { const r = document.createElement("div"); r.className = "row full";
       const b0 = document.createElement("button"); b0.type = "button"; b0.textContent = "Automātiski (solis ≤ 1200)"; b0.onclick = () => pamSet(Q => { delete Q.nx; delete Q.ny; }); r.appendChild(b0);
@@ -2507,6 +2522,32 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       for (let k = 0; k + 1 < q.length; k++) { const [ax, ay] = q[k], [bx, by] = q[k + 1], L = Math.hypot(bx - ax, by - ay) || 1, nx = -(by - ay) / L * w / 2, ny = (bx - ax) / L * w / 2, ex = (bx - ax) / L * w / 2, ey = (by - ay) / L * w / 2;
         hatch([[[ax - ex + nx, ay - ey + ny], [bx + ex + nx, by + ey + ny], [bx + ex - nx, by + ey - ny], [ax - ex - nx, ay - ey - ny]]], lay, col); }
     }
+    // īsti AutoCAD izmēri: mērķēde ar data-dxf -> DIMENSION (pagriezts lineārs) katram posmam; grafika anonīmā blokā *Dn, mērogs caur izmēru stilu (DIMLFAC)
+    const dimBlocks = [], dimRecs = [], dimStyles = new Map(); let dimN = 0;
+    const dimStyle = lf => { const n = "MM_1-" + lf; if (!dimStyles.has(n)) dimStyles.set(n, { lf, h: H() }); return n; };
+    function dims(el, lay) {
+      const D = JSON.parse(el.getAttribute("data-dxf")), m = RI.multiply(el.getScreenCTM()), sc = scl(m), lf = Math.round(1 / sc);
+      const ln = el.querySelector("line:not([data-hit])"), col = parseCol(ln ? win.getComputedStyle(ln).stroke : "") || { r: 0, g: 0, b: 0, a: 1 };
+      const sty = dimStyle(lf), P = (u, v) => ap(m, D.h ? u : v, D.h ? v : u);   // u: pa mēra virzienu, v: šķērsām
+      for (let i = 0; i + 1 < D.x.length; i++) {
+        const a = D.x[i], b = D.x[i + 1]; if (Math.abs(b - a) < .5) continue;
+        const e1 = D.e[i] == null ? D.at : D.e[i], e2 = D.e[i + 1] == null ? D.at : D.e[i + 1];
+        const p1 = P(a, e1), p2 = P(b, e2), d1 = P(a, D.at), d2 = P(b, D.at), tm = P((a + b) / 2, D.at), ang = D.h ? 0 : 90;
+        const nm = "*D" + (++dimN), rec = H(); dimRecs.push(`  0\nBLOCK_RECORD\n  5\n${rec}\n330\n9\n100\nAcDbSymbolTableRecord\n100\nAcDbBlockTableRecord\n  2\n${nm}\n`);
+        // bloka grafika (papīra mm): mēra līnija, palīglīnijas, slīpās atzīmes, teksts virs līnijas
+        const L = (x1, y1, x2, y2) => `  0\nLINE\n  5\n${H()}\n330\n${rec}\n100\nAcDbEntity\n  8\n0\n 62\n0\n100\nAcDbLine\n 10\n${f(x1)}\n 20\n${f(y1)}\n 30\n0.0\n 11\n${f(x2)}\n 21\n${f(y2)}\n 31\n0.0\n`;
+        const ux = D.h ? 1 : 0, uy = D.h ? 0 : 1, sgn = (q, d) => Math.sign((d[0] - q[0]) * (1 - ux) + (d[1] - q[1]) * (1 - uy)) || 1;
+        const ext = (q, d) => { const s1 = sgn(q, d), o = .6; return Math.hypot(d[0] - q[0], d[1] - q[1]) < .7 ? "" : L(q[0] + (1 - ux) * s1 * o, q[1] + (1 - uy) * s1 * o, d[0] + (1 - ux) * s1 * 1.2, d[1] + (1 - uy) * s1 * 1.2); };
+        const tick = d => L(d[0] - .5, d[1] - .5, d[0] + .5, d[1] + .5);
+        const val = String(Math.round(Math.abs(b - a))), txt = D.lab ? `<> ${D.lab}` : "", shown = D.lab ? `${val} ${D.lab}` : val, th = 1.5;
+        const tp = D.h ? [tm[0], tm[1] + .6] : [tm[0] - .6, tm[1]];
+        const T = `  0\nTEXT\n  5\n${H()}\n330\n${rec}\n100\nAcDbEntity\n  8\n0\n 62\n0\n100\nAcDbText\n 10\n${f(tp[0])}\n 20\n${f(tp[1])}\n 30\n0.0\n 40\n${th}\n  1\n${enc(shown)}\n 50\n${ang}\n  7\nStandard\n 72\n1\n 11\n${f(tp[0])}\n 21\n${f(tp[1])}\n 31\n0.0\n100\nAcDbText\n 73\n0\n`;
+        dimBlocks.push(`  0\nBLOCK\n  5\n${H()}\n330\n${rec}\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockBegin\n  2\n${nm}\n 70\n1\n 10\n0.0\n 20\n0.0\n 30\n0.0\n  3\n${nm}\n  1\n\n` +
+          (() => { const dl = Math.hypot(d2[0] - d1[0], d2[1] - d1[1]) || 1, vx = (d2[0] - d1[0]) / dl * 1.2, vy = (d2[1] - d1[1]) / dl * 1.2; return L(d1[0] - vx, d1[1] - vy, d2[0] + vx, d2[1] + vy); })() + ext(p1, d1) + ext(p2, d2) + tick(d1) + tick(d2) + T +
+          `  0\nENDBLK\n  5\n${H()}\n330\n${rec}\n100\nAcDbEntity\n  8\n0\n100\nAcDbBlockEnd\n`);
+        ents.push(head("DIMENSION", lay, col) + `100\nAcDbDimension\n  2\n${nm}\n 10\n${f(d2[0])}\n 20\n${f(d2[1])}\n 30\n0.0\n 11\n${f(tp[0])}\n 21\n${f(tp[1])}\n 31\n0.0\n 70\n160\n  1\n${enc(txt)}\n 71\n5\n  3\n${sty}\n100\nAcDbAlignedDimension\n 13\n${f(p1[0])}\n 23\n${f(p1[1])}\n 33\n0.0\n 14\n${f(p2[0])}\n 24\n${f(p2[1])}\n 34\n0.0\n 50\n${ang}\n100\nAcDbRotatedDimension\n`);
+      }
+    }
     const SKIP = new Set(["defs", "clippath", "pattern", "lineargradient", "radialgradient", "mask", "style", "title", "desc", "symbol", "marker", "filter"]);
     function walk(node, clip) {
       [...node.children].forEach(el => {
@@ -2514,6 +2555,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         if (el.classList && el.classList.contains("mm-ov")) return;
         const cs = win.getComputedStyle(el); if (cs.display === "none" || cs.visibility === "hidden" || +cs.opacity === 0) return;
         const lay = layerOf(el), m = RI.multiply(el.getScreenCTM()), cp = el.hasAttribute("clip-path") ? clipOf(el, m) : null, CL = cp || clip;
+        if (t === "g" && el.hasAttribute("data-dxf")) { try { dims(el, lay); return; } catch (_) {} }   // kļūdas gadījumā paliek līnijas
         if (t === "g" || t === "a" || t === "svg") {
           if (cp && el.querySelector(':scope > use[href="#cladTex"], :scope > use')) hatch(cp, lay, tone);   // fasādes dēļu tekstūra -> fasādes tonis
           walk(el, CL); return;
@@ -2535,7 +2577,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     walk(sv, null);
     const lt = [...ltypes.values()].map(l => `  0\nLTYPE\n  5\n${l.h}\n330\n2\n100\nAcDbSymbolTableRecord\n100\nAcDbLinetypeTableRecord\n  2\n${l.n}\n 70\n0\n  3\nMM ${l.v.map(x => x.toFixed(2)).join(" ")}\n 72\n65\n 73\n${l.v.length}\n 40\n${f(l.v.reduce((a, b) => a + b, 0))}\n` + l.v.map((x, i) => ` 49\n${f(i % 2 ? -x : x)}\n 74\n0\n`).join("")).join("");
     const ly = [...layers.entries()].map(([n, h]) => `  0\nLAYER\n  5\n${h}\n330\n1\n100\nAcDbSymbolTableRecord\n100\nAcDbLayerTableRecord\n  2\n${n}\n 70\n0\n 62\n7\n  6\nContinuous\n370\n-3\n390\n13\n`).join("");
-    const txt = DXF_TPL.replace("ANSI_1252", "ANSI_1257").replace("@@LTYPE@@\n", lt).replace("@@LAYER@@\n", ly).replace("@@ENTITIES@@", ents.join("")).replace("@@HANDSEED@@", (hnd + 16).toString(16).toUpperCase());
+    // izmēru stili pa mērogiem: DIMLFAC = mērogs, lai AutoCAD rāda īstos mm; slīpās atzīmes, teksts virs līnijas, bez decimālēm
+    const ds = [...dimStyles.entries()].map(([n, o]) => `  0\nDIMSTYLE\n105\n${o.h}\n330\n4\n100\nAcDbSymbolTableRecord\n100\nAcDbDimStyleTableRecord\n  2\n${n}\n 70\n0\n  3\n\n  4\n\n 40\n1.0\n 41\n1.0\n 42\n0.6\n 43\n3.75\n 44\n1.2\n 45\n0.0\n 46\n1.2\n 47\n0.0\n 48\n0.0\n140\n1.5\n141\n0.0\n142\n0.5\n143\n0.03937007874\n144\n${o.lf}.0\n145\n0.0\n146\n1.0\n147\n0.6\n148\n0.0\n 71\n0\n 72\n0\n 73\n0\n 74\n0\n 75\n0\n 76\n0\n 77\n1\n 78\n8\n 79\n3\n170\n0\n171\n3\n172\n1\n173\n0\n174\n0\n175\n0\n176\n0\n177\n0\n178\n0\n179\n2\n271\n0\n272\n0\n273\n2\n274\n3\n275\n0\n276\n0\n277\n2\n278\n44\n279\n0\n280\n0\n281\n0\n282\n0\n283\n0\n284\n8\n285\n0\n286\n0\n288\n0\n289\n3\n371\n-2\n372\n-2\n`).join("");
+    const txt = DXF_TPL.replace("371\n-2\n372\n-2\n  0\nENDTAB", "371\n-2\n372\n-2\n" + ds + "  0\nENDTAB")
+      .replace("  2\n*Paper_Space\n340\n1E\n  0\nENDTAB", "  2\n*Paper_Space\n340\n1E\n" + dimRecs.join("") + "  0\nENDTAB")
+      .replace("100\nAcDbBlockEnd\n  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES", "100\nAcDbBlockEnd\n" + dimBlocks.join("") + "  0\nENDSEC\n  0\nSECTION\n  2\nENTITIES")
+      .replace("ANSI_1252", "ANSI_1257").replace("@@LTYPE@@\n", lt).replace("@@LAYER@@\n", ly).replace("@@ENTITIES@@", ents.join("")).replace("@@HANDSEED@@", (hnd + 16).toString(16).toUpperCase());
     const out = new Uint8Array(txt.length); for (let i = 0; i < txt.length; i++) { const c = txt.charCodeAt(i); out[i] = c < 128 ? c : CP1257.get(txt[i]) || 63; }   // Baltijas kodu lapa (latviešu burti)
     return out;
   }

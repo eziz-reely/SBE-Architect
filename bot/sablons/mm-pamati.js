@@ -94,10 +94,13 @@ let PAM_VIEW = "";   // skats, kuru pašlaik zīmē (mēru id prefikss)
 function pamDim(g, k, pts, at, horiz, o = {}) {   // mērķēde: punkti pa ass virzienu, līnija pozīcijā at; o.id = velkama (projekts.pamatu_plans.doff)
   const s = 1 / k, col = o.col || C.ink, sw = .16 * s, fs = (o.fs || 2.1) * s, tk = .9 * s, PP = pamPP() || {};
   const id = o.id ? PAM_VIEW + ":" + o.id : null;
-  if (id) { at += +((PP.doff || {})[id]) || 0; g = el("g", { "data-pdim": id, "data-h": horiz ? 1 : 0, style: "cursor:" + (horiz ? "ns-resize" : "ew-resize") }, g); }
+  if (id) at += +((PP.doff || {})[id]) || 0;
   const prs = pts.map((p, i) => [Math.round(p * 10) / 10, o.extP ? o.extP[i] : o.ext]).sort((a, b) => a[0] - b[0]).filter((q, i, A) => !i || q[0] !== A[i - 1][0]);
   const xs = prs.map(q => q[0]);
   if (xs.length < 2) return;
+  // data-dxf: DXF eksportā ķēde kļūst par īstiem AutoCAD izmēriem (DIMENSION), ne līnijām
+  const dx = { h: horiz ? 1 : 0, at, x: xs, e: prs.map(q => q[1] == null ? null : q[1]), fs: o.fs || 2.1, ...(o.label && xs.length === 2 ? { lab: String(o.label).replace(/^\d+\s*/, "") } : {}) };
+  g = el("g", { ...(id ? { "data-pdim": id, "data-h": horiz ? 1 : 0, style: "cursor:" + (horiz ? "ns-resize" : "ew-resize") } : {}), "data-dxf": JSON.stringify(dx) }, g);
   const L = (a1, b1, a2, b2, w = sw) => el("line", horiz ? { x1: a1, y1: b1, x2: a2, y2: b2, stroke: col, "stroke-width": w } : { x1: b1, y1: a1, x2: b2, y2: a2, stroke: col, "stroke-width": w }, g);
   if (id) { const h = L(xs[0], at, xs[xs.length - 1], at, 3 * s); h.setAttribute("stroke", "transparent"); h.setAttribute("data-hit", "1"); }
   L(xs[0] - 1.2 * s, at, xs[xs.length - 1] + 1.2 * s, at);
@@ -139,6 +142,19 @@ function pamCells(g, L, k) {   // laukuma vidus stabs: raustīts krusts pār lau
     T_(g, ex + w / 2, ey + .65 * s, c.t.toUpperCase(), { fs: 1.75 * s, a: "middle", fw: 600, fill: "#2e8b57" });
   });
 }
+// sienas pīrāgs aiz C24 karkasa (PP.pir mm): raustīta līnija ap kontūru apvienojumu (salaidumos nezīmē)
+function pamPir(g, L, k) {
+  const t = +((pamPP() || {}).pir) || 0; if (!t || !L.parts.length) return;
+  const E = L.parts.map(P => [P.x0 - t, P.y0 - t, P.x1 + t, P.y1 + t]), st = { stroke: "#555", "stroke-width": .2 / k, "stroke-dasharray": `${1.6 / k} ${.9 / k}`, fill: "none" };
+  const cut = (a0, a1, v, hz, me) => { let seg = [[a0, a1]];
+    E.forEach((Q, j) => { if (j === me) return; const inV = hz ? v > Q[1] + .5 && v < Q[3] - .5 : v > Q[0] + .5 && v < Q[2] - .5; if (!inV) return;
+      const q0 = hz ? Q[0] : Q[1], q1 = hz ? Q[2] : Q[3]; seg = seg.flatMap(([s0, s1]) => [[s0, Math.min(s1, q0)], [Math.max(s0, q1), s1]].filter(([u, w]) => w - u > .5)); });
+    return seg; };
+  E.forEach((Q, i) => {
+    [[Q[1], true], [Q[3], true]].forEach(([y]) => cut(Q[0], Q[2], y, true, i).forEach(([a, b]) => el("line", { x1: a, y1: y, x2: b, y2: y, ...st }, g)));
+    [[Q[0]], [Q[2]]].forEach(([x]) => cut(Q[1], Q[3], x, false, i).forEach(([a, b]) => el("line", { x1: x, y1: a, x2: x, y2: b, ...st }, g)));
+  });
+}
 function pamContour(g, L, k, dash) {   // katra kontūra (C24 karkasa ārmala); redaktorā izvēlas ar klikšķi
   L.parts.forEach(P => el("rect", { "data-snap": 1, "data-ppart": P.n, x: P.x0, y: P.y0, width: P.x1 - P.x0, height: P.y1 - P.y0, fill: "transparent", stroke: C.ink, "stroke-width": .3 / k, ...(dash ? { "stroke-dasharray": `${2 / k} ${1 / k}` } : {}) }, g));
 }
@@ -147,7 +163,7 @@ function pamContour(g, L, k, dash) {   // katra kontūra (C24 karkasa ārmala); 
 function pamViewStabi(g, v, L, k, tx) {
   const s = 1 / k, A = v.axes.x.map(a => a[0]), B = v.axes.y.map(a => a[0]), SH = pamShadow(L.parts);
   pamAxes(g, v, k, { n: 26 * s, s: 6 * s, w: 26 * s, e: 6 * s });
-  pamContour(g, L, k);
+  pamContour(g, L, k); pamPir(g, L, k);
   const P_ = key => L.pts.find(p => p.key === key);
   L.parts.forEach(P => {
     // režģa līnijas pa stabu centriem
@@ -215,9 +231,12 @@ function pamViewVainags(g, v, L, k, tx) {
   const s = 1 / k, R = pamRim(L), A = v.axes.x.map(a => a[0]), b = R.b, SH = pamShadow(L.parts);
   pamAxes(g, v, k, { n: 20 * s, s: 6 * s, w: 14 * s, e: 6 * s });
   L.parts.forEach(P => { const q = pamParts(v, pamPP() || {})[P.n]; el("rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "none", stroke: "#b5b5b5", "stroke-width": .15 * s, "stroke-dasharray": `${1.5 * s} ${1 * s}` }, g); });
-  pamPosts(g, L, k, false);
+  pamPosts(g, L, k, false); pamPir(g, L, k);
   const wood = { fill: "rgba(222,196,150,.55)", stroke: C.ink, "stroke-width": .22 * s };
-  const tag = (x, y, t) => { el("circle", { cx: x, cy: y, r: 2 * s, fill: "#fff", stroke: C.ink, "stroke-width": .18 * s }, g); T_(g, x, y + .75 * s, t, { fs: 1.9 * s, a: "middle", fw: 600 }); };
+  // marķējums: redaktorā velkams (PP.toff { id: [dx, dy] }), lai nepārklājas
+  const TO = (pamPP() || {}).toff || {};
+  const tag = (x, y, t, id) => { const o = TO[id] || [0, 0], tg = el("g", { "data-ptag": id, style: "cursor:move", transform: `translate(${o[0]} ${o[1]})` }, g);
+    el("circle", { cx: x, cy: y, r: 2 * s, fill: "#fff", stroke: C.ink, "stroke-width": .18 * s }, tg); T_(tg, x, y + .75 * s, t, { fs: 1.9 * s, a: "middle", fw: 600 }); };
   R.per.forEach(({ P, mids, x: X, y: Y, j: J }) => {
     const { x0, y0, x1, y1 } = P;
     [[[x0, y0], [x1, y0], [x1 - b, y0 + b], [x0 + b, y0 + b]], [[x1, y0], [x1, y1], [x1 - b, y1 - b], [x1 - b, y0 + b]],
@@ -226,8 +245,9 @@ function pamViewVainags(g, v, L, k, tx) {
     mids.forEach(x => el("rect", { x: x - b / 2, y: y0 + b, width: b, height: y1 - y0 - 2 * b, ...wood }, g));
     // marķējums: perimetrs R–A, perimetrs Z–D, starplikas
     const tx0 = (x0 + x1) / 2 + (mids.length % 2 ? P.sx / 2 : 0);
-    tag(tx0, y0 + b / 2, X.m); tag(tx0, y1 - b / 2, X.m); tag(x0 + b / 2, (y0 + y1) / 2, Y.m); tag(x1 - b / 2, (y0 + y1) / 2, Y.m);
-    if (J) mids.forEach((x, i) => { if (i % 2 === 0 || mids.length < 4) tag(x, (y0 + y1) / 2 + (i % 2 ? 4 * s : 0), J.m); });
+    const n = P.n;
+    tag(tx0, y0 + b / 2, X.m, n + "n"); tag(tx0, y1 - b / 2, X.m, n + "s"); tag(x0 + b / 2, (y0 + y1) / 2, Y.m, n + "w"); tag(x1 - b / 2, (y0 + y1) / 2, Y.m, n + "e");
+    if (J) mids.forEach((x, i) => { if (i % 2 === 0 || mids.length < 4) tag(x, (y0 + y1) / 2 + (i % 2 ? 4 * s : 0), J.m, n + "j" + i); });
   });
   const topP = R.per.filter(q => !SH[q.P.n].n), leftP = L.parts.filter(P => !SH[P.n].w);
   const top = topP.flatMap(({ P, mids }) => [P.x0, ...mids, P.x1].map(x => [x, P.y0])), left = leftP.flatMap(P => [P.y0, P.y0 + b, P.y1 - b, P.y1].map(y => [y, P.x0]));
@@ -260,7 +280,7 @@ function pamViewKopa(g, v, L, k, tx) {
   else el("polygon", { points: (v.poly || [[0, 0], [v.W, 0], [v.W, v.D], [0, v.D]]).map(p => p.join(" ")).join(" "), ...dl }, g);
   if (!AR.projekts.tikai_pamati) (v.rooms || []).forEach(rm => (rm.r || []).forEach(q => el("rect", { x: q[0], y: q[1], width: q[2], height: q[3], ...dl }, g)));
   if (!AR.projekts.tikai_pamati) (v.rooms || []).filter(rm => !rm.void).forEach(rm => { const q = rm.r[0]; if (q) T_(g, q[0] + q[2] / 2, q[1] + q[3] / 2, rm.n, { fs: 1.7 * s, a: "middle", fill: "#888" }); });
-  pamContour(g, L, k, true);
+  pamContour(g, L, k, true); pamPir(g, L, k);
   pamCells(g, L, k);
   pamPosts(g, L, k, true);
   pamDim(g, k, A, -8 * s, true, { ext: -10 * s, fw: 600, id: "ax" });
@@ -438,6 +458,7 @@ function pamSpec(svg, v, x, y, w, mm) {
     Lay.uz ? (EN ? `Posts set ${Lay.uz} mm in from the C24 frame outer face, so the battens are not crushed.` : `Stabi novietoti ar uzlaidi ${Lay.uz} mm uz iekšu no C24 karkasa ārmalas, lai nesaspiestu latojumu.`)
       : (EN ? "Outer post edge flush with the C24 frame outer face." : "Stabu ārmala vienā līnijā ar C24 karkasa ārmalu."),
     EN ? `Rim beam C24 ${sec} laid flat on the posts, outer edge on the C24 frame outer face, corners mitred 45°; joists N–S on post centres.` : `Vainags C24 ${sec} guļus uz stabiem, ārmala pa C24 karkasa ārmalu, stūri 45°; starplikas Z–D virzienā pa stabu centriem.`,
+    ...(+PP.pir ? [EN ? `Dashed line: wall build-up ${+PP.pir} mm outside the C24 frame.` : `Raustītā līnija: sienas pīrāgs ${+PP.pir} mm aiz C24 karkasa ārmalas.`] : []),
     ...(Lay.pts.some(p => p.moved) ? [EN ? "Shifted posts are dimensioned in orange." : "Pārbīdītie stabi atzīmēti ar oranžiem izmēriem."] : []),
     ...(Lay.cells.length ? [(EN ? "Additional posts: " : "Papildu stabi: ") + Lay.cells.map(c => c.t || (EN ? "additional post" : "papildu stabs")).join("; ") + "."] : []),
     ...((pamViews(PP).includes("kopa")) ? [EN ? "Service entry points to be confirmed on site." : "Komunikāciju ievadu vietas precizēt objektā."] : []),

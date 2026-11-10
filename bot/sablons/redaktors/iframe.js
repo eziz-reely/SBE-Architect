@@ -1100,17 +1100,19 @@
   const pLocal = (g, cx, cy) => { const sv = g.ownerSVGElement, r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal, b = tr(g);
     return [((cx - r.left) / r.width * vb.width - b.tx) / b.k, ((cy - r.top) / r.height * vb.height - b.ty) / b.k]; };
   const pK = g => tr(g).k;
-  function pSnap(g, p, lines) {   // stabu centri un malas, kontūras stūri, asu krustpunkti; lines: arī atsevišķi pa X un Y (stabu līnijas, kontūru malas)
+  function pSnap(g, p, lines, skip) {   // stabu centri un malas, kontūras stūri un malu vidi, asu krustpunkti; lines: arī atsevišķi pa X un Y (stabu līnijas, kontūru malas); skip: velkamais stabs
     const c = [], tol = 1.6 / pK(g);
-    g.querySelectorAll("circle[data-pst]").forEach(e => { const x = +e.getAttribute("cx"), y = +e.getAttribute("cy"), r = +e.getAttribute("r"); c.push([x, y], [x - r, y], [x + r, y], [x, y - r], [x, y + r]); });
-    g.querySelectorAll("rect[data-snap]").forEach(e => { const x = +e.getAttribute("x"), y = +e.getAttribute("y"), w = +e.getAttribute("width"), h = +e.getAttribute("height"); c.push([x, y], [x + w, y], [x, y + h], [x + w, y + h]); });
+    g.querySelectorAll("circle[data-pst]").forEach(e => { if (e === skip) return; const x = +e.getAttribute("cx"), y = +e.getAttribute("cy"), r = +e.getAttribute("r"); c.push([x, y], [x - r, y], [x + r, y], [x, y - r], [x, y + r]); });
+    g.querySelectorAll("rect[data-snap]").forEach(e => { const x = +e.getAttribute("x"), y = +e.getAttribute("y"), w = +e.getAttribute("width"), h = +e.getAttribute("height"); c.push([x, y], [x + w, y], [x, y + h], [x + w, y + h], [x + w / 2, y], [x + w / 2, y + h], [x, y + h / 2], [x + w, y + h / 2]); });
     (M.axes.x || []).forEach(([x]) => (M.axes.y || []).forEach(([y]) => c.push([x, y])));
     let best = null, bd = tol; c.forEach(q => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd) { bd = d; best = q; } });
     if (best) return { p: best, hit: true };
     const r = [Math.round(p[0] / 10) * 10, Math.round(p[1] / 10) * 10], hx = [], hy = [];
     if (lines) {
-      const X = [], Y = []; g.querySelectorAll("circle[data-pst]").forEach(e => { X.push(+e.getAttribute("cx")); Y.push(+e.getAttribute("cy")); });
-      g.querySelectorAll("rect[data-snap]").forEach(e => { const x = +e.getAttribute("x"), y = +e.getAttribute("y"); X.push(x, x + +e.getAttribute("width")); Y.push(y, y + +e.getAttribute("height")); });
+      const X = [], Y = [], r = (+PPM().d || 120) / 2; g.querySelectorAll("circle[data-pst]").forEach(e => { if (e === skip) return; X.push(+e.getAttribute("cx")); Y.push(+e.getAttribute("cy")); });
+      // kontūras malas un stabu centru līnijas gar malām (mala ± pusdiametrs)
+      g.querySelectorAll("rect[data-snap]").forEach(e => { const x = +e.getAttribute("x"), y = +e.getAttribute("y"), w = +e.getAttribute("width"), h = +e.getAttribute("height"); X.push(x, x + w, x + r, x + w - r, x + w / 2); Y.push(y, y + h, y + r, y + h - r, y + h / 2); });
+      (M.axes.x || []).forEach(([x]) => X.push(x)); (M.axes.y || []).forEach(([y]) => Y.push(y));
       const nb = (A, v) => A.reduce((b, a) => Math.abs(a - v) < tol && (b == null || Math.abs(a - v) < Math.abs(b - v)) ? a : b, null);
       const sx = nb(X, p[0]), sy = nb(Y, p[1]); if (sx != null) { r[0] = sx; hx.push(sx); } if (sy != null) { r[1] = sy; hy.push(sy); }
     }
@@ -1208,7 +1210,12 @@
     if (place) return false;
     const dEl = e.target.closest && e.target.closest("[data-pdim]");
     if (dEl && g) { pDrag = { kind: "dim", el: dEl, g, id: dEl.dataset.pdim, h: dEl.dataset.h === "1", p0: pLocal(g, e.clientX, e.clientY), d: 0, moved: false }; return true; }
+    const tEl = e.target.closest && e.target.closest("[data-ptag]");   // vainaga marķējums V1..: velk
+    if (tEl && g) { const t0 = (tEl.getAttribute("transform") || "").match(/-?[\d.]+/g) || [0, 0]; pDrag = { kind: "tag", el: tEl, g, id: tEl.dataset.ptag, t0: t0.map(Number), p0: pLocal(g, e.clientX, e.clientY), d: [0, 0], moved: false }; return true; }
     const kEl = e.target.closest && e.target.closest("[data-pkom]");
+    const sEl = e.target.closest && e.target.closest("circle[data-pst]");   // stabu velk ar peli; pielīp līnijām
+    if (sEl && g) { pst = sEl.dataset.pst; pstMark(); if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } post({ t: "pst", key: pst });
+      const c0 = [+sEl.getAttribute("cx"), +sEl.getAttribute("cy")]; pDrag = { kind: "post", el: sEl, g, key: pst, c0, p0: pLocal(g, e.clientX, e.clientY), d: [0, 0], moved: false }; return true; }
     if (kEl && g) { pDrag = { kind: "kom", el: kEl, g, i: +kEl.dataset.pkom, p0: pLocal(g, e.clientX, e.clientY), d: [0, 0], moved: false }; return true; }
     return false;
   }
@@ -1220,8 +1227,10 @@
     pDrag.moved = true;
     if (pDrag.kind === "rect") { const sn = pSnap(pDrag.g, p, true), b = sn.p; pHov(pDrag.g, sn); a = pDrag.a, x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]), w = Math.abs(b[0] - a[0]), h = Math.abs(b[1] - a[1]); pDrag.b = b;
       Object.entries({ x, y, width: w, height: h }).forEach(([n, v]) => pDrag.el.setAttribute(n, v)); pDrag.tx.setAttribute("x", x + 2 / pK(pDrag.g)); pDrag.tx.setAttribute("y", y - 1.5 / pK(pDrag.g)); pDrag.tx.textContent = `${Math.round(w)} × ${Math.round(h)}` + (pBuf ? `   ⌨ ${pBuf}` : ""); return; }
+    if (pDrag.kind === "post") { const sn = pSnap(pDrag.g, [pDrag.c0[0] + dx, pDrag.c0[1] + dy], true, pDrag.el); pDrag.d = [Math.round(sn.p[0] - pDrag.c0[0]), Math.round(sn.p[1] - pDrag.c0[1])];
+      pDrag.el.setAttribute("cx", pDrag.c0[0] + pDrag.d[0]); pDrag.el.setAttribute("cy", pDrag.c0[1] + pDrag.d[1]); pHov(pDrag.g, sn); post({ t: "hint", text: `Stabs: ${pDrag.d[0] >= 0 ? "+" : ""}${pDrag.d[0]} / ${pDrag.d[1] >= 0 ? "+" : ""}${pDrag.d[1]} mm` }); return; }
     if (pDrag.kind === "dim") { pDrag.d = Math.round((pDrag.h ? dy : dx) / 10) * 10; pDrag.el.setAttribute("transform", pDrag.h ? `translate(0 ${pDrag.d})` : `translate(${pDrag.d} 0)`); }
-    else { pDrag.d = [Math.round(dx / 10) * 10, Math.round(dy / 10) * 10]; pDrag.el.setAttribute("transform", `translate(${pDrag.d[0]} ${pDrag.d[1]})`); }
+    else { pDrag.d = [Math.round(dx / 10) * 10, Math.round(dy / 10) * 10]; const t0 = pDrag.t0 || [0, 0]; pDrag.el.setAttribute("transform", `translate(${t0[0] + pDrag.d[0]} ${t0[1] + pDrag.d[1]})`); }
   });
   addEventListener("pointerup", e => {
     const D = pDrag; pDrag = null; if (!D) return;
@@ -1229,6 +1238,8 @@
       if (!D.cl && Math.hypot(e.clientX - D.cx, e.clientY - D.cy) < 6) { D.cl = true; pDrag = D; post({ t: "hint", text: "Otrais stūris: klikšķini vai ieraksti izmērus, piem. 2450;600, un Enter." }); return; }   // klikšķis, ne vilkšana
       pRectDone(D); return;
     }
+    if (D.kind === "tag") { if (!D.moved || !(D.d[0] || D.d[1])) return; pEdit(Q => { Q.toff = Q.toff || {}; const o = Q.toff[D.id] || [0, 0]; Q.toff[D.id] = [o[0] + D.d[0], o[1] + D.d[1]]; }); return; }
+    if (D.kind === "post") { pHov(null); if (D.moved && (D.d[0] || D.d[1])) post({ t: "pstDrag", key: D.key, dx: D.d[0], dy: D.d[1] }); return; }
     if (D.kind === "dim") {
       const u = /:u(\d+)$/.exec(D.id);
       if (!D.moved) { if (u) { pst = "m:" + u[1]; pstMark(); post({ t: "pst", key: pst }); } return; }
