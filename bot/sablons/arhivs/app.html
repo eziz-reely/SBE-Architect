@@ -557,6 +557,7 @@ $("nClaude").onclick = async () => {
   try {
     const r = await api("/api/claude-uzdevums", { company: $("nCo").value, komplekts: $("nSet").value, veids: $("nKind").value === "claude" ? "maja" : $("nKind").value, garums: +$("nL").value || "", platums: +$("nB").value || "", augstums: +$("nH").value || "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
       nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value, piezimes: $("nNote").value });
+    if (r.launched) { $("dNew").close(); toast("Claude terminālis atvērts, turpini tur."); b.disabled = false; return; }
     $("clPath").textContent = r.path; $("clTxt").value = r.prompt;
     try { await navigator.clipboard.writeText(r.prompt); } catch (_) { $("clTxt").select(); }
     $("clChat").href = r.chat; $("dNew").close(); $("dCl").showModal(); try { window.open(r.chat, "_blank", "noopener"); } catch (_) {}

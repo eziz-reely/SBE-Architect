@@ -174,6 +174,27 @@ def rebuild_pages(mp):
         pass
 
 
+def launch_claude_terminal(fp, cd, auto):
+    """Atver jaunu PowerShell logu repo mapē ar Claude Code, kas izlasa uzdevuma failu un paliek atvērts labojumiem. True, ja palaists."""
+    try:
+        if os.name != 'nt' or not shutil.which('claude'):
+            return False
+        repo = os.path.dirname(HERE)
+        base = os.path.splitext(fp)[0]
+        prompt = (f'Izlasi uzdevuma failu {fp} un izveido SBE projektu pēc tā: trūkstošo pieņem pats, jautājumus neuzdod; pēc tam gaidi labojumus.'
+                  + (' Projekts jau ģenerējas fonā (rezultāts failā ' + base + '.rezultats.txt): neģenerē otru, gaidi to un strādā ar to.' if auto else ''))
+        open(base + '.prompt.txt', 'w', encoding='utf-8').write(prompt)
+        ps = (chr(13) + chr(10)).join([f"Set-Location -LiteralPath '{repo}'",
+                                       f"$p = Get-Content -LiteralPath '{base}.prompt.txt' -Raw -Encoding UTF8",
+                                       f"claude $p --add-dir '{cd}'", ''])
+        open(base + '.ps1', 'w', encoding='utf-8-sig').write(ps)   # BOM: PowerShell 5 pareizi lasa diakritiku
+        subprocess.Popen(['powershell', '-NoExit', '-ExecutionPolicy', 'Bypass', '-File', base + '.ps1'], cwd=repo,
+                         creationflags=getattr(subprocess, 'CREATE_NEW_CONSOLE', 0))
+        return True
+    except Exception:
+        return False
+
+
 # Claude projekta saruna, kur atveras "Veidot ar Claude" (var nomainīt ~/.sbe-arhivs.json: "claude_url")
 CLAUDE_URL = 'https://claude.ai/code/project/chan_01HF2PPLa7vSyqmmLrBrjw1d'
 SPEC_KEYS = ('S1', 'S2', 'G1', 'J1', 'P1')
@@ -570,11 +591,21 @@ class H(BaseHTTPRequestHandler):
                 note = str(b.get('piezimes') or '').strip()[:4000]
                 d = os.path.join(cos[co], '_claude_uzdevumi'); os.makedirs(d, exist_ok=True)
                 fp = os.path.join(d, time.strftime('%Y%m%d-%H%M%S') + '_' + (safe_name(b.get('nosaukums')) or 'projekts') + '.json')
-                json.dump({'uznemums': co, 'piragu_komplekts': ks['nosaukums'], 'piragu_komplekta_id': ks['id'], 'zinams': zin, 'piezimes': note, 'statuss': 'jauns'}, open(fp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+                json.dump({'uznemums': co, 'piragu_komplekts': ks['nosaukums'], 'piragu_komplekta_id': ks['id'], 'zinams': zin, 'piezimes': note, 'statuss': 'jauns', 'fona_generesana': bool(b.get('veids') != 'pamati' and b.get('garums') and b.get('platums'))}, open(fp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+                auto = bool(b.get('veids') != 'pamati' and b.get('garums') and b.get('platums'))
+                if auto:   # ir garums+platums: projekts ģenerējas fonā, kamēr čats paliek labojumiem
+                    def _gen(bb=dict(b, veids='maja'), out=os.path.splitext(fp)[0] + '.rezultats.txt'):
+                        try:
+                            res = 'Gatavs: ' + str(path_for(new_project(bb)))
+                        except Exception as e:
+                            res = 'Neizdevās: ' + str(e)
+                        open(out, 'w', encoding='utf-8').write(res)
+                    threading.Thread(target=_gen, daemon=True).start()
+                launched = launch_claude_terminal(fp, cos[co], auto)
                 rows = ''.join(f'- {lab[k]}: {v}\n' for k, v in zin.items()) or '- izmēri un citi dati vēl nav zināmi\n'
                 prompt = (f'Izveido jaunu SBE projektu uzņēmumam "{co}", pīrāgu komplekts "{ks["nosaukums"]}".\n\nZināms par projektu:\n{rows}' + (f'\nPiezīmes:\n{note}\n' if note else '') +
                           f'\nTrūkstošos izmērus un lēmumus pieņem pats pēc saprātīga pieņēmuma (norādi pieņēmumus), jautājumus neuzdod. Izmanto SBE Architect botu (/sbe-arhitekts), projektu izveido uzņēmuma mapē un atver redaktorā. Uzdevuma fails: {fp}')
-                return self.send(200, {'ok': True, 'path': fp, 'prompt': prompt, 'chat': c.get('claude_url') or CLAUDE_URL})
+                return self.send(200, {'ok': True, 'path': fp, 'prompt': prompt, 'chat': c.get('claude_url') or CLAUDE_URL, 'launched': launched})
             if p == '/api/new':
                 return self.send(200, {'key': new_project(b)})
             if p == '/api/open':
