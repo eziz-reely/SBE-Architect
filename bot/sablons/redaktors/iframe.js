@@ -152,7 +152,7 @@
       (X.gableWins || []).forEach((gw, i) => {
         if (gw.side !== s) return;
         const u0 = Math.min(mapU(s, gw.u0), mapU(s, gw.u1)), u1 = Math.max(mapU(s, gw.u0), mapU(s, gw.u1));
-        out.push({ k: "gw", i, lv: "main", b: [u0, -(gw.z1 || gw.z0 + 1400), u1, -gw.z0], pad: 60, side: s });
+        out.push({ k: "gw", i, lv: "main", b: [u0, -(gw.z1 || gwHeights(X, gw).zTop), u1, -gw.z0], pad: 60, side: s });
       });
       (X.posts || []).forEach((q, i) => {   // stabi fasādē (tikai krāsas spainim)
         const a = s === "north" || s === "south" ? q.x : q.y, l = s === "north" || s === "south" ? q.w : q.d, ez0 = (X.jumts && X.jumts.eave) || 2400;
@@ -418,11 +418,18 @@
   }
   // izvēlētā loga / durvju izmēri pie kursora, kontrolei
   let selPt = null;
+  // [TRE] slīpā loga augstums: augšmala seko jumtam (jumta augstums pie malas − 200 mm), logs ir trapece; atgriež {hL, hR, hMax, zTop}
+  function gwHeights(X, gw) {
+    const s = gw.side, sp = (s === "east" || s === "west") ? X.D : X.W, J = X.jumts || {}, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), top = u => ev + Math.min(u, sp - u) * tn - 200;
+    const u0 = gw.u0, u1 = gw.u1, mid = sp / 2, hL = Math.max(0, top(u0) - gw.z0), hR = Math.max(0, top(u1) - gw.z0), hM = u0 < mid && u1 > mid ? Math.max(0, top(mid) - gw.z0) : 0, hMax = gw.z1 ? gw.z1 - gw.z0 : Math.max(hL, hR, hM);
+    return { hL: Math.round(hL), hR: Math.round(hR), hMax: Math.round(hMax), zTop: Math.round(gw.z0 + hMax) };
+  }
+
   function sizeText(it) {
     const L = lv(it.lv);
     if (it.k === "win") { const w = L.windows[it.i]; return `${Math.round(w.len)} × ${Math.round((w.head ?? 2100) - (w.sill ?? 0))} mm`; }
     if (it.k === "door") { const d = L.doors[it.i]; return `${Math.round(d.w)} × 2100 mm`; }
-    if (it.k === "gw") { const g = M.gableWins[it.i]; return `${Math.round(g.u1 - g.u0)}${g.z1 ? " × " + Math.round(g.z1 - g.z0) : ""} mm`; }
+    if (it.k === "gw") { const g = M.gableWins[it.i], H = gwHeights(M, g); return g.z1 ? `${Math.round(g.u1 - g.u0)} × ${Math.round(g.z1 - g.z0)} mm` : `${Math.round(g.u1 - g.u0)} × ${H.hMax} mm (augstums ${H.hL} / ${H.hR})`; }
     if (it.k === "decor") return `${Math.round(it.b[2] - it.b[0])} × ${Math.round(it.b[3] - it.b[1])} mm`;
     return "";
   }
@@ -1101,7 +1108,7 @@
     const L2 = lv(it.lv, N);
     let t;
     if (it.k === "win") { const w = L2.windows[it.i]; t = bl.type === "elev" ? `${w.len} mm  ·  ${w.sill ?? 0}–${w.head ?? 2100}` : `${w.len} mm  ·  ${w.o === "h" ? w.x : w.y}`; }
-    else if (it.k === "gw") { const w = N.gableWins[it.i]; t = `${w.u1 - w.u0} mm  ·  ${w.z0}${w.z1 ? "–" + w.z1 : ""}` + (d.gwWarn ? "  ⚠ zem mansarda paneļa augšas" : ""); }
+    else if (it.k === "gw") { const w = N.gableWins[it.i], H = gwHeights(N, w); t = `${w.u1 - w.u0} × ${H.hMax} mm  ·  ${w.z0}${w.z1 ? "–" + w.z1 : "–" + H.zTop}` + (d.gwWarn ? "  ⚠ zem mansarda paneļa augšas" : ""); }
     else if (it.k === "door") { const w = L2.doors[it.i]; t = `${w.o === "h" ? w.x : w.y}`; }
     else if (it.k === "decor") t = `${Math.round(b[2] - b[0])} × ${Math.round(b[3] - b[1])} mm`;
     else if (it.k === "stamp") t = "Telpas nosaukums";

@@ -2055,6 +2055,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       g.append(field("Platums, mm", it.u1 - it.u0, (n, v) => { const w = S(n), c = (w.u0 + w.u1) / 2; v = Math.max(300, v); w.u0 = Math.round(c - v / 2); w.u1 = w.u0 + v; fix(n); }),
         field("No stūra, mm", it.u0, (n, v) => { const w = S(n), L = w.u1 - w.u0; w.u0 = v; w.u1 = v + L; fix(n); }),
         field("Apakša, mm", it.z0, (n, v) => { S(n).z0 = Math.max(0, v); fix(n); }));
+      if (!it.win) {   // slīpā loga augstums: augšmala seko jumtam
+        const J = model.jumts || {}, sp = (it.side === "east" || it.side === "west") ? model.D : model.W, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), top = u => ev + Math.min(u, sp - u) * tn - 200, mid = sp / 2;
+        const hL = Math.round(Math.max(0, top(it.u0) - it.z0)), hR = Math.round(Math.max(0, top(it.u1) - it.z0)), hM = it.u0 < mid && it.u1 > mid ? Math.round(Math.max(0, top(mid) - it.z0)) : 0;
+        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = `Augstums: kreisajā malā ${hL} mm, labajā ${hR} mm${hM ? ", vidū " + hM + " mm" : ""}; lielākais ${Math.max(hL, hR, hM)} mm. Augšmala seko jumtam, augstumu maina ar "Apakša" vai velkot logu uz augšu / leju.`; g.append(nt);
+      }
       if (it.z0 < gwBase(model)) { const wn = document.createElement("p"); wn.className = "note full"; wn.style.color = "#c92a2a"; wn.textContent = `⚠ Logs iet zem mansarda paneļa augšas (${gwBase(model)} mm). Pārbaudi konstrukciju.`; g.append(wn); }
       if (it.z1) g.append(field("Augša, mm", it.z1, (n, v) => { S(n).z1 = v; fix(n); }));
       if (it.win) g.append(field("Veids", it.kind || "hopper", (n, v) => { S(n).kind = v; }, KIND));
