@@ -447,14 +447,14 @@ function cadPlan(parent, v, opt = {}) {
       jamb(w.x, w.y, w.x, w.y + th); jamb(w.x + L, w.y, w.x + L, w.y + th);
       el("rect", { x: w.x, y: w.y + th * .36, width: L, height: th * .28, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       line(w.x, w.y + th / 2, w.x + L, w.y + th / 2, 6);
-      if (w.sill) { const oy = w.y === 0 ? w.y : w.y + th, iy = w.y === 0 ? w.y + th : w.y; line(w.x - 40, oy, w.x + L + 40, oy, 10); line(w.x, iy, w.x + L, iy, 5); }   // [MM] smalka ailas līnija arī iekšpusē
+      if (w.sill) { const so = ["north", "west"].includes(winSide(v, w)), oy = so ? w.y : w.y + th, iy = so ? w.y + th : w.y; line(w.x - 40, oy, w.x + L + 40, oy, 10); line(w.x, iy, w.x + L, iy, 5); }   // [MM] smalka ailas līnija arī iekšpusē
       else { line(w.x, w.y + 6, w.x + L, w.y + 6, 8); line(w.x, w.y + th - 6, w.x + L, w.y + th - 6, 8); }
     } else {
       gap(w.x - 14, w.y, th + 28, L);
       jamb(w.x, w.y, w.x + th, w.y); jamb(w.x, w.y + L, w.x + th, w.y + L);
       el("rect", { x: w.x + th * .36, y: w.y, width: th * .28, height: L, fill: "#fff", stroke: C.line, "stroke-width": 10 }, g);
       line(w.x + th / 2, w.y, w.x + th / 2, w.y + L, 6);
-      if (w.sill) { const ox = w.x === 0 ? w.x : w.x + th, ix = w.x === 0 ? w.x + th : w.x; line(ox, w.y - 40, ox, w.y + L + 40, 10); line(ix, w.y, ix, w.y + L, 5); }   // [MM] smalka ailas līnija arī iekšpusē
+      if (w.sill) { const so = ["north", "west"].includes(winSide(v, w)), ox = so ? w.x : w.x + th, ix = so ? w.x + th : w.x; line(ox, w.y - 40, ox, w.y + L + 40, 10); line(ix, w.y, ix, w.y + L, 5); }   // [MM] smalka ailas līnija arī iekšpusē
       else { line(w.x + 6, w.y, w.x + 6, w.y + L, 8); line(w.x + th - 6, w.y, w.x + th - 6, w.y + L, 8); }
     }
     // operable sashes: leaf hinged at the frame's room face, opened ~25° into the room, swing arc (tilt-only / fixed / sliding: none)
@@ -470,7 +470,7 @@ function cadPlan(parent, v, opt = {}) {
         if (k) { const m = fwd ? s0 : s1, q = w.o === "h" ? [m, w.y + th * .36, m, w.y + th * .64] : [w.x + th * .36, m, w.x + th * .64, m]; line(...q, 10); }
         if (p.turn) leaves.push((p.turn === "l") === fwd ? [s0, 1, s1 - s0] : [s1, -1, s1 - s0]);
       });
-      (v.noLeaf ? [] : leaves).forEach(([h, dir, lw]) => {   // v.noLeaf: bez vērtņu simboliem plānā
+      leaves.forEach(([h, dir, lw]) => {
         const p = Pt(h, 0), tip = Pt(h + dir * lw * Math.cos(A), n * lw * Math.sin(A)), cl = Pt(h + dir * lw, 0);
         el("line", { x1: p[0], y1: p[1], x2: tip[0], y2: tip[1], stroke: C.line, "stroke-width": 5 }, sashG);
         const cw = (w.o === "h") === (dir * n > 0) ? 1 : 0;
