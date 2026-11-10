@@ -949,6 +949,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   $("bResetYes").onclick = () => { $("confirm").hidden = true; $("bReset").hidden = false; sel = null; commit(clone(BASE)); };
   addEventListener("keydown", e => {
     if (e.target.closest("input,select")) return;
+    // kontūras rīks: ierakstītos izmērus (2450;600 Enter) un Esc sūta uz rasējumu arī tad, ja fokuss ir panelī
+    if (/^rect0?$/.test(pamMode || "") && !e.ctrlKey && !e.metaKey && !e.altKey && (/^[0-9.,;xX*]$/.test(e.key) || e.key === "Enter" || e.key === "Backspace" || e.key === "Escape")) { e.preventDefault(); toFrame({ mmKey: { key: e.key } }); return; }
     if (pst && !e.ctrlKey && !e.metaKey && !e.altKey && (/^Arrow(Left|Right|Up|Down)$/.test(e.key) || e.key === "Delete" || e.key === "Escape")) { e.preventDefault(); if (e.key === "Escape") { pst = null; toFrame({ mmPst: null }); panel(); } else pstKey(e.key, e.shiftKey); return; }
     if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) && sel && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); toFrame({ mmKey: { key: e.key, shiftKey: e.shiftKey } }); return; }   // bultiņas strādā arī tad, ja fokuss nav rasējumā
     if (e.key === "Escape" && moveOn) { setMove(false); railSync(); }

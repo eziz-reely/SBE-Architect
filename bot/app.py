@@ -295,6 +295,8 @@ def new_pamati(b, co_dir, L, B, zimet=False):
          'projekts': {'faze': 'klients', 'revizija': '00', 'adrese': [], 'modela_nosaukums': safe_name(b.get('nosaukums')), 'pamati': 'stabveida', 'griesti': 0, 'piragi': 'ne', 'tikai_pamati': True,
                       'pamatu_plans': {'skice': True, 'skati': {'stabi': True, 'vainags': True, 'kopa': False}, 'lapas': [['stabi', 'vainags']],
                                        'd': num('diametrs', 120, 40, 600), 'uzOn': uz > 0, 'uz': uz or 10, 'vb': num('vainags_b', 145, 45, 400), 'c24': num('c24', 0, 0, 400), **({'zimet': True, 'kom': []} if zimet else {})}}}
+    if not zimet:   # ievadītie izmēri ir paša kontūra (nākamā tiek pievienota, ne aizstāta)
+        m['projekts']['pamatu_plans']['parts'] = [{'r': [0, 0, L, B]}]
     if zimet:   # tukša lapa: asis liek pats vai tās veidojas pa kontūrām
         m['axes'] = {'x': [], 'y': []}
     os.makedirs(dest)

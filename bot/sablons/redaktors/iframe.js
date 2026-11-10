@@ -1119,6 +1119,36 @@
   let pPlace = ED.pamMode || null, pDim = null, pDrag = null;   // pPlace: "dim" | "kom" | "rect" | "rect0" | "post"; pDim: { g, pts }
   // paliekošs režīms (kontūras, stabi) pēc pārzīmēšanas turpinās: vecākā lapa to atdod ED.pamMode
   const pEnd = () => { pPlace = null; document.body.style.cursor = ""; pHov(null); };
+  // kontūras pabeigšana: R = [x, y, w, h]; jaunā kontūra kļūst izvēlēta, rīks paliek (nākamais panelis)
+  let pBuf = "";
+  function pRectDone(D, Rin) {
+    D.el.remove(); D.tx.remove(); pHov(null); pBuf = "";
+    const a = D.a, b = D.b, R = (Rin || [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])]).map(Math.round);
+    if (R[2] < 300 || R[3] < 300) { pPlace = D.mode; post({ t: "hint", text: "Kontūra par mazu (vismaz 300 × 300 mm). Velc vai ieraksti izmērus." }); return; }
+    pPlace = null;
+    pEdit((Q, N) => {
+      delete Q.zimet;
+      // pirmā paša kontūra aizstāj sākuma taisnstūri (tas nav paša zīmēts)
+      if (D.mode === "rect0" || !(Q.parts || []).length) { ["nx", "ny", "mov", "rmov", "cmov", "del", "doff"].forEach(f => delete Q[f]); Q.ext = (Q.ext || []).filter(q => Array.isArray(q)); Q.parts = [{ r: R }]; pst = "p:0"; }
+      else { Q.parts.push({ r: R }); pst = "p:" + (Q.parts.length - 1); }
+      void N;
+    }, { pamMode: "rect" });
+    post({ t: "hint", text: "Kontūra pievienota. Velc nākamo paneli, ieraksti izmērus, lai labotu šo, vai spied Esc." });
+  }
+  // ierakstītie izmēri: "garums;platums" (arī ar x vai *), Enter. Velkot: no pirmā stūra uz peles pusi; pēc tam: maina izvēlētās kontūras izmērus
+  function pType(e) {
+    const rectOn = pPlace === "rect" || pPlace === "rect0" || (pDrag && pDrag.kind === "rect"); if (!rectOn) return false;
+    const k = e.key;
+    if (/^[0-9.;xX*]$/.test(k) || k === "," || k === "Backspace") { pBuf = k === "Backspace" ? pBuf.slice(0, -1) : pBuf + (k === "," || /[xX*]/.test(k) ? ";" : k); post({ t: "hint", text: "Izmēri: " + (pBuf || "…") + "  (garums;platums, Enter)" }); if (pDrag && pDrag.tx) pDrag.tx.textContent = pDrag.tx.textContent.replace(/\s+⌨.*$/, "") + (pBuf ? "   ⌨ " + pBuf : ""); return true; }
+    if (k !== "Enter" || !pBuf) return false;
+    const v = pBuf.split(";").map(t => parseFloat(t)).filter(n => n > 0); pBuf = ""; if (!v.length) return true;
+    const w = v[0], h = v.length > 1 ? v[1] : v[0];
+    if (pDrag && pDrag.kind === "rect") { const D = pDrag, sx = D.b[0] < D.a[0] ? -1 : 1, sy = D.b[1] < D.a[1] ? -1 : 1; pDrag = null;
+      pRectDone(D, [sx < 0 ? D.a[0] - w : D.a[0], sy < 0 ? D.a[1] - h : D.a[1], w, h]); return true; }
+    const m = /^p:(\d+)$/.exec(pst || ""); if (!m) { post({ t: "hint", text: "Vispirms klikšķini pirmo stūri, tad ieraksti izmērus." }); return true; }
+    pEdit(Q => { const P = (Q.parts || [])[+m[1]]; if (P) { P.r[2] = Math.round(w); P.r[3] = Math.round(h); } }, { pamMode: pPlace || "rect" });
+    return true;
+  }
   let pHv = null;   // priekšskatījums pie kursora: pielipšanas punkts un palīglīnijas
   function pHov(g, sn) {
     if (pHv) { pHv.remove(); pHv = null; } if (!g || !sn) return;
@@ -1136,7 +1166,9 @@
   function pamHook(e) {   // true = notikums apstrādāts
     const dimMode = pPlace === "dim" || (place && place.t === "dim"), sv = e.target && e.target.closest && e.target.closest("svg.a3");
     // ārpus zīmējuma (tukšā lapas vietā) ņem tuvāko skatu: stabu plānu vai vienīgo skatu lapā
-    const g = pView(e.target) || ((pPlace || dimMode) && sv ? (sv.querySelector("g[data-pview=stabi]") || sv.querySelector("g[data-pview]")) : null);
+    // kontūras, stabi un asis vienmēr stabu plāna koordinātās (arī klikšķinot ārpus tā, piem. zem tā uz vainaga skata)
+    const gs = sv && /^(rect0?|post|ax[xy])$/.test(pPlace || "") ? sv.querySelector("g[data-pview=stabi]") : null;
+    const g = gs || pView(e.target) || ((pPlace || dimMode) && sv ? (sv.querySelector("g[data-pview=stabi]") || sv.querySelector("g[data-pview]")) : null);
     if (g && dimMode) {
       const sn = pSnap(g, pLocal(g, e.clientX, e.clientY));
       if (!pDim || pDim.g !== g) { pClear(); pDim = { g, pts: [] }; }
@@ -1146,11 +1178,12 @@
       pEdit(Q => { Q.udims = (Q.udims || []).concat([{ v: view, a, b, h: H, at: Math.round(H ? q[1] : q[0]) }]); }, { placed: true });
       return true;
     }
-    if (g && (pPlace === "rect" || pPlace === "rect0")) {   // kontūra: velk taisnstūri, pielīp stūriem
+    if (pDrag && pDrag.kind === "rect" && pDrag.cl) { pDrag.b = pSnap(pDrag.g, pLocal(pDrag.g, e.clientX, e.clientY), true).p; pRectDone(pDrag); pDrag = null; return true; }   // otrais klikšķis
+    if (g && (pPlace === "rect" || pPlace === "rect0")) {   // kontūra: velk vai 2 klikšķi, pielīp stūriem; izmērus var ierakstīt (2450;600 Enter) kā SketchUp
       pHov(null); const a = pSnap(g, pLocal(g, e.clientX, e.clientY), true).p, r = document.createElementNS(NS, "rect"), k = pK(g);
       r.setAttribute("fill", "rgba(34,102,216,.10)"); r.setAttribute("stroke", ACC); r.setAttribute("stroke-width", .4 / k); r.setAttribute("stroke-dasharray", `${1.5 / k} ${1 / k}`); g.appendChild(r);
       const t = document.createElementNS(NS, "text"); t.setAttribute("font-size", 3 / k); t.setAttribute("fill", ACC); t.setAttribute("font-weight", 600); g.appendChild(t);
-      pDrag = { kind: "rect", g, a, b: a, p0: a, el: r, tx: t, mode: pPlace, moved: true }; return true;
+      pDrag = { kind: "rect", g, a, b: a, p0: a, el: r, tx: t, mode: pPlace, moved: true, cx: e.clientX, cy: e.clientY }; pBuf = ""; return true;
     }
     if (g && (pPlace === "axx" || pPlace === "axy")) {   // būvass: vertikāla (axx, pa X) vai horizontāla (axy, pa Y); pielīp kontūru malām un stabu līnijām
       const p = pSnap(g, pLocal(g, e.clientX, e.clientY), true).p.map(Math.round), X = pPlace === "axx"; pEnd();
@@ -1186,23 +1219,15 @@
     if (!pDrag.moved && Math.hypot(dx, dy) * pK(pDrag.g) < .6) return;
     pDrag.moved = true;
     if (pDrag.kind === "rect") { const sn = pSnap(pDrag.g, p, true), b = sn.p; pHov(pDrag.g, sn); a = pDrag.a, x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]), w = Math.abs(b[0] - a[0]), h = Math.abs(b[1] - a[1]); pDrag.b = b;
-      Object.entries({ x, y, width: w, height: h }).forEach(([n, v]) => pDrag.el.setAttribute(n, v)); pDrag.tx.setAttribute("x", x + 2 / pK(pDrag.g)); pDrag.tx.setAttribute("y", y - 1.5 / pK(pDrag.g)); pDrag.tx.textContent = `${Math.round(w)} × ${Math.round(h)}`; return; }
+      Object.entries({ x, y, width: w, height: h }).forEach(([n, v]) => pDrag.el.setAttribute(n, v)); pDrag.tx.setAttribute("x", x + 2 / pK(pDrag.g)); pDrag.tx.setAttribute("y", y - 1.5 / pK(pDrag.g)); pDrag.tx.textContent = `${Math.round(w)} × ${Math.round(h)}` + (pBuf ? `   ⌨ ${pBuf}` : ""); return; }
     if (pDrag.kind === "dim") { pDrag.d = Math.round((pDrag.h ? dy : dx) / 10) * 10; pDrag.el.setAttribute("transform", pDrag.h ? `translate(0 ${pDrag.d})` : `translate(${pDrag.d} 0)`); }
     else { pDrag.d = [Math.round(dx / 10) * 10, Math.round(dy / 10) * 10]; pDrag.el.setAttribute("transform", `translate(${pDrag.d[0]} ${pDrag.d[1]})`); }
   });
-  addEventListener("pointerup", () => {
+  addEventListener("pointerup", e => {
     const D = pDrag; pDrag = null; if (!D) return;
     if (D.kind === "rect") {
-      D.el.remove(); D.tx.remove(); pHov(null);
-      const a = D.a, b = D.b, R = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])].map(Math.round);
-      if (R[2] < 500 || R[3] < 500) { pPlace = "rect"; post({ t: "hint", text: "Kontūra par mazu (vismaz 500 × 500 mm). Velc lielāku." }); return; }
-      pPlace = null;
-      pEdit((Q, N) => {
-        delete Q.zimet;
-        if (D.mode === "rect0") { ["nx", "ny", "mov", "rmov", "cmov", "del", "doff"].forEach(f => delete Q[f]); Q.ext = (Q.ext || []).filter(q => Array.isArray(q)); Q.parts = [{ r: R }]; pst = "p:0"; }
-        else { if (!(Q.parts || []).length) Q.parts = [{ r: [0, 0, N.W, N.D] }]; Q.parts.push({ r: R }); pst = "p:" + (Q.parts.length - 1); }
-      }, { pamMode: "rect" });
-      post({ t: "hint", text: "Kontūra pievienota. Velc nākamo paneli vai spied Esc." }); return;
+      if (!D.cl && Math.hypot(e.clientX - D.cx, e.clientY - D.cy) < 6) { D.cl = true; pDrag = D; post({ t: "hint", text: "Otrais stūris: klikšķini vai ieraksti izmērus, piem. 2450;600, un Enter." }); return; }   // klikšķis, ne vilkšana
+      pRectDone(D); return;
     }
     if (D.kind === "dim") {
       const u = /:u(\d+)$/.exec(D.id);
@@ -1215,7 +1240,9 @@
   });
   const C_INK = "#111";
   addEventListener("keydown", e => {
-    if (e.key === "Escape" && (pPlace || pDim)) { pClear(); pEnd(); post({ t: "placed", pamMode: null }); }
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && pType(e)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    if (e.key === "Escape" && pDrag && pDrag.kind === "rect") { pDrag.el.remove(); pDrag.tx.remove(); pDrag = null; pBuf = ""; }
+    if (e.key === "Escape" && (pPlace || pDim)) { pClear(); pEnd(); pBuf = ""; post({ t: "placed", pamMode: null }); }
     if (!pst || e.ctrlKey || e.metaKey || e.altKey) return;
     if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) || e.key === "Delete" || e.key === "Escape") {
       e.preventDefault(); e.stopImmediatePropagation();
