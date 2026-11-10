@@ -95,6 +95,8 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
 .sf { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: end; padding: 8px 10px; background: var(--paper); border-bottom: 1px solid var(--line); }
 .sl { display: grid; gap: 4px; font-size: 12.5px; }
 .card .mt.sent { color: #2f7d4f; }
+.card .ac .sec.rm:hover { color: var(--bad); border-color: var(--bad); }
+button.pri.bad { background: var(--bad); border-color: var(--bad); }
 .spg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--field); border: 1px solid var(--line2); border-radius: var(--r); padding: 3px; }
 .spg button { justify-content: center; height: 34px; font-size: 13px; color: var(--muted); }
 .spg button[aria-selected="true"] { background: var(--accent); color: #fff; }
@@ -218,10 +220,18 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
       <label>Pamati<select id="nFnd"><option value="stabveida">Stabveida</option><option value="platne">Betona plātne</option></select></label>
       <label>Fasādes tonis<select id="nTone"><option value="peleks">Pelēks</option><option value="koks">Koks</option><option value="sarkans">Sarkans</option><option value="zals">Zaļš</option><option value="balts">Balts</option></select></label>
     </div>
-    <p class="note p-only" hidden>Garums un platums ir kontūra (C24 karkasa ārmala, pa būvasīm). Stabi sakārtojas automātiski ar soli līdz 1200 mm, izmēri un specifikācija veidojas paši. Pārējo labo redaktorā, cilnē Māja → Pamatu plāns.</p>
+    <p class="note p-only" hidden>Izmērus var neievadīt: redaktors atvērsies zīmēšanas režīmā, un kontūras (paneļus) savelc ar peli lapā. Ja ievadi garumu un platumu, sākumā būs viens taisnstūris (C24 karkasa ārmala). Stabi sakārtojas paši ar soli līdz 1200 mm, izmēri un specifikācija arī.</p>
     <p class="note h-only">Bots uzģenerē plānojumu un A3 lapu. Tas var aizņemt līdz minūtei. Pēc tam projekts atveras redaktorā.</p>
     <p class="err" id="nErr" hidden></p>
     <div class="ft"><button class="sec" type="button" value="cancel" id="nCancel">Atcelt</button><button class="pri" type="submit" id="nOk">Izveidot</button></div>
+  </form>
+</dialog>
+<dialog id="dDel">
+  <form method="dialog" id="fDel">
+    <h3>Dzēst projektu?</h3>
+    <p class="note" id="delTxt"></p>
+    <p class="err" id="delErr" hidden></p>
+    <div class="ft"><button class="sec" type="button" id="delNo">Atcelt</button><button class="pri bad" type="submit" id="delOk">Dzēst</button></div>
   </form>
 </dialog>
 <dialog id="dCo">
@@ -391,7 +401,8 @@ function render() {
         <div class="mt${p.lastSent ? " sent" : ""}">${p.nfiles ? p.nfiles + (p.nfiles === 1 ? " fails" : " faili") : "Nav eksportu"}${p.lastSent ? " · klientam nosūtīts " + new Date(p.lastSent).toLocaleDateString("lv-LV") : ""}</div></div>
       <div class="ac"><a class="pri" href="/edit/${p.key}" style="display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1;height:30px;border-radius:var(--r);text-decoration:none;font:600 12.5px var(--f-ui)">${ico("edit")}Atvērt redaktorā</a>
         <button class="sec" type="button" data-files="${p.key}" title="Faili un nosūtīšana klientam" aria-label="Faili">${ico("file")}</button>
-        <button class="sec" type="button" data-open="${p.key}" title="Atvērt mapi Explorer" aria-label="Atvērt projekta mapi">${ico("folder")}</button></div>
+        <button class="sec" type="button" data-open="${p.key}" title="Atvērt mapi Explorer" aria-label="Atvērt projekta mapi">${ico("folder")}</button>
+        <button class="sec rm" type="button" data-rmp="${p.key}" data-nm="${esc(p.name)}" title="Dzēst projektu" aria-label="Dzēst projektu ${esc(p.name)}">${ico("x")}</button></div>
     </article>`).join("");
   const em = $("empty");
   em.hidden = r.length > 0;
@@ -483,7 +494,17 @@ function newDlg() {
   $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus();
 }
 $("bNew").onclick = newDlg;
+// projekta dzēšana: pēc apstiprinājuma mapi pārvieto uz <uzņēmums>\_dzestie (atgūstama)
+let delKey = null;
+document.addEventListener("click", e => { const b = e.target.closest("[data-rmp]"); if (!b) return;
+  delKey = b.dataset.rmp; $("delTxt").textContent = `Projekts „${b.dataset.nm}” pazudīs no saraksta. Mape tiks pārvietota uz uzņēmuma mapi _dzestie, no kurienes to var atgūt.`;
+  $("delErr").hidden = true; $("dDel").showModal(); $("delNo").focus(); });
+$("delNo").onclick = () => $("dDel").close();
+$("fDel").addEventListener("submit", async e => { e.preventDefault();
+  try { await api("/api/delete/" + delKey, {}); $("dDel").close(); toast("Projekts izdzēsts (atgūstams mapē _dzestie)."); load(); }
+  catch (er) { $("delErr").textContent = er.message; $("delErr").hidden = false; } });
 const kindSync = () => { const p = $("nKind").value === "pamati"; document.querySelectorAll("#dNew .h-only").forEach(e => e.hidden = p); document.querySelectorAll("#dNew .p-only").forEach(e => e.hidden = !p);
+  $("nL").required = $("nB").required = !p; $("nL").placeholder = p ? "nav jāievada" : "8570"; $("nB").placeholder = p ? "nav jāievada" : "3500";
   $("nName").placeholder = p ? "piem. Lejasbirzes" : "piem. Freya"; $("nId").placeholder = p ? "automātiski STABI-nn" : "automātiski MM-xx-nn"; };
 $("nKind").addEventListener("change", kindSync);
 $("nCancel").onclick = () => $("dNew").close();

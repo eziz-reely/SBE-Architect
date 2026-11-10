@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("SBE_PORT") or 8737)
 CFG_PATH = os.path.join(os.path.expanduser('~'), '.sbe-arhivs.json')
-SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref'}
+SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref', '_dzestie'}
 LOCK = threading.Lock()
 KEYS = {}   # atslēga -> projekta mape
 
@@ -214,9 +214,10 @@ def new_project(b):
     co = b.get('company') or ''
     if co not in cos:
         raise ValueError('Nav tāda uzņēmuma.')
+    if b.get('veids') == 'pamati':   # izmēri nav obligāti: tad redaktorā kontūras zīmē ar peli
+        z = not (b.get('garums') and b.get('platums'))
+        return new_pamati(b, cos[co], float(b.get('garums') or 6000), float(b.get('platums') or 4000), z)
     L, B = float(b['garums']), float(b['platums'])
-    if b.get('veids') == 'pamati':
-        return new_pamati(b, cos[co], L, B)
     pitch = float(b.get('slipums') or 0) or None
     if pitch is not None and not 5 <= pitch <= 60:
         raise ValueError('Jumta slīpums 5–60°.')
@@ -270,7 +271,7 @@ def new_project(b):
     return key_of(dest)
 
 
-def new_pamati(b, co_dir, L, B):
+def new_pamati(b, co_dir, L, B, zimet=False):
     """Projekts "Tikai stabu plāns": vienkāršs modelis pa kontūru (bez plānojuma), lapā tikai pamatu plāns."""
     if not (1000 <= L <= 60000 and 1000 <= B <= 30000):
         raise ValueError('Kontūra ārpus robežām (1–60 m × 1–30 m).')
@@ -293,7 +294,7 @@ def new_pamati(b, co_dir, L, B):
          'innerDims': [], 'wallTags': [], 'sections': [], 'gableWins': [], 'ceiling': 2200, 'ceilingNote': '', 'planNotes': [],
          'projekts': {'faze': 'klients', 'revizija': '00', 'adrese': [], 'modela_nosaukums': safe_name(b.get('nosaukums')), 'pamati': 'stabveida', 'griesti': 0, 'piragi': 'ne', 'tikai_pamati': True,
                       'pamatu_plans': {'skice': True, 'skati': {'stabi': True, 'vainags': True, 'kopa': False}, 'lapas': [['stabi', 'vainags']],
-                                       'd': num('diametrs', 120, 40, 600), 'uzOn': uz > 0, 'uz': uz or 10, 'vb': num('vainags_b', 145, 45, 400), 'c24': num('c24', 0, 0, 400)}}}
+                                       'd': num('diametrs', 120, 40, 600), 'uzOn': uz > 0, 'uz': uz or 10, 'vb': num('vainags_b', 145, 45, 400), 'c24': num('c24', 0, 0, 400), **({'zimet': True, 'kom': []} if zimet else {})}}}
     os.makedirs(dest)
     mp = os.path.join(dest, 'model.json')
     json.dump(m, open(mp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
@@ -445,6 +446,16 @@ class H(BaseHTTPRequestHandler):
                 while os.path.exists(dst):
                     dst = os.path.join(td, f'{stem}-{n}{ext}'); n += 1
                 shutil.move(fp, dst)
+                return self.send(200, {'ok': True})
+            if p.startswith('/api/delete/'):   # projektu pārvieto uz <uzņēmums>/_dzestie (var atgūt, pārvelkot mapi atpakaļ)
+                d = path_for(p[12:])
+                if not d or not os.path.isfile(os.path.join(d, 'model.json')):
+                    return self.send(404, 'Projekts nav atrasts', 'text/plain; charset=utf-8')
+                td = os.path.join(os.path.dirname(d), '_dzestie'); os.makedirs(td, exist_ok=True)
+                dst = os.path.join(td, os.path.basename(d)); n = 2
+                while os.path.exists(dst):
+                    dst = os.path.join(td, f'{os.path.basename(d)}-{n}'); n += 1
+                shutil.move(d, dst); KEYS.clear(); scan()
                 return self.send(200, {'ok': True})
             if p.startswith('/api/sent/'):
                 d = path_for(p[10:])
