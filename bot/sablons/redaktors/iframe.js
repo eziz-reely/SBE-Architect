@@ -469,7 +469,7 @@
     if (t === "kapnes" || t === "kapnesL") return { x: 3, y: 4 };
     if (t === "shower" || t === "armchair") return { x: 3, y: 3 };
     if (t === "Ci") return { x: 3, y: 3, ci: true };
-    if (["R", "wardrobe", "desk", "basin", "sofa", "galds"].includes(t)) return { x: 3, y: 4 };
+    if (["R", "wardrobe", "desk", "basin", "sofa", "galds", "kitchen"].includes(t)) return { x: 3, y: 4 };
     return null;
   }
   // grow one end of a piece along its own x or y by g mm (negative shrinks)
@@ -509,6 +509,7 @@
     else if (t === "desk") s = OPP[q[5] || "e"];
     else if (t === "washer") s = "n";
     else if (t === "armchair") s = "e";
+    else if (t === "tv" || t === "kitchen") s = "n";
     if (!DIRS.includes(s)) return null;
     const deg = ((Math.round(totDeg(f) / 90) % 4) + 4) % 4;
     return DIRS[(DIRS.indexOf(s) + deg) % 4];

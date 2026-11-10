@@ -139,3 +139,41 @@
   };
   const kapnesL1 = (x, y, w, h, b, side, turn, rev) => kapnesL(x, y, w, h, b, side, turn, rev, 1);
   const kapnesL3 = (x, y, w, h, b, side, turn, rev) => kapnesL(x, y, w, h, b, side, turn, rev, 3);
+  // ---------- televizors: sienas stiprinājums, izmērs pēc diagonāles collās (16:9); aizmugure pret sienu ("n") ----------
+  const tvW = d => Math.round(d * 25.4 * 0.8716);
+  const tv = (x, y, d = 55) => {
+    const w = tvW(d);
+    R(x, y, w, 45, { rx: 8 });
+    R(x + 18, y + 9, w - 36, 27, { rx: 4, sw: 2.5 });
+    R(x + w / 2 - 110, y + 45, 220, 25, { rx: 6, sw: 3 });
+  };
+  // ---------- virtuves virsma ar tehniku: moduļi pa kreisi uz labi (ledusskapis, izlietne, trauku mašīna, plīts virsma 2/4 riņķi), pārējais ir skapīši; aizmugure pret sienu ("n") ----------
+  const KMOD = { fridge: 600, sink: 800, dish: 600, hob2: 450, hob4: 600 };
+  const kitchen = (x, y, w, h, mods = ["sink", "dish", "hob4", "fridge"]) => {
+    const has = k => mods.find(m => m === k || (k === "hob" && /^hob/.test(m))), hb = mods.find(m => /^hob/.test(m));
+    const order = ["fridge", "cab", "sink", "dish", "cab", "hob", "cab"].map(k => k === "hob" ? hb : k).filter(k => k === "cab" || (k && has(k)));
+    const tot = order.reduce((a, k) => a + (k === "cab" ? 0 : KMOD[k]), 0), k = tot > w ? w / tot : 1, left = Math.max(0, w - tot * k);
+    const ncab = order.filter(q => q === "cab").length;
+    let cx = x;
+    order.forEach(m => {
+      const mw = m === "cab" ? left / ncab : KMOD[m] * k;
+      if (mw < 1) return;
+      if (m === "cab") { R(cx, y, mw, h, { sw: 3 }); Ln(cx, y + h - 30, cx + mw, y + h - 30, { dash: 1, sw: 2 }); }
+      else if (m === "fridge") { R(cx, y, mw, h, { sw: 3 }); Ln(cx, y, cx + mw, y + h, { sw: 2 }); Ln(cx + mw, y, cx, y + h, { sw: 2 }); }
+      else if (m === "dish") { R(cx, y, mw, h, { sw: 3 }); R(cx + 40, y + 40, mw - 80, h - 80, { rx: 10, sw: 2.5 }); Ln(cx + 80, y + h - 90, cx + mw - 80, y + h - 90, { sw: 3 }); Ci(cx + mw / 2, y + h / 2 - 20, 90, { sw: 2 }); }
+      else if (m === "sink") {
+        R(cx, y, mw, h, { sw: 3 });
+        R(cx + 50, y + 70, mw * .5, h - 140, { rx: 50, sw: 3.5 }); Ci(cx + 50 + mw * .25, y + h / 2, 24, { sw: 2.5 });
+        for (let q = 0; q < 4; q++) Ln(cx + mw * .62 + q * 45, y + 100, cx + mw * .62 + q * 45, y + h - 100, { sw: 2.5 });
+        Ci(cx + 50 + mw * .25, y + 40, 20, { sw: 2.5 });
+      } else {
+        R(cx, y, mw, h, { sw: 3 });
+        const two = m === "hob2", hw = two ? 300 : 560, hd = two ? 520 : 520, hx = cx + (mw - hw) / 2, hy = y + (h - hd) / 2;
+        R(hx, hy, hw, hd, { rx: 20, sw: 4 });
+        const pts = two ? [[hx + hw / 2, hy + hd * .27, 80], [hx + hw / 2, hy + hd * .73, 100]] : [[hx + hw * .27, hy + hd * .27, 100], [hx + hw * .73, hy + hd * .27, 80], [hx + hw * .27, hy + hd * .73, 80], [hx + hw * .73, hy + hd * .73, 100]];
+        pts.forEach(([a, b, r]) => { Ci(a, b, r, s); Ci(a, b, r * .5, { sw: 2.5 }); });
+      }
+      cx += mw;
+    });
+    Ln(x, y + h - 30, x + w, y + h - 30, { dash: 1, sw: 1.6 });
+  };

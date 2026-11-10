@@ -1012,7 +1012,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Apaļš galds", s: "Ø 900", e: ["Ci", 0, 0, 450], center: true, ic: "ci" },
     { n: "Krēsls", s: "430 × 450", e: ["chair", 0, 0, "n"], center: true, ic: "ch" },
     { n: "Rakstāmgalds", s: "1200 × 600", e: ["desk", 0, 0, 1200, 600, "e"], w: 1200, h: 600, ic: "desk", vy: 1 },
-    { n: "Virtuves virsma", s: "2400 × 600", e: ["R", 0, 0, 2400, 600], w: 2400, h: 600, ic: "ctr" },
+    { n: "Virtuves virsma ar tehniku", s: "2600 × 600 · izlietne, trauku mašīna, plīts, ledusskapis", e: ["kitchen", 0, 0, 2600, 600, ["sink", "dish", "hob4", "fridge"]], w: 2600, h: 600, ic: "kit" },
+    { n: "Virtuves virsma (tukša)", s: "2400 × 600", e: ["R", 0, 0, 2400, 600], w: 2400, h: 600, ic: "ctr" },
+    { n: "Televizors", s: "55″, uz sienas; diagonāli maina panelī", e: ["tv", 0, 0, 55], w: 1218, h: 70, ic: "tv" },
     { n: "Izlietne", s: "600 × 450", e: ["basin", 0, 0, 600, 450, "n"], w: 600, h: 450, ic: "bas" },
     { n: "Pods iebūvējams", s: "piekarams, 430 × 540", e: ["toilet", 0, 0, 1], center: true, ic: "wc" },
     { n: "Pods klasisks", s: "ar tvertni, 450 × 660", e: ["toilet", 0, 0, 1, null, "k"], center: true, ic: "wck" },
@@ -1051,6 +1053,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     ci: '<circle cx="12" cy="12" r="7.5"/>',
     ch: '<rect x="7" y="9" width="10" height="9.5" rx="1.5"/><path d="M7 5.5h10"/>',
     desk: '<rect x="2.5" y="5" width="19" height="9" rx="1"/><circle cx="12" cy="18" r="2.5"/>',
+    tv: '<rect x="2.5" y="5" width="19" height="12" rx="1.5"/><path d="M9 20.5h6M12 17v3.5"/>',
+    kit: '<rect x="2" y="7.5" width="20" height="9"/><path d="M7 7.5v9M15 7.5v9"/><circle cx="18.5" cy="10.5" r="1"/><circle cx="18.5" cy="13.5" r="1"/><rect x="9" y="9.5" width="4" height="5" rx="1.5"/>',
     ctr: '<rect x="2" y="7.5" width="20" height="9"/><circle cx="6" cy="12" r="1.8"/><circle cx="10.5" cy="12" r="1.8"/><rect x="14" y="9.5" width="6" height="5" rx="1"/>',
     bas: '<rect x="4.5" y="5.5" width="15" height="13" rx="2"/><ellipse cx="12" cy="13" rx="4.5" ry="3.2"/><path d="M12 7.5v2"/>',
     wc: '<rect x="7.5" y="3" width="9" height="2" rx=".8"/><path d="M7.5 5c-.4 5 .3 10.5 2.2 13.3Q10.8 20.5 12 20.5t2.3-2.2C16.2 15.5 16.9 10 16.5 5z"/><path d="M9.7 8.5c-.3 3.5.3 7.5 2.3 9 2-1.5 2.6-5.5 2.3-9z"/>',
@@ -1138,7 +1142,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     $("libOpen").appendChild(b); }
   $("gClr").onclick = () => $("bGuideClr").click();
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
-  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk"]], ["Virtuve un vannas istaba", ["ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]]], host = $("libFurn");
+  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk", "tv"]], ["Virtuve un vannas istaba", ["kit", "ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]]], host = $("libFurn");
     GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
       FURN_LIB.filter(f => ics.includes(f.ic)).forEach(f => libButton(host, f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy })); }); }
 
@@ -1220,7 +1224,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const L = lvOf(m, s); if (!L) return null;
     return (s.k === "win" ? L.windows : s.k === "door" ? L.doors : L.furniture || [])[s.i];
   }
-  const FURN = { kapnes: "Taisnas kāpnes", kapnesL: "L kāpnes", sofaL: "L dīvāns", galds: "Galds ar krēsliem", bed: "Gulta", nightstand: "Naktsgaldiņš", sofa: "Dīvāns", toilet: "Pods", shower: "Duša", basin: "Izlietne", washer: "Veļasmašīna", chair: "Krēsls", armchair: "Atpūtas krēsls", wardrobe: "Skapis", desk: "Rakstāmgalds", stool: "Taburete", R: "Taisnstūris (galds, virsma)", Ci: "Aplis (galds)", Ln: "Līnija" };
+  const FURN = { kapnes: "Taisnas kāpnes", kapnesL: "L kāpnes", sofaL: "L dīvāns", galds: "Galds ar krēsliem", bed: "Gulta", nightstand: "Naktsgaldiņš", sofa: "Dīvāns", toilet: "Pods", shower: "Duša", basin: "Izlietne", washer: "Veļasmašīna", tv: "Televizors", kitchen: "Virtuves virsma ar tehniku", chair: "Krēsls", armchair: "Atpūtas krēsls", wardrobe: "Skapis", desk: "Rakstāmgalds", stool: "Taburete", R: "Taisnstūris (galds, virsma)", Ci: "Aplis (galds)", Ln: "Līnija" };
   const KIND = { fixed: "Neverams", turn: "Vēramais", tilt: "Vēramais-gāžamais", hopper: "Gāžamais", casement2: "Divvērtņu", slide2: "Bīdāmais" };
   const PKIND = { fixed: "Neverama", turn: "Vērama", tilt: "Vērama-gāžama", hopper: "Gāžama" };
   const SIDE = { north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" };
@@ -2081,7 +2085,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const mv = (n, k, v) => { const f = S(n), d = v - B(n)[k]; B(n)[k] = v; if (wrapped) f[k === 1 ? 2 : 3] += d; };
       if (nm === "Ln") g.append(field("X1", base[1], (n, v) => { B(n)[1] = v; }), field("Y1", base[2], (n, v) => { B(n)[2] = v; }), field("X2", base[3], (n, v) => { B(n)[3] = v; }), field("Y2", base[4], (n, v) => { B(n)[4] = v; }));
       else g.append(field("X, mm", base[1], (n, v) => mv(n, 1, v)), field("Y, mm", base[2], (n, v) => mv(n, 2, v)));
-      if (["bed", "sofa", "sofaL", "R", "basin", "wardrobe", "desk", "galds"].includes(nm) && typeof base[3] === "number" && typeof base[4] === "number")
+      if (["bed", "sofa", "sofaL", "R", "basin", "wardrobe", "desk", "galds", "kitchen"].includes(nm) && typeof base[3] === "number" && typeof base[4] === "number")
         g.append(field("Garums, mm", base[3], (n, v) => { B(n)[3] = Math.max(200, v); }), field(nm === "sofaL" ? "Dziļums, mm" : "Platums, mm", base[4], (n, v) => { B(n)[4] = Math.max(200, v); }));
       if (nm === "sofa" || nm === "sofaL") {
         g.append(field("Forma", nm === "sofa" ? "i" : base[6] === "l" ? "l" : "r", (n, v) => {
@@ -2132,6 +2136,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       }
       if (nm === "toilet") g.append(field("Veids", base[5] === "k" ? "k" : "i", (n, v) => { const f = B(n); while (f.length < 5) f.push(null); if (v === "k") f[5] = "k"; else { f.length = 5; while (f.length > 4 && f[f.length - 1] == null) f.pop(); } }, { i: "Iebūvējams (piekarams)", k: "Klasisks ar tvertni" }, "full"));
       if (vary) g.append(field("Detalizācija", String(vOf(nm0)), (n, v) => { const f = B(n); f[0] = typeV(f[0], +v); }, { 1: "Vienkāršs", 2: "Standarta", 3: "Detalizēts" }, "full"));
+      if (nm === "tv") {
+        const std = [24, 32, 40, 43, 50, 55, 65, 75, 85, 98]; if (!std.includes(base[3])) std.push(base[3]); std.sort((p, q) => p - q);
+        g.append(field("Diagonāle, collas", base[3], (n, v) => { B(n)[3] = +v; }, Object.fromEntries(std.map(d => [d, `${d}″ · ${Math.round(d * 25.4 * 0.8716)} mm plats`])), "full"));
+      }
+      if (nm === "kitchen") {
+        const mods = Array.isArray(base[5]) ? base[5] : [], yn = (k, t) => field(t, mods.some(m => m === k) ? "1" : "0", (n, v) => { const f = B(n); f[5] = (Array.isArray(f[5]) ? f[5] : []).filter(m => m !== k); if (v === "1") f[5].push(k); }, { 1: "Ir", 0: "Nav" });
+        g.append(yn("fridge", "Ledusskapis"), yn("sink", "Izlietne"), yn("dish", "Trauku mašīna"));
+        g.append(field("Plīts virsma", mods.find(m => /^hob/.test(m)) || "0", (n, v) => { const f = B(n); f[5] = (Array.isArray(f[5]) ? f[5] : []).filter(m => !/^hob/.test(m)); if (v !== "0") f[5].push(v); }, { 0: "Nav", hob2: "2 riņķi", hob4: "4 riņķi" }, "full"));
+        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Moduļi tiek izkārtoti pa kreisi uz labi (ledusskapis, izlietne, trauku mašīna, plīts), pārējais ir skapīši. Garumu maina ar lauku vai velkot malu."; g.append(nt);
+      }
       if (nm === "Ci") g.append(field("Rādiuss, mm", base[3], (n, v) => { B(n)[3] = v; }));
       if (nm === "armchair" || nm === "shower") g.append(field("Izmērs, mm", base[3], (n, v) => { B(n)[3] = v; }));
     }
