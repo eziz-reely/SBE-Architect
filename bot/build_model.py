@@ -95,8 +95,9 @@ def build(model_path, langs=None):
     for w_ in pr.get('wall_types') or []:   # redaktorā pievienotie starpsienu veidi (projekts.wall_types) nonāk AR sienu specifikācijā
         if w_.get('id') and w_.get('layers'):
             cfg['layers'][w_['id']] = {'name': w_.get('name') or w_['id'], 'layers': w_['layers']}
-    T = sum(l[1] for l in cfg['layers']['S1']['layers'])
-    t = sum(l[1] for l in cfg['layers']['S2']['layers'])
+    _th = lambda L_: sum(l[1] for l in L_ if not (len(l) > 2 and l[2] == 'n'))   # slāņi "latojumā" (n) neskaitās biezumā, kā redaktorā
+    T = _th(cfg['layers']['S1']['layers'])
+    t = _th(cfg['layers']['S2']['layers'])
 
     cad = open(os.path.join(SBE, 'plani', 'cad.js'), encoding='utf-8').read()
     ar = open(os.path.join(SBE, 'plani', 'ar.js'), encoding='utf-8').read()
