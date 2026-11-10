@@ -193,6 +193,10 @@ def build(model_path, langs=None):
          "      [[w.x, w.y, w.x, w.y + th], [w.x + L, w.y, w.x + L, w.y + th]].forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x, y: w.y + th * .36"),
         ("      jamb(w.x, w.y, w.x + th, w.y); jamb(w.x, w.y + L, w.x + th, w.y + L);\n      el(\"rect\", { x: w.x + th * .36",
          "      [[w.x, w.y, w.x + th, w.y], [w.x, w.y + L, w.x + th, w.y + L]].forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x + th * .36"),
+        ("  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT));",
+         "  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT + (pc.up || 0)));"),
+        ("pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);",
+         "(pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT) - (pc.up || 0), ROOF.plinth - 40);"),
         # [MM] ja apakšā ir aploda, palodze paliek ailas apakšā
         ('    if (true) {\n      z0 -= CB;\n', '    if (true) {\n'),
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)

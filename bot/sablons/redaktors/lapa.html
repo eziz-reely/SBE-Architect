@@ -1435,6 +1435,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const I = () => sel.i;
     g.append(field("Nosaukums", t.name || "Terase", (n, v) => { n.terraces[I()].name = v; }, "text", "full"));
     g.append(field("Pīrāgs", t.preset || "deck", (n, v) => { const q = n.terraces[I()]; q.preset = v; if (TER_PRE[v] && TER_PRE[v][1] != null) q.th = TER_PRE[v][1]; }, Object.fromEntries(Object.entries(TER_PRE).map(([k, a]) => [k, a[0] + (a[1] != null ? " · " + a[1] + " mm" : "")])), "full"));
+    g.append(field("Augstums virs pamata, mm", t.up || 0, (n, v) => { n.terraces[I()].up = Math.max(0, Math.min(2000, v)); }));
     g.append(field("Pīrāga biezums, mm", t.th || 120, (n, v) => { const q = n.terraces[I()]; q.th = Math.max(20, Math.min(1500, v)); q.preset = "cits"; }));
     g.append(field("Stūra statņi", t.corners ? "1" : "0", (n, v) => { const q = n.terraces[I()]; q.corners = v === "1"; if (q.corners) delete q.posts; }, { 0: "Nav", 1: "Lamellu statņi stūros" }));
     g.append(field("Tekstūras platums, mm", t.texW || 1000, (n, v) => { n.terraces[I()].texW = Math.max(100, v); }));
