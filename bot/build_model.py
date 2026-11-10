@@ -24,7 +24,7 @@ RAL = {'RAL 7016': '#383E42', 'RAL 7024': '#474A50', 'RAL 7021': '#2F3234', 'RAL
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'userDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
@@ -95,8 +95,9 @@ def build(model_path, langs=None):
     for w_ in pr.get('wall_types') or []:   # redaktorā pievienotie starpsienu veidi (projekts.wall_types) nonāk AR sienu specifikācijā
         if w_.get('id') and w_.get('layers'):
             cfg['layers'][w_['id']] = {'name': w_.get('name') or w_['id'], 'layers': w_['layers']}
-    T = sum(l[1] for l in cfg['layers']['S1']['layers'])
-    t = sum(l[1] for l in cfg['layers']['S2']['layers'])
+    _th = lambda L_: sum(l[1] for l in L_ if not (len(l) > 2 and l[2] == 'n'))   # slāņi "latojumā" (n) neskaitās biezumā, kā redaktorā
+    T = _th(cfg['layers']['S1']['layers'])
+    t = _th(cfg['layers']['S2']['layers'])
 
     cad = open(os.path.join(SBE, 'plani', 'cad.js'), encoding='utf-8').read()
     ar = open(os.path.join(SBE, 'plani', 'ar.js'), encoding='utf-8').read()

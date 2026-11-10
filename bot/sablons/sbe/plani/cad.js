@@ -674,6 +674,26 @@ function elevation(parent, v, side, opt = { levels: true }) {
     });
   }
 
+  // [TRE] fasādes dekoratīvie elementi (v.decor): taisnstūris/pllīnija, biezums (0 = līdz ar fasādi), tekstūra (apdares dēlis vai metāls), tekstūras pagrieziens
+  (v.decor || []).forEach((d, di) => {
+    if (d.side !== side || !d.pts || d.pts.length < 3) return;
+    const pts = d.pts.map(([a, z]) => `${map(a)},${-z}`).join(" "), xs = d.pts.map(q => map(q[0])), zs = d.pts.map(q => -q[1]), th = +d.th || 0, id = "dec-" + side + di;
+    if (th > 0) el("polygon", { points: d.pts.map(([a, z]) => `${map(a) + th * .6},${-z + th * .6}`).join(" "), fill: "rgba(0,0,0,.28)" }, g);   // ēna: elements izvirzīts no fasādes
+    if (d.tex === "metal") el("polygon", { points: pts, fill: d.col || "#3a3f44", stroke: C.ink, "stroke-width": th > 0 ? 14 : 8 }, g);
+    else if (d.tex === "img" && d.img) {   // sava tekstūra no datora: flīzes platums texW, pagrieziens rot
+      const tw = Math.max(100, +d.texW || 1000), pid = "dtx-" + side + di, pat = el("pattern", { id: pid, patternUnits: "userSpaceOnUse", width: tw, height: tw * (+d.texAr || 1), patternTransform: `rotate(${+d.rot || 0})` }, g);
+      el("image", { href: d.img, width: tw, height: tw * (+d.texAr || 1), preserveAspectRatio: "none" }, pat);
+      el("polygon", { points: pts, fill: `url(#${pid})`, stroke: C.ink, "stroke-width": th > 0 ? 14 : 8 }, g);
+    }
+    else {
+      el("polygon", { points: pts }, el("clipPath", { id }, g));
+      const k = 1.4, rot = +d.rot || 0, cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...zs) + Math.max(...zs)) / 2;
+      const tg = el("g", { transform: `rotate(${rot} ${cx} ${cy}) translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})` }, el("g", { "clip-path": `url(#${id})` }, g));
+      for (let x = Math.floor((cx - 3000) / 2000) * 2000; x < cx + 3000; x += 2000) for (let y = Math.floor((cy - 3000) / 2000) * 2000; y < cy + 3000; y += 2000) el("use", { href: "#cladTex", x, y }, tg);
+      el("polygon", { points: pts, fill: "none", stroke: C.ink, "stroke-width": th > 0 ? 14 : 8 }, g);
+    }
+  });
+
   // openings
   const reveal = (gg, u0, u1, z0, z1) => {
     const sh = 330, sv = 190;

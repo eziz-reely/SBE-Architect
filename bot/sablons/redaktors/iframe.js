@@ -135,6 +135,11 @@
         const a = w.o === "h" ? w.x : w.y, u0 = Math.min(mapU(s, a), mapU(s, a + w.len)), u1 = Math.max(mapU(s, a), mapU(s, a + w.len));
         out.push({ k: "win", i, lv: "main", b: [u0, -(w.head ?? 2100), u1, -(w.sill ?? 0)], pad: 60, side: s });
       });
+      (X.decor || []).forEach((d, i) => {   // [TRE] fasādes elementi
+        if (d.side !== s || !d.pts) return;
+        const us = d.pts.map(q => mapU(s, q[0])), zs = d.pts.map(q => q[1]);
+        out.push({ k: "decor", i, lv: "main", b: [Math.min(...us), -Math.max(...zs), Math.max(...us), -Math.min(...zs)], pad: 20, side: s });
+      });
       (X.gableWins || []).forEach((gw, i) => {
         if (gw.side !== s) return;
         const u0 = Math.min(mapU(s, gw.u0), mapU(s, gw.u1)), u1 = Math.max(mapU(s, gw.u0), mapU(s, gw.u1));
@@ -171,6 +176,7 @@
       for (const it of items(bl)) {
         if (!same(it, sel) && !linked(it, sel)) continue;
         if (near(delPos(it.b, k), 3)) return { it, bl, p, del: true };
+        if (it.k === "decor") { for (const [z, q] of edgeHandles(it.b)) if (near(q, 2.4)) return { it, bl, p, rz: z }; continue; }   // [TRE] fasādes elementa malu rokturi
         if (it.k !== "furn") continue;
         if (near(handlePos(it.b, k), 3)) return { it, bl, p, rot: true };
         if (canSize(lv(it.lv).furniture[it.i])) for (const [z, q] of edgeHandles(it.b)) if (near(q, 2.4)) return { it, bl, p, rz: z };
@@ -181,7 +187,7 @@
       items(bl).forEach(it => {
         if (!inB(p, it.b, it.pad)) return;
         if (it.k === "post" && bl.type === "elev" && !(place && place.t === "bucket")) return;
-        const a = area(it.b) + (it.k === "ter" ? 2e9 : 0) - (it.k === "tvert" ? 1e10 : 0) + (it.k === "furn" ? 1e8 : it.k === "stamp" ? 5e7 : it.k === "gut" ? 1e9 : it.k === "idim" ? 2e8 : 0);   // logi un durvis pirms mēbelēm
+        const a = area(it.b) + (it.k === "ter" ? 2e9 : 0) - (it.k === "tvert" ? 1e10 : 0) - (it.k === "decor" && sel && sel.k === "decor" && sel.i === it.i ? 1e10 : 0) + (it.k === "furn" ? 1e8 : it.k === "stamp" ? 5e7 : it.k === "gut" ? 1e9 : it.k === "idim" ? 2e8 : 0);   // logi un durvis pirms mēbelēm
         if (!best || a < best.a) best = { a, it, bl, p };
       });
     });
@@ -387,10 +393,12 @@
       const k = ek(bl), o = overlay(bl.g);
       rect(o, it.b, false, k, it.k === "furn" ? 0 : undefined);
       if (it.k === "ter") { const t = M.terraces[it.i]; mk(o, "polygon", { points: t.poly.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.10)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` }); t.poly.forEach(q => snapMark(o, q, true, k)); }
+      if (it.k === "stamp") (lv(it.lv, M).rooms[it.i] || { r: [] }).r.forEach(q => mk(o, "rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "rgba(34,102,216,.13)", stroke: ACC, "stroke-width": 0.8 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}`, "pointer-events": "none" }));   // [TRE] telpas aizņemtā platība
       if (it.k === "post") gpts(it.b).forEach((q, j) => mk(o, "circle", { cx: q[0], cy: q[1], r: 1.3 / k, fill: j === 4 ? ACC : "#fff", stroke: ACC, "stroke-width": 0.4 / k }));
       if (it.k !== "stamp" && it.k !== "axo") delHandle(o, it.b, k);
       if (bl.type === "plan" && (it.k === "door" || it.k === "win")) openDims(o, bl.lv, it, k);
       if (bl.type === "elev" && (it.k === "win" || it.k === "gw")) elevDims(o, bl, it, k);
+      if (it.k === "decor") sizeHandles(o, it.b, k);
       if (it.k === "furn") { rotHandle(o, it.b, k); if (canSize(lv(it.lv).furniture[it.i])) sizeHandles(o, it.b, k); }
       const t = sizeText(it);
       if (t) { const at = selPt && selPt.g === bl.g ? [selPt.p[0] + 4 / k, selPt.p[1] - 4 / k] : [it.b[0] + 7 / k, it.b[1] - 2.5 / k]; label(o, at[0], at[1], t, k); }
@@ -961,6 +969,20 @@
     }
     if (it.k === "gut") return null;
     const s = d.h.bl.side, du = dx, dz = -dy;
+    if (it.k === "decor") {   // [TRE] fasādes elements: pārvieto vai maina izmēru; malas pielīp pie logiem, fasādes malām, ±0, dzegas un citiem elementiem
+      const D = N.decor[it.i], b = it.b; let u0 = b[0], u1 = b[2], zt = -b[1], zb = -b[3];
+      const sn = (vals, tg, dl) => { let bd = null; vals.forEach(v => tg.forEach(t => { const e = t - (v + dl); if (Math.abs(e) <= 120 && (bd == null || Math.abs(e) < Math.abs(bd))) bd = e; })); return bd; };
+      const P = decSnapPts(s, it.i), mv = z === "move", du2 = r10(du), dz2 = r10(dz);
+      if (mv || z === "l") { const e = sn(mv ? [u0, u1] : [u0], P.us, du2); u0 += du2 + (e || 0); if (mv) u1 += du2 + (e || 0); }
+      if (z === "r") { const e = sn([u1], P.us, du2); u1 += du2 + (e || 0); }
+      if (mv || z === "t") { const e = sn(mv ? [zt, zb] : [zt], P.zs, dz2); zt += dz2 + (e || 0); if (mv) zb += dz2 + (e || 0); }
+      if (z === "b") { const e = sn([zb], P.zs, dz2); zb += dz2 + (e || 0); }
+      if (!mv) { if (u1 - u0 < 50) { if (z === "l") u0 = u1 - 50; else u1 = u0 + 50; } if (zt - zb < 50) { if (z === "t") zt = zb + 50; else zb = zt - 50; } }
+      if (zb < 0) { zt -= zb; zb = 0; }
+      const ou = b[2] - b[0] || 1, oz = (-b[1]) - (-b[3]) || 1, fu = (u1 - u0) / ou, fz = (zt - zb) / oz;
+      D.pts = D.pts.map(q => { const uu = mapU(s, q[0]), nu = u0 + (uu - b[0]) * fu, nz = zb + (q[1] - (-b[3])) * fz; return [r10(mapU(s, nu)), Math.max(0, r10(nz))]; });
+      d.decInfo = { u0, u1, zb, zt }; return N;
+    }
     if (it.k === "door") { const o = N.doors[it.i]; o.x = Math.max(T, Math.min(M.W - T - o.w, o.x + sgn(s) * r10(du))); return N; }
     const isG = it.k === "gw", o = isG ? N.gableWins[it.i] : N.windows[it.i];
     let [u0, u1] = [it.b[0], it.b[2]];
@@ -1052,6 +1074,7 @@
     if (it.k === "win") { const w = L2.windows[it.i]; t = bl.type === "elev" ? `${w.len} mm  ·  ${w.sill ?? 0}–${w.head ?? 2100}` : `${w.len} mm  ·  ${w.o === "h" ? w.x : w.y}`; }
     else if (it.k === "gw") { const w = N.gableWins[it.i]; t = `${w.u1 - w.u0} mm  ·  ${w.z0}${w.z1 ? "–" + w.z1 : ""}`; }
     else if (it.k === "door") { const w = L2.doors[it.i]; t = `${w.o === "h" ? w.x : w.y}`; }
+    else if (it.k === "decor") t = `${Math.round(b[2] - b[0])} × ${Math.round(b[3] - b[1])} mm`;
     else if (it.k === "stamp") t = "Telpas nosaukums";
     else if (it.k === "dim") { const dm = L2.userDims[it.i]; t = `${Math.round(dm[3] - dm[2])} mm` + (d.snapLine ? "  · vienā ķēdē" : ""); }
     else if (it.k === "idim") t = "Mērķēde" + (d.snapLine ? "  · vienā ķēdē" : "");
@@ -1306,7 +1329,7 @@
       if (r.miss) { post({ t: "hint", text: r.miss }); return true; }
       if (r.pending) { post({ t: "hint", text: r.pending }); return true; }
       place = null; document.body.style.cursor = ""; sel = r.sel;
-      post({ t: "edit", model: r.N, sel: r.sel, place: !!r.fit, placed: true });
+      post({ t: "edit", model: r.N, sel: r.sel, place: !!r.fit, placed: true, nameFocus: !!r.nameFocus });
       return true;
     }
     if (hovWall) {   // sienas posma gala rokturis
@@ -1344,6 +1367,8 @@
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "terrace") { terPreview(e.clientX, e.clientY, e.shiftKey); return; }
+    if (place && place.t === "zone" && place.poly) { zonePreview(e.clientX, e.clientY); return; }
+    if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
     if (drag && drag.wend) {
       const hw = drag.hw, X = hw.w.axis === "x", p = toLocal(hw.bl.g, e.clientX, e.clientY), o = overlay(hw.bl.g), k = ek(hw.bl);
@@ -1734,6 +1759,72 @@
     if (pts.length && !shift && !place.rect) { const a = pts[pts.length - 1]; if (Math.abs(x - a[0]) >= Math.abs(y - a[1])) y = a[1]; else x = a[0]; }
     return [x, y];
   }
+  // [TRE] fasādes elementu pielipšanas punkti: logu malas, fasādes malas, ±0, dzega, citu elementu punkti (u: gar fasādi, z: augstums)
+  function decSnapPts(s, ex) {
+    const sp = span(s), ev = (M.jumts && M.jumts.eave) || 2600, us = [0, sp], zs = [0, ev];
+    (M.windows || []).forEach(w => { if (w.side !== s) return; const a = w.o === "h" ? w.x : w.y; us.push(mapU(s, a), mapU(s, a + w.len)); zs.push(w.sill ?? 0, w.head ?? 2100); });
+    (M.decor || []).forEach((q, i) => { if (q.side !== s || i === ex || !q.pts) return; q.pts.forEach(t => { us.push(mapU(s, t[0])); zs.push(t[1]); }); });
+    if (place && place.t === "decor" && place.side === s) (place.pts || []).forEach(t => { us.push(mapU(s, t[0])); zs.push(t[1]); });
+    return { us, zs };
+  }
+  function decSn(s, u, z, rad = 120) {
+    const P = decSnapPts(s, -1); let su = null, sz = null;
+    P.us.forEach(t => { if (Math.abs(t - u) < rad && (su == null || Math.abs(t - u) < Math.abs(su - u))) su = t; });
+    P.zs.forEach(t => { if (Math.abs(t - z) < rad && (sz == null || Math.abs(t - z) < Math.abs(sz - z))) sz = t; });
+    return { u: su != null ? su : r10(u), z: sz != null ? sz : r10(z), su, sz };
+  }
+  function decPreview(cx, cy) {
+    document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+    const bl = blocks().find(b => { if (b.type !== "elev") return false; const r = b.g.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; });
+    if (!bl) return;
+    const s = bl.side, p = toLocal(bl.g, cx, cy), o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" }), sn = decSn(s, p[0], -p[1]), q = [sn.u, -Math.max(0, sn.z)];
+    const dash = { stroke: ACC, "stroke-width": 0.3 / k, "stroke-dasharray": `${1.2 / k} ${0.8 / k}` };
+    if (sn.su != null) mk(g, "line", Object.assign({ x1: sn.su, y1: -9000, x2: sn.su, y2: 600 }, dash));
+    if (sn.sz != null) mk(g, "line", Object.assign({ x1: -600, y1: -sn.sz, x2: span(s) + 600, y2: -sn.sz }, dash));
+    const pts = (place.side === s ? place.pts || [] : []).map(a => [mapU(s, a[0]), -a[1]]);
+    const all = place.rect && pts.length ? [pts[0], [q[0], pts[0][1]], q, [pts[0][0], q[1]], pts[0]] : pts.concat([q]);
+    if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: all.length > 2 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
+    pts.forEach(a => snapMark(g, a, true, k)); snapMark(g, q, false, k);
+    label(g, q[0] + 3 / k, q[1] - 3 / k, place.rect && pts.length ? `${Math.abs(Math.round(q[0] - pts[0][0]))} × ${Math.abs(Math.round(q[1] - pts[0][1]))} mm` : `${Math.round(q[0])} · augstums ${Math.round(-q[1])}`, k);
+  }
+  // [TRE] zona: jauns taisnleņķa punkts (pielīp pie asīm un iepriekšējā punkta x vai y)
+  function zonePt(p, pts) {
+    let x = snapAx("main", "x", p[0], 200), y = snapAx("main", "y", p[1], 200);
+    if (pts.length) { const l = pts[pts.length - 1]; if (Math.abs(x - l[0]) >= Math.abs(y - l[1])) y = l[1]; else x = l[0]; }
+    return [x, y];
+  }
+  // taisnleņķa daudzstūris → taisnstūru saraksts [x, y, w, h]
+  function polyRects(pts) {
+    const n = pts.length, ys = [...new Set(pts.map(q => q[1]))].sort((a, b) => a - b), out = [];
+    for (let i = 0; i + 1 < ys.length; i++) {
+      const y0 = ys[i], y1 = ys[i + 1], ym = (y0 + y1) / 2, xs = [];
+      for (let j = 0; j < n; j++) { const a = pts[j], b = pts[(j + 1) % n]; if (Math.abs(a[0] - b[0]) < 1 && Math.min(a[1], b[1]) < ym && Math.max(a[1], b[1]) > ym) xs.push(a[0]); }
+      xs.sort((a, b) => a - b);
+      for (let k = 0; k + 1 < xs.length; k += 2) if (xs[k + 1] - xs[k] > 1) { const m = out.find(r => Math.abs(r[0] - xs[k]) < 1 && Math.abs(r[2] - (xs[k + 1] - xs[k])) < 1 && Math.abs(r[1] + r[3] - y0) < 1); if (m) m[3] = +(m[3] + y1 - y0).toFixed(1); else out.push([xs[k], y0, +(xs[k + 1] - xs[k]).toFixed(1), +(y1 - y0).toFixed(1)]); }
+    }
+    return out.reduce((s, r) => s + r[2] * r[3], 0) < 250000 ? [] : out;
+  }
+  // jauna zona: vieta tiek nogriezta no visām esošajām telpām, nosaukumu raksta lietotājs
+  function zoneAdd(N, R) {
+    N.rooms.forEach(rm => { R.forEach(([x0, y0, w, h]) => { const x1 = x0 + w, y1 = y0 + h, out = []; rm.r.forEach(q => {
+      const qx1 = q[0] + q[2], qy1 = q[1] + q[3];
+      if (x1 <= q[0] || x0 >= qx1 || y1 <= q[1] || y0 >= qy1) { out.push(q); return; }
+      const ix0 = Math.max(x0, q[0]), ix1 = Math.min(x1, qx1), iy0 = Math.max(y0, q[1]), iy1 = Math.min(y1, qy1), A = (a, b, c, d) => c - a > 1 && d - b > 1 && out.push([a, b, +(c - a).toFixed(1), +(d - b).toFixed(1)]);
+      A(q[0], q[1], qx1, iy0); A(q[0], iy1, qx1, qy1); A(q[0], iy0, ix0, iy1); A(ix1, iy0, qx1, iy1); }); rm.r = out; }); });
+    if (N.rooms.some(rm => !rm.r.length)) return { miss: "Zona pilnībā aizsedz citu telpu. Zīmē mazāku." };
+    N.rooms.push({ n: "Telpa", en: "Room", r: R.map(q => q.slice()) });
+    const ni = N.rooms.length - 1, big = R.slice().sort((a, b) => b[2] * b[3] - a[2] * a[3])[0]; N.stampAt = N.stampAt || {}; N.stampScale = N.stampScale || {};
+    N.stampAt[ni] = [+(big[0] + big[2] / 2).toFixed(1), +(big[1] + big[3] / 2).toFixed(1)]; N.stampScale[ni] = 0.7;
+    return { N, sel: { k: "stamp", i: ni, lv: "main" }, nameFocus: true };
+  }
+  function zonePreview(cx, cy) {
+    const bl = terBlock(); if (!bl) return;
+    const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
+    const k = ek(bl), g = mk(o, "g", { class: "gh" }), pts = place.pts || [], q = zonePt(p, pts), all = pts.concat([q]);
+    if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: pts.length > 1 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
+    pts.forEach(a => snapMark(g, a, true, k)); snapMark(g, q, false, k);
+    const l = pts[pts.length - 1]; label(g, q[0] + 3 / k, q[1] - 3 / k, l ? `${Math.round(Math.hypot(q[0] - l[0], q[1] - l[1]))} mm` + (pts.length > 2 ? "  · klikšķis pirmajā punktā noslēdz" : "") : "Zona: uzklikšķini pirmo stūri", k);
+  }
   function terPreview(cx, cy, shift) {
     const bl = terBlock(); if (!bl) return;
     const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
@@ -1973,6 +2064,25 @@
           if (r.err) { P.p0 = null; return { miss: r.err }; }
           return { N, sel: null };
         }
+        if (P.t === "zone") {   // [TRE] jauna zona: divi klikšķi; vieta tiek nogriezta no esošajām telpām, nosaukumu raksta lietotājs
+          if (bl.lv !== "main") return { miss: "Zonas var likt 1. stāva plānā." };
+          const sx = v => snapAx("main", "x", v, 200), sy = v => snapAx("main", "y", v, 200);
+          if (P.poly) {   // zona pa kontūru: taisnleņķa polilīnija, klikšķis pirmajā punktā noslēdz
+            P.pts = P.pts || []; const pts = P.pts, q = zonePt(p, pts);
+            if (pts.length > 2 && Math.hypot(q[0] - pts[0][0], q[1] - pts[0][1]) < 300) {
+              const c = pts.slice(), l = c[c.length - 1]; if (Math.abs(l[0] - c[0][0]) > 1 && Math.abs(l[1] - c[0][1]) > 1) c.push([c[0][0], l[1]]);
+              const R = polyRects(c); P.pts = [];
+              if (!R.length) return { miss: "Kontūrs nederīgs. Zīmē taisnleņķa kontūru." };
+              return zoneAdd(N, R);
+            }
+            if (pts.length && Math.hypot(q[0] - pts[pts.length - 1][0], q[1] - pts[pts.length - 1][1]) < 50) return { pending: "Uzklikšķini nākamo stūri." };
+            pts.push(q); return { pending: pts.length < 3 ? "Turpini likt stūrus." : "Turpini vai uzklikšķini pirmajā punktā, lai noslēgtu zonu." };
+          }
+          if (!P.p0) { P.p0 = [sx(p[0]), sy(p[1])]; return { pending: "Uzklikšķini zonas pretējo stūri." }; }
+          const x0 = Math.min(P.p0[0], sx(p[0])), x1 = Math.max(P.p0[0], sx(p[0])), y0 = Math.min(P.p0[1], sy(p[1])), y1 = Math.max(P.p0[1], sy(p[1]));
+          if (x1 - x0 < 500 || y1 - y0 < 500) { P.p0 = null; return { miss: "Zona par mazu (vismaz 500 × 500 mm)." }; }
+          return zoneAdd(N, [[x0, y0, x1 - x0, y1 - y0]]);
+        }
         if (P.t === "furn") {
           const e = clone(P.entry);
           if (P.center) { e[1] = r10(p[0]); e[2] = r10(p[1]); } else { e[1] = r10(p[0] - P.w / 2); e[2] = r10(p[1] - P.h / 2); }
@@ -1998,6 +2108,19 @@
         const rl = P.t === "dim" && P.f2 ? 3500 : 200;
         if (p[0] < -rl || p[0] > sp + rl || p[1] > (P.f2 && P.t === "dim" ? 3500 : 300) || p[1] < -(eave + sp)) continue;
         if (P.t === "dim") return fdimClick(bl, p, cx, cy);
+        if (P.t === "decor") {   // [TRE] fasādes elements: taisnstūris (2 klikšķi) vai polilīnija (klikšķis pirmajā punktā noslēdz)
+          if (P.side && P.side !== s) return { miss: "Visi elementa punkti jāliek vienā fasādē." };
+          P.side = s; P.pts = P.pts || [];
+          const sn = decSn(s, p[0], -p[1]), a = r10(mapU(s, sn.u)), z = Math.max(0, sn.z);
+          const pts = P.pts, mkEl = pp => { const D = N.decor = N.decor || []; D.push({ side: s, pts: pp, th: 20, tex: "clad", rot: 0 }); return { N, sel: { k: "decor", i: D.length - 1, lv: "main" } }; };
+          if (P.rect) {
+            if (!pts.length) { pts.push([a, z]); return { pending: "Uzklikšķini pretējo stūri." }; }
+            const q = pts[0]; if (Math.abs(a - q[0]) < 50 || Math.abs(z - q[1]) < 50) return { miss: "Elements par mazu. Uzklikšķini tālāk." };
+            return mkEl([[q[0], q[1]], [a, q[1]], [a, z], [q[0], z]]);
+          }
+          if (pts.length > 2 && Math.hypot(a - pts[0][0], z - pts[0][1]) < 250) return mkEl(pts.slice());
+          pts.push([a, z]); return { pending: pts.length < 3 ? "Turpini likt punktus." : "Turpini vai uzklikšķini pirmajā punktā, lai noslēgtu." };
+        }
         if (P.t !== "win" && P.t !== "gwin") return { miss: "Mēbeles un durvis ieliec plānā." };
         const a = mapU(s, p[0]), z = -p[1], gable = s === "east" || s === "west";
         if (gable && (z > eave - 150 || P.t === "gwin")) return { N, sel: newGableWin(N, s, a, Math.max(z, eave - 400), P.t === "gwin") };
