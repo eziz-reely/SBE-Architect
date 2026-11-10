@@ -306,6 +306,12 @@
       mk(o, "line", Object.assign({ x1: a, y1: yh, x2: c, y2: yh }, ln)); tick(a, yh); tick(c, yh);
       label(o, (a + c) / 2 - 3 / k, yh - 1.2 / k, `${Math.round(c - a)}`, k);
     });
+    if (it.k === "gw" && X.gableWins[it.i] && !X.gableWins[it.i].z1) {   // slīpā loga augstumi: kreisā mala, vidus, labā mala
+      const g = X.gableWins[it.i], H = gwHeights(X, g), z0 = -g.z0, nx = (u1 - u0) > 700 ? 350 : (u1 - u0) / 2;
+      const vd = (x, h) => { if (h < 1) return; mk(o, "line", Object.assign({ x1: x, y1: z0, x2: x, y2: z0 - h }, ln)); tick(x, z0); tick(x, z0 - h); label(o, x + 1.2 / k, z0 - h / 2, `${h}`, k); };
+      vd(u0 + nx, H.hL); vd(u1 - nx, H.hR);
+      if (H.hMax > Math.max(H.hL, H.hR) + 1) vd((u0 + u1) / 2, H.hMax);
+    }
     if (zb > 1) {
       const x = u0 + (u1 - u0) * .78;
       mk(o, "line", Object.assign({ x1: x, y1: b[3], x2: x, y2: 0 }, ln)); tick(x, b[3]); tick(x, 0);
