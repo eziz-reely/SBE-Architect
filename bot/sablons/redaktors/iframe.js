@@ -393,6 +393,7 @@
       const k = ek(bl), o = overlay(bl.g);
       rect(o, it.b, false, k, it.k === "furn" ? 0 : undefined);
       if (it.k === "ter") { const t = M.terraces[it.i]; mk(o, "polygon", { points: t.poly.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.10)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` }); t.poly.forEach(q => snapMark(o, q, true, k)); }
+      if (it.k === "stamp" && it.lv === "main") zoneHandles().forEach(h => { const s0 = 2.2 / k; mk(o, "rect", { x: h.pt[0] - s0 / 2, y: h.pt[1] - s0 / 2, width: s0, height: s0, fill: "#fff", stroke: ACC, "stroke-width": 0.35 / k }); });
       if (it.k === "stamp") (lv(it.lv, M).rooms[it.i] || { r: [] }).r.forEach(q => mk(o, "rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "rgba(34,102,216,.13)", stroke: ACC, "stroke-width": 0.8 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}`, "pointer-events": "none" }));   // [TRE] telpas aizņemtā platība
       if (it.k === "post") gpts(it.b).forEach((q, j) => mk(o, "circle", { cx: q[0], cy: q[1], r: 1.3 / k, fill: j === 4 ? ACC : "#fff", stroke: ACC, "stroke-width": 0.4 / k }));
       if (it.k !== "stamp" && it.k !== "axo") delHandle(o, it.b, k);
@@ -1301,6 +1302,7 @@
       const pp = lp && [...gv.querySelectorAll("rect[data-ppart]")].reverse().find(r => { const x = +r.getAttribute("x"), y = +r.getAttribute("y"); return lp[0] >= x && lp[1] >= y && lp[0] <= x + +r.getAttribute("width") && lp[1] <= y + +r.getAttribute("height"); });
       if (pp) { pst = "p:" + pp.dataset.ppart; pstMark(); if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } post({ t: "pst", key: pst }); return true; }
       if (pst && e.target && e.target.closest && e.target.closest("svg[data-part=pamati]")) { pst = null; pstMark(); post({ t: "pst", key: null }); return false; } }
+    if (!place && zoneDown(e)) return true;
     if (drag && drag.wend && drag.sticky) { commitWend(); return true; }
     if (place && place.t === "erase") {
       const gi = guideHit(e.clientX, e.clientY);
@@ -1363,6 +1365,7 @@
   const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";
   addEventListener("pointermove", e => {
     altNow = e.altKey;
+    if (zdrag) { zoneMove(e); return; }
     if (place && place.t === "erase") { document.body.style.cursor = ERC; const h = guideHit(e.clientX, e.clientY) >= 0 ? null : hit(e.clientX, e.clientY); hover(h); return; }
     if (place && place.t === "dim" && fdimMove(e)) return;
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
@@ -1420,6 +1423,7 @@
     }
   });
   addEventListener("pointerup", () => {
+    if (zdrag) { zoneUp(); return; }
     if (!drag) return;
     if (drag.wend) {
       if (!drag.moved && !drag.sticky) { drag.sticky = true; post({ t: "hint", text: "Tagad uzklikšķini, kur siena beidzas. Esc atceļ." }); return; }   // klikšķis uz gala, tad klikšķis, cik gara
@@ -1605,9 +1609,9 @@
       if (c < U0 || c > U1 || mid < V0 || mid > V1) continue;
       const fLo = Math.abs(c - h - U0) < 1, fHi = Math.abs(c + h - U1) < 1;   // siena precīzi pie telpas malas: tur paliekošas joslas nav
       if ((!fLo && c - h < U0 + MINR) || (!fHi && c + h > U1 - MINR)) return { err: "Starpsiena par tuvu sienai: telpa kļūtu šaurāka par 600 mm." };
-      const a2 = a <= V0 + 300 ? V0 : a, b2 = b >= V1 - 300 ? V1 : b, tA = a2 <= V0 + 1, tB = b2 >= V1 - 1;
+      let a2 = a <= V0 + 300 ? V0 : a, b2 = b >= V1 - 300 ? V1 : b, tA = a2 <= V0 + 1, tB = b2 >= V1 - 1;
+      if (!tA && !tB) { if (a2 - V0 <= V1 - b2) { a2 = V0; tA = true; } else { b2 = V1; tB = true; } }   // siena pielīp tuvākajai telpas (zonas) malai; garumu vēlāk var pielāgot ar gala rokturi
       if (b2 - a2 < PMIN) return { err: "Siena par īsu." };
-      if (!tA && !tB) return { err: "Siena jāsāk pie telpas malas (ārsienas vai citas sienas)." };
       const P = (u0, v0, u1, v1) => (vertical ? [u0, v0, u1 - u0, v1 - v0] : [v0, u0, v1 - v0, u1 - u0]);
       let parts;
       if (tA && tB) parts = [P(U0, V0, c - h, V1), P(c + h, V0, U1, V1)];
@@ -1871,6 +1875,64 @@
     if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: pts.length > 1 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
     pts.forEach(a => snapMark(g, a, true, k)); snapMark(g, q, false, k);
     const l = pts[pts.length - 1]; label(g, q[0] + 3 / k, q[1] - 3 / k, l ? `${Math.round(Math.hypot(q[0] - l[0], q[1] - l[1]))} mm` + (pts.length > 2 ? "  · klikšķis pirmajā punktā noslēdz" : "") : "Zona: uzklikšķini pirmo stūri", k);
+  }
+  // [TRE] zonas (telpas) malu vilkšana: rokturi tikai malām pret atvērtu blakus zonu; blakus zona atdod vai paņem platību, sienas netiek kustinātas
+  function zoneHandles() {
+    if (!sel || sel.k !== "stamp" || sel.lv !== "main" || place) return [];
+    const rm = M.rooms[sel.i]; if (!rm) return [];
+    const out = [], touch = (a, b, ax) => ax === "x" ? Math.abs(a - b) < 1.5 : Math.abs(a - b) < 1.5;
+    rm.r.forEach((q, j) => {
+      const [x, y, w, h] = q;
+      [["l", x, [x, y + h / 2], "x"], ["r", x + w, [x + w, y + h / 2], "x"], ["t", y, [x + w / 2, y], "y"], ["b", y + h, [x + w / 2, y + h], "y"]].forEach(([e, v, pt, ax]) => {
+        const inner = rm.r.some((o, k) => k !== j && (ax === "x" ? (touch(e === "l" ? o[0] + o[2] : o[0], v, "x") && Math.min(y + h, o[1] + o[3]) - Math.max(y, o[1]) > 50) : (touch(e === "t" ? o[1] + o[3] : o[1], v, "y") && Math.min(x + w, o[0] + o[2]) - Math.max(x, o[0]) > 50)));
+        // rokturis tikai malai pret atvērtu blakus zonu (bez sienas); sienas netiek pārbīdītas
+        const open = M.rooms.some((r2, ri) => ri !== sel.i && r2.r.some(o => (ax === "x" ? (Math.abs((e === "l" ? o[0] + o[2] : o[0]) - v) < 1 && Math.min(y + h, o[1] + o[3]) - Math.max(y, o[1]) > 50) : (Math.abs((e === "t" ? o[1] + o[3] : o[1]) - v) < 1 && Math.min(x + w, o[0] + o[2]) - Math.max(x, o[0]) > 50))));
+        if (!inner && open) out.push({ j, e, ax, v, pt });
+      });
+    });
+    return out;
+  }
+  // rects: nobīdes d pielietošana; atgriež jaunu telpu sarakstu vai null (par mazu)
+  function zoneShift(h, d) {
+    const N = clone(M), rm = N.rooms[sel.i], q = rm.r[h.j], X = h.ax === "x", MIN = 300;
+    const ext = N.rooms.flatMap(r => r.r), lo = Math.min(...ext.map(a => X ? a[0] : a[1])), hi = Math.max(...ext.map(a => X ? a[0] + a[2] : a[1] + a[3]));
+    let nv = Math.max(lo, Math.min(hi, h.v + d)); d = nv - h.v;
+    const I = X ? 0 : 1, S = X ? 2 : 3, O = X ? 1 : 0, OS = X ? 3 : 2, front = h.e === "l" || h.e === "t";
+    if (front) { q[I] = +(q[I] + d).toFixed(1); q[S] = +(q[S] - d).toFixed(1); } else q[S] = +(q[S] + d).toFixed(1);
+    if (q[S] < MIN) return null;
+    N.rooms.forEach((r, ri) => { if (ri === sel.i) return; r.r.forEach(o => {
+      if (Math.min(q[O] + q[OS], o[O] + o[OS]) - Math.max(q[O], o[O]) <= 50) return;
+      if (front) { const g = h.v - (o[I] + o[S]); if (g > -1 && g < 1) { o[S] = +(o[S] + d).toFixed(1); } }
+      else { const g = o[I] - h.v; if (g > -1 && g < 1) { o[I] = +(o[I] + d).toFixed(1); o[S] = +(o[S] - d).toFixed(1); } }
+    }); });
+    if (N.rooms.some(r => r.r.some(o => o[2] < 50 || o[3] < 50))) return null;
+    if (N.rooms.some((r, ri) => ri !== sel.i && r.r.some(o => o[2] < MIN && o[3] < MIN) && false)) return null;
+    return { N, nv, q };
+  }
+  let zdrag = null;
+  function zoneDown(e) {
+    const hs = zoneHandles(); if (!hs.length) return false;
+    const bl = terBlock(); if (!bl) return false;
+    const p = toLocal(bl.g, e.clientX, e.clientY), k = ek(bl);
+    const h = hs.find(a => Math.hypot(a.pt[0] - p[0], a.pt[1] - p[1]) < 3 / k); if (!h) return false;
+    zdrag = { h, bl, p0: p, ok: null }; return true;
+  }
+  function zoneMove(e) {
+    if (!zdrag) return false;
+    const { h, bl } = zdrag, p = toLocal(bl.g, e.clientX, e.clientY), m = bl.g.getScreenCTM(), rad = e.altKey ? 0 : (m && m.a ? 6 / Math.abs(m.a) : 60);
+    let v = h.ax === "x" ? p[0] : p[1]; v = e.altKey ? Math.round(v) : (rad ? snapAx("main", h.ax, v, rad) : v);
+    const r = zoneShift(h, v - h.v); zdrag.ok = r; zdrag.v = v;
+    const o = overlay(bl.g), k = ek(bl); o.querySelectorAll(".gh").forEach(x => x.remove());
+    const g = mk(o, "g", { class: "gh" });
+    if (r) { const q = r.q; mk(g, "rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "rgba(34,102,216,.15)", stroke: ACC, "stroke-width": 0.8 / k, "stroke-dasharray": `${1.4 / k} ${0.9 / k}` }); label(g, q[0] + 2 / k, q[1] - 2 / k, `${Math.round(q[2])} × ${Math.round(q[3])} mm  ·  ${(q[2] * q[3] / 1e6).toFixed(2)} m²`, k); }
+    return true;
+  }
+  function zoneUp() {
+    if (!zdrag) return false;
+    const z = zdrag; zdrag = null; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+    if (z.ok && Math.abs(z.v - z.h.v) >= 1) post({ t: "edit", model: z.ok.N, sel });
+    else drawSel();
+    return true;
   }
   function terPreview(cx, cy, shift) {
     const bl = terBlock(); if (!bl) return;
