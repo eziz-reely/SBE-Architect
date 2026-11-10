@@ -139,6 +139,10 @@
         const u0 = Math.min(mapU(s, gw.u0), mapU(s, gw.u1)), u1 = Math.max(mapU(s, gw.u0), mapU(s, gw.u1));
         out.push({ k: "gw", i, lv: "main", b: [u0, -(gw.z1 || gw.z0 + 1400), u1, -gw.z0], pad: 60, side: s });
       });
+      (X.posts || []).forEach((q, i) => {   // stabi fasādē (tikai krāsas spainim)
+        const a = s === "north" || s === "south" ? q.x : q.y, l = s === "north" || s === "south" ? q.w : q.d, ez0 = (X.jumts && X.jumts.eave) || 2400;
+        out.push({ k: "post", i, lv: "main", b: [Math.min(mapU(s, a), mapU(s, a + l)), -ez0, Math.max(mapU(s, a), mapU(s, a + l)), 0], pad: 30, side: s });
+      });
       const NT = ((X.projekts || {}).notekas || {});
       // notekas un notekcaurules: katra atsevišķi (north/south = noteka, nw/ne/sw/se = caurule stūrī)
       const ez = (X.jumts && X.jumts.eave) || 2600, sp = span(s), on = key => NT[key] !== false, gut = (key, b) => { if (on(key)) out.push({ k: "gut", i: key, lv: "main", b, pad: 30, side: s }); };
@@ -175,6 +179,7 @@
       const p = toLocal(bl.g, cx, cy);
       items(bl).forEach(it => {
         if (!inB(p, it.b, it.pad)) return;
+        if (it.k === "post" && bl.type === "elev" && !(place && place.t === "bucket")) return;
         const a = area(it.b) + (it.k === "ter" ? 2e9 : 0) - (it.k === "tvert" ? 1e10 : 0) + (it.k === "furn" ? 1e8 : it.k === "stamp" ? 5e7 : it.k === "gut" ? 1e9 : it.k === "idim" ? 2e8 : 0);   // logi un durvis pirms mēbelēm
         if (!best || a < best.a) best = { a, it, bl, p };
       });
