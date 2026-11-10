@@ -2025,7 +2025,14 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     r.appendChild(b); p.appendChild(r);
   }
   function del() {
-    const it = itemOf(model, sel); if (!it || sel.k === "stamp") return;
+    if (sel.k === "stamp") {   // [TRE] telpas (zonas) dzēšana: noņem telpu, pārnumurē nosaukumu pozīcijas; eksplikācija atjaunojas pati
+      const n = clone(model), L = lvOf(n, sel), i = sel.i;
+      if (!L.rooms || L.rooms.length < 2 || !L.rooms[i]) return;
+      L.rooms.splice(i, 1);
+      ["stampAt", "stampScale"].forEach(k => { const o = L[k] || {}, r = {}; Object.keys(o).forEach(j => { j = +j; if (j < i) r[j] = o[j]; else if (j > i) r[j - 1] = o[j]; }); L[k] = r; });
+      sel = null; commit(n); return;
+    }
+    const it = itemOf(model, sel); if (!it) return;
     const n = clone(model);
     if (sel.k === "post") n.posts.splice(sel.i, 1);
     else if (sel.k === "ter") n.terraces.splice(sel.i, 1);
