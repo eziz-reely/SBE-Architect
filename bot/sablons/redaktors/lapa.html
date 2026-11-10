@@ -720,7 +720,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   let model = clone(BASE), undo = [], redo = [], clip = null, sel = null, view = null, dirty = false, placeNext = false;
 
   // ---- the same model block build_model.py writes, plus a map from each furniture entry to its drawn shapes ----
-  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "entryInChain", "porch", "terrace"];
+  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "entryInChain", "porch", "terraces", "axOff"];
   const call = f => f[0] === "_rot"
     ? `{ const i0 = F.length; ${call(f[4])} for (let i = i0; i < F.length; i++) F[i].tr = "rotate(${f[1]} ${f[2]} ${f[3]})" + (F[i].tr ? " " + F[i].tr : ""); }`
     : `${f[0]}(${f.slice(1).map(a => JSON.stringify(a)).join(", ")});`;
@@ -917,6 +917,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Horiz. palīglīnija", s: "Shift+G", p: { t: "guide", o: "h" }, ic: "gh" },
     { n: "Slīpa palīglīnija", s: "jumta slīpumā", p: { t: "guide", o: "s" }, ic: "gs" },
     { n: "Dzēšgumija", s: "klikšķis dzēš visu elementu", p: { t: "erase" }, ic: "er" },
+    { n: "Terase", s: "polilīnija: klikšķi stūros, dubultklikšķis noslēdz", p: { t: "terrace" }, ic: "ter" },
   ];
   // vy: mēbelei ir 3 detalizācijas varianti (bed1 / bed / bed3)
   const FURN_LIB = [
@@ -1003,7 +1004,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (onBtn === b) { endPlace(); toFrame({ mmPlace: null }); return; }
       endPlace(); if (moveOn) setMove(false); placing = clone(spec); onBtn = b; b.classList.add("on");
       if (placing.vy) placing.entry[0] = typeV(placing.entry[0], detail);
-      $("hint").textContent = spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Plānā: uzklikšķini mēra pirmo galu (pielīp sienām). Fasādē: uzklikšķini punktu un izvēlies augstuma atzīmi vai lineāru mēru." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
+      $("hint").textContent = spec.t === "terrace" ? "Uzklikšķini terases stūrus (Shift: brīvs leņķis, Backspace: atpakaļ). Dubultklikšķis, Enter vai klikšķis uz pirmā punkta noslēdz." : spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Plānā: uzklikšķini mēra pirmo galu (pielīp sienām). Fasādē: uzklikšķini punktu un izvēlies augstuma atzīmi vai lineāru mēru." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
       toFrame({ mmPlace: spec }); railSync();
     };
     b.title = item.n + " · " + item.s;
@@ -1027,10 +1028,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const ACTIONS = [
     { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); setMove(false); railSync(); } },
     ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
+    { id: "ter", n: "Terase", k: "t", ic: "ter", run: () => { const b = OPENB[11]; if (b) b.click(); railSync(); } },
     { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gx", run: () => { $("bGuideClr").click(); } },
   ];
-  const RAIL = ["sel", "t3", "t4", "er", "t5", "t6", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
+  const RAIL = ["sel", "t3", "t4", "ter", "er", "t5", "t6", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
+  IC.ter = '<path d="M3.5 17.5 7 8h13.5L17 17.5z"/><path d="M9.5 12.5h8"/>';
   IC.sel = '<path d="M5 3.5 18.5 10l-6 1.8-2.6 5.7z"/><path d="m12.6 11.9 5 5"/>';
   const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
   let keyMap = Object.assign({}, DEF), keyCap = null;
@@ -1085,6 +1088,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const idOwn = (m, s) => { const L = lvOf(m, s); if (!L.innerDims) L.innerDims = clone(m.innerDims || []); return L.innerDims; };   // mansards manto 1. stāva ķēdes, līdz tās labo
   function itemOf(m, s) {
     if (!s) return null;
+    if (s.k === "ter") return (m.terraces || [])[s.i];
+    if (s.k === "axo") return { axo: s.i };
     if (s.k === "gw") return (m.gableWins || [])[s.i];
     if (s.k === "guide") return ((m.projekts || {}).guides || [])[s.i];
     if (s.k === "stamp") { const L = lvOf(m, s); return L && (L.rooms || [])[s.i] ? { stamp: 1 } : null; }
@@ -1412,6 +1417,47 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const show = () => { nav.querySelectorAll("[data-sec]").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sec === majaSec))); gs.forEach(e => { e.hidden = secOf(e) !== majaSec; }); };
     show();
   }
+  function axO(X) {   // asu galu attālums katrā pusē (kā build_model)
+    const pts = [].concat(X.porch ? [X.porch.poly] : [], (X.terraces || []).map(t => t.poly)).flat();
+    const ex = { n: Math.max(0, ...pts.map(q => -q[1])), s: Math.max(0, ...pts.map(q => q[1] - X.D)), w: Math.max(0, ...pts.map(q => -q[0])), e: Math.max(0, ...pts.map(q => q[0] - X.W)) }, r = {};
+    ["n", "s", "w", "e"].forEach(k => { r[k] = X.axOff && X.axOff[k] != null ? X.axOff[k] : 3150 + (ex[k] > 0 ? ex[k] + 400 : 0); });
+    return r;
+  }
+  const TER_PRE = { deck: ["Koka klājs uz latām", 120], karkass: ["Koka klājs uz karkasa", 300], flizes: ["Flīzes / bruģis", 60], cits: ["Cits (ieraksti biezumu)", null] };
+  // izlabo augšupielādēto tekstūru: līdz 1024 px, JPEG, lai fails neuzbriest
+  function terUpload(file, done) {
+    const r = new FileReader();
+    r.onload = () => { const im = new Image(); im.onload = () => { const k = Math.min(1, 1024 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); done(c.toDataURL("image/jpeg", .85)); }; im.src = r.result; };
+    r.readAsDataURL(file);
+  }
+  function terPanel(p, h, sub, g, t) {
+    h.textContent = "Terase"; sub.textContent = "klājs · ārtelpa, nav kopējā platībā · velc malu pa x vai y asi";
+    const I = () => sel.i;
+    g.append(field("Nosaukums", t.name || "Terase", (n, v) => { n.terraces[I()].name = v; }, "text", "full"));
+    g.append(field("Pīrāgs", t.preset || "deck", (n, v) => { const q = n.terraces[I()]; q.preset = v; if (TER_PRE[v] && TER_PRE[v][1] != null) q.th = TER_PRE[v][1]; }, Object.fromEntries(Object.entries(TER_PRE).map(([k, a]) => [k, a[0] + (a[1] != null ? " · " + a[1] + " mm" : "")])), "full"));
+    g.append(field("Pīrāga biezums, mm", t.th || 120, (n, v) => { const q = n.terraces[I()]; q.th = Math.max(20, Math.min(1500, v)); q.preset = "cits"; }));
+    g.append(field("Stūra statņi", t.corners ? "1" : "0", (n, v) => { const q = n.terraces[I()]; q.corners = v === "1"; if (q.corners) delete q.posts; }, { 0: "Nav", 1: "Lamellu statņi stūros" }));
+    g.append(field("Tekstūras platums, mm", t.texW || 1000, (n, v) => { n.terraces[I()].texW = Math.max(100, v); }));
+    g.append(field("Tekstūras pagrieziens, °", t.texRot || 0, (n, v) => { n.terraces[I()].texRot = ((Math.round(v) % 360) + 360) % 360; }));
+    p.append(h, sub, g);
+    const r1 = document.createElement("div"); r1.className = "row";
+    const up = document.createElement("input"); up.type = "file"; up.accept = "image/*"; up.hidden = true;
+    up.onchange = () => { const f = up.files && up.files[0]; if (!f) return; terUpload(f, url => { const n = clone(model); n.terraces[sel.i].tex = url; commit(n); }); };
+    const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = t.tex ? "Mainīt tekstūru" : "Augšupielādēt tekstūru"; b1.onclick = () => up.click();
+    const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Pagriezt tekstūru 90°"; b2.onclick = () => { const n = clone(model); const q = n.terraces[sel.i]; q.texRot = ((q.texRot || 0) + 90) % 360; commit(n); };
+    r1.append(up, b1, b2);
+    if (t.tex) { const b3 = document.createElement("button"); b3.type = "button"; b3.textContent = "Noņemt tekstūru"; b3.onclick = () => { const n = clone(model); n.terraces[sel.i].tex = null; commit(n); }; r1.append(b3); }
+    p.appendChild(r1);
+    const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst terasi"; b.onclick = del; r.appendChild(b); p.appendChild(r);
+    const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Velc terases malu, lai to pagarinātu vai saīsinātu; velc laukumu, lai pārbīdītu visu terasi. Fasādēs terase parādās automātiski."; p.appendChild(nt);
+  }
+  function axoPanel(p, h, sub, g) {
+    h.textContent = "Būvasis"; sub.textContent = "attālums no mājas katrā pusē · velc asu joslu uz āru vai iekšā";
+    const A = axO(model), NM = { n: "Ziemeļos, mm", s: "Dienvidos, mm", w: "Rietumos, mm", e: "Austrumos, mm" };
+    Object.keys(NM).forEach(k => g.append(field(NM[k], A[k], (n, v) => { n.axOff = Object.assign({}, axO(n), { [k]: Math.max(1200, v) }); })));
+    p.append(h, sub, g);
+    const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.textContent = "Atiestatīt (ārpus mērķēdēm)"; b.onclick = () => { const n = clone(model); delete n.axOff; commit(n); }; r.appendChild(b); p.appendChild(r);
+  }
   function panel() {
     mats(); majaOrder();
     const p = $("panel"); p.textContent = ""; fid = 0;
@@ -1421,6 +1467,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     h.className = "sel-name"; sub.className = "sel-sub"; g.className = "grid";
     const where = sel.lv === "loft" ? "Mansards" : "1. stāvs";
     const S = n => itemOf(n, sel);
+    if (sel.k === "ter") { terPanel(p, h, sub, g, it); return; }
+    if (sel.k === "axo") { axoPanel(p, h, sub, g); return; }
     if (sel.k === "stamp") {
       const rm = (lvOf(model, sel).rooms || [])[sel.i] || {};
       h.textContent = "Telpa"; sub.textContent = where + " · nosaukums plānā un eksplikācijā";
@@ -1574,7 +1622,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function del() {
     const it = itemOf(model, sel); if (!it || sel.k === "stamp") return;
     const n = clone(model);
-    if (sel.k === "guide") n.projekts.guides.splice(sel.i, 1);
+    if (sel.k === "ter") n.terraces.splice(sel.i, 1);
+    else if (sel.k === "guide") n.projekts.guides.splice(sel.i, 1);
     else if (sel.k === "gut") { n.projekts = n.projekts || {}; (n.projekts.notekas = n.projekts.notekas || {})[sel.i] = false; }
     else if (sel.k === "dim") lvOf(n, sel).userDims.splice(sel.i, 1);
     else if (sel.k === "idim") idOwn(n, sel).splice(sel.i, 1);
