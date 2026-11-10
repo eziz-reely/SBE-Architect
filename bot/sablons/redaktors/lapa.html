@@ -1991,6 +1991,14 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const r0 = document.createElement("div"); r0.className = "row"; const b0 = document.createElement("button"); b0.type = "button"; b0.className = "del"; b0.textContent = "Dzēst"; b0.onclick = del; r0.appendChild(b0); p.appendChild(r0);
       return;
     }
+    if ((sel.k === "win" || sel.k === "gw") && sel.more && sel.more.length) {   // [TRE] vairāki logi (Ctrl+klikšķis): kopīgi iestatījumi
+      const all = [sel, ...sel.more].filter(q => q.k === "win" || q.k === "gw");
+      h.textContent = `Atlasīti ${all.length} logi`; sub.textContent = "iestatījumi attiecas uz visiem atlasītajiem · Ctrl+klikšķis pievieno vai noņem";
+      const cw = q => (q.k === "gw" ? (model.gableWins || [])[q.i] : (lvOf(model, q).windows || [])[q.i]) || {};
+      g.append(field("Aplodas", casOf(cw(all[0])), (n, v) => { all.forEach(q => { const w = q.k === "gw" ? n.gableWins[q.i] : lvOf(n, q).windows[q.i]; if (w) setCas(w, v); }); }, CAS, "full"));
+      p.append(h, sub, g);
+      return;
+    }
     if (sel.k === "win") {
       h.textContent = "Logs"; sub.textContent = `${where} · ${SIDE[it.side] || ""} siena`;
       const key = it.o === "h" ? "x" : "y", oldW = it;
@@ -2027,7 +2035,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const fix = n => { const gw = S(n), lw = n.loft && (n.loft.windows || []).find(w => gwMatch(oldG, w)); if (lw) { lw.y = gw.u0; lw.len = gw.u1 - gw.u0; lw.sill = gw.z0; if (gw.z1) lw.head = gw.z1; } };
       g.append(field("Platums, mm", it.u1 - it.u0, (n, v) => { const w = S(n), c = (w.u0 + w.u1) / 2; v = Math.max(300, v); w.u0 = Math.round(c - v / 2); w.u1 = w.u0 + v; fix(n); }),
         field("No stūra, mm", it.u0, (n, v) => { const w = S(n), L = w.u1 - w.u0; w.u0 = v; w.u1 = v + L; fix(n); }),
-        field("Apakša, mm", it.z0, (n, v) => { S(n).z0 = Math.max(gwBase(n), v); fix(n); }));
+        field("Apakša, mm", it.z0, (n, v) => { S(n).z0 = Math.max(0, v); fix(n); }));
+      if (it.z0 < gwBase(model)) { const wn = document.createElement("p"); wn.className = "note full"; wn.style.color = "#c92a2a"; wn.textContent = `⚠ Logs iet zem mansarda paneļa augšas (${gwBase(model)} mm). Pārbaudi konstrukciju.`; g.append(wn); }
       if (it.z1) g.append(field("Augša, mm", it.z1, (n, v) => { S(n).z1 = v; fix(n); }));
       if (it.win) g.append(field("Veids", it.kind || "hopper", (n, v) => { S(n).kind = v; }, KIND));
       g.append(field("Aplodas", it.casing === 0 ? "0" : it.casingAll ? "all" : "1", (n, v) => { const w = S(n); delete w.casing; delete w.casingAll; if (v === "0") w.casing = 0; if (v === "all") w.casingAll = true; },

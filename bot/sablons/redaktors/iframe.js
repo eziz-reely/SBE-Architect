@@ -398,14 +398,14 @@
       if (it.k === "post") gpts(it.b).forEach((q, j) => mk(o, "circle", { cx: q[0], cy: q[1], r: 1.3 / k, fill: j === 4 ? ACC : "#fff", stroke: ACC, "stroke-width": 0.4 / k }));
       if (it.k !== "stamp" && it.k !== "axo") delHandle(o, it.b, k);
       if (bl.type === "plan" && (it.k === "door" || it.k === "win")) openDims(o, bl.lv, it, k);
-      if (bl.type === "elev" && (it.k === "win" || it.k === "gw")) elevDims(o, bl, it, k);
+      if (bl.type === "elev" && (it.k === "win" || it.k === "gw" || it.k === "decor")) elevDims(o, bl, it, k);
       if (it.k === "decor") sizeHandles(o, it.b, k);
       if (it.k === "furn") { rotHandle(o, it.b, k); if (canSize(lv(it.lv).furniture[it.i])) sizeHandles(o, it.b, k); }
       const t = sizeText(it);
       if (t) { const at = selPt && selPt.g === bl.g ? [selPt.p[0] + 4 / k, selPt.p[1] - 4 / k] : [it.b[0] + 7 / k, it.b[1] - 2.5 / k]; label(o, at[0], at[1], t, k); }
     }));
     // grupa (Shift+klikšķis): pārējie atlasītie elementi
-    (sel.more || []).forEach(m => blocks().forEach(bl => { if (bl.type !== "plan") return; items(bl).forEach(it => { if (same(it, m)) rect(overlay(bl.g), it.b, false, ek(bl), it.k === "furn" ? 0 : undefined); }); }));
+    (sel.more || []).forEach(m => blocks().forEach(bl => { items(bl).forEach(it => { if (same(it, m)) rect(overlay(bl.g), it.b, false, ek(bl), it.k === "furn" ? 0 : undefined); }); }));
   }
   // izvēlētā loga / durvju izmēri pie kursora, kontrolei
   let selPt = null;
@@ -414,6 +414,7 @@
     if (it.k === "win") { const w = L.windows[it.i]; return `${Math.round(w.len)} × ${Math.round((w.head ?? 2100) - (w.sill ?? 0))} mm`; }
     if (it.k === "door") { const d = L.doors[it.i]; return `${Math.round(d.w)} × 2100 mm`; }
     if (it.k === "gw") { const g = M.gableWins[it.i]; return `${Math.round(g.u1 - g.u0)}${g.z1 ? " × " + Math.round(g.z1 - g.z0) : ""} mm`; }
+    if (it.k === "decor") return `${Math.round(it.b[2] - it.b[0])} × ${Math.round(it.b[3] - it.b[1])} mm`;
     return "";
   }
   // a loft gable window and its facade drawing are the same window
@@ -832,6 +833,13 @@
   }
   function applyC(d, dx, dy) {
     if (d.grp && d.zone === "move") return applyGrp(d, dx, dy);
+    if (d.copy && d.zone === "move" && d.h.it.k === "decor") {   // [TRE] fasādes elementa kopēšana (Ctrl+vilkt)
+      if (!d.it0) d.it0 = d.h.it;
+      const ni = M.decor.length; M.decor.push(clone(M.decor[d.it0.i])); let N;
+      d.h = Object.assign({}, d.h, { it: Object.assign({}, d.it0, { i: ni }) });
+      try { N = apply(d, dx, dy); } finally { M.decor.pop(); }
+      d.cpI = ni; return N;
+    }
     if (!d.copy || d.zone !== "move") return apply(d, dx, dy);
     if (!d.it0) { d.it0 = d.h.it; d.b0 = d.boxes; }
     const it = d.it0, key = it.k === "furn" ? "furniture" : it.k === "win" ? "windows" : it.k === "post" ? "posts" : "doors", L = it.k === "post" ? M : lv(it.lv), arr = L[key];
@@ -994,10 +1002,20 @@
     if (u0 < T) { u1 += T - u0; u0 = T; } if (u1 > sp - T) { u0 -= u1 - (sp - T); u1 = sp - T; }
     d.gwMid = false;
     if (isG) {
-      if (z === "b" || (z === "move" && o.win)) o.z0 = o.z0 + r10(dz);
-      if (o.z0 < GWB) { if (o.z1) o.z1 += GWB - o.z0; o.z0 = GWB; }   // 2. stāva logs nav zemāk par mansarda paneļa augšu
+      if (z === "b" || z === "move") o.z0 = Math.max(0, o.z0 + (d.alt ? Math.round(dz) : r10(dz)));
+      d.gwWarn = o.z0 < GWB;   // [TRE] zem mansarda paneļa augšas: brīdinājums, bet vilkt var tālāk
       if (o.z1 && (z === "t" || z === "move")) o.z1 = o.z1 + r10(dz);
       if (o.z1 && o.z1 < o.z0 + 300) o.z1 = o.z0 + 300;
+      if (!o.win && !d.alt) {   // [TRE] slīpais logs pielīp apakšējo logu malām un vidum
+        const tg = [];
+        (M.windows || []).forEach(w => { if (w.side !== s) return; const a = w.o === "h" ? w.x : w.y, q0 = Math.min(mapU(s, a), mapU(s, a + w.len)), q1 = Math.max(mapU(s, a), mapU(s, a + w.len)); tg.push(q0, q1, (q0 + q1) / 2); });
+        const m0 = d.h.bl.g.getScreenCTM(), rr = m0 && m0.a ? Math.min(150, 6 / Math.abs(m0.a)) : 60, W0 = u1 - u0, cs = [];
+        const pick = (vals, fn) => { let bd = null; vals.forEach(v => tg.forEach(t => { const e2 = t - v; if (Math.abs(e2) <= rr && (bd == null || Math.abs(e2) < Math.abs(bd))) bd = e2; })); return bd; };
+        if (z === "l") { const e2 = pick([u0]); if (e2 != null) u0 += e2; }
+        else if (z === "r") { const e2 = pick([u1]); if (e2 != null) u1 += e2; }
+        else if (z === "move") { const e2 = pick([u0, u1, (u0 + u1) / 2]); if (e2 != null) { u0 += e2; u1 += e2; } }
+        void W0; void cs;
+      }
       if (!o.win) {
         // slīpais logs paliek gala trijstūrī (stūros var kļūt trijstūrains, ārā neiziet) un pielīp kores vidus līnijai
         const ev = (M.jumts && M.jumts.eave) || 2600, tn = Math.tan(((M.jumts && M.jumts.pitch) || 30) * Math.PI / 180), um = Math.max(T, (o.z0 + 200 - ev) / tn);
@@ -1074,7 +1092,7 @@
     const L2 = lv(it.lv, N);
     let t;
     if (it.k === "win") { const w = L2.windows[it.i]; t = bl.type === "elev" ? `${w.len} mm  ·  ${w.sill ?? 0}–${w.head ?? 2100}` : `${w.len} mm  ·  ${w.o === "h" ? w.x : w.y}`; }
-    else if (it.k === "gw") { const w = N.gableWins[it.i]; t = `${w.u1 - w.u0} mm  ·  ${w.z0}${w.z1 ? "–" + w.z1 : ""}`; }
+    else if (it.k === "gw") { const w = N.gableWins[it.i]; t = `${w.u1 - w.u0} mm  ·  ${w.z0}${w.z1 ? "–" + w.z1 : ""}` + (d.gwWarn ? "  ⚠ zem mansarda paneļa augšas" : ""); }
     else if (it.k === "door") { const w = L2.doors[it.i]; t = `${w.o === "h" ? w.x : w.y}`; }
     else if (it.k === "decor") t = `${Math.round(b[2] - b[0])} × ${Math.round(b[3] - b[1])} mm`;
     else if (it.k === "stamp") t = "Telpas nosaukums";
@@ -1084,7 +1102,7 @@
     else t = `Δx ${d.fdx}  Δy ${d.fdy}`;
     label(g, b[0], b[1] - 2.2 / k, t, k);
     if (bl.type === "plan" && (it.k === "door" || it.k === "win")) { o.querySelectorAll(".od").forEach(e => e.remove()); openDims(g, it.lv, it, k, N); }
-    if (bl.type === "elev" && (it.k === "win" || it.k === "gw")) {
+    if (bl.type === "elev" && (it.k === "win" || it.k === "gw" || it.k === "decor")) {
       o.querySelectorAll(".od").forEach(e => e.remove());
       const nb = (items(bl, N).find(x => same(x, it)) || it); elevDims(g, bl, nb, k, N);
       if (d.gwMid) { const sp = span(bl.side), ev = (M.jumts && M.jumts.eave) || 2600, top = ev + sp / 2 * Math.tan(((M.jumts && M.jumts.pitch) || 30) * Math.PI / 180);
@@ -1348,14 +1366,15 @@
       document.body.style.cursor = "grabbing"; return true;
     }
     const grpOk = h.bl.type === "plan" && !h.wall && GRP.includes(h.it.k) && h.it.lv !== "loft";
-    if (e.shiftKey && grpOk && sel && GRP.includes(sel.k) && sel.lv === h.it.lv && !same(h.it, sel)) {   // Shift+klikšķis: pievieno / noņem no atlasītās grupas
+    const grpE = h.bl.type === "elev" && !h.wall && (h.it.k === "win" || h.it.k === "gw") && sel && (sel.k === "win" || sel.k === "gw");   // [TRE] fasādē logus var atlasīt grupā (Ctrl vai Shift + klikšķis) un mainīt kopīgus iestatījumus
+    if ((e.shiftKey || e.ctrlKey || e.metaKey) && ((grpOk && sel && GRP.includes(sel.k) && sel.lv === h.it.lv) || grpE) && !same(h.it, sel)) {   // Shift/Ctrl+klikšķis: pievieno / noņem no atlasītās grupas
       const more = (sel.more || []).slice(), ix = more.findIndex(m => same(m, h.it));
       if (ix >= 0) more.splice(ix, 1); else more.push({ k: h.it.k, i: h.it.i, lv: h.it.lv });
       sel = Object.assign({}, sel, { more }); drawSel(); post({ t: "sel", sel }); return true;
     }
     const inGrp = grpOk && sel && sel.more && sel.more.length && (same(h.it, sel) || sel.more.some(m => same(m, h.it)));
     if (!h.wall && !inGrp) { sel = h.it.k === "tedge" || h.it.k === "tvert" ? { k: "ter", i: Math.floor(h.it.i / 100), lv: "main" } : { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
-    drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door", "post"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
+    drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door", "post", "decor"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
     if (h.it.k === "post" && drag.zone === "move") { const pq = M.posts[h.it.i]; drag.gp0 = nearestGrab([pq.x, pq.y, pq.x + pq.w, pq.y + pq.d], h.p); drag.refs = []; }
     document.body.style.cursor = h.wall ? MVC : cur(drag.zone);
     return true;
@@ -1449,7 +1468,7 @@
     if (N && d.grp && d.ghost) { if (d.copy) sel = Object.assign({}, d.ghost[0], { more: d.ghost.slice(1) }); post({ t: "edit", model: N, sel }); return; }
     if (N && d.cpI != null) { sel = { k: d.h.it.k, i: d.cpI, lv: d.h.it.lv }; if (d.h.it.k === "post") sel.from = d.it0.i; post({ t: "edit", model: N, sel }); return; }
     if (N && (d.zone === "wx" || d.zone === "wy") && bathFix(N)) { post({ t: "hint", text: BATHMSG }); document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); return; }
-    if (N) post({ t: "edit", model: N, sel });
+    if (N) { post({ t: "edit", model: N, sel }); if (d.gwWarn) setTimeout(() => post({ t: "hint", text: "Uzmanību: logs iet zem mansarda paneļa augšas (" + GWB + " mm). Vari turpināt vilkt uz leju." }), 300); }
     else document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
   });
 
@@ -1465,6 +1484,7 @@
     post({ t: "edit", model: N, sel: { k: "post", i: sel.i, lv: "main" } });
   }
   addEventListener("keydown", e => {
+    if (place && place.t === "decor" && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "q" || e.key === "Q")) { e.preventDefault(); e.stopImmediatePropagation(); decQ(); return; }
     if (sel && sel.k === "post" && sel.from != null && !divBuf && (e.key === "/" || e.key === "*") && !e.ctrlKey) { e.preventDefault(); divBuf = { op: e.key, s: "" }; post({ t: "hint", text: (e.key === "/" ? "Dalīt ar: " : "Atkārtot reizes: ") + "ieraksti skaitli un Enter" }); return; }
     if (divBuf) {
       if (/^[0-9]$/.test(e.key)) { e.preventDefault(); divBuf.s += e.key; post({ t: "hint", text: (divBuf.op === "/" ? "Dalīt ar: " : "Atkārtot reizes: ") + divBuf.s + "  (Enter apstiprina)" }); return; }
@@ -1771,11 +1791,20 @@
     (M.windows || []).forEach(w => { if (w.side !== s) return; const a = w.o === "h" ? w.x : w.y; us.push(mapU(s, a), mapU(s, a + w.len)); zs.push(w.sill ?? 0, w.head ?? 2100); });
     (M.decor || []).forEach((q, i) => { if (q.side !== s || i === ex || !q.pts) return; q.pts.forEach(t => { us.push(mapU(s, t[0])); zs.push(t[1]); }); });
     if (place && place.t === "decor" && place.side === s) (place.pts || []).forEach(t => { us.push(mapU(s, t[0])); zs.push(t[1]); });
+    if (place && place.t === "decor") (place.refs || []).forEach(r => { if (r.s === s) { us.push(r.u); zs.push(r.z); } });   // Q atsauces punkti: pielipšana to x un z līnijām
     return { us, zs };
   }
   // pielipšanas rādiuss ≈ 6 ekrāna pikseļi (tuvinot kļūst smalkāks), ne vairāk par 120 mm
   function decRad(bl) { const m = bl.g.getScreenCTM(); return m && m.a ? Math.min(120, 6 / Math.abs(m.a)) : 60; }
   let altNow = false;
+  // Q: pašreizējais pielipšanas punkts kļūst par atsauci (kā ArchiCAD palīglīnijas); atkārtots Q uz tā paša punkta noņem
+  function decQ() {
+    const l = place && place.last; if (!l) { post({ t: "hint", text: "Pārvieto kursoru fasādē uz punktu (loga stūris, mala), tad spied Q." }); return; }
+    place.refs = place.refs || []; const ix = place.refs.findIndex(r => r.s === l.s && Math.abs(r.u - l.u) < 30 && Math.abs(r.z - l.z) < 30);
+    if (ix >= 0) place.refs.splice(ix, 1); else { place.refs.push({ s: l.s, u: l.u, z: l.z }); if (place.refs.length > 6) place.refs.shift(); }
+    if (place.lastXY) decPreview(place.lastXY[0], place.lastXY[1]);
+    post({ t: "hint", text: ix >= 0 ? "Atsauce noņemta." : `Atsauce (${Math.round(l.u)}; augstums ${Math.round(l.z)}). Elements pielips tās x un augstuma līnijām. Q uz tā paša punkta noņem.` });
+  }
   function decSn(s, u, z, rad = 120, alt = altNow) {
     if (alt) return { u: Math.round(u), z: Math.round(z), su: null, sz: null };
     const P = decSnapPts(s, -1); let su = null, sz = null;
@@ -1791,6 +1820,10 @@
     const dash = { stroke: ACC, "stroke-width": 0.3 / k, "stroke-dasharray": `${1.2 / k} ${0.8 / k}` };
     if (sn.su != null) mk(g, "line", Object.assign({ x1: sn.su, y1: -9000, x2: sn.su, y2: 600 }, dash));
     if (sn.sz != null) mk(g, "line", Object.assign({ x1: -600, y1: -sn.sz, x2: span(s) + 600, y2: -sn.sz }, dash));
+    place.last = { s, u: sn.u, z: Math.max(0, sn.z) }; place.lastXY = [cx, cy];
+    (place.refs || []).forEach(r => { if (r.s !== s) return;
+      mk(g, "line", Object.assign({ x1: r.u, y1: -9000, x2: r.u, y2: 600 }, dash, { stroke: "#d9480f" })); mk(g, "line", Object.assign({ x1: -600, y1: -r.z, x2: span(s) + 600, y2: -r.z }, dash, { stroke: "#d9480f" }));
+      mk(g, "circle", { cx: r.u, cy: -r.z, r: 1.6 / k, fill: "#d9480f", stroke: "#fff", "stroke-width": 0.3 / k }); });
     const pts = (place.side === s ? place.pts || [] : []).map(a => [mapU(s, a[0]), -a[1]]);
     const all = place.rect && pts.length ? [pts[0], [q[0], pts[0][1]], q, [pts[0][0], q[1]], pts[0]] : pts.concat([q]);
     if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: all.length > 2 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
