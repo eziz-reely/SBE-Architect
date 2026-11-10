@@ -608,6 +608,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
   const FAS = !!(window.AR && AR.projekts && AR.projekts.fascia);   // [MM] horizontāla fascija tikai sarkanajam tonim (balta); pārējiem dēļi iet līdz jumtam
   const vt = FAS ? 220 : 100;                                          // vējmalas biezums (mm) pie gala fasādēm
   const roofTopW = ridgeTop - (v.D / 2) * tan;                         // jumta virsmas augstums pie sienas gala fasādē
+  (window.__FDF = window.__FDF || {})[side] = { ridge: ridgeTop, eT: eEdge + thV, eave: ROOF.eave, eEdge, roofW: roofTopW, ridgeU };   // [TRE] fasādes mēru enkuri: mērs seko jumta augstumam, ja tas bija piesnapots
 
   // ground
   { let d = ""; for (let x = -1400; x < span + 1400 - 260; x += 200) d += `M ${x} ${ROOF.plinth + 260} L ${x + 260} ${ROOF.plinth} `; el("path", { d, stroke: "#666", "stroke-width": 8, fill: "none" }, g); }
@@ -892,8 +893,9 @@ function elevation(parent, v, side, opt = { levels: true }) {
 
   // lietotāja fasādes mēri (projekts.fdims): augstuma atzīmes labajā pusē un lineārie mēri
   ((window.AR && AR.projekts && AR.projekts.fdims) || []).filter(d => d.s === side).forEach(d => {
-    const dc = FDIMC();
+    const dc = FDIMC(), FF = (window.__FDF || {})[side] || {}, tg = (val, t) => (t && FF[t] != null ? FF[t] : val);
     if (d.k === "lvl") {
+      d = Object.assign({}, d, { z: tg(d.z, d.tz) });
       const lc = DIMC() || C.ink;   // augstuma atzīmes: mēru ķēžu krāsa
       const x0 = span + ROOF.ov + 150, lx = span + ROOF.ov + 1300, ty = -d.z - 210, lab = lv(Math.round(d.z)), tw = lab.length * 152;
       el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: lc, "stroke-width": 7 }, g);
@@ -901,7 +903,8 @@ function elevation(parent, v, side, opt = { levels: true }) {
       el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: lc, "stroke-width": 10 }, g);
       const t = T_(g, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", lc);
     } else if (d.k === "lin") {
-      const h = d.o === "h", pa = (d.p || [0, 0]), at = d.at;
+      const h = d.o === "h", pt0 = (d.p || [0, 0]), at = d.at, pa = h ? [tg(pt0[0], d.pt && d.pt[0]), tg(pt0[1], d.pt && d.pt[1])] : pt0;
+      d = Object.assign({}, d, h ? {} : { a: tg(d.a, d.ta), b: tg(d.b, d.tb) });
       // izvadlīnijas: īsas, no 100 mm atstarpes pie fasādes līdz 150 mm aiz mēra līnijas (neiet cauri fasādei un citiem mēriem)
       const startOf = pv => { if (h) return at < Math.min(pv, 0) ? -100 : pv + (at > pv ? 100 : -100); return at > span ? span + 100 : at < 0 ? -100 : pv + (at > pv ? 100 : -100); };
       const endOf = (st) => at + (st < at ? 150 : -150);

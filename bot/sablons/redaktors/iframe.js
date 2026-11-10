@@ -140,6 +140,15 @@
         const us = d.pts.map(q => mapU(s, q[0])), zs = d.pts.map(q => q[1]);
         out.push({ k: "decor", i, lv: "main", b: [Math.min(...us), -Math.max(...zs), Math.max(...us), -Math.min(...zs)], pad: 20, side: s });
       });
+      ((X.projekts && X.projekts.fdims) || []).forEach((d, i) => {   // [TRE] lietotāja fasādes mēri: atlasāmi un dzēšami
+        if (d.s !== s) return;
+        const ov = (X.jumts && X.jumts.ov) || 0, sp = span(s);
+        let b;
+        if (d.k === "lvl") b = [sp + ov + 150, -d.z - 260, sp + ov + 1800, -d.z + 60];
+        else if (d.o === "h") b = [d.a, -d.at - 120, d.b, -d.at + 120];
+        else b = [d.at - 120, -d.b, d.at + 120, -d.a];
+        out.push({ k: "fdim", i, lv: "main", b, pad: 40, side: s });
+      });
       (X.gableWins || []).forEach((gw, i) => {
         if (gw.side !== s) return;
         const u0 = Math.min(mapU(s, gw.u0), mapU(s, gw.u1)), u1 = Math.max(mapU(s, gw.u0), mapU(s, gw.u1));
@@ -1376,6 +1385,7 @@
     if (!h.wall && !inGrp) { sel = h.it.k === "tedge" || h.it.k === "tvert" ? { k: "ter", i: Math.floor(h.it.i / 100), lv: "main" } : { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
     drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door", "post", "decor"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
     if (h.it.k === "post" && drag.zone === "move") { const pq = M.posts[h.it.i]; drag.gp0 = nearestGrab([pq.x, pq.y, pq.x + pq.w, pq.y + pq.d], h.p); drag.refs = []; }
+    if (h.it.k === "fdim") { drag = null; return true; }   // fasādes mēru tikai atlasa (Delete dzēš)
     document.body.style.cursor = h.wall ? MVC : cur(drag.zone);
     return true;
   };
@@ -2286,6 +2296,6 @@
       const bl = blocks().find(x => x.type === "plan" && x.lv === sel.lv), boxes = bl && furnBoxes(bl), b = boxes && boxes[sel.i];
       if (b) { let [dx, dy, rm] = fit(sel.lv, b, 0, 0); [dx, dy] = collide(sel.lv, b, dx, dy, boxes, [sel.i], rm, true); if (dx || dy) { const N = clone(M); shiftF(lv(sel.lv, N).furniture[sel.i], dx, dy); post({ t: "replace", model: N, sel }); return; } }
     }
-    post({ t: "ready", check: out });
+    post({ t: "ready", check: out, feat: JSON.parse(JSON.stringify(window.__FDF || {})) });
   }, 120));
 })();

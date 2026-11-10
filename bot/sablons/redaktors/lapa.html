@@ -837,6 +837,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (d.t === "pam") { if (JSON.stringify(d.info) !== JSON.stringify(pamInfo)) { pamInfo = d.info; panel(); } return; }   // pamatu plāna izkārtojums (arī no jaunā rāmja)
     if (d.t === "replace" && fromPending) { model = d.model; sel = d.sel; panel(); render(); return; }
     if (d.t === "ready" && fromPending) {
+      if (d.feat) FEAT = d.feat;
       const nf = pending; FR[live].classList.add("wait"); nf.classList.remove("wait");
       live = FR.indexOf(nf); pending = null; $("busy").hidden = true;
       try { nf.contentWindow.focus(); } catch (_) {}
@@ -865,8 +866,18 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "key" && d.k === "guide") startGuide(d.o);
   });
 
+  // [TRE] fasādes mēri piesienas jumta augstumiem (kore, dzega): mainot kores augstumu vai slīpumu, piesnapotais mērs seko līdzi
+  let FEAT = null;
+  function fdTag(m) {
+    const FD = (m.projekts || {}).fdims; if (!FD || !FD.length || !FEAT) return;
+    const tag = (s, z) => { const F = FEAT[s]; if (!F || z == null) return undefined; for (const k of ["ridge", "eT", "eave", "eEdge", "roofW"]) if (Math.abs(F[k] - z) < 2.5) return k; return undefined; };
+    FD.forEach(d => { if (d.tg) return; d.tg = 1;
+      if (d.k === "lvl") { const t = tag(d.s, d.z); if (t) d.tz = t; }
+      else if (d.o === "h") { const t = (d.p || []).map(z => tag(d.s, z)); if (t.some(Boolean)) d.pt = t.map(x => x || null); }
+      else { const ta = tag(d.s, d.a), tb = tag(d.s, d.b); if (ta) d.ta = ta; if (tb) d.tb = tb; } });
+  }
   function commit(m) {
-    pamNorm(m);
+    pamNorm(m); fdTag(m);
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
     undo.push(clone(model)); redo = []; model = m; dirty = true; status("Ir nesaglabāti labojumi."); buttons(); panel(); render(); fasTint();
   }
@@ -1197,6 +1208,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (s.k === "ter") return (m.terraces || [])[s.i];
     if (s.k === "post") return (m.posts || [])[s.i];
     if (s.k === "decor") return (m.decor || [])[s.i];
+    if (s.k === "fdim") return ((m.projekts || {}).fdims || [])[s.i];
     if (s.k === "axo") return { axo: s.i };
     if (s.k === "gw") return (m.gableWins || [])[s.i];
     if (s.k === "guide") return ((m.projekts || {}).guides || [])[s.i];
@@ -1923,6 +1935,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       return;
     }
     if (sel.k === "axo") { axoPanel(p, h, sub, g); return; }
+    if (sel.k === "fdim") {   // [TRE] fasādes mērs
+      const D0 = ((model.projekts || {}).fdims || [])[sel.i] || {};
+      h.textContent = D0.k === "lvl" ? "Augstuma atzīme" : "Lineārs mērs"; sub.textContent = ({ north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" }[D0.s] || D0.s) + " fasāde" + (D0.k === "lin" ? " · " + Math.round(D0.b - D0.a) + " mm" : "") + (D0.ta || D0.tb || D0.tz || (D0.pt && D0.pt.some(Boolean)) ? " · seko jumta augstumam" : "") + " · Delete dzēš";
+      p.append(h, sub);
+      const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst mēru"; b.onclick = del; r.appendChild(b); p.append(r);
+      return;
+    }
     if (sel.k === "decor") {   // [TRE] fasādes dekoratīvais elements: biezums, tekstūra, pagrieziens
       const D0 = (model.decor || [])[sel.i] || {}, set = (f) => { const n = clone(model); f(n.decor[sel.i]); commit(n); };
       h.textContent = "Fasādes elements"; sub.textContent = "fasāde: " + ({ north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" }[D0.side] || D0.side) + " · Delete dzēš";
@@ -2129,6 +2148,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (sel.k === "post") n.posts.splice(sel.i, 1);
     else if (sel.k === "ter") n.terraces.splice(sel.i, 1);
     else if (sel.k === "decor") n.decor.splice(sel.i, 1);
+    else if (sel.k === "fdim") { n.projekts.fdims.splice(sel.i, 1); if (!n.projekts.fdims.length) delete n.projekts.fdims; }
     else if (sel.k === "guide") n.projekts.guides.splice(sel.i, 1);
     else if (sel.k === "gut") { n.projekts = n.projekts || {}; (n.projekts.notekas = n.projekts.notekas || {})[sel.i] = false; }
     else if (sel.k === "dim") lvOf(n, sel).userDims.splice(sel.i, 1);
