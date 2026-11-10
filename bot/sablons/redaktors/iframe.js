@@ -135,6 +135,11 @@
         const a = w.o === "h" ? w.x : w.y, u0 = Math.min(mapU(s, a), mapU(s, a + w.len)), u1 = Math.max(mapU(s, a), mapU(s, a + w.len));
         out.push({ k: "win", i, lv: "main", b: [u0, -(w.head ?? 2100), u1, -(w.sill ?? 0)], pad: 60, side: s });
       });
+      (X.decor || []).forEach((d, i) => {   // [TRE] fasādes elementi
+        if (d.side !== s || !d.pts) return;
+        const us = d.pts.map(q => mapU(s, q[0])), zs = d.pts.map(q => q[1]);
+        out.push({ k: "decor", i, lv: "main", b: [Math.min(...us), -Math.max(...zs), Math.max(...us), -Math.min(...zs)], pad: 20, side: s });
+      });
       (X.gableWins || []).forEach((gw, i) => {
         if (gw.side !== s) return;
         const u0 = Math.min(mapU(s, gw.u0), mapU(s, gw.u1)), u1 = Math.max(mapU(s, gw.u0), mapU(s, gw.u1));
@@ -1998,6 +2003,19 @@
         const rl = P.t === "dim" && P.f2 ? 3500 : 200;
         if (p[0] < -rl || p[0] > sp + rl || p[1] > (P.f2 && P.t === "dim" ? 3500 : 300) || p[1] < -(eave + sp)) continue;
         if (P.t === "dim") return fdimClick(bl, p, cx, cy);
+        if (P.t === "decor") {   // [TRE] fasādes elements: taisnstūris (2 klikšķi) vai polilīnija (klikšķis pirmajā punktā noslēdz)
+          const a = r10(mapU(s, p[0])), z = Math.max(0, r10(-p[1]));
+          if (P.side && P.side !== s) return { miss: "Visi elementa punkti jāliek vienā fasādē." };
+          P.side = s; P.pts = P.pts || [];
+          const pts = P.pts, mkEl = pp => { const D = N.decor = N.decor || []; D.push({ side: s, pts: pp, th: 20, tex: "clad", rot: 0 }); return { N, sel: { k: "decor", i: D.length - 1, lv: "main" } }; };
+          if (P.rect) {
+            if (!pts.length) { pts.push([a, z]); return { pending: "Uzklikšķini pretējo stūri." }; }
+            const q = pts[0]; if (Math.abs(a - q[0]) < 50 || Math.abs(z - q[1]) < 50) return { miss: "Elements par mazu. Uzklikšķini tālāk." };
+            return mkEl([[q[0], q[1]], [a, q[1]], [a, z], [q[0], z]]);
+          }
+          if (pts.length > 2 && Math.hypot(a - pts[0][0], z - pts[0][1]) < 250) return mkEl(pts.slice());
+          pts.push([a, z]); return { pending: pts.length < 3 ? "Turpini likt punktus." : "Turpini vai uzklikšķini pirmajā punktā, lai noslēgtu." };
+        }
         if (P.t !== "win" && P.t !== "gwin") return { miss: "Mēbeles un durvis ieliec plānā." };
         const a = mapU(s, p[0]), z = -p[1], gable = s === "east" || s === "west";
         if (gable && (z > eave - 150 || P.t === "gwin")) return { N, sel: newGableWin(N, s, a, Math.max(z, eave - 400), P.t === "gwin") };
