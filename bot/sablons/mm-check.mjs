@@ -30,6 +30,7 @@ for (const file of process.argv.slice(2)) {
     const sheets = [...document.querySelectorAll('svg.a3')];
     const planSheet = sheets.find(s => s.querySelector('[data-block=plan] [data-furn]')) || sheets[0];
     let planG = planSheet.querySelector('[data-block=plan]');
+    if (!planG) { document.body.style.transform = Z0; return { rev: v.rev, label: v.label, out, nf: 0 }; }   // tikai pamatu lapas: plāna noteikumi neattiecas
     let inv = planG.getCTM().inverse();
     const bboxOf = els => {
       let b = null;

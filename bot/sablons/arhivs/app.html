@@ -194,12 +194,13 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
   <form method="dialog" id="fNew">
     <h3>Jauns projekts</h3>
     <label>Uzņēmums<select id="nCo" required></select></label>
+    <label>Projekta veids<select id="nKind"><option value="maja">Māja: plānojums, fasādes, A3 lapa</option><option value="pamati">Tikai stabu plāns (pamati pa kontūru)</option></select></label>
     <div class="g2">
       <label>Garums, mm<input id="nL" type="number" inputmode="numeric" min="3000" max="40000" step="10" required placeholder="8570"></label>
       <label>Platums, mm<input id="nB" type="number" inputmode="numeric" min="2500" max="15000" step="10" required placeholder="3500"></label>
-      <label>Jumta slīpums, °<input id="nP" type="number" inputmode="decimal" min="5" max="60" step="0.5" value="25"></label>
+      <label class="h-only">Jumta slīpums, °<input id="nP" type="number" inputmode="decimal" min="5" max="60" step="0.5" value="25"></label>
     </div>
-    <div class="g2 two">
+    <div class="g2 two h-only">
       <label>Kores augstums, mm (nav obligāts)<input id="nH" type="number" inputmode="numeric" min="2500" max="12000" step="10" placeholder="aprēķina no slīpuma"></label>
       <label>Dzegas augstums, mm<input id="nE" type="number" inputmode="numeric" min="2000" max="6000" step="10" value="2600" title="Izmanto tikai tad, ja kores augstums nav ievadīts"></label>
     </div>
@@ -207,12 +208,18 @@ dialog.wide { width: min(620px, calc(100vw - 32px)); }
       <label>Modeļa nosaukums<input id="nName" type="text" placeholder="piem. Freya"></label>
       <label>ID (nav obligāts)<input id="nId" type="text" placeholder="automātiski MM-xx-nn"></label>
     </div>
-    <div class="g2">
+    <div class="g2 p-only" hidden>
+      <label>Staba diametrs, mm<input id="nPd" type="number" inputmode="numeric" min="40" max="600" step="1" value="120"></label>
+      <label>Uzlaide uz iekšu, mm<input id="nPu" type="number" inputmode="numeric" min="0" max="400" step="1" value="0" title="0 = stabu ārmala pret kontūru"></label>
+      <label>Vainaga dēlis<select id="nPv"><option value="145">C24 45×145</option><option value="195">C24 45×195</option></select></label>
+    </div>
+    <div class="g2 h-only">
       <label>Mansards<select id="nLoft"><option value="ja">Ar mansardu</option><option value="ne">Bez mansarda</option></select></label>
       <label>Pamati<select id="nFnd"><option value="stabveida">Stabveida</option><option value="platne">Betona plātne</option></select></label>
       <label>Fasādes tonis<select id="nTone"><option value="peleks">Pelēks</option><option value="koks">Koks</option><option value="sarkans">Sarkans</option><option value="zals">Zaļš</option><option value="balts">Balts</option></select></label>
     </div>
-    <p class="note">Bots uzģenerē plānojumu un A3 lapu. Tas var aizņemt līdz minūtei. Pēc tam projekts atveras redaktorā.</p>
+    <p class="note p-only" hidden>Garums un platums ir kontūra (C24 karkasa ārmala, pa būvasīm). Stabi sakārtojas automātiski ar soli līdz 1200 mm, izmēri un specifikācija veidojas paši. Pārējo labo redaktorā, cilnē Māja → Pamatu plāns.</p>
+    <p class="note h-only">Bots uzģenerē plānojumu un A3 lapu. Tas var aizņemt līdz minūtei. Pēc tam projekts atveras redaktorā.</p>
     <p class="err" id="nErr" hidden></p>
     <div class="ft"><button class="sec" type="button" value="cancel" id="nCancel">Atcelt</button><button class="pri" type="submit" id="nOk">Izveidot</button></div>
   </form>
@@ -476,6 +483,9 @@ function newDlg() {
   $("nErr").hidden = true; $("dNew").showModal(); $("nL").focus();
 }
 $("bNew").onclick = newDlg;
+const kindSync = () => { const p = $("nKind").value === "pamati"; document.querySelectorAll("#dNew .h-only").forEach(e => e.hidden = p); document.querySelectorAll("#dNew .p-only").forEach(e => e.hidden = !p);
+  $("nName").placeholder = p ? "piem. Lejasbirzes" : "piem. Freya"; $("nId").placeholder = p ? "automātiski STABI-nn" : "automātiski MM-xx-nn"; };
+$("nKind").addEventListener("change", kindSync);
 $("nCancel").onclick = () => $("dNew").close();
 const ridgeHint = () => { const P = +$("nP").value, Bw = +$("nB").value; $("nE").disabled = !!$("nH").value; if (!$("nH").value && P && Bw) $("nH").placeholder = "≈ " + Math.round((+$("nE").value || 2600) + 295 / Math.cos(P * Math.PI / 180) + Bw / 2 * Math.tan(P * Math.PI / 180) + ($("nFnd").value === "platne" ? 0 : 275)) + " no slīpuma"; };
 ["nP", "nB", "nH", "nE", "nFnd"].forEach(id => $(id).addEventListener("input", ridgeHint));
@@ -483,7 +493,8 @@ $("fNew").addEventListener("submit", async e => {
   e.preventDefault(); const b = $("nOk"); b.disabled = true; b.textContent = "Ģenerē…"; $("nErr").hidden = true;
   try {
     const r = await api("/api/new", { company: $("nCo").value, garums: +$("nL").value, platums: +$("nB").value, augstums: $("nH").value ? +$("nH").value : "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
-      nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value });
+      nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value,
+      veids: $("nKind").value, diametrs: +$("nPd").value || 120, uzlaide: +$("nPu").value || 0, vainags_b: +$("nPv").value || 145 });
     location.href = "/edit/" + r.key;
   } catch (er) { $("nErr").textContent = er.message; $("nErr").hidden = false; b.disabled = false; b.textContent = "Izveidot"; }
 });

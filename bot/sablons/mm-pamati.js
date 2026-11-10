@@ -188,8 +188,8 @@ function pamViewKopa(g, v, L, k, tx) {
   // sienas: ārējā kontūra un telpu iekšējās virsmas, tušētas
   const dl = { fill: "none", stroke: "#555", "stroke-width": .2 * s, "stroke-dasharray": `${1.6 * s} ${.9 * s}` };
   el("polygon", { points: (v.poly || [[0, 0], [v.W, 0], [v.W, v.D], [0, v.D]]).map(p => p.join(" ")).join(" "), ...dl }, g);
-  (v.rooms || []).forEach(rm => (rm.r || []).forEach(q => el("rect", { x: q[0], y: q[1], width: q[2], height: q[3], ...dl }, g)));
-  (v.rooms || []).filter(rm => !rm.void).forEach(rm => { const q = rm.r[0]; if (q) T_(g, q[0] + q[2] / 2, q[1] + q[3] / 2, rm.n, { fs: 1.7 * s, a: "middle", fill: "#888" }); });
+  if (!AR.projekts.tikai_pamati) (v.rooms || []).forEach(rm => (rm.r || []).forEach(q => el("rect", { x: q[0], y: q[1], width: q[2], height: q[3], ...dl }, g)));
+  if (!AR.projekts.tikai_pamati) (v.rooms || []).filter(rm => !rm.void).forEach(rm => { const q = rm.r[0]; if (q) T_(g, q[0] + q[2] / 2, q[1] + q[3] / 2, rm.n, { fs: 1.7 * s, a: "middle", fill: "#888" }); });
   pamContour(g, L, k, true);
   pamCells(g, L, k);
   pamPosts(g, L, k, true);
@@ -286,10 +286,11 @@ function pamSheet(v, views) {
 }
 // klienta lapa + ieslēgtās pamatu lapas; lapu numuri 1/n .. n/n
 function mmSheets(pv) {
-  if (!pamOn("skice")) return [modelSheet(pv)];
-  const P = AR.projekts, keep = P.lapa, SH = pamSheetsOf(pamPP()), n = SH.length + 1;
-  P.lapa = `1/${n}`; const out = [modelSheet(pv)];
-  SH.forEach((views, i) => { P.lapa = `${i + 2}/${n}`; out.push(pamSheet(pv, views)); });
+  const P = AR.projekts, only = !!P.tikai_pamati;   // projekts "Tikai stabu plāns": klienta lapas nav
+  if (!pamOn("skice")) return only ? [pamSheet(pv, ["stabi"])] : [modelSheet(pv)];
+  const keep = P.lapa, SH = pamSheetsOf(pamPP()), n = SH.length + (only ? 0 : 1), out = [];
+  if (!only) { P.lapa = `1/${n}`; out.push(modelSheet(pv)); }
+  SH.forEach((views, i) => { P.lapa = `${out.length + 1}/${n}`; out.push(pamSheet(pv, views)); });
   P.lapa = keep;
   return out;
 }

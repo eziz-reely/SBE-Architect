@@ -83,7 +83,7 @@ function mmTitleBlock(svg, v, lf, L) {
   lab(108 + SH, tx.key);
   const kv = [[tx.kFoot, mmNum(foot) + " m²"], [tx.kNet, mmNum(net) + " m²"], [tx.kSize, `${Math.round(v.W)} × ${Math.round(v.D)}`],
     [tx.kRidge, I.augstums ? mmNum(I.augstums / 1000) + " m" : "–"], [tx.kCeil, mmNum((v.ceiling || 2200) / 1000) + " m"], [tx.kPitch, (P.pitch || 25) + "°"],
-    ...(P.raditaji || []).map(r => L === "en" && r.length > 2 ? [r[2], r[3] || r[1]] : r)];   // papildu rādītāji: [nosaukums, vērtība, EN nosaukums, EN vērtība]
+    ...(P.raditaji || []).map(r => L === "en" && r.length > 2 ? [r[2], r[3] || r[1]] : r)].filter(r => !P.tikai_pamati || r[0] === tx.kFoot || r[0] === tx.kSize);   // tikai stabu plāns: laukums un gabarīti   // papildu rādītāji: [nosaukums, vērtība, EN nosaukums, EN vērtība]
   let ky = 114 + SH;
   kv.forEach(([k, val]) => {
     T_(g, X + 3, ky, k, { fs: 1.9, fill: MM_GREY });

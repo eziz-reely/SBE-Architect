@@ -1904,6 +1904,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     tab(b.dataset.tab);
   });
   try { const t = localStorage.getItem("mmTab"); if (t && document.querySelector(`[data-pane="${t}"]`)) tab(t); } catch (_) {}
+  if ((model.projekts || {}).tikai_pamati) { tab("house"); majaSec = "pamplans"; }   // projekts "Tikai stabu plāns": uzreiz pamatu plāna vadība
   function showCheck(out) {
     const ul = $("check"); ul.textContent = "";
     out = out.slice(); const b = gwBase(model);

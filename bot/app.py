@@ -215,6 +215,8 @@ def new_project(b):
     if co not in cos:
         raise ValueError('Nav tāda uzņēmuma.')
     L, B = float(b['garums']), float(b['platums'])
+    if b.get('veids') == 'pamati':
+        return new_pamati(b, cos[co], L, B)
     pitch = float(b.get('slipums') or 0) or None
     if pitch is not None and not 5 <= pitch <= 60:
         raise ValueError('Jumta slīpums 5–60°.')
@@ -265,6 +267,37 @@ def new_project(b):
         mj.setdefault('projekts', {})['piragi_layers'] = sp
         json.dump(mj, open(mp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
         threading.Thread(target=rebuild_pages, args=(mp,), daemon=True).start()
+    return key_of(dest)
+
+
+def new_pamati(b, co_dir, L, B):
+    """Projekts "Tikai stabu plāns": vienkāršs modelis pa kontūru (bez plānojuma), lapā tikai pamatu plāns."""
+    if not (1000 <= L <= 60000 and 1000 <= B <= 30000):
+        raise ValueError('Kontūra ārpus robežām (1–60 m × 1–30 m).')
+    pid = safe_name(b.get('id'))
+    if not pid:   # nākamais brīvais STABI-NN
+        used = {x['id'] for x in scan()}; n = 1
+        while f'STABI-{n:02d}' in used: n += 1
+        pid = f'STABI-{n:02d}'
+    dest = os.path.join(co_dir, pid); n = 2
+    while os.path.exists(dest):
+        dest = os.path.join(co_dir, f'{pid}-{n}'); n += 1
+    cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
+    T = sum(l[1] for l in cfg['layers']['S1']['layers'])
+    num = lambda k, d, lo, hi: max(lo, min(hi, int(float(b.get(k) or d))))
+    uz = num('uzlaide', 0, 0, 400)
+    m = {'id': os.path.basename(dest), 'nosaukums': safe_name(b.get('nosaukums')) or os.path.basename(dest), 'platiba_grupa': f'{int(round(L * B / 1e6))}m2',
+         'ievade': {'garums': L, 'platums': B}, 'W': L, 'D': B, 'jumts': {'forma': 'divslipju', 'pitch': 25, 'ov': 0, 'eave': 2600},
+         'rooms': [{'n': 'Telpa', 'en': 'Room', 'r': [[T, T, L - 2 * T, B - 2 * T]], 'void': True}], 'doors': [], 'windows': [], 'furniture': [],
+         'axes': {'x': [[0, '1'], [L, '2']], 'y': [[0, 'A'], [B, 'B']]}, 'stampAt': {}, 'stampScale': {}, 'levelAt': [L / 2, B / 2],
+         'innerDims': [], 'wallTags': [], 'sections': [], 'gableWins': [], 'ceiling': 2200, 'ceilingNote': '', 'planNotes': [],
+         'projekts': {'faze': 'klients', 'revizija': '00', 'adrese': [], 'modela_nosaukums': safe_name(b.get('nosaukums')), 'pamati': 'stabveida', 'griesti': 0, 'piragi': 'ne', 'tikai_pamati': True,
+                      'pamatu_plans': {'skice': True, 'skati': {'stabi': True, 'vainags': True, 'kopa': False}, 'lapas': [['stabi', 'vainags']],
+                                       'd': num('diametrs', 120, 40, 600), 'uzOn': uz > 0, 'uz': uz or 10, 'vb': num('vainags_b', 145, 45, 400), 'c24': num('c24', 0, 0, 400)}}}
+    os.makedirs(dest)
+    mp = os.path.join(dest, 'model.json')
+    json.dump(m, open(mp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    threading.Thread(target=rebuild_pages, args=(mp,), daemon=True).start()
     return key_of(dest)
 
 
