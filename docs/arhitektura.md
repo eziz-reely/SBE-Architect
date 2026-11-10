@@ -12,7 +12,8 @@ Ar `--varianti N` plānojumu veido `planner.py` (formas II/L/T), katrs variants 
 
 ## Redaktors
 `redaktors.py` no `lapa.html` (UI, CSS slāņi pēc kārtas, jaunākie beigās), `iframe.js` (rasējuma loģika, `apply`, `drawGuides`), `viz3d.js` + `three.min.js` (3D, Gemini references) saliek vienu HTML failu. Modeli un šablonu ieliek kā JSON marķieros `__MM_MODEL__`, `__MM_TEMPLATE__`. Pārbaudes noteikumus ņem no `mm-check.mjs`. Tālummaiņa ir CSS transform uz body, tāpēc `vector-effect: non-scaling-stroke` nestrādā; biezumus rēķina px (`pxU()`).
-Cilne Māja: tēmas Izmēri | Jumts | Izskats | Konstrukcijas (`MAJA_SEC`). Konstrukcijas nosaukumi `projekts.piragi_names`.
+Cilne Māja: tēmas Izmēri | Jumts | Izskats | Konstrukcijas | Pamatu plāns (`MAJA_SEC`). Konstrukcijas nosaukumi `projekts.piragi_names`.
+Pamatu un komunikāciju plāns (tikai stabveida pamatiem): `bot/sablons/mm-pamati.js`, dati `projekts.pamatu_plans` (skice/ar, skati, lapas, d, uzOn/uz, nx/ny, mov, rmov, cmov, del, ext, vb, kom, piez). Skicē `mmSheets()` pievieno lapas aiz klienta lapas, AR daļā daļas `pam1..pam3` aiz `visp`. Redaktorā stabu izvēle `pst` (iframe `data-pst`), bultiņas bīda.
 Ikonas: `IC` + `icon()`. Eksporti: PDF, SVG, DXF, SketchUp .rb (`skp.py`), `model.json`.
 
 ## Serveris un arhīvs
