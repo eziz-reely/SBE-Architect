@@ -470,7 +470,7 @@ function cadPlan(parent, v, opt = {}) {
         if (k) { const m = fwd ? s0 : s1, q = w.o === "h" ? [m, w.y + th * .36, m, w.y + th * .64] : [w.x + th * .36, m, w.x + th * .64, m]; line(...q, 10); }
         if (p.turn) leaves.push((p.turn === "l") === fwd ? [s0, 1, s1 - s0] : [s1, -1, s1 - s0]);
       });
-      leaves.forEach(([h, dir, lw]) => {
+      (v.noLeaf ? [] : leaves).forEach(([h, dir, lw]) => {   // v.noLeaf: bez vērtņu simboliem plānā
         const p = Pt(h, 0), tip = Pt(h + dir * lw * Math.cos(A), n * lw * Math.sin(A)), cl = Pt(h + dir * lw, 0);
         el("line", { x1: p[0], y1: p[1], x2: tip[0], y2: tip[1], stroke: C.line, "stroke-width": 5 }, sashG);
         const cw = (w.o === "h") === (dir * n > 0) ? 1 : 0;

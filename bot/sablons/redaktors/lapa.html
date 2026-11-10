@@ -742,7 +742,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   let pst = null, pamInfo = null, pamMode = null;   // pamMode: paliekošs pamatu plāna rīks (kontūra, stabs), ko jaunais rāmis turpina   // pamatu plāns: izvēlētais stabs, izkārtojuma dati no lapas
 
   // ---- the same model block build_model.py writes, plus a map from each furniture entry to its drawn shapes ----
-  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "entryInChain", "porch", "terraces", "axOff", "posts"];
+  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "noLeaf", "entryInChain", "porch", "terraces", "axOff", "posts"];
   const call = f => f[0] === "_rot"
     ? `{ const i0 = F.length; ${call(f[4])} for (let i = i0; i < F.length; i++) F[i].tr = "rotate(${f[1]} ${f[2]} ${f[3]})" + (F[i].tr ? " " + F[i].tr : ""); }`
     : `${f[0]}(${f.slice(1).map(a => JSON.stringify(a)).join(", ")});`;
