@@ -1805,16 +1805,57 @@
     return out.reduce((s, r) => s + r[2] * r[3], 0) < 250000 ? [] : out;
   }
   // jauna zona: vieta tiek nogriezta no visām esošajām telpām, nosaukumu raksta lietotājs
-  function zoneAdd(N, R) {
-    N.rooms.forEach(rm => { R.forEach(([x0, y0, w, h]) => { const x1 = x0 + w, y1 = y0 + h, out = []; rm.r.forEach(q => {
+  function absorbRects(L, dead, skip) {
+    if (!dead.length) return;
+    const ov = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0);
+    const adj = (q, d) => {   // [kopīgais garums, sprauga, virziens]
+      let r = null;
+      const gx1 = q[0] - (d[0] + d[2]), gx2 = d[0] - (q[0] + q[2]), gy1 = q[1] - (d[1] + d[3]), gy2 = d[1] - (q[1] + q[3]), ox = ov(q[1], q[1] + q[3], d[1], d[1] + d[3]), oy = ov(q[0], q[0] + q[2], d[0], d[0] + d[2]);
+      if (ox > 50) { if (gx1 > -1 && gx1 <= 320) r = [ox, Math.max(0, gx1), "r"]; else if (gx2 > -1 && gx2 <= 320) r = [ox, Math.max(0, gx2), "l"]; }
+      if (!r && oy > 50) { if (gy1 > -1 && gy1 <= 320) r = [oy, Math.max(0, gy1), "b"]; else if (gy2 > -1 && gy2 <= 320) r = [oy, Math.max(0, gy2), "t"]; }
+      return r;
+    };
+    let best = -1, bs = 0, bz = false;
+    L.rooms.forEach((rm, j) => { if (j === skip) return; let z0 = 0, z1 = 0;
+      rm.r.forEach(q => dead.forEach(d => { const a = adj(q, d); if (a) { if (a[1] < 1) z0 += a[0]; else z1 += a[0]; } }));
+      const zero = z0 > 0, sc = zero ? z0 : z1; if (sc > 0 && ((zero && !bz) || (zero === bz && sc > bs))) { best = j; bs = sc; bz = zero; } });
+    if (best < 0) return;
+    dead.forEach(d => {
+      let e = d.slice();
+      for (const q of L.rooms[best].r) { const a = adj(q, d); if (!a || a[1] < 1) continue;
+        if (a[2] === "r") e = [d[0], d[1], d[2] + a[1], d[3]]; else if (a[2] === "l") e = [d[0] - a[1], d[1], d[2] + a[1], d[3]]; else if (a[2] === "b") e = [d[0], d[1], d[2], d[3] + a[1]]; else e = [d[0], d[1] - a[1], d[2], d[3] + a[1]]; break; }
+      L.rooms[best].r.push(e.map(v => +v.toFixed(1)));
+    });
+  }
+  function zoneAdd(N, R, redo) {
+    const hasR = redo != null && N.rooms[redo], old = hasR ? N.rooms[redo].r : null;
+    if (hasR) N.rooms[redo].r = [];
+    N.rooms.forEach((rm, ri) => { if (ri === redo) return; R.forEach(([x0, y0, w, h]) => { const x1 = x0 + w, y1 = y0 + h, out = []; rm.r.forEach(q => {
       const qx1 = q[0] + q[2], qy1 = q[1] + q[3];
       if (x1 <= q[0] || x0 >= qx1 || y1 <= q[1] || y0 >= qy1) { out.push(q); return; }
       const ix0 = Math.max(x0, q[0]), ix1 = Math.min(x1, qx1), iy0 = Math.max(y0, q[1]), iy1 = Math.min(y1, qy1), A = (a, b, c, d) => c - a > 1 && d - b > 1 && out.push([a, b, +(c - a).toFixed(1), +(d - b).toFixed(1)]);
       A(q[0], q[1], qx1, iy0); A(q[0], iy1, qx1, qy1); A(q[0], iy0, ix0, iy1); A(ix1, iy0, qx1, iy1); }); rm.r = out; }); });
-    if (N.rooms.some(rm => !rm.r.length)) return { miss: "Zona pilnībā aizsedz citu telpu. Zīmē mazāku." };
+    if (N.rooms.some((rm, ri) => ri !== redo && !rm.r.length)) return { miss: "Zona pilnībā aizsedz citu telpu. Zīmē mazāku." };
+    const big = R.slice().sort((a, b) => b[2] * b[3] - a[2] * a[3])[0], ctr = [+(big[0] + big[2] / 2).toFixed(1), +(big[1] + big[3] / 2).toFixed(1)];
+    N.stampAt = N.stampAt || {}; N.stampScale = N.stampScale || {};
+    if (hasR) {   // esošas telpas kontūra maiņa: vecais laukums, kas vairs nav telpā, pievienojas blakus telpai
+      N.rooms[redo].r = R.map(q => q.slice());
+      let rest = old.map(q => q.slice());
+      R.forEach(([x0, y0, w, h]) => { const x1 = x0 + w, y1 = y0 + h, out = []; rest.forEach(q => {
+        const qx1 = q[0] + q[2], qy1 = q[1] + q[3];
+        if (x1 <= q[0] || x0 >= qx1 || y1 <= q[1] || y0 >= qy1) { out.push(q); return; }
+        const ix0 = Math.max(x0, q[0]), ix1 = Math.min(x1, qx1), iy0 = Math.max(y0, q[1]), iy1 = Math.min(y1, qy1), A = (a, b, c, d) => c - a > 1 && d - b > 1 && out.push([a, b, +(c - a).toFixed(1), +(d - b).toFixed(1)]);
+        A(q[0], q[1], qx1, iy0); A(q[0], iy1, qx1, qy1); A(q[0], iy0, ix0, iy1); A(ix1, iy0, qx1, iy1); }); rest = out; });
+      rest = rest.filter(q => q[2] > 1 && q[3] > 1);
+      if (rest.length) {   // atbrīvotā vieta paliek kā jauna telpa, ko var pārveidot vai izdzēst (dzēšot tā pievienojas blakus telpai)
+        const bg = rest.slice().sort((a, b) => b[2] * b[3] - a[2] * a[3])[0], ni = N.rooms.length;
+        N.rooms.push({ n: "Telpa", en: "Room", r: rest }); N.stampAt[ni] = [+(bg[0] + bg[2] / 2).toFixed(1), +(bg[1] + bg[3] / 2).toFixed(1)]; N.stampScale[ni] = 0.7;
+      }
+      const sa = N.stampAt[redo]; if (!sa || !R.some(q => sa[0] >= q[0] && sa[0] <= q[0] + q[2] && sa[1] >= q[1] && sa[1] <= q[1] + q[3])) N.stampAt[redo] = ctr;
+      return { N, sel: { k: "stamp", i: redo, lv: "main" } };
+    }
     N.rooms.push({ n: "Telpa", en: "Room", r: R.map(q => q.slice()) });
-    const ni = N.rooms.length - 1, big = R.slice().sort((a, b) => b[2] * b[3] - a[2] * a[3])[0]; N.stampAt = N.stampAt || {}; N.stampScale = N.stampScale || {};
-    N.stampAt[ni] = [+(big[0] + big[2] / 2).toFixed(1), +(big[1] + big[3] / 2).toFixed(1)]; N.stampScale[ni] = 0.7;
+    const ni = N.rooms.length - 1; N.stampAt[ni] = ctr; N.stampScale[ni] = 0.7;
     return { N, sel: { k: "stamp", i: ni, lv: "main" }, nameFocus: true };
   }
   function zonePreview(cx, cy) {
@@ -2073,7 +2114,7 @@
               const c = pts.slice(), l = c[c.length - 1]; if (Math.abs(l[0] - c[0][0]) > 1 && Math.abs(l[1] - c[0][1]) > 1) c.push([c[0][0], l[1]]);
               const R = polyRects(c); P.pts = [];
               if (!R.length) return { miss: "Kontūrs nederīgs. Zīmē taisnleņķa kontūru." };
-              return zoneAdd(N, R);
+              return zoneAdd(N, R, P.redo);
             }
             if (pts.length && Math.hypot(q[0] - pts[pts.length - 1][0], q[1] - pts[pts.length - 1][1]) < 50) return { pending: "Uzklikšķini nākamo stūri." };
             pts.push(q); return { pending: pts.length < 3 ? "Turpini likt stūrus." : "Turpini vai uzklikšķini pirmajā punktā, lai noslēgtu zonu." };

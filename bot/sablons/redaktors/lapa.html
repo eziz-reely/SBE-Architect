@@ -1309,6 +1309,29 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     };
     d.showModal();
   }
+  // [TRE] atbrīvotie taisnstūri pievienojas blakus telpai (ar kopīgāko malu); ja starp tiem ir starpsiena (sprauga ≤ 320), siena tiek izņemta
+  function absorbRects(L, dead, skip) {
+    if (!dead.length) return;
+    const ov = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0);
+    const adj = (q, d) => {   // [kopīgais garums, sprauga, virziens]
+      let r = null;
+      const gx1 = q[0] - (d[0] + d[2]), gx2 = d[0] - (q[0] + q[2]), gy1 = q[1] - (d[1] + d[3]), gy2 = d[1] - (q[1] + q[3]), ox = ov(q[1], q[1] + q[3], d[1], d[1] + d[3]), oy = ov(q[0], q[0] + q[2], d[0], d[0] + d[2]);
+      if (ox > 50) { if (gx1 > -1 && gx1 <= 320) r = [ox, Math.max(0, gx1), "r"]; else if (gx2 > -1 && gx2 <= 320) r = [ox, Math.max(0, gx2), "l"]; }
+      if (!r && oy > 50) { if (gy1 > -1 && gy1 <= 320) r = [oy, Math.max(0, gy1), "b"]; else if (gy2 > -1 && gy2 <= 320) r = [oy, Math.max(0, gy2), "t"]; }
+      return r;
+    };
+    let best = -1, bs = 0, bz = false;
+    L.rooms.forEach((rm, j) => { if (j === skip) return; let z0 = 0, z1 = 0;
+      rm.r.forEach(q => dead.forEach(d => { const a = adj(q, d); if (a) { if (a[1] < 1) z0 += a[0]; else z1 += a[0]; } }));
+      const zero = z0 > 0, sc = zero ? z0 : z1; if (sc > 0 && ((zero && !bz) || (zero === bz && sc > bs))) { best = j; bs = sc; bz = zero; } });
+    if (best < 0) return;
+    dead.forEach(d => {
+      let e = d.slice();
+      for (const q of L.rooms[best].r) { const a = adj(q, d); if (!a || a[1] < 1) continue;
+        if (a[2] === "r") e = [d[0], d[1], d[2] + a[1], d[3]]; else if (a[2] === "l") e = [d[0] - a[1], d[1], d[2] + a[1], d[3]]; else if (a[2] === "b") e = [d[0], d[1], d[2], d[3] + a[1]]; else e = [d[0], d[1] - a[1], d[2], d[3] + a[1]]; break; }
+      L.rooms[best].r.push(e.map(v => +v.toFixed(1)));
+    });
+  }
   // [TRE] starpsienu pīrāga biezuma maiņa: telpas starp starpsienām izaug vai saraujas pret sienas viduslīniju, platības pārrēķinās
   function partSync(n, m0) {
     const th = (P) => { const L = ((P || {}).piragi_layers || {}).S2 || (LAYERS0.S2 || {}).layers; return L ? L.reduce((a, l) => a + (l[2] === "n" ? 0 : +l[1] || 0), 0) : 0; };
@@ -1929,6 +1952,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       h.textContent = "Telpa"; sub.textContent = where + " · nosaukums plānā un eksplikācijā";
       g.append(field("Nosaukums", rm.n || "", (n, v) => { lvOf(n, sel).rooms[sel.i].n = v; }, "text", "full"));
       p.append(h, sub, g);
+      { const r = document.createElement("div"); r.className = "row", cb = document.createElement("button"); cb.type = "button"; cb.textContent = "Mainīt kontūru"; cb.title = "Uzzīmē telpas jauno kontūru (taisnleņķa polilīnija); atbrīvotā vieta pievienojas blakus telpai";
+        cb.onclick = () => { endPlace(); if (moveOn) setMove(false); placing = { t: "zone", poly: true, redo: sel.i }; $("hint").textContent = "Telpas kontūrs: klikšķi jaunajos stūros, klikšķis pirmajā punktā noslēdz. Esc atceļ."; toFrame({ mmPlace: placing }); railSync(); };
+        r.appendChild(cb); p.append(r); }
       { const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst telpu"; b.onclick = del; r.appendChild(b); p.append(r); }
       return;
     }
@@ -2080,17 +2106,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (sel.k === "stamp") {   // [TRE] telpas (zonas) dzēšana: noņem telpu, pārnumurē nosaukumu pozīcijas; eksplikācija atjaunojas pati
       const n = clone(model), L = lvOf(n, sel), i = sel.i;
       if (!L.rooms || L.rooms.length < 2 || !L.rooms[i]) return;
-      {   // atvērtā zona (bez sienas) pievienojas blakus telpai, citādi paliktu tukša sprauga ar sienām
-        const dead = L.rooms[i].r, ov = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0);
-        let best = -1, bl = 0;
-        L.rooms.forEach((rm, j) => { if (j === i) return; let sh = 0;
-          rm.r.forEach(q => dead.forEach(d => {
-            if (Math.abs(q[0] - (d[0] + d[2])) < 1 || Math.abs(d[0] - (q[0] + q[2])) < 1) sh += Math.max(0, ov(q[1], q[1] + q[3], d[1], d[1] + d[3]));
-            if (Math.abs(q[1] - (d[1] + d[3])) < 1 || Math.abs(d[1] - (q[1] + q[3])) < 1) sh += Math.max(0, ov(q[0], q[0] + q[2], d[0], d[0] + d[2]));
-          }));
-          if (sh > bl) { bl = sh; best = j; } });
-        if (best >= 0) L.rooms[best].r.push(...dead.map(d => d.slice()));
-      }
+      absorbRects(L, L.rooms[i].r, i);   // atbrīvotā vieta (arī siena starp telpām) pievienojas blakus telpai
       L.rooms.splice(i, 1);
       ["stampAt", "stampScale"].forEach(k => { const o = L[k] || {}, r = {}; Object.keys(o).forEach(j => { j = +j; if (j < i) r[j] = o[j]; else if (j > i) r[j - 1] = o[j]; }); L[k] = r; });
       sel = null; commit(n); return;
