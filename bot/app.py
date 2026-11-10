@@ -174,6 +174,8 @@ def rebuild_pages(mp):
         pass
 
 
+# Claude projekta saruna, kur atveras "Veidot ar Claude" (var nomainīt ~/.sbe-arhivs.json: "claude_url")
+CLAUDE_URL = 'https://claude.ai/code/project/chan_01HF2PPLa7vSyqmmLrBrjw1d'
 SPEC_KEYS = ('S1', 'S2', 'G1', 'J1', 'P1')
 
 
@@ -572,7 +574,7 @@ class H(BaseHTTPRequestHandler):
                 rows = ''.join(f'- {lab[k]}: {v}\n' for k, v in zin.items()) or '- izmēri un citi dati vēl nav zināmi\n'
                 prompt = (f'Izveido jaunu SBE projektu uzņēmumam "{co}", pīrāgu komplekts "{ks["nosaukums"]}".\n\nZināms par projektu:\n{rows}' + (f'\nPiezīmes:\n{note}\n' if note else '') +
                           f'\nTrūkstošos izmērus un lēmumus pieņem pats pēc saprātīga pieņēmuma (norādi pieņēmumus), jautājumus neuzdod. Izmanto SBE Architect botu (/sbe-arhitekts), projektu izveido uzņēmuma mapē un atver redaktorā. Uzdevuma fails: {fp}')
-                return self.send(200, {'ok': True, 'path': fp, 'prompt': prompt})
+                return self.send(200, {'ok': True, 'path': fp, 'prompt': prompt, 'chat': c.get('claude_url') or CLAUDE_URL})
             if p == '/api/new':
                 return self.send(200, {'key': new_project(b)})
             if p == '/api/open':

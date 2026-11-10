@@ -201,7 +201,7 @@ label.chk input { width: auto; }
     <h3>Jauns projekts</h3>
     <label>Uzņēmums<select id="nCo" required></select></label>
     <div class="sset"><label>Pīrāgu komplekts<select id="nSet"></select></label><button class="sec" type="button" id="nSetOpen" title="Atvērt pīrāgu lapu: skatīt un labot slāņus">Pīrāgu lapa</button></div>
-    <label>Projekta veids<select id="nKind"><option value="maja">Māja: plānojums, fasādes, A3 lapa</option><option value="pamati">Tikai stabu plāns (pamati pa kontūru)</option></select></label>
+    <label>Projekta veids<select id="nKind"><option value="maja">Māja: plānojums, fasādes, A3 lapa</option><option value="pamati">Tikai stabu plāns (pamati pa kontūru)</option><option value="claude">Māja ar Claude: izmēri vai plānojums vēl nav zināmi</option></select></label>
     <div class="g2">
       <label>Garums, mm<input id="nL" type="number" inputmode="numeric" min="3000" max="40000" step="10" required placeholder="8570"></label>
       <label>Platums, mm<input id="nB" type="number" inputmode="numeric" min="2500" max="15000" step="10" required placeholder="3500"></label>
@@ -282,9 +282,9 @@ label.chk input { width: auto; }
 <dialog id="dCl">
   <form method="dialog">
     <h3>Uzdevums Claude</h3>
-    <p class="note">Uzdevums ir saglabāts uzņēmuma mapē <b id="clPath"></b>. Ielīmē tālāk redzamo tekstu Claude sarunā (tas jau ir nokopēts starpliktuvē), un Claude izveidos projektu un pabeigs trūkstošo.</p>
+    <p class="note">Uzdevums ir saglabāts uzņēmuma mapē <b id="clPath"></b>. Claude čats atveras jaunā cilnē: ielīmē tajā tālāk redzamo tekstu (tas jau ir nokopēts starpliktuvē). Claude izveidos projektu, un to pašu čatu vari izmantot labojumiem.</p>
     <textarea id="clTxt" rows="10" readonly></textarea>
-    <div class="ft"><span style="flex:1"></span><button class="sec" type="button" id="clCopy">Kopēt vēlreiz</button><button class="pri" type="submit">Aizvērt</button></div>
+    <div class="ft"><span style="flex:1"></span><button class="sec" type="button" id="clCopy">Kopēt vēlreiz</button><a class="btn sec" id="clChat" href="#" target="_blank" rel="noopener">Atvērt Claude čatu</a><button class="pri" type="submit">Aizvērt</button></div>
   </form>
 </dialog>
 <div id="toast" hidden role="status"></div>
@@ -546,7 +546,7 @@ $("fDel").addEventListener("submit", async e => { e.preventDefault();
   try { await api("/api/delete/" + delKey, {}); $("dDel").close(); toast("Projekts izdzēsts (atgūstams mapē _dzestie)."); load(); }
   catch (er) { $("delErr").textContent = er.message; $("delErr").hidden = false; } });
 const kindSync = () => { const p = $("nKind").value === "pamati"; document.querySelectorAll("#dNew .h-only").forEach(e => e.hidden = p); document.querySelectorAll("#dNew .p-only").forEach(e => e.hidden = !p);
-  $("nL").required = $("nB").required = !p; $("nL").placeholder = p ? "nav jāievada" : "8570"; $("nB").placeholder = p ? "nav jāievada" : "3500";
+  const cl = $("nKind").value === "claude"; $("nL").required = $("nB").required = !p && !cl; $("nOk").textContent = cl ? "Veidot ar Claude" : "Izveidot"; $("nClaude").hidden = cl; $("nL").placeholder = p ? "nav jāievada" : "8570"; $("nB").placeholder = p ? "nav jāievada" : "3500";
   $("nName").placeholder = p ? "piem. Lejasbirzes" : "piem. Freya"; $("nId").placeholder = p ? "automātiski STABI-nn" : "automātiski MM-xx-nn"; };
 $("nKind").addEventListener("change", kindSync);
 $("nCancel").onclick = () => $("dNew").close();
@@ -555,17 +555,18 @@ const ridgeHint = () => { const P = +$("nP").value, Bw = +$("nB").value; $("nE")
 $("nClaude").onclick = async () => {
   const b = $("nClaude"); b.disabled = true;
   try {
-    const r = await api("/api/claude-uzdevums", { company: $("nCo").value, komplekts: $("nSet").value, veids: $("nKind").value, garums: +$("nL").value || "", platums: +$("nB").value || "", augstums: +$("nH").value || "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
+    const r = await api("/api/claude-uzdevums", { company: $("nCo").value, komplekts: $("nSet").value, veids: $("nKind").value === "claude" ? "maja" : $("nKind").value, garums: +$("nL").value || "", platums: +$("nB").value || "", augstums: +$("nH").value || "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
       nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value, piezimes: $("nNote").value });
     $("clPath").textContent = r.path; $("clTxt").value = r.prompt;
     try { await navigator.clipboard.writeText(r.prompt); } catch (_) { $("clTxt").select(); }
-    $("dNew").close(); $("dCl").showModal();
+    $("clChat").href = r.chat; $("dNew").close(); $("dCl").showModal(); try { window.open(r.chat, "_blank", "noopener"); } catch (_) {}
   } catch (er) { $("nErr").textContent = er.message; $("nErr").hidden = false; }
   b.disabled = false;
 };
 $("clCopy").onclick = async () => { try { await navigator.clipboard.writeText($("clTxt").value); toast("Nokopēts."); } catch (_) { $("clTxt").select(); } };
 $("fNew").addEventListener("submit", async e => {
-  e.preventDefault(); const b = $("nOk"); b.disabled = true; b.textContent = "Ģenerē…"; $("nErr").hidden = true;
+  e.preventDefault(); if ($("nKind").value === "claude") { $("nClaude").click(); return; }
+  const b = $("nOk"); b.disabled = true; b.textContent = "Ģenerē…"; $("nErr").hidden = true;
   try {
     const r = await api("/api/new", { company: $("nCo").value, komplekts: $("nSet").value, garums: +$("nL").value, platums: +$("nB").value, augstums: $("nH").value ? +$("nH").value : "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
       nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value,
