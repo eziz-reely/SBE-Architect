@@ -8,7 +8,7 @@
   const r10 = v => Math.round(v / 10) * 10;
   const T = Math.min(...M.rooms.flatMap(r => r.r.map(q => q[0])));   // ārsienas biezums
   const SNAP = 60, MINR = 600, GWB = ED.gwBase || 0;                                       // mēbele pielīp sienai tuvāk par 150 mm; telpa ne šaurāka par 600 mm
-  let sel = ED.sel || null, drag = null, clip = ED.clip || null;
+  let sel = ED.sel || null, drag = null, clip = ED.clip || null, pick = ED.pick || null;
   { const st = document.createElement("style"); st.textContent = "body{-webkit-user-select:none;user-select:none;touch-action:none}"; document.head.appendChild(st); }
 
   const sheet = () => document.querySelector("svg.a3");
@@ -1381,6 +1381,7 @@
       drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: "rot", c, a0: Math.atan2(h.p[1] - c[1], h.p[0] - c[0]), ang: 0, boxes: furnBoxes(h.bl), moved: false };
       document.body.style.cursor = "grabbing"; return true;
     }
+    if (e.altKey && !h.wall && ["win", "door", "furn", "gw"].includes(h.it.k)) return pickInject(h, e.ctrlKey || e.metaKey);   // [TRE] Alt+klikšķis paņem objekta iestatījumus, Ctrl+Alt+klikšķis uzliek tos citam tāda paša veida objektam (kā ArchiCAD pipete)
     const grpOk = h.bl.type === "plan" && !h.wall && GRP.includes(h.it.k) && h.it.lv !== "loft";
     const grpE = h.bl.type === "elev" && !h.wall && (h.it.k === "win" || h.it.k === "gw") && sel && (sel.k === "win" || sel.k === "gw");   // [TRE] fasādē logus var atlasīt grupā (Ctrl vai Shift + klikšķis) un mainīt kopīgus iestatījumus
     if ((e.shiftKey || e.ctrlKey || e.metaKey) && ((grpOk && sel && GRP.includes(sel.k) && sel.lv === h.it.lv) || grpE) && !same(h.it, sel)) {   // Shift/Ctrl+klikšķis: pievieno / noņem no atlasītās grupas
@@ -1396,6 +1397,30 @@
     document.body.style.cursor = h.wall ? MVC : cur(drag.zone);
     return true;
   };
+  // iestatījumu pārnese: pozīcija, izmērs un virziens paliek, pārējie iestatījumi tiek pārņemti
+  const PK_SKIP = { win: ["x", "y", "o", "side", "len", "parts"], door: ["x", "y", "o", "w", "th", "entry", "side"] };
+  const PK_TXT = { win: "logs", door: "durvis", furn: "mēbele", gw: "slīpais logs" };
+  function pickObj(k, lvn, i) { return k === "gw" ? M.gableWins[i] : k === "furn" ? lv(lvn).furniture[i] : lv(lvn)[k === "win" ? "windows" : "doors"][i]; }
+  function pickInject(h, inject) {
+    const k = h.it.k;
+    if (!inject) {
+      pick = { k, o: clone(pickObj(k, h.it.lv, h.it.i)) };
+      post({ t: "pick", pick }); post({ t: "hint", text: `Paņemti ${PK_TXT[k]} iestatījumi. Ctrl+Alt+klikšķis uz cita objekta tos uzliek.` }); return true;
+    }
+    if (!pick) { post({ t: "hint", text: "Vispirms ar Alt+klikšķi paņem iestatījumus no objekta." }); return true; }
+    if (pick.k !== k) { post({ t: "hint", text: `Paņemti ${PK_TXT[pick.k]} iestatījumi; tos var uzlikt tikai tāda paša veida objektam.` }); return true; }
+    const N = clone(M), t = pickObj(k, h.it.lv, h.it.i), src = pick.o; let tt = k === "gw" ? N.gableWins[h.it.i] : k === "furn" ? lv(h.it.lv, N).furniture[h.it.i] : lv(h.it.lv, N)[k === "win" ? "windows" : "doors"][h.it.i];
+    void t;
+    if (k === "furn") { for (let j = 5; j < Math.max(src.length, tt.length); j++) { if (src[j] === undefined) tt.length = Math.min(tt.length, j); else tt[j] = clone(src[j]); } }
+    else if (k === "gw") { ["casing", "casingAll"].forEach(f => { delete tt[f]; if (src[f] !== undefined) tt[f] = src[f]; }); }
+    else {
+      const skip = PK_SKIP[k]; Object.keys(tt).forEach(f => { if (!skip.includes(f) && !["id"].includes(f) && src[f] === undefined && ["casing", "casingAll", "kind", "tilt", "hinge", "sill", "head", "side", "color"].includes(f)) delete tt[f]; });
+      Object.keys(src).forEach(f => { if (!skip.includes(f)) tt[f] = clone(src[f]); });
+      if (k === "win") { delete tt.parts; if (src.parts && src.parts.length) { const tot = src.parts.reduce((a, p) => a + p.len, 0) || 1; tt.parts = src.parts.map(p => Object.assign(clone(p), { len: Math.round(p.len / tot * tt.len) })); const df = tt.len - tt.parts.reduce((a, p) => a + p.len, 0); tt.parts[tt.parts.length - 1].len += df; } }
+    }
+    sel = { k, i: h.it.i, lv: h.it.lv };
+    post({ t: "edit", model: N, sel }); post({ t: "hint", text: "Iestatījumi uzlikti." }); return true;
+  }
   let moveMode = false;
   const MVC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='%23e0201b' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'><path d='M16 2l5 6h-3.4v6.6H24V11l6 5-6 5v-3.6h-6.4V24H21l-5 6-5-6h3.4v-6.6H8V21l-6-5 6-5v3.6h6.4V8H11z'/></g></svg>\") 16 16, move";
   const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";

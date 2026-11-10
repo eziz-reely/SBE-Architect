@@ -738,7 +738,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const b = gwBase(n);
     (n.gableWins || []).forEach(g => { if (g.z0 < b) { const lw = n.loft && (n.loft.windows || []).find(w => gwMatch(g, w)); if (g.z1) g.z1 = +(g.z1 + b - g.z0).toFixed(1); g.z0 = b; if (lw) { lw.head = +((lw.head || b) + b - (lw.sill || 0)).toFixed(1); lw.sill = b; } } });
   }
-  let model = clone(BASE), undo = [], redo = [], clip = null, sel = null, view = null, dirty = false, placeNext = false;
+  let model = clone(BASE), undo = [], redo = [], clip = null, pick = null, sel = null, view = null, dirty = false, placeNext = false;
   let pst = null, pamInfo = null, pamMode = null;   // pamMode: paliekošs pamatu plāna rīks (kontūra, stabs), ko jaunais rāmis turpina   // pamatu plāns: izvēlētais stabs, izkārtojuma dati no lapas
 
   // ---- the same model block build_model.py writes, plus a map from each furniture entry to its drawn shapes ----
@@ -806,7 +806,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const i = h.lastIndexOf("</body>"); if (i > 0) h = h.slice(0, i) + st + h.slice(i);
     }
     if (edit) {
-      const ed = JSON.stringify({ model: m, sel, pst, pamMode, place: placeNext, gwBase: gwBase(m), clip }).split("</").join("<\\/");
+      const ed = JSON.stringify({ model: m, sel, pst, pamMode, place: placeNext, gwBase: gwBase(m), clip, pick }).split("</").join("<\\/");
       placeNext = false;
       const inj = `<script>window.MM_ED=${ed};window.MMZ_INIT=${JSON.stringify(view)};<\/script><script>${FRAME_JS.split("</").join("<\\/")}<\/script>`;
       const i = h.lastIndexOf("</body>");
@@ -847,6 +847,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       return;
     }
     if (!fromLive) return;
+    if (d.t === "pick") { pick = d.pick; }
     if (d.t === "clip") { clip = d.clip; $("hint").textContent = "Nokopēts: " + d.n + " gab. Ctrl+V iekopē."; }
     else if (d.t === "sel") { sel = d.sel; if (sel) pst = null; panel(); }
     else if (d.t === "pst") { pst = d.key; sel = null; panel(); }
