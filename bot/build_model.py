@@ -24,7 +24,7 @@ RAL = {'RAL 7016': '#383E42', 'RAL 7024': '#474A50', 'RAL 7021': '#2F3234', 'RAL
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'userDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'entryInChain', 'porch']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'entryInChain', 'porch', 'terrace']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
@@ -174,6 +174,9 @@ def build(model_path, langs=None):
          '      const LS = side === "west" ? (sd < 0 ? "north" : "south") : (sd < 0 ? "south" : "north"), gOn = NOT(LS), pOn = NOT(LS[0] + side[0]);\n      if (!gOn && !pOn) return;'),
         ('      el("path", { d, fill: "none", stroke: C.ink, "stroke-width": 118, "data-keep": 1 }, g);\n      el("path", { d, fill: "none", stroke: GUT, "stroke-width": 100, "data-keep": 1 }, g);\n      el("line", { x1: uc - sd * 22, y1: -(zt - 80), x2: uc - sd * 22, y2: -zEnd - 20, stroke: "rgba(255,255,255,.22)", "stroke-width": 8 }, g);\n      for (let z = 600; z < zt - 600; z += 1100) el("rect", { x: uc - 65, y: -z - 25, width: 130, height: 50, fill: "#24282b" }, g);\n      el("path", { d: `M ${ue} ${-zt}',
          '      if (pOn) {\n      el("path", { d, fill: "none", stroke: C.ink, "stroke-width": 118, "data-keep": 1 }, g);\n      el("path", { d, fill: "none", stroke: GUT, "stroke-width": 100, "data-keep": 1 }, g);\n      el("line", { x1: uc - sd * 22, y1: -(zt - 80), x2: uc - sd * 22, y2: -zEnd - 20, stroke: "rgba(255,255,255,.22)", "stroke-width": 8 }, g);\n      for (let z = 600; z < zt - 600; z += 1100) el("rect", { x: uc - 65, y: -z - 25, width: 130, height: 50, fill: "#24282b" }, g);\n      }\n      if (gOn) el("path", { d: `M ${ue} ${-zt}'),
+        # [MM] rietumu terase (v.terrace): klājs plānā kā lievenis, fasādēs kā lieveņa klājs
+        ('  if (v.porch) porchPlan(g, v.porch, v.rooms.length + 1);', '  if (v.porch) porchPlan(g, v.porch, v.rooms.length + 1);\n  if (v.terrace) porchPlan(g, v.terrace, v.rooms.length + (v.porch ? 2 : 1));'),
+        ('  if (v.porch) {\n    const pc = v.porch, out =', '  for (const pc of [v.porch, v.terrace].filter(Boolean)) {\n    const out ='),
         # [MM] ja apakšā ir aploda, palodze paliek ailas apakšā
         ('    if (true) {\n      z0 -= CB;\n', '    if (true) {\n'),
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)
