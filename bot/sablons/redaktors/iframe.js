@@ -1083,8 +1083,26 @@
       });
     });
   })();
+  // ---- pamatu plāns: stabu izvēle ar klikšķi, bultiņas pārbīda (to dara vecākā lapa, šeit tikai izcelšana un pārsūtīšana) ----
+  let pst = ED.pst || null;
+  const pstOn = k => !pst ? false : pst[1] === ":" ? (pst[0] === "r" ? new RegExp("^a?\\d+," + pst.slice(2) + "$") : new RegExp("^b?" + pst.slice(2) + ",\\d+$")).test(k) : k === pst;   // r:j visa rinda, c:i visa kolona
+  const pstMark = () => document.querySelectorAll("[data-pst]").forEach(c => { const on = pstOn(c.dataset.pst); c.setAttribute("fill", on ? ACC : "#8a8d90"); c.setAttribute("stroke", on ? ACC : C_INK); });
+  const C_INK = "#111";
+  addEventListener("keydown", e => {
+    if (!pst || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) || e.key === "Delete" || e.key === "Escape") {
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (e.key === "Escape") { pst = null; pstMark(); post({ t: "pst", key: null }); }
+      else post({ t: "pstKey", key: e.key, shiftKey: e.shiftKey });
+    }
+  }, true);
+  addEventListener("message", e => { const m = e.data; if (m && "mmPst" in m) { pst = m.mmPst; pstMark(); } });
+  addEventListener("load", () => { pstMark(); if (window.MM_PAM) post({ t: "pam", info: window.MM_PAM }); });
   window.MMZ_HOOK = e => {
     if (e.button !== 0) return false;
+    { const pe = e.target && e.target.closest && e.target.closest("[data-pst]");
+      if (pe && !place) { pst = pe.dataset.pst; pstMark(); if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } post({ t: "pst", key: pst }); return true; }
+      if (pst && e.target && e.target.closest && e.target.closest("svg[data-part=pamati]")) { pst = null; pstMark(); post({ t: "pst", key: null }); return false; } }
     if (drag && drag.wend && drag.sticky) { commitWend(); return true; }
     if (place && place.t === "erase") {
       const gi = guideHit(e.clientX, e.clientY);
