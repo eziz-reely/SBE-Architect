@@ -852,7 +852,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "pstKey") pstKey(d.key, d.shiftKey);
     else if (d.t === "pstDrag") { pst = d.key; pstMove(d.dx, d.dy); }
     else if (d.t === "view") view = d.view;
-    else if (d.t === "edit") { if (d.resized) roofFix(d.model); if (d.pst !== undefined) pst = d.pst; pamSetMode(d.pamMode || null); sel = d.sel || sel; if (d.placed) endPlace(); if (d.place) placeNext = true; commit(d.model); }
+    else if (d.t === "edit") { if (d.resized) roofFix(d.model); if (d.pst !== undefined) pst = d.pst; pamSetMode(d.pamMode || null); sel = d.sel || sel; if (d.placed) endPlace(); if (d.place) placeNext = true; commit(d.model); if (d.nameFocus) setTimeout(() => { const i = document.querySelector("#panel input[type=text]"); if (i) { i.focus(); i.select(); } }, 800); }
     else if (d.t === "undo") doUndo();
     else if (d.t === "redo") doRedo();
     else if (d.t === "delete") del();
@@ -983,6 +983,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Fasādes elements", s: "taisnstūris: divi klikšķi fasādē (dekors, metāls)", p: { t: "decor", rect: true }, ic: "ter" },
     { n: "Fasādes elements (polilīnija)", s: "klikšķi stūros fasādē; klikšķis pirmajā punktā noslēdz", p: { t: "decor" }, ic: "ter" },
     { n: "Stabs", s: "klikšķis novieto; Ctrl+vilkt kopē, tad /n dala", p: { t: "post" }, ic: "post" },
+    { n: "Zona (telpa)", s: "divi klikšķi plānā: jauna telpa, vieta tiek nogriezta no esošās; jāieraksta tikai nosaukums", p: { t: "zone" }, ic: "ter" },
     { n: "Krāsas spainis", s: "B; klikšķis uzliek materiālu, Alt+klikšķis paņem", p: { t: "bucket" }, ic: "bucket" },
   ];
   // vy: mēbelei ir 3 detalizācijas varianti (bed1 / bed / bed3)
@@ -2050,6 +2051,17 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (sel.k === "stamp") {   // [TRE] telpas (zonas) dzēšana: noņem telpu, pārnumurē nosaukumu pozīcijas; eksplikācija atjaunojas pati
       const n = clone(model), L = lvOf(n, sel), i = sel.i;
       if (!L.rooms || L.rooms.length < 2 || !L.rooms[i]) return;
+      {   // atvērtā zona (bez sienas) pievienojas blakus telpai, citādi paliktu tukša sprauga ar sienām
+        const dead = L.rooms[i].r, ov = (a0, a1, b0, b1) => Math.min(a1, b1) - Math.max(a0, b0);
+        let best = -1, bl = 0;
+        L.rooms.forEach((rm, j) => { if (j === i) return; let sh = 0;
+          rm.r.forEach(q => dead.forEach(d => {
+            if (Math.abs(q[0] - (d[0] + d[2])) < 1 || Math.abs(d[0] - (q[0] + q[2])) < 1) sh += Math.max(0, ov(q[1], q[1] + q[3], d[1], d[1] + d[3]));
+            if (Math.abs(q[1] - (d[1] + d[3])) < 1 || Math.abs(d[1] - (q[1] + q[3])) < 1) sh += Math.max(0, ov(q[0], q[0] + q[2], d[0], d[0] + d[2]));
+          }));
+          if (sh > bl) { bl = sh; best = j; } });
+        if (best >= 0) L.rooms[best].r.push(...dead.map(d => d.slice()));
+      }
       L.rooms.splice(i, 1);
       ["stampAt", "stampScale"].forEach(k => { const o = L[k] || {}, r = {}; Object.keys(o).forEach(j => { j = +j; if (j < i) r[j] = o[j]; else if (j > i) r[j - 1] = o[j]; }); L[k] = r; });
       sel = null; commit(n); return;

@@ -392,6 +392,7 @@
       const k = ek(bl), o = overlay(bl.g);
       rect(o, it.b, false, k, it.k === "furn" ? 0 : undefined);
       if (it.k === "ter") { const t = M.terraces[it.i]; mk(o, "polygon", { points: t.poly.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.10)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` }); t.poly.forEach(q => snapMark(o, q, true, k)); }
+      if (it.k === "stamp") (lv(it.lv, M).rooms[it.i] || { r: [] }).r.forEach(q => mk(o, "rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "rgba(34,102,216,.13)", stroke: ACC, "stroke-width": 0.8 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}`, "pointer-events": "none" }));   // [TRE] telpas aizņemtā platība
       if (it.k === "post") gpts(it.b).forEach((q, j) => mk(o, "circle", { cx: q[0], cy: q[1], r: 1.3 / k, fill: j === 4 ? ACC : "#fff", stroke: ACC, "stroke-width": 0.4 / k }));
       if (it.k !== "stamp" && it.k !== "axo") delHandle(o, it.b, k);
       if (bl.type === "plan" && (it.k === "door" || it.k === "win")) openDims(o, bl.lv, it, k);
@@ -1311,7 +1312,7 @@
       if (r.miss) { post({ t: "hint", text: r.miss }); return true; }
       if (r.pending) { post({ t: "hint", text: r.pending }); return true; }
       place = null; document.body.style.cursor = ""; sel = r.sel;
-      post({ t: "edit", model: r.N, sel: r.sel, place: !!r.fit, placed: true });
+      post({ t: "edit", model: r.N, sel: r.sel, place: !!r.fit, placed: true, nameFocus: !!r.nameFocus });
       return true;
     }
     if (hovWall) {   // sienas posma gala rokturis
@@ -1977,6 +1978,23 @@
           const r = addPartitionAcross(N, vertical, c, v0, v1);
           if (r.err) { P.p0 = null; return { miss: r.err }; }
           return { N, sel: null };
+        }
+        if (P.t === "zone") {   // [TRE] jauna zona: divi klikšķi; vieta tiek nogriezta no esošajām telpām, nosaukumu raksta lietotājs
+          if (bl.lv !== "main") return { miss: "Zonas var likt 1. stāva plānā." };
+          const sx = v => snapAx("main", "x", v, 200), sy = v => snapAx("main", "y", v, 200);
+          if (!P.p0) { P.p0 = [sx(p[0]), sy(p[1])]; return { pending: "Uzklikšķini zonas pretējo stūri." }; }
+          const x0 = Math.min(P.p0[0], sx(p[0])), x1 = Math.max(P.p0[0], sx(p[0])), y0 = Math.min(P.p0[1], sy(p[1])), y1 = Math.max(P.p0[1], sy(p[1]));
+          if (x1 - x0 < 500 || y1 - y0 < 500) { P.p0 = null; return { miss: "Zona par mazu (vismaz 500 × 500 mm)." }; }
+          N.rooms.forEach(rm => { const out = []; rm.r.forEach(q => {
+            const qx1 = q[0] + q[2], qy1 = q[1] + q[3];
+            if (x1 <= q[0] || x0 >= qx1 || y1 <= q[1] || y0 >= qy1) { out.push(q); return; }
+            const ix0 = Math.max(x0, q[0]), ix1 = Math.min(x1, qx1), iy0 = Math.max(y0, q[1]), iy1 = Math.min(y1, qy1), R = (a, b, c, d) => c - a > 1 && d - b > 1 && out.push([a, b, +(c - a).toFixed(1), +(d - b).toFixed(1)]);
+            R(q[0], q[1], qx1, iy0); R(q[0], iy1, qx1, qy1); R(q[0], iy0, ix0, iy1); R(ix1, iy0, qx1, iy1); }); rm.r = out; });
+          if (N.rooms.some(rm => !rm.r.length)) { P.p0 = null; return { miss: "Zona pilnībā aizsedz citu telpu. Zīmē mazāku." }; }
+          N.rooms.push({ n: "Telpa", en: "Room", r: [[x0, y0, x1 - x0, y1 - y0]] });
+          const ni = N.rooms.length - 1; N.stampAt = N.stampAt || {}; N.stampScale = N.stampScale || {};
+          N.stampAt[ni] = [+((x0 + x1) / 2).toFixed(1), +((y0 + y1) / 2).toFixed(1)]; N.stampScale[ni] = 0.7;
+          return { N, sel: { k: "stamp", i: ni, lv: "main" }, nameFocus: true };
         }
         if (P.t === "furn") {
           const e = clone(P.entry);
