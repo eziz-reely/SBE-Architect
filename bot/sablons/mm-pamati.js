@@ -60,7 +60,11 @@ function pamPart(PP, n, R, d, uz, off, add) {
 function pamLayout(v, PP) {
   const d = +PP.d || 120, uz = PP.uzOn ? (PP.uz != null ? +PP.uz : 10) : 0, off = pamC24();   // uzlaide tikai ar ķeksīti
   const pts = [], seen = new Set();
-  const add = (key, x, y, xa, ya, kind, moved, part) => { if (seen.has(key)) return null; seen.add(key); const p = { key, x, y, x0: xa, y0: ya, kind, moved, part }; pts.push(p); return p; };
+  // blakus kontūru (paneļu) salaidumā tuvi stabi apvienojas vienā, uz salaiduma līnijas (PP.kopigi = false: katram panelim savi)
+  const join = PP.kopigi !== false, tol = d * 1.6;
+  const add = (key, x, y, xa, ya, kind, moved, part) => { if (seen.has(key)) return null; seen.add(key);
+    if (join && part > 0) { const q = pts.find(q => q.part >= 0 && q.part !== part && Math.hypot(q.x - x, q.y - y) < tol); if (q) { q.x = (q.x + x) / 2; q.y = (q.y + y) / 2; q.shared = true; return null; } }
+    const p = { key, x, y, x0: xa, y0: ya, kind, moved, part }; pts.push(p); return p; };
   const parts = pamParts(v, PP).map((R, n) => pamPart(PP, n, R, d, uz, off, add));
   // papildu stabi: [x, y] brīvi vai { c: [i, j], p: kontūra, t, o } laukuma vidū starp 4 stabiem (piem. kamīnam), ar krustu un atsauci
   const del = new Set(PP.del || []), cells = [];
@@ -149,7 +153,9 @@ function pamViewStabi(g, v, L, k, tx) {
     P.GX.forEach(x => el("line", { x1: x, y1: P.y0 - 2 * s, x2: x, y2: P.y1 + 2 * s, ...gl }, g));
     P.GY.forEach(y => el("line", { x1: P.x0 - 2 * s, y1: y, x2: P.x1 + 2 * s, y2: y, ...gl }, g));
     // diagonāles pa malējo stabu centriem
-    const c = [P_(P.pre + "0,0"), P_(`${P.pre}${P.nx - 1},0`), P_(`${P.pre}${P.nx - 1},${P.ny - 1}`), P_(`${P.pre}0,${P.ny - 1}`)];
+    const near = (x, y) => L.pts.reduce((b, p) => !b || Math.hypot(p.x - x, p.y - y) < Math.hypot(b.x - x, b.y - y) ? p : b, null);   // apvienots salaiduma stabs
+    const cp = (i, j) => P_(`${P.pre}${i},${j}`) || near(P.GX[i], P.GY[j]);
+    const c = [cp(0, 0), cp(P.nx - 1, 0), cp(P.nx - 1, P.ny - 1), cp(0, P.ny - 1)];
     [[c[0], c[2], .3], [c[1], c[3], .7]].forEach(([a, b, f]) => {
       if (!a || !b) return;
       el("line", { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: "#5b7fa8", "stroke-width": .15 * s, "stroke-dasharray": `${1.2 * s} ${.8 * s}` }, g);
@@ -164,7 +170,9 @@ function pamViewStabi(g, v, L, k, tx) {
   pamPosts(g, L, k, true);
   // mērķēdes: augšā un kreisajā pusē (no āra uz iekšu: asis, stabu ārējais izmērs, stabi pa centriem)
   const CO = (pamPP() || {}).colOut || "#2e8b57";   // stabu ārējais izmērs: zaļš vai lietotāja krāsa
-  const rowOf = (P, cy) => L.pts.filter(p => p.part === P.n && Math.abs(p.y0 - cy) < 1), colOf = (P, cx) => L.pts.filter(p => p.part === P.n && Math.abs(p.x0 - cx) < 1);
+  // rinda vai kolona kontūrā (ar salaiduma stabiem, kas apvienoti ar kaimiņu kontūru)
+  const inP = (P, p) => p.part === P.n || (p.shared && p.x > P.x0 - L.d && p.x < P.x1 + L.d && p.y > P.y0 - L.d && p.y < P.y1 + L.d);
+  const rowOf = (P, cy) => L.pts.filter(p => inP(P, p) && Math.abs((p.part === P.n ? p.y0 : p.y) - cy) < L.d), colOf = (P, cx) => L.pts.filter(p => inP(P, p) && Math.abs((p.part === P.n ? p.x0 : p.x) - cx) < L.d);
   const top = L.parts.filter(P => !SH[P.n].n).flatMap(P => rowOf(P, P.cy0).map(p => [p.x, P.y0])), left = L.parts.filter(P => !SH[P.n].w).flatMap(P => colOf(P, P.cx0).map(p => [p.y, P.x0]));
   const ox0 = L.cx0 - L.d / 2, ox1 = L.cx1 + L.d / 2, oy0 = L.cy0 - L.d / 2, oy1 = L.cy1 + L.d / 2;
   pamDim(g, k, A, -19 * s, true, { ext: -21 * s, fw: 600, id: "ax" });
