@@ -189,11 +189,28 @@ def company_spec(cdir):
         return {}
 
 
+# CLASSIC: standarta stabveida pamatu konstrukcijas (specifikācija 02.07.2025.); S2 starpsiena paliek SBE noklusējums
+CLASSIC = {
+    'S1': [['Pusspundes dēļi', 21, 'h'], ['Pretgrauzēju barjera', 0, 'm'], ['Latojums 25x50', 25, 'a'], ['Difūzijas membrāna CoverCORE STRONG 75', 0, 'm'],
+           ['OSB 3 plāksne', 10, 'o'], ['C24 karkass 45x145, minerālvate Isover STANDART 35 150 mm', 145, 'i'], ['Tvaika izolācijas membrāna ClimaCORE 75', 0, 'm'],
+           ['C24 45x45, minerālvate Isover STANDART 35 50 mm', 45, 'a'], ['Ģipškartons 2 kārtās vai vagondēlis (2. stadija)', 25, 'k']],
+    'G1': [['Grīdas segums (2. stadija)', 0, ''], ['Grīdas ģipškartons', 12.5, 'k'], ['Durelis', 18, 'o'], ['Amortizācijas lenta', 2, ''], ['Latojums 25x100', 25, 'a'],
+           ['C24 karkass 45x195, minerālvate Isover STANDART 35 2x100 mm', 200, 'i'], ['Durelis', 11, 'o'], ['Vainags C24 45x195', 45, ''], ['Pretgrauzēju siets', 0.5, 'm']],
+    'J1': [['Jumta segums', 0.5, ''], ['Amortizācijas lenta', 2, ''], ['Hor. latojums 25x100', 25, 'a'], ['Vert. latojums 25x50', 25, 'a'], ['Difūzijas membrāna CoverCORE STRONG 75', 0, 'm'],
+           ['C24 karkass 45x195, minerālvate Isover STANDART 35 200 mm', 200, 'i'], ['Tvaika izolācijas membrāna ClimaCORE 75', 0, 'm'], ['Latojums 25x50', 25, 'a'],
+           ['Ģipškartons 1 kārtā vai vagondēlis (2. stadija)', 12.5, 'k']],
+}
+
+
 def spec_sets(cs):
-    """Uzņēmuma pīrāgu komplekti: ([{id, nosaukums, piragi_layers, piragi_names}], aktīvā id). Vecais formāts kļūst par "Standarta"."""
+    """Uzņēmuma pīrāgu komplekti: ([{id, nosaukums, piragi_layers, piragi_names}], aktīvā id). Bez saglabātiem komplektiem: CLASSIC (standarta);
+    vecie uzņēmuma iestatījumi kļūst par komplektu "Standarta" un paliek aktīvi."""
     sets = [k for k in (cs.get('komplekti') or []) if isinstance(k, dict) and k.get('id')]
     if not sets:
-        sets = [{'id': 'standarts', 'nosaukums': 'Standarta', 'piragi_layers': cs.get('piragi_layers') or {}, 'piragi_names': cs.get('piragi_names') or {}}]
+        sets = [{'id': 'classic', 'nosaukums': 'CLASSIC', 'piragi_layers': CLASSIC, 'piragi_names': {}}]
+        if cs.get('piragi_layers') or cs.get('piragi_names'):
+            sets.append({'id': 'standarts', 'nosaukums': 'Standarta', 'piragi_layers': cs.get('piragi_layers') or {}, 'piragi_names': cs.get('piragi_names') or {}})
+            cs = dict(cs, aktivs='standarts')
     act = cs.get('aktivs')
     if act not in [k['id'] for k in sets]:
         act = sets[0]['id']
