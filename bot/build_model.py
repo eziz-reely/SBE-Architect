@@ -189,6 +189,10 @@ def build(model_path, langs=None):
          "    const along = q => endV ? q[1] : q[0], edge = (pc.__ter ? terEdge(pc, side, v) : pc.poly.filter(out)).map(q => map(along(q)));"),
         ("      face(u0, u1, fT, ROOF.plinth - 40);   // lievenis cokola augstumā",
          "      face(u0, u1, pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);   // lievenis cokola augstumā"),
+        ("      jamb(w.x, w.y, w.x, w.y + th); jamb(w.x + L, w.y, w.x + L, w.y + th);\n      el(\"rect\", { x: w.x, y: w.y + th * .36",
+         "      [[w.x, w.y, w.x, w.y + th], [w.x + L, w.y, w.x + L, w.y + th]].forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x, y: w.y + th * .36"),
+        ("      jamb(w.x, w.y, w.x + th, w.y); jamb(w.x, w.y + L, w.x + th, w.y + L);\n      el(\"rect\", { x: w.x + th * .36",
+         "      [[w.x, w.y, w.x + th, w.y], [w.x, w.y + L, w.x + th, w.y + L]].forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x + th * .36"),
         # [MM] ja apakšā ir aploda, palodze paliek ailas apakšā
         ('    if (true) {\n      z0 -= CB;\n', '    if (true) {\n'),
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)
