@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("SBE_PORT") or 8737)
 CFG_PATH = os.path.join(os.path.expanduser('~'), '.sbe-arhivs.json')
-SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref', '_dzestie'}
+SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref', '_dzestie', '_claude_uzdevumi'}
 LOCK = threading.Lock()
 KEYS = {}   # atslēga -> projekta mape
 
@@ -557,6 +557,22 @@ class H(BaseHTTPRequestHandler):
                 cs['specifikacija_apstiprinata'] = True
                 json.dump(cs, open(os.path.join(d, 'uznemums.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
                 return self.send(200, {'ok': True})
+            if p == '/api/claude-uzdevums':   # "Veidot ar Claude": saglabā zināmos datus uzdevuma failā un sagatavo tekstu Claude
+                c = load_cfg(); cos = companies(c); co = b.get('company') or ''
+                if co not in cos:
+                    return self.send(400, 'Nav tāda uzņēmuma.', 'text/plain; charset=utf-8')
+                ks = pick_set(company_spec(cos[co]), b.get('komplekts'))
+                lab = {'garums': 'garums, mm', 'platums': 'platums, mm', 'augstums': 'kores augstums, mm', 'slipums': 'jumta slīpums, °', 'dzega': 'dzegas augstums, mm', 'nosaukums': 'modeļa nosaukums', 'id': 'ID',
+                       'mansards': 'mansards (ja/ne)', 'pamati': 'pamati', 'tonis': 'fasādes tonis', 'veids': 'projekta veids (maja/pamati)'}
+                zin = {k: b[k] for k in lab if b.get(k) not in (None, '')}
+                note = str(b.get('piezimes') or '').strip()[:4000]
+                d = os.path.join(cos[co], '_claude_uzdevumi'); os.makedirs(d, exist_ok=True)
+                fp = os.path.join(d, time.strftime('%Y%m%d-%H%M%S') + '_' + (safe_name(b.get('nosaukums')) or 'projekts') + '.json')
+                json.dump({'uznemums': co, 'piragu_komplekts': ks['nosaukums'], 'piragu_komplekta_id': ks['id'], 'zinams': zin, 'piezimes': note, 'statuss': 'jauns'}, open(fp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+                rows = ''.join(f'- {lab[k]}: {v}\n' for k, v in zin.items()) or '- izmēri un citi dati vēl nav zināmi\n'
+                prompt = (f'Izveido jaunu SBE projektu uzņēmumam "{co}", pīrāgu komplekts "{ks["nosaukums"]}".\n\nZināms par projektu:\n{rows}' + (f'\nPiezīmes:\n{note}\n' if note else '') +
+                          f'\nTrūkstošos izmērus un lēmumus pieņem pats pēc saprātīga pieņēmuma (norādi pieņēmumus), jautājumus neuzdod. Izmanto SBE Architect botu (/sbe-arhitekts), projektu izveido uzņēmuma mapē un atver redaktorā. Uzdevuma fails: {fp}')
+                return self.send(200, {'ok': True, 'path': fp, 'prompt': prompt})
             if p == '/api/new':
                 return self.send(200, {'key': new_project(b)})
             if p == '/api/open':

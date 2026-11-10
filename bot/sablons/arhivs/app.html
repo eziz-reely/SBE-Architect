@@ -227,8 +227,9 @@ label.chk input { width: auto; }
     </div>
     <p class="note p-only" hidden>Izmērus var neievadīt: redaktors atvērsies zīmēšanas režīmā, un kontūras (paneļus) savelc ar peli lapā. Ja ievadi garumu un platumu, sākumā būs viens taisnstūris (C24 karkasa ārmala). Stabi sakārtojas paši ar soli līdz 1200 mm, izmēri un specifikācija arī.</p>
     <p class="note h-only">Bots uzģenerē plānojumu un A3 lapu. Tas var aizņemt līdz minūtei. Pēc tam projekts atveras redaktorā.</p>
+    <label>Ko vēl zini par projektu (nav obligāti)<textarea id="nNote" rows="3" placeholder="piem. 2 guļamistabas, vannasistaba pie ieejas, terase dienvidos, klients vēlas koka fasādi"></textarea></label>
     <p class="err" id="nErr" hidden></p>
-    <div class="ft"><button class="sec" type="button" value="cancel" id="nCancel">Atcelt</button><button class="pri" type="submit" id="nOk">Izveidot</button></div>
+    <div class="ft"><button class="sec" type="button" id="nClaude" title="Aizpildi, ko zini (arī bez izmēriem); Claude pārņems darbu">Veidot ar Claude</button><span style="flex:1"></span><button class="sec" type="button" value="cancel" id="nCancel">Atcelt</button><button class="pri" type="submit" id="nOk">Izveidot</button></div>
   </form>
 </dialog>
 <dialog id="dDel">
@@ -276,6 +277,14 @@ label.chk input { width: auto; }
     <div class="sps"><button class="sec" type="button" id="sAdd">Pievienot slāni</button><span class="sp"></span><span id="sSum"></span></div>
     <p class="err" id="sErr" hidden></p>
     <div class="ft"><button class="sec" type="button" id="sReset" title="Visām četrām atjauno SBE noklusējumu">Atjaunot noklusējumu</button><span style="flex:1"></span><button class="sec" type="button" id="sCancel">Atcelt</button><button class="pri" type="submit" id="sOk">Saglabāt</button></div>
+  </form>
+</dialog>
+<dialog id="dCl">
+  <form method="dialog">
+    <h3>Uzdevums Claude</h3>
+    <p class="note">Uzdevums ir saglabāts uzņēmuma mapē <b id="clPath"></b>. Ielīmē tālāk redzamo tekstu Claude sarunā (tas jau ir nokopēts starpliktuvē), un Claude izveidos projektu un pabeigs trūkstošo.</p>
+    <textarea id="clTxt" rows="10" readonly></textarea>
+    <div class="ft"><span style="flex:1"></span><button class="sec" type="button" id="clCopy">Kopēt vēlreiz</button><button class="pri" type="submit">Aizvērt</button></div>
   </form>
 </dialog>
 <div id="toast" hidden role="status"></div>
@@ -543,6 +552,18 @@ $("nKind").addEventListener("change", kindSync);
 $("nCancel").onclick = () => $("dNew").close();
 const ridgeHint = () => { const P = +$("nP").value, Bw = +$("nB").value; $("nE").disabled = !!$("nH").value; if (!$("nH").value && P && Bw) $("nH").placeholder = "≈ " + Math.round((+$("nE").value || 2600) + 295 / Math.cos(P * Math.PI / 180) + Bw / 2 * Math.tan(P * Math.PI / 180) + ($("nFnd").value === "platne" ? 0 : 275)) + " no slīpuma"; };
 ["nP", "nB", "nH", "nE", "nFnd"].forEach(id => $(id).addEventListener("input", ridgeHint));
+$("nClaude").onclick = async () => {
+  const b = $("nClaude"); b.disabled = true;
+  try {
+    const r = await api("/api/claude-uzdevums", { company: $("nCo").value, komplekts: $("nSet").value, veids: $("nKind").value, garums: +$("nL").value || "", platums: +$("nB").value || "", augstums: +$("nH").value || "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
+      nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value, piezimes: $("nNote").value });
+    $("clPath").textContent = r.path; $("clTxt").value = r.prompt;
+    try { await navigator.clipboard.writeText(r.prompt); } catch (_) { $("clTxt").select(); }
+    $("dNew").close(); $("dCl").showModal();
+  } catch (er) { $("nErr").textContent = er.message; $("nErr").hidden = false; }
+  b.disabled = false;
+};
+$("clCopy").onclick = async () => { try { await navigator.clipboard.writeText($("clTxt").value); toast("Nokopēts."); } catch (_) { $("clTxt").select(); } };
 $("fNew").addEventListener("submit", async e => {
   e.preventDefault(); const b = $("nOk"); b.disabled = true; b.textContent = "Ģenerē…"; $("nErr").hidden = true;
   try {
