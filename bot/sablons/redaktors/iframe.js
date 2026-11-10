@@ -1099,6 +1099,7 @@
     }
     if (!place) { const gi = guideHit(e.clientX, e.clientY);
       if (gi >= 0) { sel = { k: "guide", i: gi }; drawSel(); post({ t: "sel", sel }); drag = { gi, gd: GUIDES()[gi], x0: e.clientX, y0: e.clientY, moved: false, P: guidePts(), h: null }; return true; } }
+    if (place && place.t === "bucket") return bucketClick(e);
     if (place && place.t === "post") return postClick(e);
     if (place && place.t === "terrace") return terClick(e);
     if (place) {
@@ -1161,6 +1162,7 @@
     }
     if (!drag && !place && hovWall && nearHandle(e) >= 0) { document.body.style.cursor = hovWall.w.axis === "x" ? "ns-resize" : "ew-resize"; return; }
     if (!drag && !place) { const gi = guideHit(e.clientX, e.clientY); if (gi >= 0) { document.body.style.cursor = GUIDES()[gi].o === "h" ? "ns-resize" : "ew-resize"; hover(null); return; } }
+    if (place && place.t === "bucket") { document.body.style.cursor = e.altKey ? "copy" : "cell"; const t = bucketTarget(e.clientX, e.clientY); hover(t && t.k !== "fas" ? hit(e.clientX, e.clientY) : null); return; }
     if (place) { hover(null); return; }
     if (!drag) {
       const h = hit(e.clientX, e.clientY);
@@ -1706,6 +1708,35 @@
     return false;
   }
 
+  // krāsas spainis (SketchUp "Paint Bucket"): klikšķis uzliek materiālu, Alt+klikšķis paņem to no elementa
+  function bucketTarget(cx, cy) {
+    const h = hit(cx, cy);
+    if (h && !h.wall && h.it.k === "post") return { k: "post", i: h.it.i };
+    if (h && (h.it.k === "ter" || h.it.k === "tedge" || h.it.k === "tvert")) return { k: "ter", i: h.it.k === "ter" ? h.it.i : Math.floor(h.it.i / 100) };
+    if (!h) { const bl = blocks().find(b => { if (b.type !== "elev") return false; const r = b.g.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; }); if (bl) return { k: "fas" }; }
+    return null;
+  }
+  function bucketClick(e) {
+    const t = bucketTarget(e.clientX, e.clientY), P = M.projekts || {};
+    if (!t) { post({ t: "hint", text: "Spainis darbojas uz stabu, terasi un fasādes laukumu (fasādes rasējumā)." }); return true; }
+    if (e.altKey) {   // paņem materiālu
+      const o = t.k === "post" ? M.posts[t.i] : t.k === "ter" ? M.terraces[t.i] : { col: P.fasade_hex, ral: P.fasade_ral };
+      if (t.k === "fas" && !o.col) { post({ t: "hint", text: "Fasādei nav izvēlēta RAL krāsa, nav ko paņemt." }); return true; }
+      place.mat = { col: o.col || null, ral: o.ral || null, tex: o.tex || null, texW: o.texW || 1000, texRot: o.texRot || 0 };
+      post({ t: "bmat", mat: place.mat }); post({ t: "hint", text: "Materiāls paņemts." }); return true;
+    }
+    const m = place.mat || {}, N = clone(M);
+    if (t.k === "fas") {
+      if (!m.col) { post({ t: "hint", text: "Fasādei der tikai krāsa (RAL vai brīva), ne tekstūra." }); return true; }
+      N.projekts = N.projekts || {}; N.projekts.fasade_hex = m.col; if (m.ral) N.projekts.fasade_ral = m.ral; else delete N.projekts.fasade_ral;
+    } else {
+      const o = t.k === "post" ? N.posts[t.i] : N.terraces[t.i];
+      ["col", "ral", "tex"].forEach(k => { if (m[k]) o[k] = m[k]; else delete o[k]; });
+      if (m.tex) { o.texW = m.texW || 1000; o.texRot = m.texRot || 0; }
+      if (t.k === "ter" && !m.tex) delete o.tex;
+    }
+    post({ t: "edit", model: N, sel }); return true;
+  }
   function placeAt(cx, cy) {
     const P = place, N = clone(M), eave = (M.jumts && M.jumts.eave) || 2600;
     for (const bl of blocks()) {
