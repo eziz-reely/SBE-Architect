@@ -720,7 +720,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const $ = id => document.getElementById(id);
   // 2. stāva (mansarda) logu bāzes punkts: mansarda pārseguma paneļa augša = griesti + paneļa biezums (MM pīrāgs P1)
   // jumta un grīdas pīrāgu biezumi no SBE konfigurācijas (kores augstums -> dzega)
-  const layerSum = k => { try { const j = TPL.match(new RegExp('"' + k + '":\\s*\\{[^[]*"layers":\\s*(\\[\\[[^\\]]*\\](?:,\\s*\\[[^\\]]*\\])*\\])')); return j ? JSON.parse(j[1]).reduce((a, l) => a + (+l[1] || 0), 0) : 0; } catch (e) { return 0; } };
+  const layerSum = k => { try { const j = TPL.match(new RegExp('"' + k + '":\\s*\\{[^[]*"layers":\\s*(\\[\\[[^\\]]*\\](?:,\\s*\\[[^\\]]*\\])*\\])')); return j ? JSON.parse(j[1]).reduce((a, l) => a + (l[2] === "n" ? 0 : +l[1] || 0), 0) : 0; } catch (e) { return 0; } };
   const ROOF_T = layerSum("J1") || 295, FLOOR_T = layerSum("G1") || 275.5;
   // ievade.augstums = kores augstums no grīdas paneļa apakšas (kā botā); dzega = kore - jumta biezums - pusplatums × slīpums
   function roofFix(n) {
@@ -1254,7 +1254,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function group(title, host) { const d = document.createElement("div"); d.className = "group"; const c = document.createElement("p"); c.className = "cap"; c.textContent = title; const g = document.createElement("div"); g.className = "grid"; d.append(c, g); host.appendChild(d); return g; }
   const SPEC_OPEN = new Set();
   // ---- visas konstrukcijas vienā logā: sienas (ārsiena, starpsienas), jumts, grīda; nosaukumi un slāņi; saglabā vienā reizē ----
-  const LKIND = { "": "Cits", h: "Apdare", a: "Latojums / sprauga", m: "Membrāna", i: "Izolācija / karkass", o: "OSB / plātne", k: "Ģipškartons" };
+  const LKIND = { "": "Cits", h: "Apdare", a: "Latojums / sprauga", m: "Membrāna", i: "Izolācija / karkass", o: "OSB / plātne", k: "Ģipškartons", n: "Latojumā (neskaita biezumā)" };
   function conDlg() {
     let d = document.getElementById("dCon");
     if (!d) {
@@ -1266,7 +1266,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const C = {}; ["S1", "S2", "J1", "G1"].filter(k => LAYERS0[k]).forEach(k => C[k] = { name: PN[k] || LAYERS0[k].name, layers: (PL[k] || LAYERS0[k].layers).map(l => l.slice()) });
     WT.forEach(w => C[w.id] = { name: w.name, layers: w.layers, wt: true });
     const SEC = [["Sienas", ["S1", "S2", ...WT.map(w => w.id)]], ["Jumts", ["J1"]], ["Grīda", ["G1"]]];
-    const sum = L => Math.round(L.reduce((a, l) => a + (+l[1] || 0), 0) * 10) / 10;
+    const sum = L => Math.round(L.reduce((a, l) => a + (l[2] === "n" ? 0 : +l[1] || 0), 0) * 10) / 10;
     const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     const draw = () => {
       d.innerHTML = `<form method="dialog"><div class="hd"><h3>Konstrukcijas</h3><p class="note" style="margin:0">Visas sienas, jumts un grīda vienā logā. Nosaukumi un slāņi nonāk AR lapā "Sienu specifikācija". Slāņi no ārpuses uz iekšpusi.</p></div><div class="bd">` +
@@ -1287,7 +1287,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const del = e.target.closest("[data-del]"), add = e.target.closest("[data-add]");
       if (del || add) { read(); const k = e.target.closest(".cn").dataset.k; if (del) C[k].layers.splice(+del.closest(".rw").dataset.i, 1); else C[k].layers.push(["", 0, ""]); const sc = d.querySelector(".bd").scrollTop; draw(); d.querySelector(".bd").scrollTop = sc; }
     };
-    d.oninput = e => { const cn = e.target.closest(".cn"); if (cn && e.target.name === "t") cn.querySelector(".sm").textContent = cn.dataset.k + " · " + sum([...cn.querySelectorAll("[name=t]")].map(i => ["", +i.value || 0])) + " mm"; };
+    d.oninput = e => { const cn = e.target.closest(".cn"); if (cn && e.target.name === "t") cn.querySelector(".sm").textContent = cn.dataset.k + " · " + sum([...cn.querySelectorAll(".rw")].map(r => ["", +r.querySelector("[name=t]").value || 0, r.querySelector("[name=c]").value])) + " mm"; };
     d.onsubmit = e => {
       e.preventDefault(); read();
       const n = clone(model); n.projekts = n.projekts || {}; const pl = {}, pn = {};
@@ -1357,7 +1357,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       WT.forEach((w, wi) => ENT.push({ k: w.id, name: w.name, cur: w.layers, custom: wi, exp: null,
         save: arr => { const n = clone(model); n.projekts.wall_types[wi].layers = arr; commit(n); } }));
       ENT.forEach(en => {
-        const k = en.k, base = { name: en.name }, cur = en.cur.map(l => l.slice()), sum = cur.reduce((a, l) => a + (+l[1] || 0), 0), save = en.save, PL1 = en.edited;
+        const k = en.k, base = { name: en.name }, cur = en.cur.map(l => l.slice()), sum = cur.reduce((a, l) => a + (l[2] === "n" ? 0 : +l[1] || 0), 0), save = en.save, PL1 = en.edited;
         const box = document.createElement("div"); box.className = "full spec";
         const t = document.createElement("b");
         if (en.custom != null) {

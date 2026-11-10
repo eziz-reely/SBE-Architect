@@ -452,7 +452,7 @@ $("fList").addEventListener("click", e => {
 });
 document.addEventListener("click", e => { const f = e.target.closest("[data-files]"); if (f) files(f.dataset.files).catch(er => toast(er.message)); });
 // ---- uzņēmuma sienu specifikācijas (S1 ārsiena, S2 starpsiena, G1 grīda, J1 jumts) ----
-const KIND = { "": "Cits", h: "Apdare", a: "Latojums / gaisa sprauga", m: "Membrāna", i: "Izolācija / karkass", o: "OSB / plātne", k: "Ģipškartons" };
+const KIND = { "": "Cits", h: "Apdare", a: "Latojums / gaisa sprauga", m: "Membrāna", i: "Izolācija / karkass", o: "OSB / plātne", k: "Ģipškartons", n: "Latojumā (neskaita biezumā)" };
 let SP = null, spTab = "S1", spAfter = null;
 const spCopy = o => JSON.parse(JSON.stringify(o));
 const spCur = () => SP.sets[SP.idx];
@@ -468,7 +468,7 @@ async function specDlg(key, after, setId) {
   spTab = "S1"; $("sErr").hidden = true; spDraw(); $("dSpec").showModal();
 }
 function spRead() { const c = spCur(), nv = $("sName").value.trim(); if (nv) c.nm[spTab] = nv; c.cur[spTab] = [...$("sRows").querySelectorAll(".spr")].map(r => [r.querySelector("[name=n]").value.trim(), +r.querySelector("[name=t]").value || 0, r.querySelector("[name=k]").value]).filter(l => l[0]); }
-function spSum() { const t = [...$("sRows").querySelectorAll("[name=t]")].reduce((a, i) => a + (+i.value || 0), 0); $("sSum").innerHTML = `Kopā <b>${Math.round(t * 10) / 10} mm</b>`; }
+function spSum() { const t = [...$("sRows").querySelectorAll(".spr:not(.h)")].reduce((a, r) => a + (r.querySelector("[name=k]").value === "n" ? 0 : +r.querySelector("[name=t]").value || 0), 0); $("sSum").innerHTML = `Kopā <b>${Math.round(t * 10) / 10} mm</b>`; }
 // trīs atsevišķas konstrukcijas: sienas (ārsiena, starpsiena), jumts, grīda
 const SPG = [["sienas", "Sienas", ["S1", "S2"]], ["jumts", "Jumts", ["J1"]], ["grida", "Grīda", ["G1"]], ["mansards", "Mansards", ["P1"]]];
 const spGroup = () => SPG.find(g => g[2].includes(spTab));
@@ -485,6 +485,7 @@ function spDraw() {
 $("sGroups").addEventListener("click", e => { const b = e.target.closest("[data-g]"); if (!b) return; spRead(); spTab = SPG.find(g => g[0] === b.dataset.g)[2][0]; spDraw(); });
 $("sTabs").addEventListener("click", e => { const b = e.target.closest("[data-t]"); if (!b) return; spRead(); spTab = b.dataset.t; spDraw(); });
 $("sRows").addEventListener("input", spSum);
+$("sRows").addEventListener("change", spSum);
 $("sRows").addEventListener("click", e => { if (e.target.closest(".x")) { e.target.closest(".spr").remove(); spSum(); } });
 $("sAdd").innerHTML = ico("plus") + "Pievienot slāni";
 $("sAdd").onclick = () => { spRead(); spCur().cur[spTab].push(["", 0, ""]); spDraw(); const i = $("sRows").querySelectorAll("[name=n]"); i[i.length - 1].focus(); };

@@ -267,7 +267,7 @@ def new_project(b):
         H = math.ceil(float(b.get('dzega') or 2600) + RT / math.cos(p) + B / 2 * math.tan(p) + flT)
     if not (3000 <= L <= 40000 and 2500 <= B <= 15000 and 2500 <= H <= 12000):
         raise ValueError('Izmēri ārpus robežām (garums 3–40 m, platums 2,5–15 m, kore 2,5–12 m).')
-    p1 = sum(l[1] for l in (pick_set(company_spec(cos[co]), b.get('komplekts')).get('piragi_layers') or {}).get('P1', []))
+    p1 = sum(l[1] for l in (pick_set(company_spec(cos[co]), b.get('komplekts')).get('piragi_layers') or {}).get('P1', []) if (len(l) < 3 or l[2] != 'n'))
     args = [sys.executable, os.path.join(HERE, 'generate.py'), str(L), str(B), str(H), '--valodas', 'LV']
     if pitch: args += ['--slipums', f'{pitch:g}']
     pid = safe_name(b.get('id'))

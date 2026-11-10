@@ -332,6 +332,10 @@ def build(model_path, langs=None):
     ]:
         assert a_ in ar, 'SBE ar.js: nav atrasts ' + a_[:50]
         ar = ar.replace(a_, b_, 1)
+    # [MM] slānis ar veidu "n" (piem. pretgrauzēju barjera latojumā) neskaita kopējā biezumā: lapā biezums 0, mm nosaukumā
+    a_ = 'const LAYERS = k => (ARC && ARC.layers && ARC.layers[k]) || null;'
+    assert a_ in ar, 'SBE ar.js: nav atrasts LAYERS'
+    ar = ar.replace(a_, 'const LAYERS = k => { const s = (ARC && ARC.layers && ARC.layers[k]) || null; return s && s.layers.some(l => l[2] === "n") ? { ...s, layers: s.layers.map(l => l[2] === "n" ? [l[0] + " (" + l[1] + " mm latojumā)", 0, ""] : l) } : s; };', 1)
     for a_, b_ in [
         ('  const g = el("g", { transform: "translate(61 50) scale(0.01)" }, svg);\n  cadPlan(g, v, { furniture: o.furniture ?? true, axes: true, levels: true, tag: o.tag || "-a3", tags: o.tags ?? !!v.marks, wallTags: o.wallTags, sections: o.sections });',
          '  const g = el("g", { transform: window.AR_PK ? `translate(${27 + 3450 * window.AR_PK} ${22 + 3450 * window.AR_PK}) scale(${window.AR_PK})` : "translate(61 50) scale(0.01)" }, svg);\n  cadPlan(g, v, { furniture: o.furniture ?? true, axes: true, levels: true, tag: o.tag || "-a3", tags: o.tags ?? !!v.marks, wallTags: o.wallTags, sections: o.sections });\n  if (window.AR_PK) arFix(g, 0.01 / window.AR_PK);'),
