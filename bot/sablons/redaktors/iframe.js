@@ -1085,10 +1085,102 @@
   })();
   // ---- pamatu plāns: stabu izvēle ar klikšķi, bultiņas pārbīda (to dara vecākā lapa, šeit tikai izcelšana un pārsūtīšana) ----
   let pst = ED.pst || null;
-  const pstOn = k => !pst ? false : pst[1] === ":" ? (pst[0] === "r" ? new RegExp("^a?\\d+," + pst.slice(2) + "$") : new RegExp("^b?" + pst.slice(2) + ",\\d+$")).test(k) : k === pst;   // r:j visa rinda, c:i visa kolona
-  const pstMark = () => document.querySelectorAll("[data-pst]").forEach(c => { const on = pstOn(c.dataset.pst); c.setAttribute("fill", on ? ACC : "#8a8d90"); c.setAttribute("stroke", on ? ACC : C_INK); });
+  const pstOn = k => { if (!pst) return false; const m = /^(\d+\/)?([rc]):(\d+)$/.exec(pst); if (!m) return k === pst;   // [n/]r:j visa rinda, [n/]c:i visa kolona
+    const pre = (m[1] || "").replace("/", "\\/"); return (m[2] === "r" ? new RegExp("^" + pre + "a?\\d+," + m[3] + "$") : new RegExp("^" + pre + "b?" + m[3] + ",\\d+$")).test(k); };
+  const pstMark = () => {
+    document.querySelectorAll("[data-pst]").forEach(c => { const on = pstOn(c.dataset.pst); c.setAttribute("fill", on ? ACC : "#8a8d90"); c.setAttribute("stroke", on ? ACC : C_INK); });
+    document.querySelectorAll("[data-pkom] > [data-hit]").forEach(c => { const on = pst === "k:" + c.parentNode.dataset.pkom; c.setAttribute("stroke", on ? ACC : "none"); c.setAttribute("stroke-width", on ? 40 : 0); });
+    document.querySelectorAll("rect[data-ppart]").forEach(r => { const on = pst === "p:" + r.dataset.ppart; r.setAttribute("fill", on ? "rgba(34,102,216,.08)" : "transparent"); r.style.outline = ""; r.setAttribute("stroke", on ? ACC : C_INK); });
+    document.querySelectorAll("[data-pdim]").forEach(g => { const on = pst && pst[0] === "m" && g.dataset.pdim.endsWith(":u" + pst.slice(2)); g.style.filter = on ? "drop-shadow(0 0 1.5px " + ACC + ")" : ""; });
+  };
+  // ---- pamatu lapa: mēru ķēžu vilkšana, pievadu vilkšana, D mēri un pievadu likšana ar klikšķi ----
+  const PPM = () => (M.projekts || {}).pamatu_plans || {};
+  const pView = el => el && el.closest && el.closest("g[data-pview]");
+  const pLocal = (g, cx, cy) => { const sv = g.ownerSVGElement, r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal, b = tr(g);
+    return [((cx - r.left) / r.width * vb.width - b.tx) / b.k, ((cy - r.top) / r.height * vb.height - b.ty) / b.k]; };
+  const pK = g => tr(g).k;
+  function pSnap(g, p) {   // stabu centri un malas, kontūras stūri, asu krustpunkti
+    const c = [], tol = 2.5 / pK(g);
+    g.querySelectorAll("circle[data-pst]").forEach(e => { const x = +e.getAttribute("cx"), y = +e.getAttribute("cy"), r = +e.getAttribute("r"); c.push([x, y], [x - r, y], [x + r, y], [x, y - r], [x, y + r]); });
+    g.querySelectorAll("rect[data-snap]").forEach(e => { const x = +e.getAttribute("x"), y = +e.getAttribute("y"), w = +e.getAttribute("width"), h = +e.getAttribute("height"); c.push([x, y], [x + w, y], [x, y + h], [x + w, y + h]); });
+    (M.axes.x || []).forEach(([x]) => (M.axes.y || []).forEach(([y]) => c.push([x, y])));
+    let best = null, bd = tol; c.forEach(q => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd) { bd = d; best = q; } });
+    return best ? { p: best, hit: true } : { p: [Math.round(p[0] / 10) * 10, Math.round(p[1] / 10) * 10], hit: false };
+  }
+  let pPlace = null, pDim = null, pDrag = null;   // pPlace: "dim" | "kom"; pDim: { g, pts }
+  const pMarks = [];
+  const pMark = (g, p) => { const k = pK(g), c = document.createElementNS(NS, "circle"); c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", 1.2 / k); c.setAttribute("fill", ACC); g.appendChild(c); pMarks.push(c); };
+  const pClear = () => { pMarks.splice(0).forEach(c => c.remove()); pDim = null; };
+  const pEdit = (f, extra) => { const N = clone(M); N.projekts = N.projekts || {}; N.projekts.pamatu_plans = N.projekts.pamatu_plans || {}; f(N.projekts.pamatu_plans, N); post(Object.assign({ t: "edit", model: N, sel: null, pst }, extra || {})); };
+  const pKomList = Q => { if (!Q.kom) { const L = []; document.querySelectorAll("[data-pkom]").forEach(e => { L[+e.dataset.pkom] = JSON.parse(e.dataset.kom); }); Q.kom = L.filter(Boolean); } return Q.kom; };
+  function pamHook(e) {   // true = notikums apstrādāts
+    const dimMode = pPlace === "dim" || (place && place.t === "dim"), sv = e.target && e.target.closest && e.target.closest("svg.a3");
+    // ārpus zīmējuma (tukšā lapas vietā) ņem tuvāko skatu: stabu plānu vai vienīgo skatu lapā
+    const g = pView(e.target) || ((pPlace || dimMode) && sv ? (sv.querySelector("g[data-pview=stabi]") || sv.querySelector("g[data-pview]")) : null);
+    if (g && dimMode) {
+      const sn = pSnap(g, pLocal(g, e.clientX, e.clientY));
+      if (!pDim || pDim.g !== g) { pClear(); pDim = { g, pts: [] }; }
+      if (pDim.pts.length < 2) { pDim.pts.push(sn.p); pMark(g, sn.p); post({ t: "hint", text: pDim.pts.length === 1 ? "Mērs: otrais punkts (pielīp stabu centriem un malām)" : "Mērs: klikšķis, kur novietot mēra līniju" }); return true; }
+      const [a, b] = pDim.pts, q = pLocal(g, e.clientX, e.clientY), H = Math.abs(b[0] - a[0]) >= Math.abs(b[1] - a[1]), view = g.dataset.pview;
+      pClear(); pPlace = null; document.body.style.cursor = "";
+      pEdit(Q => { Q.udims = (Q.udims || []).concat([{ v: view, a, b, h: H, at: Math.round(H ? q[1] : q[0]) }]); }, { placed: true });
+      return true;
+    }
+    if (g && (pPlace === "rect" || pPlace === "rect0")) {   // kontūra: velk taisnstūri, pielīp stūriem
+      const a = pSnap(g, pLocal(g, e.clientX, e.clientY)).p, r = document.createElementNS(NS, "rect"), k = pK(g);
+      r.setAttribute("fill", "rgba(34,102,216,.10)"); r.setAttribute("stroke", ACC); r.setAttribute("stroke-width", .4 / k); r.setAttribute("stroke-dasharray", `${1.5 / k} ${1 / k}`); g.appendChild(r);
+      const t = document.createElementNS(NS, "text"); t.setAttribute("font-size", 3 / k); t.setAttribute("fill", ACC); t.setAttribute("font-weight", 600); g.appendChild(t);
+      pDrag = { kind: "rect", g, a, b: a, p0: a, el: r, tx: t, mode: pPlace, moved: true }; return true;
+    }
+    if (g && pPlace === "kom") {
+      const p = pLocal(g, e.clientX, e.clientY).map(v => Math.round(v / 10) * 10), d = { n: p[1], s: M.D - p[1], w: p[0], e: M.W - p[0] };
+      const side = Object.keys(d).sort((a, b) => d[a] - d[b])[0];
+      pPlace = null; document.body.style.cursor = "";
+      pEdit(Q => { const L = pKomList(Q); L.push({ n: "Jauns pievads", c: "#0b8a6a", side, x: p[0], y: p[1], sym: "ievads" }); pst = "k:" + (L.length - 1); }, { placed: true });
+      post({ t: "pst", key: pst });
+      return true;
+    }
+    if (place) return false;
+    const dEl = e.target.closest && e.target.closest("[data-pdim]");
+    if (dEl && g) { pDrag = { kind: "dim", el: dEl, g, id: dEl.dataset.pdim, h: dEl.dataset.h === "1", p0: pLocal(g, e.clientX, e.clientY), d: 0, moved: false }; return true; }
+    const kEl = e.target.closest && e.target.closest("[data-pkom]");
+    if (kEl && g) { pDrag = { kind: "kom", el: kEl, g, i: +kEl.dataset.pkom, p0: pLocal(g, e.clientX, e.clientY), d: [0, 0], moved: false }; return true; }
+    return false;
+  }
+  addEventListener("pointermove", e => {
+    if (!pDrag) return;
+    const p = pLocal(pDrag.g, e.clientX, e.clientY), dx = p[0] - pDrag.p0[0], dy = p[1] - pDrag.p0[1];
+    if (!pDrag.moved && Math.hypot(dx, dy) * pK(pDrag.g) < .6) return;
+    pDrag.moved = true;
+    if (pDrag.kind === "rect") { const b = pSnap(pDrag.g, p).p, a = pDrag.a, x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]), w = Math.abs(b[0] - a[0]), h = Math.abs(b[1] - a[1]); pDrag.b = b;
+      Object.entries({ x, y, width: w, height: h }).forEach(([n, v]) => pDrag.el.setAttribute(n, v)); pDrag.tx.setAttribute("x", x + 2 / pK(pDrag.g)); pDrag.tx.setAttribute("y", y - 1.5 / pK(pDrag.g)); pDrag.tx.textContent = `${Math.round(w)} × ${Math.round(h)}`; return; }
+    if (pDrag.kind === "dim") { pDrag.d = Math.round((pDrag.h ? dy : dx) / 10) * 10; pDrag.el.setAttribute("transform", pDrag.h ? `translate(0 ${pDrag.d})` : `translate(${pDrag.d} 0)`); }
+    else { pDrag.d = [Math.round(dx / 10) * 10, Math.round(dy / 10) * 10]; pDrag.el.setAttribute("transform", `translate(${pDrag.d[0]} ${pDrag.d[1]})`); }
+  });
+  addEventListener("pointerup", () => {
+    const D = pDrag; pDrag = null; if (!D) return;
+    if (D.kind === "rect") {
+      D.el.remove(); D.tx.remove(); pPlace = null; document.body.style.cursor = "";
+      const a = D.a, b = D.b, R = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]), Math.abs(b[1] - a[1])].map(Math.round);
+      if (R[2] < 500 || R[3] < 500) { post({ t: "hint", text: "Kontūra par mazu (vismaz 500 × 500 mm). Spied pogu vēlreiz un velc lielāku." }); post({ t: "placed" }); return; }
+      pEdit((Q, N) => {
+        if (D.mode === "rect0") { ["nx", "ny", "mov", "rmov", "cmov", "del", "doff"].forEach(f => delete Q[f]); Q.ext = (Q.ext || []).filter(q => Array.isArray(q)); Q.parts = [{ r: R }]; pst = "p:0"; }
+        else { if (!(Q.parts || []).length) Q.parts = [{ r: [0, 0, N.W, N.D] }]; Q.parts.push({ r: R }); pst = "p:" + (Q.parts.length - 1); }
+      }, { placed: true });
+      post({ t: "pst", key: pst }); return;
+    }
+    if (D.kind === "dim") {
+      const u = /:u(\d+)$/.exec(D.id);
+      if (!D.moved) { if (u) { pst = "m:" + u[1]; pstMark(); post({ t: "pst", key: pst }); } return; }
+      pEdit(Q => { if (u) { const q = (Q.udims || [])[+u[1]]; if (q) q.at += D.d; } else { Q.doff = Q.doff || {}; Q.doff[D.id] = (Q.doff[D.id] || 0) + D.d; if (!Q.doff[D.id]) delete Q.doff[D.id]; } });
+    } else {
+      if (!D.moved) { pst = "k:" + D.i; pstMark(); post({ t: "pst", key: pst }); return; }
+      pEdit(Q => { const q = pKomList(Q)[D.i]; if (q) { q.x = (+q.x || 0) + D.d[0]; q.y = (+q.y || 0) + D.d[1]; } });
+    }
+  });
   const C_INK = "#111";
   addEventListener("keydown", e => {
+    if (e.key === "Escape" && (pPlace || pDim)) { pClear(); pPlace = null; document.body.style.cursor = ""; post({ t: "placed" }); }
     if (!pst || e.ctrlKey || e.metaKey || e.altKey) return;
     if (/^Arrow(Left|Right|Up|Down)$/.test(e.key) || e.key === "Delete" || e.key === "Escape") {
       e.preventDefault(); e.stopImmediatePropagation();
@@ -1096,12 +1188,19 @@
       else post({ t: "pstKey", key: e.key, shiftKey: e.shiftKey });
     }
   }, true);
-  addEventListener("message", e => { const m = e.data; if (m && "mmPst" in m) { pst = m.mmPst; pstMark(); } });
+  addEventListener("message", e => { const m = e.data; if (m && "mmPst" in m) { pst = m.mmPst; pstMark(); }
+    if (m && "mmPamPlace" in m) { pClear(); pPlace = m.mmPamPlace; document.body.style.cursor = pPlace ? "crosshair" : ""; }
+    if (m && "mmPlace" in m && !m.mmPlace) { pClear(); pPlace = null; } });
   addEventListener("load", () => { pstMark(); if (window.MM_PAM) post({ t: "pam", info: window.MM_PAM }); });
   window.MMZ_HOOK = e => {
     if (e.button !== 0) return false;
+    if (pamHook(e)) return true;
     { const pe = e.target && e.target.closest && e.target.closest("[data-pst]");
       if (pe && !place) { pst = pe.dataset.pst; pstMark(); if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } post({ t: "pst", key: pst }); return true; }
+      // kontūras izvēle: klikšķis tās laukumā (arī uz režģa līnijām), ja nav trāpīts stabs, mērs vai pievads
+      const gv = !place && pView(e.target), lp = gv && gv.dataset.pview === "stabi" ? pLocal(gv, e.clientX, e.clientY) : null;
+      const pp = lp && [...gv.querySelectorAll("rect[data-ppart]")].reverse().find(r => { const x = +r.getAttribute("x"), y = +r.getAttribute("y"); return lp[0] >= x && lp[1] >= y && lp[0] <= x + +r.getAttribute("width") && lp[1] <= y + +r.getAttribute("height"); });
+      if (pp) { pst = "p:" + pp.dataset.ppart; pstMark(); if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } post({ t: "pst", key: pst }); return true; }
       if (pst && e.target && e.target.closest && e.target.closest("svg[data-part=pamati]")) { pst = null; pstMark(); post({ t: "pst", key: null }); return false; } }
     if (drag && drag.wend && drag.sticky) { commitWend(); return true; }
     if (place && place.t === "erase") {
