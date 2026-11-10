@@ -118,6 +118,7 @@
           t.poly.forEach((q, j) => { const r = t.poly[(j + 1) % t.poly.length], Hh = Math.abs(q[1] - r[1]) < 1;
             out.push({ k: "tedge", i: i * 100 + j, lv: "main", b: Hh ? [Math.min(q[0], r[0]), q[1] - 90, Math.max(q[0], r[0]), q[1] + 90] : [q[0] - 90, Math.min(q[1], r[1]), q[0] + 90, Math.max(q[1], r[1])], pad: 30 }); });
         });
+        (X.posts || []).forEach((q, i) => out.push({ k: "post", i, lv: "main", b: [q.x, q.y, q.x + q.w, q.y + q.d], pad: 40 }));
         const AO = axO(X);   // asu galu josla katrā pusē: velc uz āru / iekšā, visas šīs puses asis pārvietojas kopā
         out.push({ k: "axo", i: "n", lv: "main", b: [0, -AO.n - 520, X.W, -AO.n + 80], pad: 0 }, { k: "axo", i: "s", lv: "main", b: [0, X.D + AO.s - 80, X.W, X.D + AO.s + 520], pad: 0 },
           { k: "axo", i: "w", lv: "main", b: [-AO.w - 520, 0, -AO.w + 80, X.D], pad: 0 }, { k: "axo", i: "e", lv: "main", b: [X.W + AO.e - 80, 0, X.W + AO.e + 520, X.D], pad: 0 });
@@ -619,6 +620,8 @@
   function snapPts(l, axis) {
     const X = axis === "x", L = lv(l), c = rects(l).flatMap(q => (X ? [q[0], q[2]] : [q[1], q[3]]));
     c.push(0, X ? M.W : M.D);
+    (M.posts || []).forEach(q => c.push(X ? q.x : q.y, X ? q.x + q.w : q.y + q.d));   // stabu malas
+    (M.terraces || []).forEach(t => t.poly.forEach(q => c.push(X ? q[0] : q[1])));   // terases stūri
     (L.windows || []).forEach(w => { if ((w.o === "h") === X) c.push(X ? w.x : w.y, (X ? w.x : w.y) + w.len); });
     (L.doors || []).forEach(d => { if ((d.o === "h") === X) c.push(X ? d.x : d.y, (X ? d.x : d.y) + d.w); });
     ((M.axes || {})[axis] || []).forEach(a => c.push(a[0]));
@@ -785,7 +788,7 @@
     if (d.grp && d.zone === "move") return applyGrp(d, dx, dy);
     if (!d.copy || d.zone !== "move") return apply(d, dx, dy);
     if (!d.it0) { d.it0 = d.h.it; d.b0 = d.boxes; }
-    const it = d.it0, key = it.k === "furn" ? "furniture" : it.k === "win" ? "windows" : "doors", L = lv(it.lv), arr = L[key];
+    const it = d.it0, key = it.k === "furn" ? "furniture" : it.k === "win" ? "windows" : it.k === "post" ? "posts" : "doors", L = it.k === "post" ? M : lv(it.lv), arr = L[key];
     const ni = arr.length; arr.push(clone(arr[it.i]));
     d.h = Object.assign({}, d.h, { it: Object.assign({}, it, { i: ni }) });
     if (d.b0) { d.boxes = Object.assign({}, d.b0, { [ni]: d.b0[it.i] }); delete d.boxes[it.i]; }
@@ -825,6 +828,11 @@
     const N = clone(M);
     if (d.h.bl.type === "plan") {
       const L = lv(it.lv, N);
+      if (it.k === "post") {
+        const q = N.posts[it.i], sn = (ax, lo, len, dv) => { const c = snapPts("main", ax); let best = dv; let bd = 120; c.forEach(t => [lo + dv, lo + dv + len, lo + dv + len / 2].forEach(v => { const df = t - v; if (Math.abs(df) < bd) { bd = Math.abs(df); best = dv + df; } })); return best; };
+        const mx = d.nudge ? dx : sn("x", q.x, q.w, dx), my = d.nudge ? dy : sn("y", q.y, q.d, dy);
+        q.x = +(q.x + r10(mx)).toFixed(1); q.y = +(q.y + r10(my)).toFixed(1); d.fdx = r10(mx); d.fdy = r10(my); return N;
+      }
       if (it.k === "ter") {
         const t = N.terraces[it.i], sx = r10(dx), sy = r10(dy);
         t.poly = t.poly.map(q => [q[0] + sx, q[1] + sy]); if (t.posts) t.posts = t.posts.map(q => [q[0] + sx, q[1] + sy, q[2]]);
@@ -1040,6 +1048,7 @@
     }
     if (!place) { const gi = guideHit(e.clientX, e.clientY);
       if (gi >= 0) { sel = { k: "guide", i: gi }; drawSel(); post({ t: "sel", sel }); drag = { gi, gd: GUIDES()[gi], x0: e.clientX, y0: e.clientY, moved: false, P: guidePts(), h: null }; return true; } }
+    if (place && place.t === "post") return postClick(e);
     if (place && place.t === "terrace") return terClick(e);
     if (place) {
       const r = placeAt(e.clientX, e.clientY);
@@ -1069,7 +1078,7 @@
     }
     const inGrp = grpOk && sel && sel.more && sel.more.length && (same(h.it, sel) || sel.more.some(m => same(m, h.it)));
     if (!h.wall && !inGrp) { sel = h.it.k === "tedge" ? { k: "ter", i: Math.floor(h.it.i / 100), lv: "main" } : { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
-    drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
+    drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door", "post"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
     document.body.style.cursor = h.wall ? MVC : cur(drag.zone);
     return true;
   };
@@ -1081,6 +1090,7 @@
     if (place && place.t === "dim" && fdimMove(e)) return;
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
+    if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "terrace") { terPreview(e.clientX, e.clientY, e.shiftKey); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
     if (drag && drag.wend) {
@@ -1139,14 +1149,31 @@
     if (!d.moved) return;
     const N = applyC(d, d.dx, d.dy);
     if (N && d.grp && d.ghost) { if (d.copy) sel = Object.assign({}, d.ghost[0], { more: d.ghost.slice(1) }); post({ t: "edit", model: N, sel }); return; }
-    if (N && d.cpI != null) { sel = { k: d.h.it.k, i: d.cpI, lv: d.h.it.lv }; post({ t: "edit", model: N, sel }); return; }
+    if (N && d.cpI != null) { sel = { k: d.h.it.k, i: d.cpI, lv: d.h.it.lv }; if (d.h.it.k === "post") sel.from = d.it0.i; post({ t: "edit", model: N, sel }); return; }
     if (N && (d.zone === "wx" || d.zone === "wy") && bathFix(N)) { post({ t: "hint", text: BATHMSG }); document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); return; }
     if (N) post({ t: "edit", model: N, sel });
     else document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
   });
 
   // keyboard: arrows move, R turns, Delete removes, Ctrl+Z / Ctrl+Y, Esc
+  // stabu kopēšana kā SketchUp: Ctrl+vilkt kopē; /n sadala attālumu starp oriģinālu un kopiju ar n stabiem, *n atkārto to pašu soli n reizes
+  let divBuf = null;
+  function postDiv(n, op) {
+    const src = M.posts[sel.from], cp = M.posts[sel.i]; if (!src || !cp) return;
+    const N = clone(M), dx = cp.x - src.x, dy = cp.y - src.y, arr = [];
+    if (op === "/") for (let k = 1; k < n; k++) arr.push([src.x + dx * k / n, src.y + dy * k / n]);
+    else for (let k = 2; k <= n; k++) arr.push([src.x + dx * k, src.y + dy * k]);
+    arr.forEach(([x, y]) => N.posts.push(Object.assign(clone(src), { x: +x.toFixed(1), y: +y.toFixed(1) })));
+    post({ t: "edit", model: N, sel: { k: "post", i: sel.i, lv: "main" } });
+  }
   addEventListener("keydown", e => {
+    if (sel && sel.k === "post" && sel.from != null && !divBuf && (e.key === "/" || e.key === "*") && !e.ctrlKey) { e.preventDefault(); divBuf = { op: e.key, s: "" }; post({ t: "hint", text: (e.key === "/" ? "Dalīt ar: " : "Atkārtot reizes: ") + "ieraksti skaitli un Enter" }); return; }
+    if (divBuf) {
+      if (/^[0-9]$/.test(e.key)) { e.preventDefault(); divBuf.s += e.key; post({ t: "hint", text: (divBuf.op === "/" ? "Dalīt ar: " : "Atkārtot reizes: ") + divBuf.s + "  (Enter apstiprina)" }); return; }
+      if (e.key === "Backspace") { e.preventDefault(); divBuf.s = divBuf.s.slice(0, -1); return; }
+      if (e.key === "Enter") { e.preventDefault(); const n = +divBuf.s, op = divBuf.op; divBuf = null; if (n >= (op === "/" ? 2 : 1)) postDiv(n, op); return; }
+      if (e.key === "Escape") { divBuf = null; post({ t: "hint", text: "" }); return; }
+    }
     if (place && place.t === "terrace" && e.key === "Enter") { e.preventDefault(); terFinish(); return; }
     if (place && place.t === "terrace" && e.key === "Backspace") { e.preventDefault(); (place.pts || []).pop(); return; }
     if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) { e.preventDefault(); post({ t: e.shiftKey ? "redo" : "undo" }); return; }
@@ -1430,13 +1457,13 @@
   function terPt(p, shift) {
     let x = snapAx("main", "x", p[0], 150), y = snapAx("main", "y", p[1], 150);
     const pts = place.pts || [];
-    if (pts.length && !shift) { const a = pts[pts.length - 1]; if (Math.abs(x - a[0]) >= Math.abs(y - a[1])) y = a[1]; else x = a[0]; }
+    if (pts.length && !shift && !place.rect) { const a = pts[pts.length - 1]; if (Math.abs(x - a[0]) >= Math.abs(y - a[1])) y = a[1]; else x = a[0]; }
     return [x, y];
   }
   function terPreview(cx, cy, shift) {
     const bl = terBlock(); if (!bl) return;
     const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
-    const k = ek(bl), g = mk(o, "g", { class: "gh" }), pts = place.pts || [], q = terPt(p, shift), all = pts.concat([q]);
+    const k = ek(bl), g = mk(o, "g", { class: "gh" }), pts = place.pts || [], q = terPt(p, shift), all = place.rect && pts.length ? [pts[0], [q[0], pts[0][1]], q, [pts[0][0], q[1]], pts[0]] : pts.concat([q]);
     if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: pts.length > 1 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
     pts.forEach(a => snapMark(g, a, true, k)); snapMark(g, q, false, k);
     const last = pts[pts.length - 1];
@@ -1469,11 +1496,29 @@
     });
     document.documentElement.appendChild(box);
   }
+  function postPreview(cx, cy) {
+    const bl = terBlock(); if (!bl) return;
+    const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
+    const k = ek(bl), g = mk(o, "g", { class: "gh" }), x = snapAx("main", "x", p[0], 150), y = snapAx("main", "y", p[1], 150);
+    rect(g, [x - 150, y - 150, x + 150, y + 150], true, k, 0); label(g, x + 200, y - 200, "Stabs 300 × 300", k);
+  }
+  function postClick(e) {
+    const bl = terBlock(); if (!bl) return true;
+    const p = toLocal(bl.g, e.clientX, e.clientY), x = snapAx("main", "x", p[0], 150), y = snapAx("main", "y", p[1], 150), N = clone(M);
+    N.posts = (N.posts || []).concat([{ name: "Stabs", x: x - 150, y: y - 150, w: 300, d: 300 }]);
+    place = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(q => q.remove());
+    post({ t: "edit", model: N, sel: { k: "post", i: N.posts.length - 1, lv: "main" }, placed: true }); return true;
+  }
   function terClick(e) {
     const bl = terBlock(); if (!bl) return true;
     if (place.asking) return true;
     place.pts = place.pts || [];
     const p = terPt(toLocal(bl.g, e.clientX, e.clientY), e.shiftKey), pts = place.pts;
+    if (place.rect) {   // taisnstūris: pirmais klikšķis un pretējais stūris
+      if (!pts.length) { pts.push(p); terPreview(e.clientX, e.clientY, e.shiftKey); return true; }
+      const a = pts[0]; if (Math.abs(p[0] - a[0]) < 100 || Math.abs(p[1] - a[1]) < 100) { post({ t: "hint", text: "Terase par šauru. Uzklikšķini tālāk." }); return true; }
+      place.pts = [a, [p[0], a[1]], p, [a[0], p[1]]]; terFinish(); return true;
+    }
     if (pts.length > 2 && Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1]) < 250) { terFinish(); return true; }
     if (!pts.length || Math.hypot(p[0] - pts[pts.length - 1][0], p[1] - pts[pts.length - 1][1]) > 50) pts.push(p);
     terPreview(e.clientX, e.clientY, e.shiftKey); return true;

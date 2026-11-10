@@ -24,7 +24,7 @@ RAL = {'RAL 7016': '#383E42', 'RAL 7024': '#474A50', 'RAL 7021': '#2F3234', 'RAL
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'userDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'entryInChain', 'porch', 'terraces', 'axOff']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
@@ -197,6 +197,10 @@ def build(model_path, langs=None):
          "  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT + (pc.up || 0)));"),
         ("pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);",
          "(pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT) - (pc.up || 0), ROOF.plinth - 40);"),
+        ("  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
+         "  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));\n  (v.posts || []).forEach(q => { el(\"rect\", { x: q.x, y: q.y, width: q.w, height: q.d, fill: \"#fff\", stroke: C.ink, \"stroke-width\": 12 }, g); el(\"path\", { d: `M ${q.x} ${q.y} L ${q.x + q.w} ${q.y + q.d} M ${q.x + q.w} ${q.y} L ${q.x} ${q.y + q.d}`, stroke: C.ink, \"stroke-width\": 6 }, g); });   // [MM] brīvie stabi"),
+        ("  // openings\n  const reveal =",
+         "  (v.posts || []).forEach(q => { const a = endV ? q.y : q.x, l = endV ? q.d : q.w; postsU.push([Math.min(map(a), map(a + l)), l]); });   // [MM] brīvie stabi fasādēs\n  // openings\n  const reveal ="),
         # [MM] ja apakšā ir aploda, palodze paliek ailas apakšā
         ('    if (true) {\n      z0 -= CB;\n', '    if (true) {\n'),
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)
