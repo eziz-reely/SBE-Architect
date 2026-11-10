@@ -78,6 +78,8 @@ def build(model_path, langs=None):
     pr['fascia'] = tone.get('vejmala') == 'balta'   # horizontāla balta fascija tikai sarkanajam
     lg = pr.get('logu_tonis') or tone.get('logi', 'RAL 7016')   # logu rāmju tonis: no fasādes toņa vai izvēlēts (projekts.logu_tonis)
     pr['logi'], pr['logi_hex'] = lg, RAL.get(lg, '#383E42')
+    if pr.get('logu_hex'):   # brīva rāmju krāsa (krāsas spainis)
+        pr['logi_hex'] = pr['logu_hex']
     tc = lambda c: tone['sw'] if c == 'tonis' else c   # 'tonis' = fasādes tonī
     cfg.setdefault('win', {}).update(colorOut=pr['logi'], casingColor=tc(pr.get('aplodas')) or pr['logi'], sillColor=tc(pr.get('palodzes')))   # aplodu tonis var atšķirties (projekts.aplodas)   # logu rāmji un apmales pēc toņa (sarkanajam balti RAL 9016)
     pr['vejkaste'] = m.get('jumts', {}).get('vejkaste', True) is not False   # jumta pārkare ar vēja kasti (slēgta)
@@ -337,7 +339,7 @@ def build(model_path, langs=None):
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
     import re
-    tex = base64.b64encode(open(os.path.join(HERE, 'sablons', tone['tex']), 'rb').read()).decode()
+    tex = (pr.get('fasade_tex') if pr.get('fasade_hex') else None) or base64.b64encode(open(os.path.join(HERE, 'sablons', tone['tex']), 'rb').read()).decode()
     cad, n = re.subn(r'const CLAD_TEX = "data:image/jpeg;base64,[^"]*";', lambda _: f'const CLAD_TEX = "data:image/jpeg;base64,{tex}";', cad, count=1)
     assert n == 1, 'SBE cad.js: nav atrasta CLAD_TEX tekstūra'
 
