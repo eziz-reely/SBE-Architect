@@ -319,6 +319,9 @@ def new_project(b):
         shutil.move(src, dest)
         try: os.rmdir(os.path.dirname(src))   # tukšā <m²> mape repo MĀJAS
         except OSError: pass
+    mp0 = os.path.join(dest, 'model.json'); mj0 = json.load(open(mp0, encoding='utf-8'))   # uzņēmuma nosaukums AR rakstlaukumam
+    mj0.setdefault('projekts', {})['uznemums'] = co
+    json.dump(mj0, open(mp0, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
     cs0 = pick_set(company_spec(cos[co]), b.get('komplekts')); sp = cs0.get('piragi_layers')
     if cs0.get('piragi_names'):
         mp = os.path.join(dest, 'model.json'); mj = json.load(open(mp, encoding='utf-8'))
@@ -452,7 +455,8 @@ class H(BaseHTTPRequestHandler):
                 if not d:
                     return self.send(404, 'Projekts nav atrasts', 'text/plain; charset=utf-8')
                 pg = editor_html(d)
-                return self.send(200, SHIM % json.dumps({'key': p[6:], 'dir': d}, ensure_ascii=False) + pg, 'text/html; charset=utf-8')
+                co_name = next((n for n, base in companies(load_cfg()).items() if os.path.abspath(d).lower().startswith(os.path.abspath(base).lower() + os.sep)), '')
+                return self.send(200, SHIM % json.dumps({'key': p[6:], 'dir': d, 'company': co_name}, ensure_ascii=False) + pg, 'text/html; charset=utf-8')
             if p == '/favicon.ico':
                 f = os.path.join(HERE, 'sablons', 'arhivs', 'sbe.ico')
                 return self.send(200, open(f, 'rb').read(), 'image/x-icon') if os.path.exists(f) else self.send(404, b'', 'text/plain')
