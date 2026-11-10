@@ -33,7 +33,7 @@ function pamC24() {
 }
 // kontūras: PP.parts = [{ r: [x, y, w, h], nx, ny, mov, rmov, cmov, del }] (0. kontūras iestatījumi PP saknē); nav = viena W × D
 // katrai kontūrai savs režģis un vainags; stabu atslēgas ar priedēkli "n/" (n ≥ 1)
-const pamParts = (v, PP) => (PP.parts && PP.parts.length ? PP.parts.map(p => p.r) : [[0, 0, v.W, v.D]]);
+const pamParts = (v, PP) => (PP.parts && PP.parts.length ? PP.parts.map(p => p.r) : PP.zimet ? [] : [[0, 0, v.W, v.D]]);   // zimet: jauns projekts, tukša lapa
 const pamS = (PP, n) => (n ? (PP.parts || [])[n] || {} : PP);
 // stabu izkārtojums vienā kontūrā: režģis pa centriem + perimetra malējo laidumu papildu stabi + pārbīdes
 function pamPart(PP, n, R, d, uz, off, add) {
@@ -66,6 +66,7 @@ function pamLayout(v, PP) {
     if (join && part > 0) { const q = pts.find(q => q.part >= 0 && q.part !== part && Math.hypot(q.x - x, q.y - y) < tol); if (q) { q.x = (q.x + x) / 2; q.y = (q.y + y) / 2; q.shared = true; return null; } }
     const p = { key, x, y, x0: xa, y0: ya, kind, moved, part }; pts.push(p); return p; };
   const parts = pamParts(v, PP).map((R, n) => pamPart(PP, n, R, d, uz, off, add));
+  if (!parts.length) return { d, uz, off, parts, pts, cells: [], nx: 0, ny: 0, sx: 0, sy: 0, GX: [], GY: [], GXv: [], x0: 0, y0: 0, x1: v.W, y1: v.D, cx0: 0, cx1: v.W, cy0: 0, cy1: v.D };
   // papildu stabi: [x, y] brīvi vai { c: [i, j], p: kontūra, t, o } laukuma vidū starp 4 stabiem (piem. kamīnam), ar krustu un atsauci
   const del = new Set(PP.del || []), cells = [];
   (PP.ext || []).forEach((q, n) => {
@@ -116,9 +117,10 @@ function pamUDims(g, k) {
 }
 function pamAxes(g, v, k, ext) {   // asis 1..n, A..n ar apļiem
   const s = 1 / k, dash = { stroke: C.axis, "stroke-width": .18 * s, "stroke-dasharray": `${4 * s} ${1 * s} ${.6 * s} ${1 * s}` };
-  const bub = (cx, cy, n) => { el("circle", { cx, cy, r: 2.8 * s, fill: "#fff", stroke: C.ink, "stroke-width": .2 * s }, g); T_(g, cx, cy + 1.1 * s, n, { a: "middle", fs: 3 * s, fw: 500 }); };
-  (v.axes.x || []).forEach(([x, n]) => { el("line", { x1: x, y1: -ext.n, x2: x, y2: v.D + ext.s, ...dash }, g); bub(x, -ext.n - 2.8 * s, n); });
-  (v.axes.y || []).forEach(([y, n]) => { el("line", { x1: -ext.w, y1: y, x2: v.W + ext.e, y2: y, ...dash }, g); bub(-ext.w - 2.8 * s, y, n); });
+  // data-pax: redaktorā asi izvēlas ar klikšķi uz apļa (nosaukums, vieta, dzēšana)
+  const bub = (cx, cy, n, id) => { const b = el("g", { "data-pax": id, style: "cursor:pointer" }, g); el("circle", { cx, cy, r: 2.8 * s, fill: "#fff", stroke: C.ink, "stroke-width": .2 * s }, b); T_(b, cx, cy + 1.1 * s, n, { a: "middle", fs: 3 * s, fw: 500 }); };
+  (v.axes.x || []).forEach(([x, n], i) => { el("line", { x1: x, y1: -ext.n, x2: x, y2: v.D + ext.s, ...dash }, g); bub(x, -ext.n - 2.8 * s, n, "x:" + i); });
+  (v.axes.y || []).forEach(([y, n], i) => { el("line", { x1: -ext.w, y1: y, x2: v.W + ext.e, y2: y, ...dash }, g); bub(-ext.w - 2.8 * s, y, n, "y:" + i); });
 }
 function pamPosts(g, L, k, tag) {
   const s = 1 / k;
@@ -207,7 +209,7 @@ function pamRim(L) {
   ["x", "y", "j"].flatMap(t => items.filter(q => q.ty === t)).forEach((q, i) => q.m = "V" + (i + 1));
   items.sort((a, b) => +a.m.slice(1) - +b.m.slice(1));
   const lm = items.reduce((a, q) => a + q.n * q.L, 0) / 1000;
-  return { b, h, items, per, lm, mids: per[0].mids };
+  return { b, h, items, per, lm, mids: per.length ? per[0].mids : [] };
 }
 function pamViewVainags(g, v, L, k, tx) {
   const s = 1 / k, R = pamRim(L), A = v.axes.x.map(a => a[0]), b = R.b, SH = pamShadow(L.parts);
@@ -356,6 +358,12 @@ function pamDraw(svg, v, R, views) {
   pl.pos.forEach(p => {
     const g = el("g", { "data-block": "pam-" + p.key, transform: `translate(${p.x} ${p.y}) scale(${pl.k})` }, svg);
     PAM_VIEW = p.key; g.setAttribute("data-pview", p.key);
+    if (!Lay.parts.length) {   // tukša lapa: tikai laukums kontūru zīmēšanai un paša asis
+      const s = 1 / pl.k; pamAxes(g, v, pl.k, { n: 8 * s, s: 4 * s, w: 8 * s, e: 4 * s });
+      el("rect", { x: 0, y: 0, width: v.W, height: v.D, fill: "none", stroke: "#cfd3d8", "stroke-width": .15 * s, "stroke-dasharray": `${1.5 * s} ${1.5 * s}` }, g);
+      if (p.key === "stabi") T_(g, v.W / 2, v.D / 2, window.MM_LANG === "en" ? "Draw the outlines" : "Velc kontūras ar peli", { a: "middle", fs: 3 * s, fill: "#9aa1a9" });
+      sheetHeading(svg, p.hx, p.hy, Math.min(p.w, 215), tx[p.key], sct); return;
+    }
     ({ stabi: pamViewStabi, vainags: pamViewVainags, kopa: pamViewKopa })[p.key](g, v, Lay, pl.k, tx);
     sheetHeading(svg, p.hx, p.hy, Math.min(p.w, 215), tx[p.key], sct);
   });
@@ -369,7 +377,7 @@ function pamSheet(v, views) {
   el("rect", { x: 20, y: 10, width: 267, height: 400, fill: "none", stroke: C.ink, "stroke-width": .5 }, svg);
   el("line", { x1: 247, y1: 10, x2: 247, y2: 410, stroke: C.ink, "stroke-width": .35, "data-block": "title-strip" }, svg);
   pamDraw(svg, v, [26, 16, 216, 336], views);
-  pamSpec(svg, v, 26, 356, 215, true);
+  if (pamLayout(v, pamPP() || {}).parts.length) pamSpec(svg, v, 26, 356, 215, true);
   mmTitleBlock(svg, v, null, window.MM_LANG === "en" ? "en" : "lv");
   window.MM_SCALE_TXT = null;
   return svg;
@@ -391,7 +399,7 @@ function pamArSheet(v, k, mk) {
   const pl = pamPlace(v, views, [26, 16, 378, 222], !!PP.brivs);
   const svg = mk(PP.brivs ? "-" : "1:" + pl.sc);
   pamDraw(svg, v, [26, 16, 378, 222], views);
-  pamSpec(svg, v, 26, 246, 194, false);
+  if (pamLayout(v, PP).parts.length) pamSpec(svg, v, 26, 246, 194, false);
   window.MM_SCALE = 100; window.MM_SCALE_TXT = null;
   return svg;
 }

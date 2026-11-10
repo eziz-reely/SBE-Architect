@@ -1576,11 +1576,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       (Q.kom || []).forEach(q => { q.x = (+q.x || 0) - x0; q.y = (+q.y || 0) - y0; });
       (Q.ext || []).forEach(q => { if (Array.isArray(q)) { q[0] -= x0; q[1] -= y0; } });
       (Q.udims || []).forEach(u => { u.a = [u.a[0] - x0, u.a[1] - y0]; u.b = [u.b[0] - x0, u.b[1] - y0]; u.at -= u.h ? y0 : x0; });
+      if (Q.asisMan && n.axes) { (n.axes.x || []).forEach(a => a[0] -= x0); (n.axes.y || []).forEach(a => a[0] -= y0); }
     }
     n.W = Math.max(...RR.map(r => r[0] + r[2])); n.D = Math.max(...RR.map(r => r[1] + r[3]));
     const ax = i => [...new Set(RR.flatMap(r => [r[i], r[i] + r[i + 2]]).map(v => Math.round(v)))].sort((a, b) => a - b);
     const LET = "ABCDEFGHIJKLMNOPRSTUVZ";
-    n.axes = { x: ax(0).map((v, i) => [v, String(i + 1)]), y: ax(1).map((v, i) => [v, LET[i] || "Y" + i]) };
+    if (!Q.asisMan) n.axes = { x: ax(0).map((v, i) => [v, String(i + 1)]), y: ax(1).map((v, i) => [v, LET[i] || "Y" + i]) };
     (n.rooms || []).forEach(rm => { if (rm.void) rm.r = [[0, 0, n.W, n.D]]; });
     n.levelAt = [n.W / 2, n.D / 2];
   }
@@ -1596,8 +1597,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     r.append(l, b1, v, b2); return r;
   }
   const PAM_MODE_TXT = { rect: "Velc kontūru (paneli) stabu plānā: pielīp stūriem un malām. Esc beidz.", rect0: "Velc pirmo kontūru: tā aizstās visas esošās. Pēc tam velc nākamos paneļus. Esc beidz.",
+    axx: "Klikšķini, kur likt vertikālu būvasi (pielīp kontūru malām un stabu līnijām). Esc atceļ.", axy: "Klikšķini, kur likt horizontālu būvasi (pielīp kontūru malām un stabu līnijām). Esc atceļ.",
     post: "Klikšķini, kur likt stabu: pielīp stabu līnijām, centriem un kontūru malām. Esc beidz.", dim: "Mērs: klikšķini pirmo punktu (pielīp stabu centriem un malām). Esc atceļ.", kom: "Klikšķini vietu, kur pievads ienāk mājā. Esc atceļ." };
-  function pamSetMode(m, send) { pamMode = m === "dim" || m === "kom" ? null : m; $("hint").textContent = m ? PAM_MODE_TXT[m] || "" : ""; if (m) status(PAM_MODE_TXT[m] || ""); if (send) toFrame({ mmPamPlace: m }); }
+  function pamSetMode(m, send) { pamMode = /^(dim|kom|axx|axy)$/.test(m || "") ? null : m; $("hint").textContent = m ? PAM_MODE_TXT[m] || "" : ""; if (m) status(PAM_MODE_TXT[m] || ""); if (send) toFrame({ mmPamPlace: m }); }
   const pamSet = f => { const n = clone(model); f(pamPP(n), n); commit(n); };
   function pamPanel(host) {
     const P = model.projekts || {};
@@ -1632,6 +1634,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Zīmēt no jauna"; b2.title = "Nākamais taisnstūris aizstās visas kontūras";
       b2.onclick = () => pamSetMode("rect0", true);
       r.append(b1, b2); gc.appendChild(r);
+      { const ga = group("Būvasis", host), r2 = document.createElement("div"); r2.className = "row full";
+        const mk = (t, m, ti) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = ti; b.onclick = () => pamSetMode(m, true); r2.appendChild(b); };
+        mk("+ Ass ↕ (1, 2, 3)", "axx", "Vertikāla ass: klikšķis lapā"); mk("+ Ass ↔ (A, B, C)", "axy", "Horizontāla ass: klikšķis lapā");
+        if (PP.asisMan) { const b = document.createElement("button"); b.type = "button"; b.textContent = "Asis pēc kontūrām"; b.title = "Paša asis aizstāj ar automātiskām pa kontūru malām"; b.onclick = () => pamSet(Q => { delete Q.asisMan; }); r2.appendChild(b); }
+        ga.appendChild(r2);
+        const nt2 = document.createElement("p"); nt2.className = "note full"; nt2.textContent = PP.asisMan ? "Asis liktas paši. Uzklikšķini uz ass apļa, lai mainītu nosaukumu, vietu vai dzēstu." : "Pagaidām asis veidojas pa kontūru malām. Tiklīdz pieliec vai maini kādu asi, tās vairs nemainās pašas."; ga.appendChild(nt2); }
       const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Kontūra ir C24 karkasa ārmala. Katrā kontūrā stabi un vainags saliekas paši. L vai T formai velc vairākus taisnstūrus blakus; izmērus precizē, izvēloties kontūru."; gc.appendChild(nt);
     }
     const gs = group("Stabi", host);
@@ -1724,6 +1732,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   function pstMove(dx, dy, abs) {
     const n = clone(model), Q = pamPP(n), k = pst; if (!k) return;
+    if (k[1] === ":" && "xy".includes(k[0])) { const A = ((n.axes || {})[k[0]] || [])[+k.slice(2)]; if (!A) return; A[0] += k[0] === "x" ? dx : dy; pamPP(n).asisMan = true; commit(n); return; }
     if (k[1] === ":" && "kmp".includes(k[0])) {   // pievads, lietotāja mērs vai visa kontūra
       const i = +k.slice(2);
       if (k[0] === "k") { const q = (Q.kom || pamKom(n))[i]; if (!q) return; q.x = (+q.x || 0) + dx; q.y = (+q.y || 0) + dy; }
@@ -1737,6 +1746,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   function pstDel() {
     const n = clone(model), Q0 = pamPP(n); if (!pst) return;
+    if (pst[1] === ":" && "xy".includes(pst[0])) { (n.axes[pst[0]] || []).splice(+pst.slice(2), 1); Q0.asisMan = true; pst = null; commit(n); return; }
     if (pst[1] === ":" && pst[0] === "k") { (Q0.kom || pamKom(n)).splice(+pst.slice(2), 1); pst = null; commit(n); return; }
     if (pst[1] === ":" && pst[0] === "m") { (Q0.udims || []).splice(+pst.slice(2), 1); pst = null; commit(n); return; }
     if (pst[1] === ":" && pst[0] === "p") { const ps = pamParts(n, Q0), i = +pst.slice(2); if (ps.length < 2) return; pamPartDel(Q0, i); pst = null; commit(n); return; }
@@ -1765,6 +1775,14 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       p.append(h, sub, g, arrows());
       const r = document.createElement("div"); r.className = "row"; r.appendChild(btn("Dzēst pievadu", pstDel, "del")); p.appendChild(r); return true;
     }
+    if (t === "x" || t === "y") {
+      const A = ((model.axes || {})[t] || [])[i]; if (!A) { pst = null; return false; }
+      h.textContent = `Būvass ${A[1]}`; sub.textContent = (t === "x" ? "vertikāla, attālums no kreisās malas" : "horizontāla, attālums no augšējās malas") + " · bultiņas bīda (Shift 100 mm)";
+      g.append(field("Nosaukums", A[1], (n, v) => { n.axes[t][i][1] = String(v).trim() || A[1]; pamPP(n).asisMan = true; }, "text"),
+        field("Vieta, mm", A[0], (n, v) => { n.axes[t][i][0] = Math.round(v); pamPP(n).asisMan = true; }));
+      p.append(h, sub, g, arrows());
+      const r = document.createElement("div"); r.className = "row"; r.appendChild(btn("Dzēst asi", pstDel, "del")); p.appendChild(r); return true;
+    }
     if (t === "m") {
       const u = (PP.udims || [])[i]; if (!u) { pst = null; return false; }
       h.textContent = "Mērs " + Math.round(Math.abs(u.h ? u.b[0] - u.a[0] : u.b[1] - u.a[1])) + " mm"; sub.textContent = "paša likts mērs (D) · velc lapā vai bīdi ar bultiņām";
@@ -1789,7 +1807,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   function pstCard(p) {
     const PP = (model.projekts || {}).pamatu_plans; if (!PP) { pst = null; return false; }
-    if (pst[1] === ":" && "kmp".includes(pst[0])) return pamCard(p, PP);
+    if (pst[1] === ":" && "kmpxy".includes(pst[0])) return pamCard(p, PP);
     const k = pst, ext = k[0] === "e", line = /^(\d+\/)?[rc]:/.test(k), q = ext ? (PP.ext || [])[+k.slice(1)] : null; if (ext && !q) { pst = null; return false; }
     const free = ext && Array.isArray(q), cell = ext && !free, m = pstOff(clone(PP), k).get();
     const h = document.createElement("p"), sub = document.createElement("p"), g = document.createElement("div"); g.className = "grid";

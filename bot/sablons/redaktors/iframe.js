@@ -1090,6 +1090,7 @@
   const pstMark = () => {
     document.querySelectorAll("[data-pst]").forEach(c => { const on = pstOn(c.dataset.pst); c.setAttribute("fill", on ? ACC : "#8a8d90"); c.setAttribute("stroke", on ? ACC : C_INK); });
     document.querySelectorAll("[data-pkom] > [data-hit]").forEach(c => { const on = pst === "k:" + c.parentNode.dataset.pkom; c.setAttribute("stroke", on ? ACC : "none"); c.setAttribute("stroke-width", on ? 40 : 0); });
+    document.querySelectorAll("[data-pax] > circle").forEach(c => { const on = pst === c.parentNode.dataset.pax; c.setAttribute("stroke", on ? ACC : C_INK); c.setAttribute("fill", on ? "#dfe9fb" : "#fff"); });
     document.querySelectorAll("rect[data-ppart]").forEach(r => { const on = pst === "p:" + r.dataset.ppart; r.setAttribute("fill", on ? "rgba(34,102,216,.08)" : "transparent"); r.style.outline = ""; r.setAttribute("stroke", on ? ACC : C_INK); });
     document.querySelectorAll("[data-pdim]").forEach(g => { const on = pst && pst[0] === "m" && g.dataset.pdim.endsWith(":u" + pst.slice(2)); g.style.filter = on ? "drop-shadow(0 0 1.5px " + ACC + ")" : ""; });
   };
@@ -1151,6 +1152,13 @@
       const t = document.createElementNS(NS, "text"); t.setAttribute("font-size", 3 / k); t.setAttribute("fill", ACC); t.setAttribute("font-weight", 600); g.appendChild(t);
       pDrag = { kind: "rect", g, a, b: a, p0: a, el: r, tx: t, mode: pPlace, moved: true }; return true;
     }
+    if (g && (pPlace === "axx" || pPlace === "axy")) {   // būvass: vertikāla (axx, pa X) vai horizontāla (axy, pa Y); pielīp kontūru malām un stabu līnijām
+      const p = pSnap(g, pLocal(g, e.clientX, e.clientY), true).p.map(Math.round), X = pPlace === "axx"; pEnd();
+      pEdit((Q, N) => { const A = N.axes = N.axes || {}, L = A[X ? "x" : "y"] = (A[X ? "x" : "y"] || []).slice(), pos = X ? p[0] : p[1];
+        const LET = "ABCDEFGHIJKLMNOPRSTUVZ", nm = X ? String(Math.max(0, ...L.map(a => parseInt(a[1], 10) || 0)) + 1) : (LET.split("").find(c => !L.some(a => a[1] === c)) || "Y");
+        L.push([pos, nm]); L.sort((a, b) => a[0] - b[0]); Q.asisMan = true; pst = (X ? "x:" : "y:") + L.findIndex(a => a[0] === pos && a[1] === nm); }, { placed: true });
+      return true;
+    }
     if (g && pPlace === "post" && g.dataset.pview === "stabi") {   // stabs ar klikšķi: pielīp stabu līnijām un centriem; režīms paliek līdz Esc
       const p = pSnap(g, pLocal(g, e.clientX, e.clientY), true).p.map(Math.round);
       pEdit(Q => { Q.ext = (Q.ext || []).concat([[p[0], p[1]]]); }, { pamMode: "post" });
@@ -1172,7 +1180,7 @@
     return false;
   }
   addEventListener("pointermove", e => {
-    if (!pDrag && (pPlace === "post" || pPlace === "rect" || pPlace === "rect0")) { const sv = e.target && e.target.closest && e.target.closest("svg.a3"), g = sv && sv.querySelector("g[data-pview=stabi]"); pHov(g, g && pSnap(g, pLocal(g, e.clientX, e.clientY), true)); }
+    if (!pDrag && /^(post|rect0?|ax[xy])$/.test(pPlace || "")) { const sv = e.target && e.target.closest && e.target.closest("svg.a3"), g = sv && sv.querySelector("g[data-pview=stabi]"); pHov(g, g && pSnap(g, pLocal(g, e.clientX, e.clientY), true)); }
     if (!pDrag) return;
     const p = pLocal(pDrag.g, e.clientX, e.clientY), dx = p[0] - pDrag.p0[0], dy = p[1] - pDrag.p0[1];
     if (!pDrag.moved && Math.hypot(dx, dy) * pK(pDrag.g) < .6) return;
@@ -1222,6 +1230,8 @@
   window.MMZ_HOOK = e => {
     if (e.button !== 0) return false;
     if (pamHook(e)) return true;
+    { const ax = !place && e.target && e.target.closest && e.target.closest("[data-pax]");
+      if (ax) { pst = ax.dataset.pax; pstMark(); if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } post({ t: "pst", key: pst }); return true; } }
     { const pe = e.target && e.target.closest && e.target.closest("[data-pst]");
       if (pe && !place) { pst = pe.dataset.pst; pstMark(); if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } post({ t: "pst", key: pst }); return true; }
       // kontūras izvēle: klikšķis tās laukumā (arī uz režģa līnijām), ja nav trāpīts stabs, mērs vai pievads
