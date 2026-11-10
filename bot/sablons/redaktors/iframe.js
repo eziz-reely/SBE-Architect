@@ -1025,6 +1025,14 @@
     d.gwMid = false;
     if (isG) {
       if (z === "b" || z === "move") o.z0 = Math.max(0, o.z0 + (d.alt ? Math.round(dz) : r10(dz)));
+      if (!o.win && !o.z1 && !d.alt && (z === "b" || z === "move")) {   // [TRE] slīpais logs pielīp citu slīpo logu apakšas un augšas līmenim (ar Alt – bez snapa)
+        const m1 = d.h.bl.g.getScreenCTM(), rz = m1 && m1.a ? Math.min(150, 7 / Math.abs(m1.a)) : 60;
+        const tgz = [];
+        (M.gableWins || []).forEach((w, j) => { if (j === it.i || w.side !== s || w.win) return; tgz.push(w.z0, gwHeights(M, w).zTop); });
+        let best = null;
+        tgz.forEach(t => { const e2 = t - o.z0; if (Math.abs(e2) <= rz && (best == null || Math.abs(e2) < Math.abs(best))) best = e2; });
+        d.gzSnap = null; if (best != null) { o.z0 = Math.max(0, Math.round(o.z0 + best)); d.gzSnap = o.z0; }
+      }
       d.gwWarn = o.z0 < GWB;   // [TRE] zem mansarda paneļa augšas: brīdinājums, bet vilkt var tālāk
       if (o.z1 && (z === "t" || z === "move")) o.z1 = o.z1 + r10(dz);
       if (o.z1 && o.z1 < o.z0 + 300) o.z1 = o.z0 + 300;
@@ -1127,6 +1135,7 @@
     if (bl.type === "elev" && (it.k === "win" || it.k === "gw" || it.k === "decor")) {
       o.querySelectorAll(".od").forEach(e => e.remove());
       const nb = (items(bl, N).find(x => same(x, it)) || it); elevDims(g, bl, nb, k, N);
+      if (d.gzSnap != null) { const sp = span(bl.side); mk(g, "line", { x1: 0, y1: -d.gzSnap, x2: sp, y2: -d.gzSnap, stroke: ACC, "stroke-width": 0.25 / k, "stroke-dasharray": `${1.2 / k} ${0.8 / k}` }); }
       if (d.gwMid) { const sp = span(bl.side), ev = (M.jumts && M.jumts.eave) || 2600, top = ev + sp / 2 * Math.tan(((M.jumts && M.jumts.pitch) || 30) * Math.PI / 180);
         mk(g, "line", { x1: sp / 2, y1: -top - 300, x2: sp / 2, y2: 300, stroke: ACC, "stroke-width": 0.3 / k, "stroke-dasharray": `${1.2 / k} ${0.8 / k}` });
         label(g, sp / 2 + 1.2 / k, -top - 150, "kores vidus", k); }
