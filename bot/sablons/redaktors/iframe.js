@@ -1329,11 +1329,18 @@
     if (hit) mk(g, "rect", { x: q[0] - 1.3 / k, y: q[1] - 1.3 / k, width: 2.6 / k, height: 2.6 / k, fill: ACC, stroke: "#fff", "stroke-width": 0.3 / k });
     else mk(g, "circle", { cx: q[0], cy: q[1], r: 1.2 / k, fill: "#fff", stroke: ACC, "stroke-width": 0.4 / k });
   }
+  // plāna darba laukums: māja + terases, lievenis un stabi, kas var iziet ārpus mājas (mērīšanai, novietošanai)
+  function outPlan(p) {
+    let x0 = 0, y0 = 0, x1 = M.W, y1 = M.D;
+    const add = q => { x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0]); y1 = Math.max(y1, q[1]); };
+    (M.terraces || []).forEach(t => t.poly.forEach(add)); ((M.porch && M.porch.poly) || []).forEach(add); (M.posts || []).forEach(q => { add([q.x, q.y]); add([q.x + q.w, q.y + q.d]); });
+    return p[0] < x0 - 300 || p[1] < y0 - 300 || p[0] > x1 + 300 || p[1] > y1 + 300;
+  }
   function dimHover(cx, cy) {
     for (const bl of blocks()) {
       if (bl.type !== "plan") continue;
       const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
-      if (p[0] < -300 || p[1] < -300 || p[0] > M.W + 300 || p[1] > M.D + 300) continue;
+      if (outPlan(p)) continue;
       const k = ek(bl), g = mk(o, "g", { class: "gh" }), sx = snapI(bl.lv, "x", p[0]), sy = snapI(bl.lv, "y", p[1]), q = [sx.hit ? sx.v : p[0], sy.hit ? sy.v : p[1]];
       const gl = { stroke: ACC, "stroke-width": 0.25 / k, "stroke-dasharray": `${1 / k} ${0.7 / k}` };
       if (sx.hit) mk(g, "line", Object.assign({ x1: q[0], y1: q[1] - 6 / k, x2: q[0], y2: q[1] + 6 / k }, gl));
@@ -1704,7 +1711,7 @@
     for (const bl of blocks()) {
       const p = toLocal(bl.g, cx, cy), bb = bl.g.getBBox(); void bb;
       if (bl.type === "plan") {
-        if (p[0] < -300 || p[1] < -300 || p[0] > M.W + 300 || p[1] > M.D + 300) continue;
+        if (outPlan(p)) continue;
         if (P.t === "dim") {   // divi klikšķi: sākums un beigas; ass pēc garākā virziena
           if (!P.p0) { P.p0 = [p[0], p[1]]; P.lv = bl.lv; return { pending: "Tagad uzklikšķini mēra otro galu." }; }
           const a = P.p0, X = Math.abs(p[0] - a[0]) >= Math.abs(p[1] - a[1]), ax = X ? "x" : "y";
