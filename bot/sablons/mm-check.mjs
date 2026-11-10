@@ -20,6 +20,7 @@ for (const file of process.argv.slice(2)) {
   await page.waitForTimeout(800);
   const res = await page.evaluate(({ REQ, HALL_MAX, DOOR_MARGIN, DOOR_BACK, WIN_LOW, WIN_DEPTH, TOL }) => {
     const v = window.__PV, out = [];
+    const Z0 = document.body.style.transform; document.body.style.transform = 'none';   // mēra bez tālummaiņas: vairākas lapas citādi sīkina tekstu un maina tā robežas
     const bad = (rule, msg) => out.push(`[${rule}] ${msg}`);
     const ov = (a, b, t = TOL) => Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > t && Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > t;
     const inside = (a, b, t = TOL) => a[0] >= b[0] - t && a[1] >= b[1] - t && a[2] <= b[2] + t && a[3] <= b[3] + t;
@@ -138,6 +139,7 @@ for (const file of process.argv.slice(2)) {
         if (+r.slice(3) < 1 || +r.slice(3) > n) bad("R10 atsauce", `lapa ${k + 1}: „${t.textContent}” – lapas ${r} komplektā nav`);
       })));
     }
+    document.body.style.transform = Z0;
     return { rev: v.rev, label: v.label, out, nf: furn.length };
   }, { REQ, HALL_MAX, DOOR_MARGIN, DOOR_BACK, WIN_LOW, WIN_DEPTH, TOL });
   console.log(`\n${file}: Rev. ${res.rev}${res.label ? ` (variants ${res.label})` : ''}, ${res.nf} mēbeles — ${res.out.length ? res.out.length + ' kļūdas' : 'OK'}`);
