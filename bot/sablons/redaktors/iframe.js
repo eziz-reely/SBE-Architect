@@ -123,8 +123,9 @@
         });
         (X.posts || []).forEach((q, i) => out.push({ k: "post", i, lv: "main", b: [q.x, q.y, q.x + q.w, q.y + q.d], pad: 40 }));
         const AO = axO(X);   // asu galu josla katrā pusē: velc uz āru / iekšā, visas šīs puses asis pārvietojas kopā
-        out.push({ k: "axo", i: "n", lv: "main", b: [0, -AO.n - 520, X.W, -AO.n + 80], pad: 0 }, { k: "axo", i: "s", lv: "main", b: [0, X.D + AO.s - 80, X.W, X.D + AO.s + 520], pad: 0 },
-          { k: "axo", i: "w", lv: "main", b: [-AO.w - 520, 0, -AO.w + 80, X.D], pad: 0 }, { k: "axo", i: "e", lv: "main", b: [X.W + AO.e - 80, 0, X.W + AO.e + 520, X.D], pad: 0 });
+        const pb = Math.max(300, ep0 ? 10 * ep0 / 7 : 300);   // josla ap asu galiem un burbuļiem ≈ 10 px katrā pusē
+        out.push({ k: "axo", i: "n", lv: "main", b: [0, -AO.n - 300 - pb, X.W, -AO.n + pb * .4], pad: 0 }, { k: "axo", i: "s", lv: "main", b: [0, X.D + AO.s - pb * .4, X.W, X.D + AO.s + 300 + pb], pad: 0 },
+          { k: "axo", i: "w", lv: "main", b: [-AO.w - 300 - pb, 0, -AO.w + pb * .4, X.D], pad: 0 }, { k: "axo", i: "e", lv: "main", b: [X.W + AO.e - pb * .4, 0, X.W + AO.e + 300 + pb, X.D], pad: 0 });
       }
       if (X === M) Object.entries(stampBoxes(bl)).forEach(([i, b]) => out.push({ k: "stamp", i: +i, lv: bl.lv, b, pad: 0 }));
     } else {
@@ -200,6 +201,7 @@
     if (h.del) return "del";
     if (h.rz) return h.rz;
     if (h.it.k === "tvert") return "tc";
+    if (h.it.k === "axo") return h.it.i === "n" || h.it.i === "s" ? "t" : "l";
     if (h.it.k === "tedge") { const t = M.terraces[Math.floor(h.it.i / 100)], j = h.it.i % 100, a = t.poly[j], b = t.poly[(j + 1) % t.poly.length]; return Math.abs(a[1] - b[1]) < 1 ? "t" : Math.abs(a[0] - b[0]) < 1 ? "l" : "move"; }
     if (h.it.k === "gut" || h.it.k === "idim") return "move";
     if (h.it.k === "dim") {   // gali maina garumu, vidus pārvieto mēra līniju
