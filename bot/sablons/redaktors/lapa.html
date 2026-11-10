@@ -1937,7 +1937,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         cs.onchange = () => set(d => { d.col = cs.value; }); cl.append(cs); g.append(cl);
       }
       if (D0.tex === "img") {
-        g.append(field("Tekstūras flīzes platums, mm", D0.texW || 1000, (n, v) => { n.decor[sel.i].texW = Math.max(100, v); }));
+        const ar0 = +D0.texAr || 1, lock = D0.texLock !== false;
+        g.append(field("Tekstūras platums, mm", D0.texW || 1000, (n, v) => { n.decor[sel.i].texW = Math.max(50, v); }),
+          field("Tekstūras garums, mm", Math.round((D0.texW || 1000) * ar0), (n, v) => { const q = n.decor[sel.i], h = Math.max(50, v); if (q.texLock === false) q.texAr = +(h / (q.texW || 1000)).toFixed(4); else q.texW = Math.max(50, Math.round(h / (+q.texAr || 1))); }));
+        { const lk = document.createElement("label"), ck = document.createElement("input"); lk.className = "full"; lk.style.cssText = "display:flex;gap:8px;align-items:center"; ck.type = "checkbox"; ck.checked = lock;
+          ck.onchange = () => set(d => { d.texLock = ck.checked; }); lk.append(ck, document.createTextNode("Saglabāt tekstūras proporciju (noņem ķeksi, lai platumu un garumu mainītu atsevišķi)")); g.append(lk); }
         const fr = document.createElement("div"), fb = document.createElement("button"), ff = document.createElement("input"); fr.className = "row full"; fb.type = "button"; fb.textContent = D0.img ? "Mainīt attēlu…" : "Izvēlēties attēlu no datora…";
         ff.type = "file"; ff.accept = "image/*"; ff.hidden = true;
         ff.onchange = () => { const q = ff.files && ff.files[0]; if (q) terUpload(q, url => { const im = new Image(); im.onload = () => set(d => { d.img = url; d.texAr = +(im.naturalHeight / (im.naturalWidth || 1)).toFixed(3); }); im.src = url; }); };

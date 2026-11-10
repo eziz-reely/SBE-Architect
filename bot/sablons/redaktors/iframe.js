@@ -971,8 +971,9 @@
     const s = d.h.bl.side, du = dx, dz = -dy;
     if (it.k === "decor") {   // [TRE] fasādes elements: pārvieto vai maina izmēru; malas pielīp pie logiem, fasādes malām, ±0, dzegas un citiem elementiem
       const D = N.decor[it.i], b = it.b; let u0 = b[0], u1 = b[2], zt = -b[1], zb = -b[3];
-      const sn = (vals, tg, dl) => { let bd = null; vals.forEach(v => tg.forEach(t => { const e = t - (v + dl); if (Math.abs(e) <= 120 && (bd == null || Math.abs(e) < Math.abs(bd))) bd = e; })); return bd; };
-      const P = decSnapPts(s, it.i), mv = z === "move", du2 = r10(du), dz2 = r10(dz);
+      const alt = !!d.alt, rad = alt ? 0 : decRad(d.h.bl), R = v => alt ? Math.round(v) : r10(v);   // Alt: bez pielipšanas, solis 1 mm
+      const sn = (vals, tg, dl) => { if (!rad) return null; let bd = null; vals.forEach(v => tg.forEach(t => { const e = t - (v + dl); if (Math.abs(e) <= rad && (bd == null || Math.abs(e) < Math.abs(bd))) bd = e; })); return bd; };
+      const P = decSnapPts(s, it.i), mv = z === "move", du2 = R(du), dz2 = R(dz);
       if (mv || z === "l") { const e = sn(mv ? [u0, u1] : [u0], P.us, du2); u0 += du2 + (e || 0); if (mv) u1 += du2 + (e || 0); }
       if (z === "r") { const e = sn([u1], P.us, du2); u1 += du2 + (e || 0); }
       if (mv || z === "t") { const e = sn(mv ? [zt, zb] : [zt], P.zs, dz2); zt += dz2 + (e || 0); if (mv) zb += dz2 + (e || 0); }
@@ -980,7 +981,7 @@
       if (!mv) { if (u1 - u0 < 50) { if (z === "l") u0 = u1 - 50; else u1 = u0 + 50; } if (zt - zb < 50) { if (z === "t") zt = zb + 50; else zb = zt - 50; } }
       if (zb < 0) { zt -= zb; zb = 0; }
       const ou = b[2] - b[0] || 1, oz = (-b[1]) - (-b[3]) || 1, fu = (u1 - u0) / ou, fz = (zt - zb) / oz;
-      D.pts = D.pts.map(q => { const uu = mapU(s, q[0]), nu = u0 + (uu - b[0]) * fu, nz = zb + (q[1] - (-b[3])) * fz; return [r10(mapU(s, nu)), Math.max(0, r10(nz))]; });
+      D.pts = D.pts.map(q => { const uu = mapU(s, q[0]), nu = u0 + (uu - b[0]) * fu, nz = zb + (q[1] - (-b[3])) * fz; return [R(mapU(s, nu)), Math.max(0, R(nz))]; });
       d.decInfo = { u0, u1, zb, zt }; return N;
     }
     if (it.k === "door") { const o = N.doors[it.i]; o.x = Math.max(T, Math.min(M.W - T - o.w, o.x + sgn(s) * r10(du))); return N; }
@@ -1361,6 +1362,7 @@
   const MVC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='%23e0201b' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'><path d='M16 2l5 6h-3.4v6.6H24V11l6 5-6 5v-3.6h-6.4V24H21l-5 6-5-6h3.4v-6.6H8V21l-6-5 6-5v3.6h6.4V8H11z'/></g></svg>\") 16 16, move";
   const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";
   addEventListener("pointermove", e => {
+    altNow = e.altKey;
     if (place && place.t === "erase") { document.body.style.cursor = ERC; const h = guideHit(e.clientX, e.clientY) >= 0 ? null : hit(e.clientX, e.clientY); hover(h); return; }
     if (place && place.t === "dim" && fdimMove(e)) return;
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
@@ -1767,7 +1769,11 @@
     if (place && place.t === "decor" && place.side === s) (place.pts || []).forEach(t => { us.push(mapU(s, t[0])); zs.push(t[1]); });
     return { us, zs };
   }
-  function decSn(s, u, z, rad = 120) {
+  // pielipšanas rādiuss ≈ 6 ekrāna pikseļi (tuvinot kļūst smalkāks), ne vairāk par 120 mm
+  function decRad(bl) { const m = bl.g.getScreenCTM(); return m && m.a ? Math.min(120, 6 / Math.abs(m.a)) : 60; }
+  let altNow = false;
+  function decSn(s, u, z, rad = 120, alt = altNow) {
+    if (alt) return { u: Math.round(u), z: Math.round(z), su: null, sz: null };
     const P = decSnapPts(s, -1); let su = null, sz = null;
     P.us.forEach(t => { if (Math.abs(t - u) < rad && (su == null || Math.abs(t - u) < Math.abs(su - u))) su = t; });
     P.zs.forEach(t => { if (Math.abs(t - z) < rad && (sz == null || Math.abs(t - z) < Math.abs(sz - z))) sz = t; });
@@ -1777,7 +1783,7 @@
     document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
     const bl = blocks().find(b => { if (b.type !== "elev") return false; const r = b.g.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; });
     if (!bl) return;
-    const s = bl.side, p = toLocal(bl.g, cx, cy), o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" }), sn = decSn(s, p[0], -p[1]), q = [sn.u, -Math.max(0, sn.z)];
+    const s = bl.side, p = toLocal(bl.g, cx, cy), o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" }), sn = decSn(s, p[0], -p[1], decRad(bl)), q = [sn.u, -Math.max(0, sn.z)];
     const dash = { stroke: ACC, "stroke-width": 0.3 / k, "stroke-dasharray": `${1.2 / k} ${0.8 / k}` };
     if (sn.su != null) mk(g, "line", Object.assign({ x1: sn.su, y1: -9000, x2: sn.su, y2: 600 }, dash));
     if (sn.sz != null) mk(g, "line", Object.assign({ x1: -600, y1: -sn.sz, x2: span(s) + 600, y2: -sn.sz }, dash));
@@ -2152,7 +2158,7 @@
         if (P.t === "decor") {   // [TRE] fasādes elements: taisnstūris (2 klikšķi) vai polilīnija (klikšķis pirmajā punktā noslēdz)
           if (P.side && P.side !== s) return { miss: "Visi elementa punkti jāliek vienā fasādē." };
           P.side = s; P.pts = P.pts || [];
-          const sn = decSn(s, p[0], -p[1]), a = r10(mapU(s, sn.u)), z = Math.max(0, sn.z);
+          const sn = decSn(s, p[0], -p[1], decRad(bl)), a = Math.round(mapU(s, sn.u)), z = Math.max(0, sn.z);
           const pts = P.pts, mkEl = pp => { const D = N.decor = N.decor || []; D.push({ side: s, pts: pp, th: 20, tex: "clad", rot: 0 }); return { N, sel: { k: "decor", i: D.length - 1, lv: "main" } }; };
           if (P.rect) {
             if (!pts.length) { pts.push([a, z]); return { pending: "Uzklikšķini pretējo stūri." }; }
