@@ -984,6 +984,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Fasādes elements (polilīnija)", s: "klikšķi stūros fasādē; klikšķis pirmajā punktā noslēdz", p: { t: "decor" }, ic: "ter" },
     { n: "Stabs", s: "klikšķis novieto; Ctrl+vilkt kopē, tad /n dala", p: { t: "post" }, ic: "post" },
     { n: "Zona (telpa)", s: "divi klikšķi plānā: jauna telpa, vieta tiek nogriezta no esošās; jāieraksta tikai nosaukums", p: { t: "zone" }, ic: "ter" },
+    { n: "Zona pa kontūru (polilīnija)", s: "klikšķi telpas stūros (taisnleņķa kontūrs); klikšķis pirmajā punktā noslēdz; jāieraksta tikai nosaukums", p: { t: "zone", poly: true }, ic: "ter" },
     { n: "Krāsas spainis", s: "B; klikšķis uzliek materiālu, Alt+klikšķis paņem", p: { t: "bucket" }, ic: "bucket" },
   ];
   // vy: mēbelei ir 3 detalizācijas varianti (bed1 / bed / bed3)
@@ -1134,7 +1135,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); setMove(false); railSync(); } },
     ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
     { id: "ter", n: "Terase", k: "t", ic: "ter", run: () => { const b = OPENB[11]; if (b) b.click(); railSync(); } },
-    { id: "bk", n: "Krāsas spainis", k: "b", ic: "bucket", run: () => { const b = OPENB[16]; if (b) b.click(); railSync(); } },
+    { id: "bk", n: "Krāsas spainis", k: "b", ic: "bucket", run: () => { const b = OPENB[17]; if (b) b.click(); railSync(); } },
     { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gx", run: () => { $("bGuideClr").click(); } },
   ];
@@ -1304,9 +1305,30 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       });
       if (Object.keys(pl).length) n.projekts.piragi_layers = pl; else delete n.projekts.piragi_layers;
       if (Object.keys(pn).length) n.projekts.piragi_names = pn; else delete n.projekts.piragi_names;
-      d.close(); commit(n); status("Konstrukcijas saglabātas.");
+      partSync(n, model); d.close(); commit(n); status("Konstrukcijas saglabātas.");
     };
     d.showModal();
+  }
+  // [TRE] starpsienu pīrāga biezuma maiņa: telpas starp starpsienām izaug vai saraujas pret sienas viduslīniju, platības pārrēķinās
+  function partSync(n, m0) {
+    const th = (P) => { const L = ((P || {}).piragi_layers || {}).S2 || (LAYERS0.S2 || {}).layers; return L ? L.reduce((a, l) => a + (l[2] === "n" ? 0 : +l[1] || 0), 0) : 0; };
+    const o = th(m0.projekts), nw = th(n.projekts), dl = (o - nw) / 2; if (!o || !nw || Math.abs(dl) < 0.05) return;
+    const adj = [];
+    [n, n.loft].forEach(L => {
+      if (!L || !L.rooms) return;
+      const R = L.rooms.flatMap(r => r.r), gaps = [];
+      R.forEach(a => R.forEach(b => {
+        if (a === b) return;
+        const gx = b[0] - (a[0] + a[2]), gy = b[1] - (a[1] + a[3]);
+        if (Math.abs(gx - o) < 2 && Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]) > 50) { adj.push([a, "r", dl]); adj.push([b, "l", dl]); gaps.push(["v", a[0] + a[2]]); }
+        if (Math.abs(gy - o) < 2 && Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]) > 50) { adj.push([a, "b", dl]); adj.push([b, "t", dl]); gaps.push(["h", a[1] + a[3]]); }
+      }));
+      const seen = new Set();
+      adj.forEach(([q, side, d]) => { const key = R.indexOf(q) + side + (L === n ? "m" : "l"); if (seen.has(key)) return; seen.add(key);
+        if (side === "r") q[2] = +(q[2] + d).toFixed(1); else if (side === "b") q[3] = +(q[3] + d).toFixed(1);
+        else if (side === "l") { q[0] = +(q[0] - d).toFixed(1); q[2] = +(q[2] + d).toFixed(1); } else { q[1] = +(q[1] - d).toFixed(1); q[3] = +(q[3] + d).toFixed(1); } });
+      (L.doors || []).forEach(dr => { if (Math.abs((dr.th || 0) - o) > 2) return; const c = dr.o === "v" ? dr.x : dr.y, g = gaps.find(q => q[0] === (dr.o === "v" ? "v" : "h") && Math.abs(q[1] - c) < 2); if (!g) return; if (dr.o === "v") dr.x = +(dr.x + dl).toFixed(1); else dr.y = +(dr.y + dl).toFixed(1); dr.th = +nw.toFixed(1); });
+    });
   }
   function mats() {
     const host = $("mats"); host.textContent = "";
@@ -1357,7 +1379,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const WT = (model.projekts || {}).wall_types || [];   // papildu starpsienu veidi: [{id, name, layers}]
       const PNm = (model.projekts || {}).piragi_names || {};
       const ENT = ["S1", "S2", "G1", "J1"].filter(k => LAYERS0[k]).map(k => ({ k, name: PNm[k] || LAYERS0[k].name, cur: PLs[k] || LAYERS0[k].layers, edited: !!PLs[k], exp: EXP[k],
-        save: arr => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.piragi_layers = n.projekts.piragi_layers || {}; if (JSON.stringify(arr) === JSON.stringify(LAYERS0[k].layers)) delete n.projekts.piragi_layers[k]; else n.projekts.piragi_layers[k] = arr; if (!Object.keys(n.projekts.piragi_layers).length) delete n.projekts.piragi_layers; commit(n); } }));
+        save: arr => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.piragi_layers = n.projekts.piragi_layers || {}; if (JSON.stringify(arr) === JSON.stringify(LAYERS0[k].layers)) delete n.projekts.piragi_layers[k]; else n.projekts.piragi_layers[k] = arr; if (!Object.keys(n.projekts.piragi_layers).length) delete n.projekts.piragi_layers; if (k === "S2") partSync(n, model); commit(n); } }));
       WT.forEach((w, wi) => ENT.push({ k: w.id, name: w.name, cur: w.layers, custom: wi, exp: null,
         save: arr => { const n = clone(model); n.projekts.wall_types[wi].layers = arr; commit(n); } }));
       ENT.forEach(en => {
@@ -1884,12 +1906,19 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       g.append(field("Biezums, mm (0 = līdz ar fasādi)", D0.th || 0, (n, v) => { n.decor[sel.i].th = Math.max(0, v); }),
         field("Tekstūras pagrieziens, °", D0.rot || 0, (n, v) => { n.decor[sel.i].rot = v; }));
       const tl = document.createElement("label"), ts = document.createElement("select"); tl.textContent = "Tekstūra"; tl.className = "full";
-      [["clad", "Apdares dēlis (kā fasāde)"], ["metal", "Metāls"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if ((D0.tex || "clad") === v) o.selected = true; ts.append(o); });
+      [["clad", "Apdares dēlis (kā fasāde)"], ["metal", "Metāls"], ["img", "Sava tekstūra (no datora)"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if ((D0.tex || "clad") === v) o.selected = true; ts.append(o); });
       ts.onchange = () => set(d => { d.tex = ts.value; }); tl.append(ts); g.append(tl);
       if (D0.tex === "metal") {
         const cl = document.createElement("label"), cs = document.createElement("select"); cl.textContent = "Metāla tonis"; cl.className = "full";
         [["#3a3f44", "RAL 7016 grafīts"], ["#1b1d1f", "RAL 9005 melns"], ["#e8e8e4", "RAL 9016 balts"], ["#9aa0a6", "Alumīnijs"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if ((D0.col || "#3a3f44") === v) o.selected = true; cs.append(o); });
         cs.onchange = () => set(d => { d.col = cs.value; }); cl.append(cs); g.append(cl);
+      }
+      if (D0.tex === "img") {
+        g.append(field("Tekstūras flīzes platums, mm", D0.texW || 1000, (n, v) => { n.decor[sel.i].texW = Math.max(100, v); }));
+        const fr = document.createElement("div"), fb = document.createElement("button"), ff = document.createElement("input"); fr.className = "row full"; fb.type = "button"; fb.textContent = D0.img ? "Mainīt attēlu…" : "Izvēlēties attēlu no datora…";
+        ff.type = "file"; ff.accept = "image/*"; ff.hidden = true;
+        ff.onchange = () => { const q = ff.files && ff.files[0]; if (q) terUpload(q, url => { const im = new Image(); im.onload = () => set(d => { d.img = url; d.texAr = +(im.naturalHeight / (im.naturalWidth || 1)).toFixed(3); }); im.src = url; }); };
+        fb.onclick = () => ff.click(); fr.append(fb, ff); g.append(fr);
       }
       p.append(h, sub, g);
       const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst elementu"; b.onclick = del; r.appendChild(b); p.append(r);

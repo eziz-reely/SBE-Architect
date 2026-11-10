@@ -680,6 +680,11 @@ function elevation(parent, v, side, opt = { levels: true }) {
     const pts = d.pts.map(([a, z]) => `${map(a)},${-z}`).join(" "), xs = d.pts.map(q => map(q[0])), zs = d.pts.map(q => -q[1]), th = +d.th || 0, id = "dec-" + side + di;
     if (th > 0) el("polygon", { points: d.pts.map(([a, z]) => `${map(a) + th * .6},${-z + th * .6}`).join(" "), fill: "rgba(0,0,0,.28)" }, g);   // ēna: elements izvirzīts no fasādes
     if (d.tex === "metal") el("polygon", { points: pts, fill: d.col || "#3a3f44", stroke: C.ink, "stroke-width": th > 0 ? 14 : 8 }, g);
+    else if (d.tex === "img" && d.img) {   // sava tekstūra no datora: flīzes platums texW, pagrieziens rot
+      const tw = Math.max(100, +d.texW || 1000), pid = "dtx-" + side + di, pat = el("pattern", { id: pid, patternUnits: "userSpaceOnUse", width: tw, height: tw * (+d.texAr || 1), patternTransform: `rotate(${+d.rot || 0})` }, g);
+      el("image", { href: d.img, width: tw, height: tw * (+d.texAr || 1), preserveAspectRatio: "none" }, pat);
+      el("polygon", { points: pts, fill: `url(#${pid})`, stroke: C.ink, "stroke-width": th > 0 ? 14 : 8 }, g);
+    }
     else {
       el("polygon", { points: pts }, el("clipPath", { id }, g));
       const k = 1.4, rot = +d.rot || 0, cx = (Math.min(...xs) + Math.max(...xs)) / 2, cy = (Math.min(...zs) + Math.max(...zs)) / 2;
