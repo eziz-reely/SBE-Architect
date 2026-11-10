@@ -101,7 +101,7 @@ button.pri.bad { background: var(--bad); border-color: var(--bad); }
 .sset label { flex: 1; margin: 0; }
 label.chk { display: flex; flex-direction: row; align-items: center; gap: 8px; font-size: 13px; margin: 0 0 10px; }
 label.chk input { width: auto; }
-.spg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--field); border: 1px solid var(--line2); border-radius: var(--r); padding: 3px; }
+.spg { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--field); border: 1px solid var(--line2); border-radius: var(--r); padding: 3px; }
 .spg button { justify-content: center; height: 34px; font-size: 13px; color: var(--muted); }
 .spg button[aria-selected="true"] { background: var(--accent); color: #fff; }
 .spt:empty { display: none; }
@@ -470,7 +470,7 @@ async function specDlg(key, after, setId) {
 function spRead() { const c = spCur(), nv = $("sName").value.trim(); if (nv) c.nm[spTab] = nv; c.cur[spTab] = [...$("sRows").querySelectorAll(".spr")].map(r => [r.querySelector("[name=n]").value.trim(), +r.querySelector("[name=t]").value || 0, r.querySelector("[name=k]").value]).filter(l => l[0]); }
 function spSum() { const t = [...$("sRows").querySelectorAll("[name=t]")].reduce((a, i) => a + (+i.value || 0), 0); $("sSum").innerHTML = `Kopā <b>${Math.round(t * 10) / 10} mm</b>`; }
 // trīs atsevišķas konstrukcijas: sienas (ārsiena, starpsiena), jumts, grīda
-const SPG = [["sienas", "Sienas", ["S1", "S2"]], ["jumts", "Jumts", ["J1"]], ["grida", "Grīda", ["G1"]]];
+const SPG = [["sienas", "Sienas", ["S1", "S2"]], ["jumts", "Jumts", ["J1"]], ["grida", "Grīda", ["G1"]], ["mansards", "Mansards", ["P1"]]];
 const spGroup = () => SPG.find(g => g[2].includes(spTab));
 function spDraw() {
   const grp = spGroup(), C = spCur();

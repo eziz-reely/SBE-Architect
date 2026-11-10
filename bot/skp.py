@@ -20,7 +20,7 @@ T = sum(l[1] for l in CFG['layers']['S1']['layers'])      # ārsiena 283,5
 FT = sum(l[1] for l in CFG['layers']['G1']['layers'])     # grīdas pīrāgs 275,5
 ROOF_T = sum(l[1] for l in CFG['layers']['J1']['layers'])
 PITCH = CFG['roof']['pitch']
-P1 = sum(l[1] for l in CFG['layers'].get('P1', {'layers': [['', 164.5]]})['layers'])
+P1 = float(os.environ.get('SBE_P1_MM') or 0) or sum(l[1] for l in CFG['layers'].get('P1', {'layers': [['', 164.5]]})['layers'])   # SBE_P1_MM: uzņēmuma mansarda grīdas pīrāgs
 GROUND = -CFG['floor'].get('posts_ground', 600)
 RAL = {'RAL 9016': '#F1F0EA', 'RAL 7016': '#383E42', 'RAL 9005': '#1D1D1D'}
 

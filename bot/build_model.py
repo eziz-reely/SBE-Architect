@@ -87,6 +87,8 @@ def build(model_path, langs=None):
     for k_, v_ in (pr.get('piragi_layers') or {}).items():   # redaktorā labotie pīrāgu slāņi (projekts.piragi_layers)
         if k_ in cfg['layers']:
             cfg['layers'][k_]['layers'] = v_
+        elif k_ == 'P1':   # mansarda grīda
+            cfg['layers']['P1'] = {'name': (pr.get('piragi_names') or {}).get('P1') or 'S-02 Mansarda grīda', 'layers': v_}
     for k_, v_ in (pr.get('piragi_names') or {}).items():   # pārdēvētas konstrukcijas (projekts.piragi_names)
         if k_ in cfg['layers'] and v_:
             cfg['layers'][k_]['name'] = v_

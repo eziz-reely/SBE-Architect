@@ -174,12 +174,14 @@ def rebuild_pages(mp):
         pass
 
 
-SPEC_KEYS = ('S1', 'S2', 'G1', 'J1')
+SPEC_KEYS = ('S1', 'S2', 'G1', 'J1', 'P1')
 
 
 def default_layers():
     c = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))['layers']
-    return {k: {'name': c[k]['name'], 'layers': c[k]['layers']} for k in SPEC_KEYS if k in c}
+    d = {k: {'name': c[k]['name'], 'layers': c[k]['layers']} for k in SPEC_KEYS if k in c}
+    d.setdefault('P1', {'name': 'S-02 Mansarda grīda', 'layers': [['Mansarda pārsegums', 164.5, '']]})   # tagad kods rēķina 164,5 mm
+    return d
 
 
 def company_spec(cdir):
@@ -196,6 +198,8 @@ CLASSIC = {
            ['C24 45x45, minerālvate Isover STANDART 35 50 mm', 45, 'a'], ['Ģipškartons 2 kārtās vai vagondēlis (2. stadija)', 25, 'k']],
     'G1': [['Grīdas segums (2. stadija)', 0, ''], ['Grīdas ģipškartons', 12.5, 'k'], ['Durelis', 18, 'o'], ['Amortizācijas lenta', 2, ''], ['Latojums 25x100', 25, 'a'],
            ['C24 karkass 45x195, minerālvate Isover STANDART 35 2x100 mm', 200, 'i'], ['Durelis', 11, 'o'], ['Vainags C24 45x195', 45, ''], ['Pretgrauzēju siets', 0.5, 'm']],
+    'P1': [['Grīdas segums (2. stadija)', 0, ''], ['Durelis', 18, 'o'], ['Latojums 25x100', 25, 'a'], ['C24 karkass 45x195, minerālvate Isover Acoustic 2x100 mm', 195, 'i'],
+           ['Latojums 25x100', 25, 'a'], ['Ģipškartons', 12.5, 'k']],
     'J1': [['Jumta segums', 0.5, ''], ['Amortizācijas lenta', 2, ''], ['Hor. latojums 25x100', 25, 'a'], ['Vert. latojums 25x50', 25, 'a'], ['Difūzijas membrāna CoverCORE STRONG 75', 0, 'm'],
            ['C24 karkass 45x195, minerālvate Isover STANDART 35 200 mm', 200, 'i'], ['Tvaika izolācijas membrāna ClimaCORE 75', 0, 'm'], ['Latojums 25x50', 25, 'a'],
            ['Ģipškartons 1 kārtā vai vagondēlis (2. stadija)', 12.5, 'k']],
@@ -263,6 +267,7 @@ def new_project(b):
         H = math.ceil(float(b.get('dzega') or 2600) + RT / math.cos(p) + B / 2 * math.tan(p) + flT)
     if not (3000 <= L <= 40000 and 2500 <= B <= 15000 and 2500 <= H <= 12000):
         raise ValueError('Izmēri ārpus robežām (garums 3–40 m, platums 2,5–15 m, kore 2,5–12 m).')
+    p1 = sum(l[1] for l in (pick_set(company_spec(cos[co]), b.get('komplekts')).get('piragi_layers') or {}).get('P1', []))
     args = [sys.executable, os.path.join(HERE, 'generate.py'), str(L), str(B), str(H), '--valodas', 'LV']
     if pitch: args += ['--slipums', f'{pitch:g}']
     pid = safe_name(b.get('id'))
@@ -278,7 +283,7 @@ def new_project(b):
     if b.get('pamati') in ('stabveida', 'platne'): args += ['--pamati', b['pamati']]
     if b.get('tonis') in ('peleks', 'koks', 'sarkans', 'zals', 'balts'): args += ['--tonis', b['tonis']]
     r = subprocess.run(args, cwd=HERE, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=900,
-                       env=dict(os.environ, PYTHONIOENCODING='utf-8'), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+                       env=dict(os.environ, PYTHONIOENCODING='utf-8', **({'SBE_P1_MM': f'{p1:g}'} if p1 else {})), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
     mps = [ln.strip() for ln in r.stdout.splitlines() if ln.strip().endswith('model.json') and os.path.exists(ln.strip())]
     if not mps:
         raise ValueError('Modeli neizdevās uzģenerēt: ' + (r.stderr.strip().splitlines() or ['?'])[-1])

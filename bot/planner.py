@@ -25,7 +25,7 @@ CFG = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='
 T = sum(l[1] for l in CFG['layers']['S1']['layers'])          # ārsiena 283,5
 t = sum(l[1] for l in CFG['layers']['S2']['layers'])          # starpsiena 195
 ROOF_T = sum(l[1] for l in CFG['layers']['J1']['layers'])
-P1 = sum(l[1] for l in CFG['layers'].get('P1', {'layers': [['', 164.5]]})['layers'])
+P1 = float(os.environ.get('SBE_P1_MM') or 0) or sum(l[1] for l in CFG['layers'].get('P1', {'layers': [['', 164.5]]})['layers'])   # SBE_P1_MM: uzņēmuma mansarda grīdas pīrāgs
 PITCH = CFG['roof']['pitch']
 
 # ---------------- [MM] plānotāja noteikumi (zinasanas_mebeles_logi.md, 10. nodaļa) ----------------
