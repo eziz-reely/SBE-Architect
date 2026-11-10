@@ -177,6 +177,8 @@ def build(model_path, langs=None):
         # [MM] rietumu terase (v.terrace): klājs plānā kā lievenis, fasādēs kā lieveņa klājs
         ('  if (v.porch) porchPlan(g, v.porch, v.rooms.length + 1);', '  if (v.porch) porchPlan(g, v.porch, v.rooms.length + 1);\n  if (v.terrace) porchPlan(g, v.terrace, v.rooms.length + (v.porch ? 2 : 1));'),
         ('  if (v.porch) {\n    const pc = v.porch, out =', '  for (const pc of [v.porch, v.terrace].filter(Boolean)) {\n    const out ='),
+        ("    el(\"rect\", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: \"#4a4f53\", stroke: C.ink, \"stroke-width\": 14 }, g);\n    el(\"line\", { x1: u + s * .35, y1: -eEdge + 20, x2: u + s * .35, y2: fT - 20, stroke: \"rgba(255,255,255,.15)\", \"stroke-width\": 8 }, g);",
+         "    el(\"rect\", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: \"#c68a58\", stroke: C.ink, \"stroke-width\": 14 }, g);\n    for (let k = 1; k < Math.round(s / 50); k++) el(\"line\", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: \"#5a3a1e\", \"stroke-width\": 6 }, g);   // [MM] dekoratīvs lamellu statnis"),
         # [MM] ja apakšā ir aploda, palodze paliek ailas apakšā
         ('    if (true) {\n      z0 -= CB;\n', '    if (true) {\n'),
         # [MM] palodzes tonis var atšķirties no aplodām (AR.win.sillColor)
