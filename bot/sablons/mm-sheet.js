@@ -122,7 +122,7 @@ function mmTitleBlock(svg, v, lf, L) {
   wrap(L === "en" ? (P.rev_apraksts_en || P.rev_apraksts || "") : (P.rev_apraksts || ""), 10).forEach((l, i) => T_(g, X + 23, ry + 4 + i * 2.8, l, { fs: 1.9 }));
   // bottom cells: scale / size / sheet
   el("line", { x1: X, y1: 372, x2: X + W, y2: 372, stroke: C.ink, "stroke-width": .35 }, g);
-  [[tx.scale, "1:" + (window.MM_SCALE || 100)], [tx.fmt, "A3"], [tx.sheet, P.lapa || "1/1"]].forEach(([k, val], i) => {
+  [[tx.scale, window.MM_SCALE_TXT || ("1:" + (window.MM_SCALE || 100))], [tx.fmt, "A3"], [tx.sheet, P.lapa || "1/1"]].forEach(([k, val], i) => {
     const x = X + i * W / 3;
     if (i) el("line", { x1: x, y1: 372, x2: x, y2: 386, stroke: C.ink, "stroke-width": .2 }, g);
     T_(g, x + W / 6, 377, k, { fs: 1.6, a: "middle", fill: MM_GREY, ls: .2 });

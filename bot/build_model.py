@@ -99,6 +99,7 @@ def build(model_path, langs=None):
     cad = open(os.path.join(SBE, 'plani', 'cad.js'), encoding='utf-8').read()
     ar = open(os.path.join(SBE, 'plani', 'ar.js'), encoding='utf-8').read()
     sheet = open(os.path.join(HERE, 'sablons', 'mm-sheet.js'), encoding='utf-8').read()
+    sheet += '\n' + open(os.path.join(HERE, 'sablons', 'mm-pamati.js'), encoding='utf-8').read()   # [MM] pamatu un komunikāciju plāns
     anchor = '  // ---------- Rev. 8:'
     assert anchor in cad, 'SBE cad.js: nav atrasts Rev. 8 bloks'
     blocks = open(os.path.join(HERE, 'sablons', 'mm-mebeles.js'), encoding='utf-8').read() + rev_block(m)
@@ -147,7 +148,7 @@ def build(model_path, langs=None):
         cad = cad.replace(a, b, 1)
     old = 'const sheetsOut = ARC ? arSheets(pv)'
     assert old in cad, 'SBE cad.js: nav atrasta drukas rinda'
-    cad = cad.replace(old, 'const sheetsOut = window.MODEL_SHEET ? [modelSheet(pv)] : ARC ? arSheets(pv)', 1)
+    cad = cad.replace(old, 'const sheetsOut = window.MODEL_SHEET ? mmSheets(pv) : ARC ? arSheets(pv)', 1)
     sc = 'T_(g, -ROOF.ov + ttl.length * 262 + 350, 2450, "M 1:100"'
     assert sc in cad, 'SBE cad.js: nav atrasts fasādes mērogs'
     cad = cad.replace(sc, 'if (!opt.noScale) ' + sc.replace('"M 1:100"', '"M 1:" + (window.MM_SCALE || 100)'), 1)
@@ -311,6 +312,8 @@ def build(model_path, langs=None):
     n0 = ar.index('function wrap(t, n) {')
     ar = ar[:n0] + ARFIX + ar[n0:]
     for a_, b_ in [
+        # [MM] pamatu un komunikāciju plāns kā AR lapa
+        ('    if (k === "plan" || k === "mebel") {', '    if (/^pam\\d$/.test(k)) { out.push(pamArSheet(v, k, sc => sheet(k, title, sc))); return; }\n    if (k === "plan" || k === "mebel") {'),
         ('      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:100"),',
          '      const [ps_, pd_] = arScalePlan(v); window.AR_PK = ps_ === 0.01 ? null : ps_; window.AR_PD = pd_; window.MM_SCALE = pd_;\n      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:" + pd_),'),
         ('      out.push(svg); return;\n    }\n    const svg = sheet(k, title, k === "mezgli"',
