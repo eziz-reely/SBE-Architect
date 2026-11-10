@@ -189,6 +189,22 @@ def company_spec(cdir):
         return {}
 
 
+def spec_sets(cs):
+    """Uzņēmuma pīrāgu komplekti: ([{id, nosaukums, piragi_layers, piragi_names}], aktīvā id). Vecais formāts kļūst par "Standarta"."""
+    sets = [k for k in (cs.get('komplekti') or []) if isinstance(k, dict) and k.get('id')]
+    if not sets:
+        sets = [{'id': 'standarts', 'nosaukums': 'Standarta', 'piragi_layers': cs.get('piragi_layers') or {}, 'piragi_names': cs.get('piragi_names') or {}}]
+    act = cs.get('aktivs')
+    if act not in [k['id'] for k in sets]:
+        act = sets[0]['id']
+    return sets, act
+
+
+def pick_set(cs, sid=None):
+    sets, act = spec_sets(cs)
+    return next((k for k in sets if k['id'] == (sid or act)), None) or next(k for k in sets if k['id'] == act)
+
+
 def clean_layers(L):
     out = {}
     for k in SPEC_KEYS:
@@ -258,7 +274,7 @@ def new_project(b):
         shutil.move(src, dest)
         try: os.rmdir(os.path.dirname(src))   # tukšā <m²> mape repo MĀJAS
         except OSError: pass
-    cs0 = company_spec(cos[co]); sp = cs0.get('piragi_layers')
+    cs0 = pick_set(company_spec(cos[co]), b.get('komplekts')); sp = cs0.get('piragi_layers')
     if cs0.get('piragi_names'):
         mp = os.path.join(dest, 'model.json'); mj = json.load(open(mp, encoding='utf-8'))
         mj.setdefault('projekts', {})['piragi_names'] = cs0['piragi_names']
@@ -352,7 +368,8 @@ class H(BaseHTTPRequestHandler):
             if p == '/api/projects':
                 pr = scan(); c = load_cfg()
                 cos = [{'name': n, 'key': key_of(d), 'path': d, 'n': sum(1 for x in pr if x['company'] == n),
-                        'spec': bool(company_spec(d).get('specifikacija_apstiprinata'))} for n, d in companies(c).items()]
+                        'spec': bool(company_spec(d).get('specifikacija_apstiprinata')),
+                        'komplekti': [{'id': k['id'], 'nosaukums': k['nosaukums']} for k in spec_sets(company_spec(d))[0]], 'aktivs': spec_sets(company_spec(d))[1]} for n, d in companies(c).items()]
                 return self.send(200, {'projects': pr, 'companies': cos, 'root': c['root']})
             if p.startswith('/api/files/'):
                 d = path_for(p[11:])
@@ -368,8 +385,8 @@ class H(BaseHTTPRequestHandler):
                 k = (urllib.parse.parse_qs(u.query).get('key') or [''])[0]; d = path_for(k)
                 if not d:
                     return self.send(404, 'Uzņēmums nav atrasts', 'text/plain; charset=utf-8')
-                cs = company_spec(d).get('piragi_layers') or {}
-                return self.send(200, {'defaults': default_layers(), 'custom': cs, 'names': company_spec(d).get('piragi_names') or {}, 'set': bool(cs)})
+                sets, act = spec_sets(company_spec(d))
+                return self.send(200, {'defaults': default_layers(), 'sets': sets, 'active': act})
             if p.startswith('/lv/'):
                 d = path_for(p[4:])
                 return self.send(200, lv_page(d), 'text/html; charset=utf-8') if d else self.send(404, 'Nav', 'text/plain; charset=utf-8')
@@ -496,15 +513,25 @@ class H(BaseHTTPRequestHandler):
                 d = path_for(b.get('key', ''))
                 if not d:
                     return self.send(404, 'Uzņēmums nav atrasts', 'text/plain; charset=utf-8')
-                cs = company_spec(d); L = clean_layers(b.get('piragi_layers'))
+                cs = company_spec(d)
                 dn = {k: v['name'] for k, v in default_layers().items()}
-                nm = {k: str(v).strip()[:80] for k, v in (b.get('piragi_names') or {}).items() if k in SPEC_KEYS and str(v).strip() and str(v).strip() != dn.get(k)}
-                if nm: cs['piragi_names'] = nm
-                else: cs.pop('piragi_names', None)
                 dfl = {k: v['layers'] for k, v in default_layers().items()}
-                L = {k: v for k, v in L.items() if v != dfl.get(k)}   # glabā tikai atšķirīgos
-                if L: cs['piragi_layers'] = L
-                else: cs.pop('piragi_layers', None)
+                out, used = [], set()
+                for i, k in enumerate((b.get('sets') or [])[:12]):
+                    sid = re.sub(r'[^a-z0-9_-]', '', str(k.get('id') or '').lower())[:24] or f'k{i + 1}'
+                    while sid in used: sid += 'x'
+                    used.add(sid)
+                    nm = {a: str(v).strip()[:80] for a, v in (k.get('piragi_names') or {}).items() if a in SPEC_KEYS and str(v).strip() and str(v).strip() != dn.get(a)}
+                    L = {a: v for a, v in clean_layers(k.get('piragi_layers')).items() if v != dfl.get(a)}   # glabā tikai atšķirīgos
+                    out.append({'id': sid, 'nosaukums': str(k.get('nosaukums') or '').strip()[:40] or f'Komplekts {i + 1}', 'piragi_layers': L, 'piragi_names': nm})
+                if not out:
+                    return self.send(400, 'Vajag vismaz vienu komplektu', 'text/plain; charset=utf-8')
+                cs['komplekti'] = out
+                cs['aktivs'] = b.get('active') if b.get('active') in used else out[0]['id']
+                ac = next(k for k in out if k['id'] == cs['aktivs'])   # vecais formāts = aktīvais komplekts
+                for key, f in (('piragi_layers', 'piragi_layers'), ('piragi_names', 'piragi_names')):
+                    if ac[f]: cs[key] = ac[f]
+                    else: cs.pop(key, None)
                 cs['specifikacija_apstiprinata'] = True
                 json.dump(cs, open(os.path.join(d, 'uznemums.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
                 return self.send(200, {'ok': True})
