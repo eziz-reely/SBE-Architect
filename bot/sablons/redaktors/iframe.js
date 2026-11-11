@@ -25,11 +25,11 @@
   }
   const tr = g => { const m = /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/.exec(g.getAttribute("transform") || ""); return m ? { tx: +m[1], ty: +m[2], k: +m[3] } : null; };
   function toLocal(g, cx, cy) {
-    const r = (g.ownerSVGElement || sheet()).getBoundingClientRect(), b = tr(g);
-    return [((cx - r.left) / r.width * 297 - b.tx) / b.k, ((cy - r.top) / r.height * 420 - b.ty) / b.k];
+    const sv = g.ownerSVGElement || sheet(), r = sv.getBoundingClientRect(), b = tr(g), vb = sv.viewBox.baseVal, vw = vb.width || 297, vh = vb.height || 420;
+    return [((cx - r.left) / r.width * vw - b.tx) / b.k, ((cy - r.top) / r.height * vh - b.ty) / b.k];
   }
   // rokturu izmērs ekrānā nemainās, lai cik tuvināts: 1 vienība ≈ 4 px
-  const ek = bl => tr(bl.g).k * ((bl.g.ownerSVGElement || sheet()).getBoundingClientRect().width / 297) / 4;
+  const ek = bl => { const sv = bl.g.ownerSVGElement || sheet(); return tr(bl.g).k * (sv.getBoundingClientRect().width / (sv.viewBox.baseVal.width || 297)) / 4; };
   const MP = () => (window.MODEL_SHEET ? "" : "ar:");   // fasāžu nobīdes atsevišķi Skicei un AR
   const blocks = () => {
     const sv = sheet(), out = [];
@@ -1500,7 +1500,7 @@
       return;
     }
     if (drag && drag.fblk) {
-      const r = (drag.h.bl.g.ownerSVGElement || sheet()).getBoundingClientRect(); drag.ds = Math.round((e.clientX - drag.x0) / r.width * vbS()[0] * 2) / 2;
+      const r = (drag.h.bl.g.ownerSVGElement || sheet()).getBoundingClientRect(); drag.ds = Math.round((e.clientX - drag.x0) / r.width * ((drag.h.bl.g.ownerSVGElement || sheet()).viewBox.baseVal.width || 297) * 2) / 2;
       if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
       if (drag.moved) drag.h.bl.g.setAttribute("transform", `translate(${drag.t0.tx + drag.ds} ${drag.t0.ty}) scale(${drag.t0.k})`);
       return;

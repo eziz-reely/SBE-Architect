@@ -778,7 +778,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     return [{ n: "1", o: "v", at: Math.round(q[0] + q[2] / 2), look: 1 }, { n: "2", o: "h", at: Math.round(q[1] + q[3] / 2), look: -1 }];
   }
   function sheetHtml(m, edit) {
-    const arView = arOn(m) && edit; if (arView) edit = false;   // AR lapas: tikai skatīšanai un eksportam, labo skicē
+    const arView = arOn(m) && edit;   // AR lapas: arī rediģējamas (fasādes un mērs), pārējais iet caur Skici
     if (arOn(m) && !(m.sections && m.sections.length >= 2)) m = Object.assign({}, m, { sections: autoSections(m) });
     const blocks = revBlock(m, 100) + (m.loft ? revBlock(Object.assign({}, m, m.loft, { id: m.id + " mansards" }), 101) : "");
     let h = TPL.split(MARK).join(blocks);
@@ -812,7 +812,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const i = h.lastIndexOf("</body>");
       h = h.slice(0, i) + inj + h.slice(i);
     }
-    if (arView) {
+    if (arView && !edit) {
       const inj = `<script>window.MMZ_INIT=${JSON.stringify(view)};window.MMZ_ON=function(){clearTimeout(window._vt);window._vt=setTimeout(function(){window.MMZ&&parent.postMessage({mmEd:1,t:"view",view:window.MMZ.get()},"*")},120)};addEventListener("load",function(){setTimeout(function(){parent.postMessage({mmEd:1,t:"ready",check:[]},"*")},120)});<\/script>`;
       const i = h.lastIndexOf("</body>");
       h = h.slice(0, i) + inj + h.slice(i);
