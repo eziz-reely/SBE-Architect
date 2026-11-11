@@ -359,14 +359,18 @@ function tag(g, x, y, t, rot = 0) {
 }
 
 function stamp(g, cx, cy, name, num, a, s = 1) {
-  const fs = 190 * s, rh = 290 * s;
-  const w = Math.max(name.length * fs * 0.6, 1000 * s) + 220 * s;
-  const x = cx - w / 2, y = cy - rh * 1.5;
-  el("rect", { x, y, width: w, height: rh * 3, fill: "none", stroke: C.ink, "stroke-width": 9 }, g);
-  [1, 2].forEach(k => el("line", { x1: x, y1: y + rh * k, x2: x + w, y2: y + rh * k, stroke: C.ink, "stroke-width": 9 }, g));
-  T_(g, cx, y + rh * .7, name, { a: "middle", fs, fw: 500 });
-  T_(g, cx, y + rh * 1.7, String(num), { a: "middle", fs });
-  const t3 = T_(g, cx, y + rh * 2.7, "", { a: "middle", fs });
+  // projekts.stampMode: "all" (noklusēti) | "nonam" (bez nosaukuma: Nr. un m²) | "off" (zīmogu nerāda); projekts.stampMul: visu zīmogu izmērs, % (noklusēti 100)
+  const PJ = (window.AR && AR.projekts) || {}, mode = PJ.stampMode || "all", nn = mode === "nonam";
+  if (mode === "off") return;
+  s *= (+PJ.stampMul > 0 ? +PJ.stampMul : 100) / 100;
+  const fs = 190 * s, rh = 290 * s, rows = nn ? 2 : 3;
+  const w = (nn ? 1000 * s : Math.max(name.length * fs * 0.6, 1000 * s)) + 220 * s;
+  const x = cx - w / 2, y = cy - rh * rows / 2;
+  el("rect", { x, y, width: w, height: rh * rows, fill: "none", stroke: C.ink, "stroke-width": 9 }, g);
+  for (let k = 1; k < rows; k++) el("line", { x1: x, y1: y + rh * k, x2: x + w, y2: y + rh * k, stroke: C.ink, "stroke-width": 9 }, g);
+  if (!nn) T_(g, cx, y + rh * .7, name, { a: "middle", fs, fw: 500 });
+  T_(g, cx, y + rh * (nn ? .7 : 1.7), String(num), { a: "middle", fs });
+  const t3 = T_(g, cx, y + rh * (nn ? 1.7 : 2.7), "", { a: "middle", fs });
   t3.innerHTML = `${f2(a)} m<tspan dy="${-fs * .4}" font-size="${fs * .65}">2</tspan>`;
 }
 
