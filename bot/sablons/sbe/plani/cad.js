@@ -597,10 +597,47 @@ function boards(g, x0, x1, y0, y1) {
   for (let x = x0; x < x1; x += TS) for (let y = y0; y < y1; y += TS) el("use", { href: "#cladTex", x, y }, g);
 }
 
+// augstuma atzīmju kolonnas nedrīkst uzbraukt kaimiņu fasādei: ja tuvu, tās pabīda tuvāk mājai (lapas mm, bloki vienā rindā)
+function fitLvlMarks(svg) {
+  const v = window.__PV; if (!v) return;
+  const re = /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/, MARG = 3, MINC = 250;
+  const B = [...svg.querySelectorAll("g[data-block^=elev-]")].map(g => { const m = re.exec(g.getAttribute("transform") || ""), side = g.getAttribute("data-block").slice(5); return m && { g, side, tx: +m[1], ty: +m[2], k: +m[3], sp: (side === "east" || side === "west" ? v.D : v.W) }; }).filter(Boolean);
+  const ext = (b, c) => Math.max(0, ...[...b.g.querySelectorAll(`[data-lvl=${c}]`)].map(e => +e.getAttribute("data-ext")));
+  const shift = {};
+  B.forEach(a => B.forEach(b => {
+    if (a === b || Math.abs(a.ty - b.ty) > 1 || b.tx <= a.tx) return;
+    const gap = b.tx - (a.tx + a.sp * a.k) - MARG, er = ext(a, "r") * a.k, el_ = ext(b, "l") * b.k;
+    if (!er && !el_) return;
+    const ex = er + el_ - gap; if (ex <= 0) return;
+    const cut = er && el_ ? ex / 2 : ex;
+    if (er) shift[a.side + "r"] = Math.max(shift[a.side + "r"] || 0, cut / a.k);
+    if (el_) shift[b.side + "l"] = Math.max(shift[b.side + "l"] || 0, Math.min(cut / b.k, Math.max(0, ...[...b.g.querySelectorAll("[data-lvl=l]")].map(e => +e.getAttribute("data-lc") - MINC))));
+  }));
+  // nobīdītiem blokiem zemes līnija paliek viena: tukšumu starp blokiem savieno ar vienu līniju
+  const FOf = (window.AR && AR.projekts && AR.projekts.fasOff) || {};
+  B.forEach(a => B.forEach(b => {
+    if (a === b || Math.abs(a.ty - b.ty) > 1 || b.tx <= a.tx || !(FOf[a.side] || FOf[b.side])) return;
+    const la = a.g.querySelector('line[data-keep][stroke-width="45"]'), lb = b.g.querySelector('line[data-keep][stroke-width="45"]');
+    if (!la || !lb) return;
+    const xa = a.tx + a.k * +la.getAttribute("x2"), xb = b.tx + b.k * +lb.getAttribute("x1");
+    if (xb - xa > 0.2) { const ln = document.createElementNS("http://www.w3.org/2000/svg", "line"); [["x1", xa], ["x2", xb], ["y1", a.ty + a.k * ROOF.plinth], ["y2", a.ty + a.k * ROOF.plinth], ["stroke", C.ink], ["stroke-width", 45 * a.k], ["data-keep", 1]].forEach(([n, vv]) => ln.setAttribute(n, vv)); svg.appendChild(ln); }
+  }));
+  B.forEach(b => {
+    [["l", 1], ["r", -1]].forEach(([c, sg]) => { const sh = shift[b.side + c]; if (!sh) return; const d = Math.round(sg * sh); b.g.querySelectorAll(`[data-lvl=${c}]`).forEach(e => e.setAttribute("transform", `translate(${d} 0)`)); if (c === "l" && window.__FDL && window.__FDL[b.side]) window.__FDL[b.side].forEach(q => { q.b[0] += d; q.b[2] += d; }); });
+  });
+}
 function elevation(parent, v, side, opt = { levels: true }) {
   const g = el("g", {}, parent);
   const endV = side === "east" || side === "west", gable = endV && !ROOF.hip, fT = ROOF.floorT;
   const span = endV ? v.D : v.W;
+  const APJ = (window.AR && AR.projekts) || {};
+  // fasādes bloka nobīde pa lapu (projekts.fasOff[side], lapas mm): bloks bīdās kopā ar augstuma atzīmēm, zemes līnija pagarinās un paliek viena
+  { const o = +(APJ.fasOff || {})[side] || 0, pt = parent.getAttribute && parent.getAttribute("data-block") ? /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/.exec(parent.getAttribute("transform") || "") : null;
+    if (o && pt) { parent.setAttribute("transform", `translate(${+pt[1] + o} ${pt[2]}) scale(${pt[3]})`); opt = Object.assign({}, opt, { gl: Math.max(0, o) / +pt[3], gr: Math.max(0, -o) / +pt[3] }); } }
+  // automātisko atzīmju kolonna: papildu attālums no fasādes (projekts.lvlOff[side], mm), ko lietotājs iestata ar vilkšanu
+  const LCX = Math.max(250, 1200 + (+(APJ.lvlOff || {})[side] || 0));
+  if (parent.getAttribute && parent.getAttribute("data-block")) (window.__FDL = window.__FDL || {})[side] = [];
+  let LG = null;   // kreisās kolonnas atzīmju grupa (fitLvlMarks to var pabīdīt tuvāk mājai)
   const map = side === "south" ? (a => a) : side === "north" ? (a => v.W - a) : side === "east" ? (a => v.D - a) : (a => a);
   const P = (u, z) => `${u},${-z}`;
   const eEdge = ROOF.eave - ROOF.ov * tan, thV = ROOF.th / Math.cos(ROOF.pitch * Math.PI / 180);
@@ -608,7 +645,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
   const FAS = !!(window.AR && AR.projekts && AR.projekts.fascia);   // [MM] horizontāla fascija tikai sarkanajam tonim (balta); pārējiem dēļi iet līdz jumtam
   const vt = FAS ? 220 : 100;                                          // vējmalas biezums (mm) pie gala fasādēm
   const roofTopW = ridgeTop - (v.D / 2) * tan;                         // jumta virsmas augstums pie sienas gala fasādē
-  (window.__FDF = window.__FDF || {})[side] = { ridge: ridgeTop, eT: eEdge + thV, eave: ROOF.eave, eEdge, roofW: roofTopW, ridgeU };   // [TRE] fasādes mēru enkuri: mērs seko jumta augstumam, ja tas bija piesnapots
+  (window.__FDF = window.__FDF || {})[side] = { ridge: ridgeTop, eT: eEdge + thV, eave: ROOF.eave, eEdge, roofW: roofTopW, ridgeU, lc: LCX, rc: 1300 };   // [TRE] fasādes mēru enkuri: mērs seko jumta augstumam, ja tas bija piesnapots
 
   // ground
   { let d = ""; for (let x = -1400; x < span + 1400 - 260; x += 200) d += `M ${x} ${ROOF.plinth + 260} L ${x + 260} ${ROOF.plinth} `; el("path", { d, stroke: "#666", "stroke-width": 8, fill: "none" }, g); }
@@ -866,13 +903,20 @@ function elevation(parent, v, side, opt = { levels: true }) {
 
   // level markers on the left
   // level mark: solid triangle on the line, bold value underlined above (below for negative levels)
-  const lvl = (z, label, above = 0) => {
-    const lx = -ROOF.ov - 1200, up = above ? 1 : z < 0 ? -1 : 1, ty = -z - up * 210;
-    el("line", { x1: lx, y1: -z, x2: -ROOF.ov - 150, y2: -z, stroke: C.ink, "stroke-width": 7 }, g);
-    el("path", { d: `M ${lx} ${-z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: C.ink }, g);
-    const tw = label.length * 152;
-    el("line", { x1: lx - 130 - tw, y1: ty, x2: lx - 130, y2: ty, stroke: C.ink, "stroke-width": 10 }, g);
-    T_(g, lx - 140, up > 0 ? ty - 45 : ty + 225, label, { a: "end", fs: 250, fw: 600 });
+  // key: atzīmes lomas atslēga (ridge, eave, 0, plinth, z<augstums>), pēc tās atzīmi var paslēpt (projekts.lvlHide = ["side:key"]); col: lietotāja atzīmes krāsa
+  const lvl = (z, label, above = 0, key, col) => {
+    if (!col) {
+      key = key || (Math.abs(z - ridgeTop) < 1 ? "ridge" : Math.abs(z - (gable ? ROOF.eave : Math.round(eEdge))) < 1 ? "eave" : z === 0 ? "0" : z === -ROOF.plinth ? "plinth" : "z" + Math.round(z));
+      if ((APJ.lvlHide || []).includes(side + ":" + key)) return;
+    }
+    const cc = col || C.ink, lx = -ROOF.ov - LCX, up = above ? 1 : z < 0 ? -1 : 1, ty = -z - up * 210, tw = label.length * 152;
+    if (!LG) LG = el("g", { "data-lvl": "l", "data-ext": 0 }, g);
+    LG.setAttribute("data-ext", Math.max(+LG.getAttribute("data-ext"), ROOF.ov + LCX + 140 + tw)); LG.setAttribute("data-lc", LCX);
+    el("line", { x1: lx, y1: -z, x2: -ROOF.ov - 150, y2: -z, stroke: cc, "stroke-width": 7 }, LG);
+    el("path", { d: `M ${lx} ${-z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: cc }, LG);
+    el("line", { x1: lx - 130 - tw, y1: ty, x2: lx - 130, y2: ty, stroke: cc, "stroke-width": 10 }, LG);
+    const tt = T_(LG, lx - 140, up > 0 ? ty - 45 : ty + 225, label, { a: "end", fs: 250, fw: 600 }); if (col) tt.setAttribute("fill", col);
+    if (!col && window.__FDL && window.__FDL[side]) window.__FDL[side].push({ key, b: [lx - 130 - tw, Math.min(-z, ty) - 40, lx + 130, Math.max(-z, ty) + 120] });
   };
   // roof pitch on the gable view
   if ((gable || ROOF.hip) && opt.levels) {
@@ -897,11 +941,13 @@ function elevation(parent, v, side, opt = { levels: true }) {
     if (d.k === "lvl") {
       d = Object.assign({}, d, { z: tg(d.z, d.tz) });
       const lc = DIMC() || C.ink;   // augstuma atzīmes: mēru ķēžu krāsa
+      if (d.sd === "l") { lvl(d.z, lv(Math.round(d.z)), 0, "u", lc); return; }   // kreisā puse: tajā pašā taisnē ar automātiskajām atzīmēm
       const x0 = span + ROOF.ov + 150, lx = span + ROOF.ov + 1300, ty = -d.z - 210, lab = lv(Math.round(d.z)), tw = lab.length * 152;
-      el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: lc, "stroke-width": 7 }, g);
-      el("path", { d: `M ${lx} ${-d.z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: lc }, g);
-      el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: lc, "stroke-width": 10 }, g);
-      const t = T_(g, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", lc);
+      const RG = el("g", { "data-lvl": "r", "data-ext": ROOF.ov + 1300 + 140 + tw }, g);
+      el("line", { x1: x0, y1: -d.z, x2: lx, y2: -d.z, stroke: lc, "stroke-width": 7 }, RG);
+      el("path", { d: `M ${lx} ${-d.z} L ${lx - 130} ${ty} L ${lx + 130} ${ty} Z`, fill: lc }, RG);
+      el("line", { x1: lx + 130, y1: ty, x2: lx + 130 + tw, y2: ty, stroke: lc, "stroke-width": 10 }, RG);
+      const t = T_(RG, lx + 140, ty - 45, lab, { a: "start", fs: 250, fw: 600 }); t.setAttribute("fill", lc);
     } else if (d.k === "lin") {
       const h = d.o === "h", pt0 = (d.p || [0, 0]), at = d.at, pa = h ? [tg(pt0[0], d.pt && d.pt[0]), tg(pt0[1], d.pt && d.pt[1])] : pt0;
       d = Object.assign({}, d, h ? {} : { a: tg(d.a, d.ta), b: tg(d.b, d.tb) });
@@ -1638,6 +1684,7 @@ if (window.PRINT_MODE && rp) {
   const pv = axesAt(window.VARIANT_LABEL ? { ...rp, label: window.VARIANT_LABEL } : rp);
   window.__PV = pv;
   const sheetsOut = ARC ? arSheets(pv) : window.PLAN_ONLY ? [planSheet(pv)] : [planSheet(pv), facadeSheet(pv)];
+  sheetsOut.forEach(fitLvlMarks);
   document.querySelectorAll(".wrap").forEach(n => n.remove());
   const ps = document.createElement("style");
   ps.textContent = "@page { size: 420mm 297mm; margin: 0 } html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; border: 0 !important } body > *:not(svg.a3) { position: absolute !important; width: 0 !important; height: 0 !important; overflow: hidden !important; margin: 0 !important } svg.a3 { display: block; width: 420mm; height: 297mm; box-shadow: none } svg.a3 + svg.a3 { break-before: page }";

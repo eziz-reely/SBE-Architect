@@ -134,8 +134,8 @@ def build(model_path, langs=None):
                  ('    lvl(-ROOF.plinth, lv(-ROOF.plinth));\n  }',
                   '    lvl(-ROOF.plinth, lv(-ROOF.plinth));\n  }\n  { const top = gable ? ROOF.eave : eEdge, zs = [];\n    (v.windows || []).filter(w => w.side === side).forEach(w => { if (w.sill > 0) zs.push(w.sill); zs.push(w.head); });\n    (v.doors || []).filter(d => d.entry && side === "south").forEach(() => zs.push(2100));\n    if (!opt.levels) lvl(0, lv(0));\n    let last = 0; [...new Set(zs)].sort((a, b) => a - b).forEach(z => { if (z - last >= 300 && top - z >= 300) { lvl(z, lv(z)); last = z; } }); }'),
                  # zemes līnija: īsāka garām mājām (opt.ground), lai garā fasāde neuzbrauc gala fasādes atzīmēm
-                 ('for (let x = -1400; x < span + 1400 - 260; x += 200)', 'const GX = opt.ground || 1600; for (let x = -(GX - 200); x < span + GX - 200 - 260; x += 200)'),
-                 ('el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth,', 'el("line", { x1: -(opt.ground || 1600), y1: ROOF.plinth, x2: span + (opt.ground || 1600), y2: ROOF.plinth,'),
+                 ('for (let x = -1400; x < span + 1400 - 260; x += 200)', 'const GX = opt.ground || 1600; for (let x = -(GX - 200) - (opt.gl || 0); x < span + GX - 200 - 260 + (opt.gr || 0); x += 200)'),
+                 ('el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth,', 'el("line", { x1: -(opt.ground || 1600) - (opt.gl || 0), y1: ROOF.plinth, x2: span + (opt.ground || 1600) + (opt.gr || 0), y2: ROOF.plinth,'),
                  # klienta lapā grīdas apakšas atzīmi nerāda (uzbrauc ±0,000)
                  ('    if (fT) lvl(-fT, lv(-fT), 1);\n', ''),
                  # bez jumta pārkares nav ēnas zem dzegas

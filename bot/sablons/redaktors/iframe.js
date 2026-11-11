@@ -144,11 +144,13 @@
         if (d.s !== s) return;
         const ov = (X.jumts && X.jumts.ov) || 0, sp = span(s);
         let b;
-        if (d.k === "lvl") b = [sp + ov + 150, -d.z - 260, sp + ov + 1800, -d.z + 60];
+        if (d.k === "lvl") { const FF = (window.__FDF || {})[s] || {}, lx = d.sd === "l" ? -ov - (FF.lc || 1200) : sp + ov + (FF.rc || 1300); b = d.sd === "l" ? [lx - 1250, -d.z - 260, lx + 130, -d.z + 60] : [sp + ov + 150, -d.z - 260, lx + 1500, -d.z + 60]; }
         else if (d.o === "h") b = [d.a, -d.at - 120, d.b, -d.at + 120];
         else b = [d.at - 120, -d.b, d.at + 120, -d.a];
         out.push({ k: "fdim", i, lv: "main", b, pad: 40, side: s });
       });
+      ((window.__FDL || {})[s] || []).forEach(q => { if (((X.projekts || {}).lvlHide || []).includes(s + ":" + q.key)) return; out.push({ k: "alvl", i: s + ":" + q.key, lv: "main", b: q.b, pad: 30, side: s }); });   // automātiskās augstuma atzīmes: atlasāmas, dzēšamas, vilkšana bīda visu kolonnu
+      out.push({ k: "fblk", i: s, lv: "main", b: [-((X.jumts && X.jumts.ov) || 0) - 100, 2100, -((X.jumts && X.jumts.ov) || 0) + 4600, 2560], pad: 0, side: s });   // fasādes virsraksts: vilkšana bīda visu bloku (ar augstuma atzīmēm)
       (X.gableWins || []).forEach((gw, i) => {
         if (gw.side !== s) return;
         const u0 = Math.min(mapU(s, gw.u0), mapU(s, gw.u1)), u1 = Math.max(mapU(s, gw.u0), mapU(s, gw.u1));
@@ -196,6 +198,7 @@
       items(bl).forEach(it => {
         if (!inB(p, it.b, it.pad)) return;
         if (it.k === "post" && bl.type === "elev" && !(place && place.t === "bucket")) return;
+        if (it.k === "fblk" && place) return;
         const a = area(it.b) + (it.k === "ter" ? 2e9 : 0) - (it.k === "tvert" ? 1e10 : 0) - (it.k === "decor" && sel && sel.k === "decor" && sel.i === it.i ? 1e10 : 0) + (it.k === "furn" ? 1e8 : it.k === "stamp" ? 5e7 : it.k === "gut" ? 1e9 : it.k === "idim" ? 2e8 : 0);   // logi un durvis pirms mēbelēm
         if (!best || a < best.a) best = { a, it, bl, p };
       });
@@ -1392,6 +1395,19 @@
     const h = hit(e.clientX, e.clientY); hover(null);
     if (!h) { if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false; }
     if (h.del) { post({ t: "delete" }); return true; }
+    if (h.it.k === "alvl") {   // atzīme: klikšķis atlasa (Delete dzēš), vilkšana bīda visu automātisko atzīmju kolonnu tuvāk/tālāk no fasādes
+      sel = { k: "alvl", i: h.it.i, lv: "main" }; drawSel(); post({ t: "sel", sel });
+      drag = { alvl: true, h, x0: e.clientX, y0: e.clientY, off0: +(((M.projekts || {}).lvlOff || {})[h.bl.side]) || 0, dx: 0, moved: false };
+      document.body.style.cursor = "ew-resize"; return true;
+    }
+    if (h.it.k === "fblk" && e.altKey) {   // Alt+klikšķis: bloks atpakaļ sākotnējā vietā
+      const N = clone(M); if (N.projekts && N.projekts.fasOff) { delete N.projekts.fasOff[h.bl.side]; post({ t: "edit", model: N, sel }); } return true;
+    }
+    if (h.it.k === "fblk") {   // fasādes bloka (ar augstuma atzīmēm) bīdīšana pa lapu; zemes līnija paliek viena
+      const t0 = tr(h.bl.g); if (!t0) return true;
+      drag = { fblk: true, h, t0, x0: e.clientX, y0: e.clientY, off0: +(((M.projekts || {}).fasOff || {})[h.bl.side]) || 0, ds: 0, moved: false };
+      document.body.style.cursor = "ew-resize"; post({ t: "hint", text: "Bīdi fasādes bloku pa kreisi/labi. Zemes līnija paliek nepārtraukta. Alt atiestata." }); return true;
+    }
     if (h.rot) {   // klikšķis = 90°, vilkšana = brīvi (solis 15°, ar Shift 1°)
       const b = h.it.b, c = [(b[0] + b[2]) / 2, (b[1] + b[3]) / 2];
       drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: "rot", c, a0: Math.atan2(h.p[1] - c[1], h.p[0] - c[0]), ang: 0, boxes: furnBoxes(h.bl), moved: false };
@@ -1452,6 +1468,24 @@
     if (place && place.t === "zone" && place.poly) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
+    if (drag && drag.alvl) {
+      const bl = drag.h.bl, a = toLocal(bl.g, e.clientX, e.clientY), b0 = toLocal(bl.g, drag.x0, drag.y0);
+      drag.dx = Math.round((a[0] - b0[0]) / 10) * 10;
+      if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
+      if (drag.moved) {
+        document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+        const o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" });
+        ((window.__FDL || {})[bl.side] || []).forEach(q => rect(g, [q.b[0] + drag.dx, q.b[1], q.b[2] + drag.dx, q.b[3]], true, k));
+        label(g, drag.h.it.b[0] + drag.dx, drag.h.it.b[1] - 2.2 / k, `Δ ${drag.dx} mm no fasādes`, k);
+      }
+      return;
+    }
+    if (drag && drag.fblk) {
+      const r = sheet().getBoundingClientRect(); drag.ds = Math.round((e.clientX - drag.x0) / r.width * vbS()[0] * 2) / 2;
+      if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
+      if (drag.moved) drag.h.bl.g.setAttribute("transform", `translate(${drag.t0.tx + drag.ds} ${drag.t0.ty}) scale(${drag.t0.k})`);
+      return;
+    }
     if (drag && drag.wend) {
       const hw = drag.hw, X = hw.w.axis === "x", p = toLocal(hw.bl.g, e.clientX, e.clientY), o = overlay(hw.bl.g), k = ek(hw.bl);
       if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
@@ -1502,6 +1536,22 @@
   addEventListener("pointerup", () => {
     if (zdrag) { zoneUp(); return; }
     if (!drag) return;
+    if (drag.alvl) {
+      const d = drag; drag = null; document.body.style.cursor = "";
+      document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+      if (!d.moved) return;
+      const N = clone(M); N.projekts = N.projekts || {}; N.projekts.lvlOff = Object.assign({}, N.projekts.lvlOff);
+      const off = d.off0 - d.dx; if (off) N.projekts.lvlOff[d.h.bl.side] = off; else delete N.projekts.lvlOff[d.h.bl.side];
+      post({ t: "edit", model: N, sel }); return;
+    }
+    if (drag.fblk) {
+      const d = drag; drag = null; document.body.style.cursor = "";
+      if (!d.moved) return;
+      let off = Math.round((d.off0 + d.ds) * 2) / 2; if (Math.abs(off) < 1.5) off = 0;   // pie sākuma vietas pielīp
+      const N = clone(M); N.projekts = N.projekts || {}; N.projekts.fasOff = Object.assign({}, N.projekts.fasOff);
+      if (off) N.projekts.fasOff[d.h.bl.side] = off; else delete N.projekts.fasOff[d.h.bl.side];
+      post({ t: "edit", model: N, sel }); return;
+    }
     if (drag.wend) {
       if (!drag.moved && !drag.sticky) { drag.sticky = true; post({ t: "hint", text: "Tagad uzklikšķini, kur siena beidzas. Esc atceļ." }); return; }   // klikšķis uz gala, tad klikšķis, cik gara
       if (drag.sticky) return;
@@ -2135,10 +2185,11 @@
     const d = document.createElement("div"); d.className = "fdc";
     d.style.cssText = `position:fixed;left:${Math.max(4, Math.min(cx + 12, innerWidth - 200))}px;top:${Math.max(4, Math.min(cy + 12, innerHeight - 110))}px;z-index:99;background:#fff;border:1px solid #bbb;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.28);padding:6px;display:grid;gap:5px;font:600 13px system-ui,sans-serif;width:188px;color:#222`;
     const mkb = (t, fn) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "padding:9px 11px;border:1px solid #cfcac0;border-radius:6px;background:#f6f4ef;cursor:pointer;text-align:left;font:inherit;color:#222"; b.onclick = ev => { ev.stopPropagation(); fn(); }; return b; };
-    d.append(mkb("Augstuma atzīme  " + zTxt(q.z), () => {
-      const N = clone(M); N.projekts = N.projekts || {}; (N.projekts.fdims = N.projekts.fdims || []).push({ s: bl.side, k: "lvl", z: q.z });
+    const addLvl = sd => {   // kreisā puse pielīp automātisko atzīmju kolonnai
+      const N = clone(M); N.projekts = N.projekts || {}; (N.projekts.fdims = N.projekts.fdims || []).push({ s: bl.side, k: "lvl", z: q.z, sd });
       d.remove(); place = null; document.body.style.cursor = ""; post({ t: "edit", model: N, sel: null, placed: true });
-    }), mkb("Lineārs mērs", () => { place.fm = true; d.remove(); post({ t: "hint", text: "Uzklikšķini mēra otro punktu. Līnija tiek novietota automātiski." }); }));
+    };
+    d.append(mkb("Augstuma atzīme pa kreisi  " + zTxt(q.z), () => addLvl("l")), mkb("Augstuma atzīme pa labi  " + zTxt(q.z), () => addLvl("r")), mkb("Lineārs mērs", () => { place.fm = true; d.remove(); post({ t: "hint", text: "Uzklikšķini mēra otro punktu. Līnija tiek novietota automātiski." }); }));
     ["pointerdown", "pointerup", "wheel"].forEach(t => d.addEventListener(t, ev => ev.stopPropagation()));
     document.documentElement.appendChild(d);
   }
