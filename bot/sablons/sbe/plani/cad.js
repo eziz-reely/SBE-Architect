@@ -788,7 +788,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
       return;
     }
     // fixed gable window with two sloping edges (pentagon), outside casing like the standard windows
-    const gg = el("g", {}, g), z0 = gw.z0 || 2450, off = 200, k = 1 / Math.cos(ROOF.pitch * Math.PI / 180), cas = (window.AR && window.AR.win && window.AR.win.casing) ?? 0;
+    const gg = el("g", {}, g), z0 = gw.z0 || 2450, off = gw.gap != null ? +gw.gap : 200, k = 1 / Math.cos(ROOF.pitch * Math.PI / 180), cas = (window.AR && window.AR.win && window.AR.win.casing) ?? 0;
     // logs nekad neiziet ārpus gala trijstūra: malas apgriež pie jumta līnijām (stūros tas var kļūt trijstūrains); kores virsotne ir fasādes vidū, ne loga vidū
     const uMin = Math.max(0, (z0 + off - ROOF.eave) / tan), a0 = Math.max(b0, uMin), a1 = Math.min(b1, span - uMin);
     if (a1 - a0 < 50) return;

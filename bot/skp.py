@@ -209,7 +209,7 @@ def build(m):
             u0, u1 = w['y'], w['y'] + w['len']
             z0 = w['sill']
             if w.get('shape') == 'gable':
-                off = 200
+                off = w.get('gap', 200)
                 zt = lambda u: eave + min(u, D - u) * tan - off
                 prof = [(u0, z0), (u1, z0), (u1, zt(u1)), (D / 2, zt(D / 2)), (u0, zt(u0))]
             else:

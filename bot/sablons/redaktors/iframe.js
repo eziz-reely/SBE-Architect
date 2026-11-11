@@ -312,8 +312,8 @@
     if (it.k === "gw" && X.gableWins[it.i] && !X.gableWins[it.i].z1) {   // slīpā loga augstumi: kreisā mala, vidus, labā mala
       const g = X.gableWins[it.i], H = gwHeights(X, g), z0 = -g.z0, nx = (u1 - u0) > 700 ? 350 : (u1 - u0) / 2;
       const vd = (x, h) => { if (h < 1) return; mk(o, "line", Object.assign({ x1: x, y1: z0, x2: x, y2: z0 - h }, ln)); tick(x, z0); tick(x, z0 - h); label(o, x + 1.2 / k, z0 - h / 2, `${h}`, k); };
-      vd(u0 + nx, H.hL); vd(u1 - nx, H.hR);
-      if (H.hMax > Math.max(H.hL, H.hR) + 1) vd((u0 + u1) / 2, H.hMax);
+      // tikai viens augstuma mērs (lielākais): malu augstumi (piem. 1059) nav vajadzīgi
+      if (H.hMax > Math.max(H.hL, H.hR) + 1) vd((u0 + u1) / 2, H.hMax); else if (H.hL >= H.hR) vd(u0 + nx, H.hL); else vd(u1 - nx, H.hR);
     }
     if (zb > 1) {
       const x = u0 + (u1 - u0) * .78;
@@ -429,7 +429,7 @@
   let selPt = null;
   // [TRE] slīpā loga augstums: augšmala seko jumtam (jumta augstums pie malas − 200 mm), logs ir trapece; atgriež {hL, hR, hMax, zTop}
   function gwHeights(X, gw) {
-    const s = gw.side, sp = (s === "east" || s === "west") ? X.D : X.W, J = X.jumts || {}, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), top = u => ev + Math.min(u, sp - u) * tn - 200;
+    const s = gw.side, sp = (s === "east" || s === "west") ? X.D : X.W, J = X.jumts || {}, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), top = u => ev + Math.min(u, sp - u) * tn - (gw.gap != null ? +gw.gap : 200);
     const u0 = gw.u0, u1 = gw.u1, mid = sp / 2, hL = Math.max(0, top(u0) - gw.z0), hR = Math.max(0, top(u1) - gw.z0), hM = u0 < mid && u1 > mid ? Math.max(0, top(mid) - gw.z0) : 0, hMax = gw.z1 ? gw.z1 - gw.z0 : Math.max(hL, hR, hM);
     return { hL: Math.round(hL), hR: Math.round(hR), hMax: Math.round(hMax), zTop: Math.round(gw.z0 + hMax) };
   }
@@ -438,7 +438,7 @@
     const L = lv(it.lv);
     if (it.k === "win") { const w = L.windows[it.i]; return `${Math.round(w.len)} × ${Math.round((w.head ?? 2100) - (w.sill ?? 0))} mm`; }
     if (it.k === "door") { const d = L.doors[it.i]; return `${Math.round(d.w)} × 2100 mm`; }
-    if (it.k === "gw") { const g = M.gableWins[it.i], H = gwHeights(M, g); return g.z1 ? `${Math.round(g.u1 - g.u0)} × ${Math.round(g.z1 - g.z0)} mm` : `${Math.round(g.u1 - g.u0)} × ${H.hMax} mm (augstums ${H.hL} / ${H.hR})`; }
+    if (it.k === "gw") { const g = M.gableWins[it.i], H = gwHeights(M, g); return g.z1 ? `${Math.round(g.u1 - g.u0)} × ${Math.round(g.z1 - g.z0)} mm` : `${Math.round(g.u1 - g.u0)} × ${H.hMax} mm`; }
     if (it.k === "decor") return `${Math.round(it.b[2] - it.b[0])} × ${Math.round(it.b[3] - it.b[1])} mm`;
     return "";
   }
