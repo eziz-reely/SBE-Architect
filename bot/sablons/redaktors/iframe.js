@@ -150,6 +150,7 @@
         out.push({ k: "fdim", i, lv: "main", b, pad: 40, side: s });
       });
       ((window.__FDL || {})[s] || []).forEach(q => { if (((X.projekts || {}).lvlHide || []).includes(s + ":" + q.key)) return; out.push({ k: "alvl", i: s + ":" + q.key, lv: "main", b: q.b, pad: 30, side: s }); });   // automātiskās augstuma atzīmes: atlasāmas, dzēšamas, vilkšana bīda visu kolonnu
+      ((window.__FDM || {})[s] || []).forEach(q => { if (((X.projekts || {}).fHide || []).includes(s + ":" + q.key)) return; out.push({ k: "fmk", i: s + ":" + q.key, lv: "main", b: q.b, pad: 30, side: s }); });   // fasādes mēri (mājas augstums, asis, slīpums): atlasāmi, dzēšami, bīdāmi
       out.push({ k: "fblk", i: s, lv: "main", b: [-((X.jumts && X.jumts.ov) || 0) - 100, 2100, -((X.jumts && X.jumts.ov) || 0) + 4600, 2560], pad: 0, side: s });   // fasādes virsraksts: vilkšana bīda visu bloku (ar augstuma atzīmēm)
       (X.gableWins || []).forEach((gw, i) => {
         if (gw.side !== s) return;
@@ -199,7 +200,7 @@
         if (!inB(p, it.b, it.pad)) return;
         if (it.k === "post" && bl.type === "elev" && !(place && place.t === "bucket")) return;
         if (it.k === "fblk" && place) return;
-        const a = area(it.b) + (it.k === "ter" ? 2e9 : 0) - (it.k === "tvert" ? 1e10 : 0) - (it.k === "decor" && sel && sel.k === "decor" && sel.i === it.i ? 1e10 : 0) + (it.k === "furn" ? 1e8 : it.k === "stamp" ? 5e7 : it.k === "gut" ? 1e9 : it.k === "idim" ? 2e8 : 0);   // logi un durvis pirms mēbelēm
+        const a = area(it.b) + (it.k === "ter" ? 2e9 : 0) - (it.k === "tvert" ? 1e10 : 0) - (it.k === "decor" && sel && sel.k === "decor" && sel.i === it.i ? 1e10 : 0) + (it.k === "furn" ? 1e8 : it.k === "stamp" ? 5e7 : it.k === "gut" ? 1e9 : it.k === "idim" ? 2e8 : it.k === "fblk" ? 4e8 : 0);   // logi un durvis pirms mēbelēm
         if (!best || a < best.a) best = { a, it, bl, p };
       });
     });
@@ -1400,6 +1401,11 @@
       drag = { alvl: true, h, x0: e.clientX, y0: e.clientY, off0: +(((M.projekts || {}).lvlOff || {})[h.bl.side]) || 0, dx: 0, moved: false };
       document.body.style.cursor = "ew-resize"; return true;
     }
+    if (h.it.k === "fmk") {   // fasādes mērs: klikšķis atlasa (Delete dzēš), vilkšana pārbīda
+      sel = { k: "fmk", i: h.it.i, lv: "main" }; drawSel(); post({ t: "sel", sel });
+      drag = { fmk: true, h, x0: e.clientX, y0: e.clientY, off0: ((M.projekts || {}).fOff || {})[h.it.i] || [0, 0], dx: 0, dy: 0, moved: false };
+      document.body.style.cursor = "move"; return true;
+    }
     if (h.it.k === "fblk" && e.altKey) {   // Alt+klikšķis: bloks atpakaļ sākotnējā vietā
       const N = clone(M); if (N.projekts && N.projekts.fasOff) { delete N.projekts.fasOff[h.bl.side]; post({ t: "edit", model: N, sel }); } return true;
     }
@@ -1468,6 +1474,18 @@
     if (place && place.t === "zone" && place.poly) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
+    if (drag && drag.fmk) {
+      const bl = drag.h.bl, a = toLocal(bl.g, e.clientX, e.clientY), b0 = toLocal(bl.g, drag.x0, drag.y0);
+      drag.dx = Math.round((a[0] - b0[0]) / 10) * 10; drag.dy = Math.round((a[1] - b0[1]) / 10) * 10;
+      if (e.shiftKey) { if (Math.abs(drag.dx) >= Math.abs(drag.dy)) drag.dy = 0; else drag.dx = 0; }
+      if (Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) > 3) drag.moved = true;
+      if (drag.moved) {
+        document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+        const o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" }), q = drag.h.it.b;
+        rect(g, [q[0] + drag.dx, q[1] + drag.dy, q[2] + drag.dx, q[3] + drag.dy], true, k);
+      }
+      return;
+    }
     if (drag && drag.alvl) {
       const bl = drag.h.bl, a = toLocal(bl.g, e.clientX, e.clientY), b0 = toLocal(bl.g, drag.x0, drag.y0);
       drag.dx = Math.round((a[0] - b0[0]) / 10) * 10;
@@ -1536,6 +1554,14 @@
   addEventListener("pointerup", () => {
     if (zdrag) { zoneUp(); return; }
     if (!drag) return;
+    if (drag.fmk) {
+      const d = drag; drag = null; document.body.style.cursor = "";
+      document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+      if (!d.moved) return;
+      const N = clone(M); N.projekts = N.projekts || {}; N.projekts.fOff = Object.assign({}, N.projekts.fOff);
+      const o = [d.off0[0] + d.dx, d.off0[1] + d.dy]; if (o[0] || o[1]) N.projekts.fOff[d.h.it.i] = o; else delete N.projekts.fOff[d.h.it.i];
+      post({ t: "edit", model: N, sel }); return;
+    }
     if (drag.alvl) {
       const d = drag; drag = null; document.body.style.cursor = "";
       document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());

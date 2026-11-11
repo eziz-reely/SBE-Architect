@@ -636,7 +636,14 @@ function elevation(parent, v, side, opt = { levels: true }) {
     if (o && pt) { parent.setAttribute("transform", `translate(${+pt[1] + o} ${pt[2]}) scale(${pt[3]})`); opt = Object.assign({}, opt, { gl: Math.max(0, o) / +pt[3], gr: Math.max(0, -o) / +pt[3] }); } }
   // automātisko atzīmju kolonna: papildu attālums no fasādes (projekts.lvlOff[side], mm), ko lietotājs iestata ar vilkšanu
   const LCX = Math.max(250, 1200 + (+(APJ.lvlOff || {})[side] || 0));
-  if (parent.getAttribute && parent.getAttribute("data-block")) (window.__FDL = window.__FDL || {})[side] = [];
+  if (parent.getAttribute && parent.getAttribute("data-block")) { (window.__FDL = window.__FDL || {})[side] = []; (window.__FDM = window.__FDM || {})[side] = []; }
+  // fasādes mēri (mājas augstums, asis, jumta slīpums): katru var paslēpt (projekts.fHide = ["side:key"]) vai pabīdīt (projekts.fOff["side:key"] = [dx, dy] mm)
+  const fmGroup = (key, b) => {
+    if ((APJ.fHide || []).includes(side + ":" + key)) return null;
+    const o = (APJ.fOff || {})[side + ":" + key], gr = el("g", o ? { "data-fm": key, transform: `translate(${o[0]} ${o[1]})` } : { "data-fm": key }, g);
+    if (window.__FDM && window.__FDM[side]) window.__FDM[side].push({ key, b: o ? [b[0] + o[0], b[1] + o[1], b[2] + o[0], b[3] + o[1]] : b });
+    return gr;
+  };
   let LG = null;   // kreisās kolonnas atzīmju grupa (fitLvlMarks to var pabīdīt tuvāk mājai)
   const map = side === "south" ? (a => a) : side === "north" ? (a => v.W - a) : side === "east" ? (a => v.D - a) : (a => a);
   const P = (u, z) => `${u},${-z}`;
@@ -659,10 +666,11 @@ function elevation(parent, v, side, opt = { levels: true }) {
   el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);
   if (opt.houseH !== false && fT) {   // [MM] viena mēra ķēde: mājas augstums no grīdas paneļa apakšas (−G1) līdz jumta virsmai (kore)
     const hy0 = -ridgeTop, hy1 = fT, hx = span + 900, Ht = (window.AR && AR.projekts && AR.projekts.ievade && AR.projekts.ievade.augstums) || Math.round(ridgeTop + fT);
-    const dl = (x1, y1, x2, y2, sw = 7) => el("line", { x1, y1, x2, y2, stroke: DIMC() || C.line, "stroke-width": sw }, g);
+    const HG = fmGroup("hh", [span + 40, hy0 - 150, hx + 300, hy1 + 150]);
+    const dl = (x1, y1, x2, y2, sw = 7) => HG && el("line", { x1, y1, x2, y2, stroke: DIMC() || C.line, "stroke-width": sw }, HG);
     dl(hx, hy0 - 120, hx, hy1 + 120);
     [hy0, hy1].forEach(y => { dl(hx - 130, y, hx + 130, y, 6); dl(hx - 75, y + 75, hx + 75, y - 75, 16); dl(span + 80, y, hx + 130, y, 4); });
-    T_(g, hx - 70, (hy0 + hy1) / 2, Math.round(Ht).toLocaleString("lv-LV").replace(/\s/g, " "), { a: "middle", fs: 190, fill: DIMC() || undefined, tr: `rotate(-90 ${hx - 70} ${(hy0 + hy1) / 2})` });
+    if (HG) T_(HG, hx - 70, (hy0 + hy1) / 2, Math.round(Ht).toLocaleString("lv-LV").replace(/\s/g, " "), { a: "middle", fs: 190, fill: DIMC() || undefined, tr: `rotate(-90 ${hx - 70} ${(hy0 + hy1) / 2})` });
   }
   if (fT) {
     // post foundation: floor build-up clad like the wall, shaded gap with posts down to the ground
@@ -922,10 +930,11 @@ function elevation(parent, v, side, opt = { levels: true }) {
   if ((gable || ROOF.hip) && opt.levels) {
     const deg = endV ? ROOF.pitch : ROOF.hip, tn = Math.tan(deg * Math.PI / 180), run = endV ? span / 2 + ROOF.ov : ins;
     const uV = gable ? 2600 : -ROOF.ov + run * .55, zV = eEdge + thV + (uV + ROOF.ov) * tn, r = 1300, a = deg * Math.PI / 180;
-    el("line", { x1: uV - r - 250, y1: -zV, x2: uV, y2: -zV, stroke: C.ink, "stroke-width": 7 }, g);
-    el("path", { d: `M ${uV - r} ${-zV} A ${r} ${r} 0 0 0 ${uV - r * Math.cos(a)} ${-zV + r * Math.sin(a)}`, fill: "none", stroke: C.ink, "stroke-width": 7 }, g);
+    const PG = fmGroup("pt", [uV - r - 250, -zV - 200, uV + r + 900, -zV + r + 200]);
+    if (PG) el("line", { x1: uV - r - 250, y1: -zV, x2: uV, y2: -zV, stroke: C.ink, "stroke-width": 7 }, PG);
+    if (PG) el("path", { d: `M ${uV - r} ${-zV} A ${r} ${r} 0 0 0 ${uV - r * Math.cos(a)} ${-zV + r * Math.sin(a)}`, fill: "none", stroke: C.ink, "stroke-width": 7 }, PG);
     const b = (180 - deg / 2) * Math.PI / 180;
-    T_(g, uV + (r + 420) * Math.cos(b), -zV + (r + 420) * Math.sin(b) * -1 + 70, `${Math.round(deg)}°`, { a: "middle", fs: 250, fw: 600 });
+    if (PG) T_(PG, uV + (r + 420) * Math.cos(b), -zV + (r + 420) * Math.sin(b) * -1 + 70, `${Math.round(deg)}°`, { a: "middle", fs: 250, fw: 600 });
   }
   if (opt.levels) {
     lvl(ridgeTop, lv(Math.round(ridgeTop)));
@@ -970,13 +979,16 @@ function elevation(parent, v, side, opt = { levels: true }) {
 
   // axes
   const ax = endV ? v.axes.y : v.axes.x;
-  ax.forEach(([a, n]) => {
-    const u = map(a);
-    el("line", { x1: u, y1: ROOF.plinth + 80, x2: u, y2: 1150, stroke: C.axis, "stroke-width": 7, "stroke-dasharray": "200 50 30 50" }, g);
-    el("circle", { cx: u, cy: 1450, r: 300, fill: "#fff", stroke: C.ink, "stroke-width": 12 }, g);
-    T_(g, u, 1540, n, { a: "middle", fs: 250, fw: 500 });
-  });
-  if (ax.length > 1) chainCad(g, ax.map(([a]) => map(a)), "x", 1000, 0, true);
+  const axU = ax.map(([a]) => map(a)), AG = axU.length ? fmGroup("ax", [Math.min(...axU) - 350, ROOF.plinth + 80, Math.max(...axU) + 350, 1800]) : null;
+  if (AG) {
+    ax.forEach(([a, n]) => {
+      const u = map(a);
+      el("line", { x1: u, y1: ROOF.plinth + 80, x2: u, y2: 1150, stroke: C.axis, "stroke-width": 7, "stroke-dasharray": "200 50 30 50" }, AG);
+      el("circle", { cx: u, cy: 1450, r: 300, fill: "#fff", stroke: C.ink, "stroke-width": 12 }, AG);
+      T_(AG, u, 1540, n, { a: "middle", fs: 250, fw: 500 });
+    });
+    if (ax.length > 1) chainCad(AG, axU, "x", 1000, 0, true);
+  }
   const names = { south: "DIENVIDU FASĀDE", north: "ZIEMEĻU FASĀDE", east: "AUSTRUMU FASĀDE", west: "RIETUMU FASĀDE" };
   const ttl = opt.title || names[side];
   T_(g, -ROOF.ov, 2450, ttl, { fs: 330, fw: 600, ls: 20 });
