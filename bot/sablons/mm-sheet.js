@@ -174,7 +174,7 @@ function modelSheet(v) {
   const keep = ARC.materials;
   const PR = ARC.projekts || {}, plate = PR.pamati === "platne";
   ARC.materials = tx.mats.map(m => m[0] === "wood" && PR.tonis_lv ? ["wood", ...(L === "en" ? PR.tonis_en : PR.tonis_lv)]
-    : m[0] === "#1d1d1d" && plate ? ["#9b9c98", ...(L === "en" ? ["Plinth: foundation slab,", "concrete"] : ["Cokols: pamatu plātne,", "betons"])]
+    : m[0] === "#1d1d1d" && plate ? [PR.cokols_plate_hex || "#9b9c98", ...(L === "en" ? ["Plinth: foundation slab,", PR.cokols_plate ? "tinted concrete, " + PR.cokols_plate : "concrete"] : ["Cokols: pamatu plātne,", PR.cokols_plate ? "tonēts betons, " + PR.cokols_plate : "betons"])]
     : m[0] === "#383E42" && PR.logi ? [PR.logi_hex || m[0], m[1], PR.logi]
     : m[0] === "#1d1d1d" && PR.cokols ? [PR.cokols_hex || m[0], m[1], PR.cokols] : m);
   { // logu aplodas un palodzes, ja to tonis atšķiras no rāmjiem ('tonis' = fasādes tonī)

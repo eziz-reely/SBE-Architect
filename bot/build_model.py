@@ -57,7 +57,12 @@ def build(model_path, langs=None):
     extra = pr.get('piezimes') or []
     ck = pr.get('cokols') or 'RAL 9005'   # stabveida pamatu metāla cokola tonis
     pr['cokols'], pr['cokols_hex'] = ck, {'RAL 9005': '#1d1d1d', 'RAL 7016': '#383E42'}.get(ck, '#1d1d1d')
+    cp = pr.get('cokols_plate')   # pamatu plātnes cokola tonis (tonēts betons); None = dabīgs betons
+    pr['cokols_plate'] = cp if cp in ('RAL 9005', 'RAL 7016') else None
+    pr['cokols_plate_hex'] = {'RAL 9005': '#2b2b2d', 'RAL 7016': '#575c60'}.get(pr['cokols_plate'], '#9b9c98')
     pam = {k: [l.replace('RAL 9005', ck) for l in v] for k, v in pam.items()}
+    if pr['cokols_plate']:   # pamatu plātne ar tonētu betona cokolu
+        pam = {k: [l.replace('Cokols: betons.', 'Cokols: tonēts betons ' + pr['cokols_plate'] + '.').replace('Plinth: concrete.', 'Plinth: tinted concrete ' + pr['cokols_plate'] + '.') for l in v] for k, v in pam.items()}
     lf = bool(m.get('loft'))   # bez mansarda: vienkārši griestu augstums
     pr['piezimes'] = pam['lv'] + ([f'Griestu augstums zem mansarda {g} mm.' if lf else f'Griestu augstums {g} mm.'] if g else []) + extra
     pr['piezimes_en'] = pam['en'] + ([f'Ceiling height under the loft {g} mm.' if lf else f'Ceiling height {g} mm.'] if g else []) + (pr.get('piezimes_en') or extra)
@@ -123,7 +128,7 @@ def build(model_path, langs=None):
                  ('    stamp(g, cx, cy, FULL[rm.n] || rm.n, i + 1,', '    if (!rm.void) stamp(g, cx, cy, FULL[rm.n] || rm.n, i + 1,'),
                  # stabveida pamati: metāla cokols RAL 9005 no grīdas apakšas līdz 40 mm virs zemes, ēnas sprauga zem tā
                  ('  } else el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "#9b9c98", stroke: C.ink, "stroke-width": 14 }, g);',
-                  '  } else if ((window.AR && AR.projekts && AR.projekts.pamati) === "platne") el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "#9b9c98", stroke: C.ink, "stroke-width": 14 }, g);\n  else { el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "rgba(0,0,0,.25)" }, g); el("rect", { x: -20, y: 0, width: span + 40, height: ROOF.plinth - 40, fill: (AR.projekts.cokols_hex || "#1d1d1d"), stroke: C.ink, "stroke-width": 10 }, g); el("line", { x1: -20, y1: 22, x2: span + 20, y2: 22, stroke: "rgba(255,255,255,.18)", "stroke-width": 8 }, g); }'),
+                  '  } else if ((window.AR && AR.projekts && AR.projekts.pamati) === "platne") el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: (AR.projekts.cokols_plate_hex || "#9b9c98"), stroke: C.ink, "stroke-width": 14 }, g);\n  else { el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "rgba(0,0,0,.25)" }, g); el("rect", { x: -20, y: 0, width: span + 40, height: ROOF.plinth - 40, fill: (AR.projekts.cokols_hex || "#1d1d1d"), stroke: C.ink, "stroke-width": 10 }, g); el("line", { x1: -20, y1: 22, x2: span + 20, y2: 22, stroke: "rgba(255,255,255,.18)", "stroke-width": 8 }, g); }'),
                  # stūru dēļi (sarkanais tonis): balti, 90 mm, no grīdas apakšas līdz dzegai
                  ('  el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);',
                   '  el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);\n  { const CB = (window.AR && AR.projekts && AR.projekts.sturi) || 0, zt = u => (gable ? roofTopW + (ridgeTop - roofTopW) * Math.min(u, span - u) / (span / 2) : (FAS ? eEdge : eEdge + thV - 20)); if (CB) [0, span - CB].forEach(u => { el("polygon", { points: [P(u, -fT), P(u + CB, -fT), P(u + CB, zt(u + CB)), P(u, zt(u))].join(" "), fill: (AR.projekts.sturi_hex || "#F2F0EA"), stroke: C.ink, "stroke-width": 6 }, g); const lx = u + (u ? 12 : CB - 12); el("line", { x1: lx, y1: -zt(lx) + 10, x2: lx, y2: fT - 10, stroke: "rgba(0,0,0,.18)", "stroke-width": 6 }, g); }); }   // [MM] gala fasādē stūra dēļi līdz vējmalai (pa jumta slīpumu)'),

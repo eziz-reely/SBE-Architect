@@ -771,7 +771,7 @@ function materials(svg, x, y, twoCols) {
   const lg = el("g", { "data-block": "materials", transform: `translate(${x} ${y})` }, svg);
   T_(lg, 0, 0, "MATERIĀLI", { fs: 3.2, fw: 600, ls: .3 });
   const r = (ARC && ARC.roof) || {}, seam = roofSeams();
-  const mats = (ARC && ARC.materials) ? ARC.materials.map(([k, a, b]) => [k === "roof" ? (seam ? "#40464b" : "url(#shingle)") : k, a, b]) : [["wood", "Fasāde: vertikāla koka apdare,", "krāsota tumši pelēka (antracīts)"], [seam ? "#40464b" : "url(#shingle)", seam ? "Jumts: valcprofila skārds" : "Jumts: bitumena šindeļi,", r.color || "RAL 7016"], ["#2f3438", "Notekas, notekcaurules", r.color || "RAL 7016"], [C.ral, "Logi, durvis: rāmji", "RAL 7016"], ["#9b9c98", "Cokols: pamatu plātne,", "betons"]];
+  const mats = (ARC && ARC.materials) ? ARC.materials.map(([k, a, b]) => [k === "roof" ? (seam ? "#40464b" : "url(#shingle)") : k, a, b]) : [["wood", "Fasāde: vertikāla koka apdare,", "krāsota tumši pelēka (antracīts)"], [seam ? "#40464b" : "url(#shingle)", seam ? "Jumts: valcprofila skārds" : "Jumts: bitumena šindeļi,", r.color || "RAL 7016"], ["#2f3438", "Notekas, notekcaurules", r.color || "RAL 7016"], [C.ral, "Logi, durvis: rāmji", "RAL 7016"], (() => { const PJ = (ARC && ARC.projekts) || {}; return PJ.pamati === "stabveida" ? [PJ.cokols_hex || "#1d1d1d", "Cokols: metāla apdare,", PJ.cokols || "RAL 9005"] : [PJ.cokols_plate_hex || "#9b9c98", "Cokols: pamatu plātne,", PJ.cokols_plate ? "tonēts betons, " + PJ.cokols_plate : "betons"]; })()];
   mats.forEach(([f, a, b], i) => {
     const yy = twoCols ? 7 + (i % 3) * 11 : 6 + i * 11, xx = twoCols ? Math.floor(i / 3) * 78 : 0;
     const sw = el("g", { transform: `translate(${xx} ${yy})` }, lg);
