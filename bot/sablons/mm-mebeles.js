@@ -151,7 +151,8 @@
   const KMOD = { fridge: 600, sink: 800, dish: 600, hob2: 450, hob4: 600 };
   const kitchen = (x, y, w, h, mods = ["sink", "dish", "hob4", "fridge"]) => {
     const has = k => mods.find(m => m === k || (k === "hob" && /^hob/.test(m))), hb = mods.find(m => /^hob/.test(m));
-    const order = ["fridge", "cab", "sink", "dish", "cab", "hob", "cab"].map(k => k === "hob" ? hb : k).filter(k => k === "cab" || (k && has(k)));
+    // ja sarakstā ir "cab", tas ir paša lietotāja secība (pa kreisi uz labi); citādi vecā noklusētā secība
+    const order = mods.includes("cab") ? mods.filter(k => k === "cab" || KMOD[k]) : ["fridge", "cab", "sink", "dish", "cab", "hob", "cab"].map(k => k === "hob" ? hb : k).filter(k => k === "cab" || (k && has(k)));
     const tot = order.reduce((a, k) => a + (k === "cab" ? 0 : KMOD[k]), 0), k = tot > w ? w / tot : 1, left = Math.max(0, w - tot * k);
     const ncab = order.filter(q => q === "cab").length;
     let cx = x;

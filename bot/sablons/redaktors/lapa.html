@@ -2182,7 +2182,23 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         const mods = Array.isArray(base[5]) ? base[5] : [], yn = (k, t) => field(t, mods.some(m => m === k) ? "1" : "0", (n, v) => { const f = B(n); f[5] = (Array.isArray(f[5]) ? f[5] : []).filter(m => m !== k); if (v === "1") f[5].push(k); }, { 1: "Ir", 0: "Nav" });
         g.append(yn("fridge", "Ledusskapis"), yn("sink", "Izlietne"), yn("dish", "Trauku mašīna"));
         g.append(field("Plīts virsma", mods.find(m => /^hob/.test(m)) || "0", (n, v) => { const f = B(n); f[5] = (Array.isArray(f[5]) ? f[5] : []).filter(m => !/^hob/.test(m)); if (v !== "0") f[5].push(v); }, { 0: "Nav", hob2: "2 riņķi", hob4: "4 riņķi" }, "full"));
-        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Moduļi tiek izkārtoti pa kreisi uz labi (ledusskapis, izlietne, trauku mašīna, plīts), pārējais ir skapīši. Garumu maina ar lauku vai velkot malu."; g.append(nt);
+        // moduļu secība pa kreisi uz labi: ◀ ▶ pārbīda, skapīšus var pievienot un noņemt
+        const KM = { fridge: "Ledusskapis", sink: "Izlietne", dish: "Trauku mašīna", hob2: "Plīts (2 riņķi)", hob4: "Plīts (4 riņķi)", cab: "Skapītis" };
+        const eff = (() => { if (mods.includes("cab")) return mods.filter(m => m === "cab" || KM[m]); const hb = mods.find(m => /^hob/.test(m)); return ["fridge", "cab", "sink", "dish", "cab", "hob", "cab"].map(k => k === "hob" ? hb : k).filter(k => k === "cab" || (k && mods.includes(k))); })();
+        const ord = document.createElement("div"); ord.className = "full"; const cap = document.createElement("p"); cap.className = "sub-cap full"; cap.textContent = "Secība pa kreisi uz labi"; ord.appendChild(cap);
+        const edit = fn => () => { const n = clone(model), f = B(n); const arr = eff.slice(); fn(arr); f[5] = arr; commit(n); };
+        eff.forEach((m, i) => {
+          const r = document.createElement("div"); r.className = "row"; r.style.cssText = "display:flex;gap:6px;align-items:center;margin:3px 0";
+          const t = document.createElement("span"); t.textContent = `${i + 1}. ${KM[m]}`; t.style.flex = "1"; r.appendChild(t);
+          const mb = (txt, ttl, ok, fn) => { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = txt; b2.title = ttl; b2.disabled = !ok; b2.onclick = edit(fn); r.appendChild(b2); };
+          mb("◀", "Pārbīda pa kreisi", i > 0, a => { [a[i - 1], a[i]] = [a[i], a[i - 1]]; });
+          mb("▶", "Pārbīda pa labi", i < eff.length - 1, a => { [a[i + 1], a[i]] = [a[i], a[i + 1]]; });
+          if (m === "cab") mb("✕", "Noņem skapīti", true, a => { a.splice(i, 1); });
+          ord.appendChild(r);
+        });
+        const add = document.createElement("button"); add.type = "button"; add.textContent = "+ Skapītis"; add.onclick = edit(a => { a.push("cab"); }); ord.appendChild(add);
+        g.append(ord);
+        const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Moduļi iet pa kreisi uz labi ar ◀ ▶ norādītajā secībā, brīvo vietu aizpilda skapīši. Garumu maina ar lauku vai velkot malu."; g.append(nt);
       }
       if (nm === "Ci") g.append(field("Rādiuss, mm", base[3], (n, v) => { B(n)[3] = v; }));
       if (nm === "armchair" || nm === "shower") g.append(field("Izmērs, mm", base[3], (n, v) => { B(n)[3] = v; }));
