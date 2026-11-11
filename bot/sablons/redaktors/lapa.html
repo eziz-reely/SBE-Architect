@@ -1517,6 +1517,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       gs.appendChild(field("Garums, mm", model.W, (n, v) => { toFrame({ mmSize: { W: Math.round(v), D: model.D } }); throw "async"; }));
       gs.appendChild(field("Platums, mm", model.D, (n, v) => { toFrame({ mmSize: { W: model.W, D: Math.round(v) } }); throw "async"; }));
       gs.appendChild(field("Kores augstums, mm", I.augstums || 0, (n, v) => { n.ievade = n.ievade || {}; n.ievade.augstums = Math.max(3000, Math.min(9000, Math.round(v))); roofFix(n); }));
+      if (model.ceiling) {   // griestu augstums: ar mansardu pārbīda arī 2. stāva paneli un logus
+        const cf = field("Griestu augstums, mm", model.ceiling, (n, v) => {
+          v = Math.max(2100, Math.min(model.loft ? 3000 : 3500, Math.round(v / 10) * 10));
+          n.ceiling = v; n.projekts = n.projekts || {}; n.projekts.griesti = v;
+          if (n.loft) { n.loft.level = +(v + PANEL).toFixed(1); n.ceilingNote = `Griestu augstums zem mansarda ${v} mm, dzīvojamā istaba atvērta līdz jumtam.`; liftWins(n); }
+          else n.ceilingNote = `Griestu augstums ${v} mm.`;
+        });
+        if (model.loft) { const sm = document.createElement("small"); sm.textContent = `Virs griestiem mansarda panelis ${PANEL} mm. 2. stāva logi nav zemāk par ${gwBase(model)} mm.`; cf.appendChild(sm); }
+        gs.appendChild(cf);
+      }
       gs.appendChild(field("Jumta slīpums, °", J.pitch || 30, (n, v) => { n.jumts = n.jumts || {}; n.jumts.pitch = Math.max(10, Math.min(55, Math.round(v))); roofFix(n); }));
       const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = `Kore no grīdas paneļa apakšas. Dzega sanāk ${J.eave || "–"} mm virs ±0,000. Garums un platums pārvieto austrumu un dienvidu ārsienu, telpas stiepjas līdzi.`; gs.appendChild(nt);
     }
@@ -1540,18 +1550,6 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     }
     pamPanel(host);
     if (SPECX.KW) group("Specifikācijas noformējums", host).appendChild(SPECX.KW);
-    if (model.loft && model.ceiling) {
-      const g3 = group("Stāvi", host);
-      const c = field("1. stāva griesti, mm", model.ceiling, (n, v) => {
-        v = Math.max(2100, Math.min(3000, Math.round(v / 10) * 10));
-        n.ceiling = v; n.projekts = n.projekts || {}; n.projekts.griesti = v;
-        n.loft.level = +(v + PANEL).toFixed(1);
-        n.ceilingNote = `Griestu augstums zem mansarda ${v} mm, dzīvojamā istaba atvērta līdz jumtam.`;
-        liftWins(n);
-      }, null, "full");
-      const note = document.createElement("small"); note.textContent = `Virs griestiem mansarda panelis ${PANEL} mm. 2. stāva logi nav zemāk par ${gwBase(model)} mm.`; c.appendChild(note);
-      g3.appendChild(c);
-    }
     const g4 = group("Notekas", host);
     const off = Object.entries(P.notekas || {}).filter(([, v]) => v === false).map(([k]) => k);
     const t = document.createElement("p"); t.className = "note full"; t.textContent = off.length ? "Noņemtās (klikšķis atjauno):" : "Uzklikšķini uz notekas vai caurules fasādē un dzēs ar ×.";
