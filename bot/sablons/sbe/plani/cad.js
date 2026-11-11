@@ -614,9 +614,9 @@ function fitLvlMarks(svg) {
     if (el_) shift[b.side + "l"] = Math.max(shift[b.side + "l"] || 0, Math.min(cut / b.k, Math.max(0, ...[...b.g.querySelectorAll("[data-lvl=l]")].map(e => +e.getAttribute("data-lc") - MINC))));
   }));
   // nobīdītiem blokiem zemes līnija paliek viena: tukšumu starp blokiem savieno ar vienu līniju
-  const FOf = (window.AR && AR.projekts && AR.projekts.fasOff) || {};
+  const FOf = (window.AR && AR.projekts && AR.projekts.fasOff) || {}, MP = window.MODEL_SHEET ? "" : "ar:";   // nobīdes glabā atsevišķi katram režīmam (Skice / AR)
   B.forEach(a => B.forEach(b => {
-    if (a === b || Math.abs(a.ty - b.ty) > 1 || b.tx <= a.tx || !(FOf[a.side] || FOf[b.side])) return;
+    if (a === b || Math.abs(a.ty - b.ty) > 1 || b.tx <= a.tx || !(FOf[MP + a.side] || FOf[MP + b.side])) return;
     const la = a.g.querySelector('line[data-keep][stroke-width="45"]'), lb = b.g.querySelector('line[data-keep][stroke-width="45"]');
     if (!la || !lb) return;
     const xa = a.tx + a.k * +la.getAttribute("x2"), xb = b.tx + b.k * +lb.getAttribute("x1");
@@ -632,15 +632,15 @@ function elevation(parent, v, side, opt = { levels: true }) {
   const span = endV ? v.D : v.W;
   const APJ = (window.AR && AR.projekts) || {};
   // fasādes bloka nobīde pa lapu (projekts.fasOff[side], lapas mm): bloks bīdās kopā ar augstuma atzīmēm, zemes līnija pagarinās un paliek viena
-  { const o = +(APJ.fasOff || {})[side] || 0, pt = parent.getAttribute && parent.getAttribute("data-block") ? /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/.exec(parent.getAttribute("transform") || "") : null;
+  { const MP = window.MODEL_SHEET ? "" : "ar:", o = +(APJ.fasOff || {})[MP + side] || 0, pt = parent.getAttribute && parent.getAttribute("data-block") ? /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/.exec(parent.getAttribute("transform") || "") : null;
     if (o && pt) { parent.setAttribute("transform", `translate(${+pt[1] + o} ${pt[2]}) scale(${pt[3]})`); opt = Object.assign({}, opt, { gl: Math.max(0, o) / +pt[3], gr: Math.max(0, -o) / +pt[3] }); } }
   // automātisko atzīmju kolonna: papildu attālums no fasādes (projekts.lvlOff[side], mm), ko lietotājs iestata ar vilkšanu
-  const LCX = Math.max(250, 1200 + (+(APJ.lvlOff || {})[side] || 0));
+  const LCX = Math.max(250, 1200 + (+(APJ.lvlOff || {})[(window.MODEL_SHEET ? "" : "ar:") + side] || 0));
   if (parent.getAttribute && parent.getAttribute("data-block")) { (window.__FDL = window.__FDL || {})[side] = []; (window.__FDM = window.__FDM || {})[side] = []; }
   // fasādes mēri (mājas augstums, asis, jumta slīpums): katru var paslēpt (projekts.fHide = ["side:key"]) vai pabīdīt (projekts.fOff["side:key"] = [dx, dy] mm)
   const fmGroup = (key, b) => {
     if ((APJ.fHide || []).includes(side + ":" + key)) return null;
-    const o = (APJ.fOff || {})[side + ":" + key], gr = el("g", o ? { "data-fm": key, transform: `translate(${o[0]} ${o[1]})` } : { "data-fm": key }, g);
+    const o = (APJ.fOff || {})[(window.MODEL_SHEET ? "" : "ar:") + side + ":" + key], gr = el("g", o ? { "data-fm": key, transform: `translate(${o[0]} ${o[1]})` } : { "data-fm": key }, g);
     if (window.__FDM && window.__FDM[side]) window.__FDM[side].push({ key, b: o ? [b[0] + o[0], b[1] + o[1], b[2] + o[0], b[3] + o[1]] : b });
     return gr;
   };

@@ -25,16 +25,17 @@
   }
   const tr = g => { const m = /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/.exec(g.getAttribute("transform") || ""); return m ? { tx: +m[1], ty: +m[2], k: +m[3] } : null; };
   function toLocal(g, cx, cy) {
-    const r = sheet().getBoundingClientRect(), b = tr(g);
+    const r = (g.ownerSVGElement || sheet()).getBoundingClientRect(), b = tr(g);
     return [((cx - r.left) / r.width * 297 - b.tx) / b.k, ((cy - r.top) / r.height * 420 - b.ty) / b.k];
   }
   // rokturu izmērs ekrānā nemainās, lai cik tuvināts: 1 vienība ≈ 4 px
-  const ek = bl => tr(bl.g).k * (sheet().getBoundingClientRect().width / 297) / 4;
+  const ek = bl => tr(bl.g).k * ((bl.g.ownerSVGElement || sheet()).getBoundingClientRect().width / 297) / 4;
+  const MP = () => (window.MODEL_SHEET ? "" : "ar:");   // fasāžu nobīdes atsevišķi Skicei un AR
   const blocks = () => {
     const sv = sheet(), out = [];
     const p = sv.querySelector("g[data-block=plan][transform]"); if (p) out.push({ g: p, type: "plan", lv: "main" });
     const l = sv.querySelector("g[data-block=loft]"); if (l && M.loft) out.push({ g: l, type: "plan", lv: "loft" });
-    sv.querySelectorAll("g[data-block^=elev-]").forEach(g => out.push({ g, type: "elev", side: g.getAttribute("data-block").slice(5) }));
+    document.querySelectorAll("svg.a3 g[data-block^=elev-]").forEach(g => out.push({ g, type: "elev", side: g.getAttribute("data-block").slice(5) }));
     return out;
   };
   const span = side => (side === "east" || side === "west" ? M.D : M.W);
@@ -1398,20 +1399,20 @@
     if (h.del) { post({ t: "delete" }); return true; }
     if (h.it.k === "alvl") {   // atzīme: klikšķis atlasa (Delete dzēš), vilkšana bīda visu automātisko atzīmju kolonnu tuvāk/tālāk no fasādes
       sel = { k: "alvl", i: h.it.i, lv: "main" }; drawSel(); post({ t: "sel", sel });
-      drag = { alvl: true, h, x0: e.clientX, y0: e.clientY, off0: +(((M.projekts || {}).lvlOff || {})[h.bl.side]) || 0, dx: 0, moved: false };
+      drag = { alvl: true, h, x0: e.clientX, y0: e.clientY, off0: +(((M.projekts || {}).lvlOff || {})[MP() + h.bl.side]) || 0, dx: 0, moved: false };
       document.body.style.cursor = "ew-resize"; return true;
     }
     if (h.it.k === "fmk") {   // fasādes mērs: klikšķis atlasa (Delete dzēš), vilkšana pārbīda
       sel = { k: "fmk", i: h.it.i, lv: "main" }; drawSel(); post({ t: "sel", sel });
-      drag = { fmk: true, h, x0: e.clientX, y0: e.clientY, off0: ((M.projekts || {}).fOff || {})[h.it.i] || [0, 0], dx: 0, dy: 0, moved: false };
+      drag = { fmk: true, h, x0: e.clientX, y0: e.clientY, off0: ((M.projekts || {}).fOff || {})[MP() + h.it.i] || [0, 0], dx: 0, dy: 0, moved: false };
       document.body.style.cursor = "move"; return true;
     }
     if (h.it.k === "fblk" && e.altKey) {   // Alt+klikšķis: bloks atpakaļ sākotnējā vietā
-      const N = clone(M); if (N.projekts && N.projekts.fasOff) { delete N.projekts.fasOff[h.bl.side]; post({ t: "edit", model: N, sel }); } return true;
+      const N = clone(M); if (N.projekts && N.projekts.fasOff) { delete N.projekts.fasOff[MP() + h.bl.side]; post({ t: "edit", model: N, sel }); } return true;
     }
     if (h.it.k === "fblk") {   // fasādes bloka (ar augstuma atzīmēm) bīdīšana pa lapu; zemes līnija paliek viena
       const t0 = tr(h.bl.g); if (!t0) return true;
-      drag = { fblk: true, h, t0, x0: e.clientX, y0: e.clientY, off0: +(((M.projekts || {}).fasOff || {})[h.bl.side]) || 0, ds: 0, moved: false };
+      drag = { fblk: true, h, t0, x0: e.clientX, y0: e.clientY, off0: +(((M.projekts || {}).fasOff || {})[MP() + h.bl.side]) || 0, ds: 0, moved: false };
       document.body.style.cursor = "ew-resize"; post({ t: "hint", text: "Bīdi fasādes bloku pa kreisi/labi. Zemes līnija paliek nepārtraukta. Alt atiestata." }); return true;
     }
     if (h.rot) {   // klikšķis = 90°, vilkšana = brīvi (solis 15°, ar Shift 1°)
@@ -1499,7 +1500,7 @@
       return;
     }
     if (drag && drag.fblk) {
-      const r = sheet().getBoundingClientRect(); drag.ds = Math.round((e.clientX - drag.x0) / r.width * vbS()[0] * 2) / 2;
+      const r = (drag.h.bl.g.ownerSVGElement || sheet()).getBoundingClientRect(); drag.ds = Math.round((e.clientX - drag.x0) / r.width * vbS()[0] * 2) / 2;
       if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
       if (drag.moved) drag.h.bl.g.setAttribute("transform", `translate(${drag.t0.tx + drag.ds} ${drag.t0.ty}) scale(${drag.t0.k})`);
       return;
@@ -1559,7 +1560,7 @@
       document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
       if (!d.moved) return;
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.fOff = Object.assign({}, N.projekts.fOff);
-      const o = [d.off0[0] + d.dx, d.off0[1] + d.dy]; if (o[0] || o[1]) N.projekts.fOff[d.h.it.i] = o; else delete N.projekts.fOff[d.h.it.i];
+      const o = [d.off0[0] + d.dx, d.off0[1] + d.dy]; if (o[0] || o[1]) N.projekts.fOff[MP() + d.h.it.i] = o; else delete N.projekts.fOff[MP() + d.h.it.i];
       post({ t: "edit", model: N, sel }); return;
     }
     if (drag.alvl) {
@@ -1567,7 +1568,7 @@
       document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
       if (!d.moved) return;
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.lvlOff = Object.assign({}, N.projekts.lvlOff);
-      const off = d.off0 - d.dx; if (off) N.projekts.lvlOff[d.h.bl.side] = off; else delete N.projekts.lvlOff[d.h.bl.side];
+      const off = d.off0 - d.dx; if (off) N.projekts.lvlOff[MP() + d.h.bl.side] = off; else delete N.projekts.lvlOff[MP() + d.h.bl.side];
       post({ t: "edit", model: N, sel }); return;
     }
     if (drag.fblk) {
@@ -1575,7 +1576,7 @@
       if (!d.moved) return;
       let off = Math.round((d.off0 + d.ds) * 2) / 2; if (Math.abs(off) < 1.5) off = 0;   // pie sākuma vietas pielīp
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.fasOff = Object.assign({}, N.projekts.fasOff);
-      if (off) N.projekts.fasOff[d.h.bl.side] = off; else delete N.projekts.fasOff[d.h.bl.side];
+      if (off) N.projekts.fasOff[MP() + d.h.bl.side] = off; else delete N.projekts.fasOff[MP() + d.h.bl.side];
       post({ t: "edit", model: N, sel }); return;
     }
     if (drag.wend) {

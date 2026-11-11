@@ -1560,13 +1560,38 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       off.forEach(k => { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "↺ " + GUTN(k); b2.onclick = () => { const n = clone(model); delete n.projekts.notekas[k]; commit(n); }; r.appendChild(b2); });
       g4.appendChild(r);
     }
+    facSheetGroup(host);
   }
-  const MAJA_ORDER = ["Mājas izmēri", "Pamati", "Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi", "Konstrukcijas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Specifikācijas noformējums"];
+  function facSheetGroup(host) {   // fasāžu bloku nobīde lapā un noņemto mēru atjaunošana (Skicei un AR atsevišķi)
+    const P2 = model.projekts || {}, ar = arOn(model), MPm = ar ? "ar:" : "", g5 = group("Fasādes lapā", host);
+    const NM = { south: "Dienvidu", north: "Ziemeļu", east: "Austrumu", west: "Rietumu" };
+    ["south", "north", "east", "west"].forEach(sd => {
+      g5.appendChild(field(`${NM[sd]} fasāde: bloka nobīde, mm`, +((P2.fasOff || {})[MPm + sd]) || 0, (n, v) => {
+        n.projekts = n.projekts || {}; n.projekts.fasOff = Object.assign({}, n.projekts.fasOff);
+        v = Math.round(v * 2) / 2; if (v) n.projekts.fasOff[MPm + sd] = v; else delete n.projekts.fasOff[MPm + sd];
+      }));
+      g5.appendChild(field(`${NM[sd]} fasāde: atzīmes tālāk no sienas, mm`, +((P2.lvlOff || {})[MPm + sd]) || 0, (n, v) => {
+        n.projekts = n.projekts || {}; n.projekts.lvlOff = Object.assign({}, n.projekts.lvlOff);
+        v = Math.round(v / 10) * 10; if (v) n.projekts.lvlOff[MPm + sd] = v; else delete n.projekts.lvlOff[MPm + sd];
+      }));
+    });
+    const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = (ar ? "AR lapām" : "Skices lapai") + ": plus bīda bloku pa labi, mīnus pa kreisi (lapas mm). Zemes līnija paliek viena, atzīmes pie kaimiņu fasādes pabīdās pašas."; g5.appendChild(nt);
+    const KN = { hh: "mājas augstums", ax: "asu mēri", pt: "jumta slīpums" }, back = [];
+    (P2.fHide || []).forEach(k => back.push([`↺ ${NM[k.split(":")[0]] || ""}: ${KN[k.split(":")[1]] || k}`, n => { n.projekts.fHide = n.projekts.fHide.filter(x => x !== k); if (!n.projekts.fHide.length) delete n.projekts.fHide; }]));
+    (P2.lvlHide || []).forEach(k => back.push([`↺ ${NM[k.split(":")[0]] || ""}: atzīme ${k.split(":")[1]}`, n => { n.projekts.lvlHide = n.projekts.lvlHide.filter(x => x !== k); if (!n.projekts.lvlHide.length) delete n.projekts.lvlHide; }]));
+    if (back.length) {
+      const t2 = document.createElement("p"); t2.className = "note full"; t2.textContent = "Noņemtie fasādes mēri (klikšķis atjauno):"; g5.appendChild(t2);
+      const r = document.createElement("div"); r.className = "row full";
+      back.forEach(([lab, fn]) => { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = lab; b2.onclick = () => { const n = clone(model); fn(n); commit(n); }; r.appendChild(b2); });
+      g5.appendChild(r);
+    }
+  }
+  const MAJA_ORDER = ["Mājas izmēri", "Pamati", "Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi", "Konstrukcijas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Fasādes lapā", "Specifikācijas noformējums"];
   // cilne Māja pa tēmām: viena tēma redzama, pārslēgs augšā; izvēle paliek arī pēc pārzīmēšanas
   const MAJA_SEC = [
     ["izmeri", "Izmēri", ["Mājas izmēri", "Stāvi"]],
     ["jumts", "Jumts", ["Jumts", "Notekas"]],
-    ["izskats", "Izskats", ["Krāsas", "Visi logi"]],
+    ["izskats", "Izskats", ["Krāsas", "Visi logi", "Fasādes lapā"]],
     ["konstr", "Konstrukcijas", ["Pamati", "Konstrukcijas (pīrāgi)", "Specifikācijas noformējums"]],
     ["pamplans", "Pamatu plāns", ["Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi"]],
   ];
