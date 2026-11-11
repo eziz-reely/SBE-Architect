@@ -763,6 +763,19 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const AR_ALL = [["visp", "Vispārīgie rādītāji"], ["plan", "1. stāva plāns ar izmēriem"], ["mebel", "1. stāva plāns ar mēbelēm"], ["jumts", "Jumta plāns"], ["griez", "Griezumi 1-1 un 2-2"],
     ["fas1", "Fasādes (dienvidi, rietumi)"], ["fas2", "Fasādes (ziemeļi, austrumi)"], ["sienas", "Sienu specifikācija"], ["logi", "Logu un durvju specifikācija"], ["mezgli", "Logu montāžas mezgli"]];
   const arOn = m => !!(m.projekts && m.projekts.ar && m.projekts.ar.on);
+  // ---- vizualizāciju lapas: papildu lapas ar bildēm (Skicei un AR atsevišķi); bildes ir lapas mm, x/y kreisais augšējais stūris, r pagrieziens ap centru ----
+  const vizKey = m => arOn(m) ? "ar_vizl" : "vizl";
+  const vizDims = m => arOn(m) ? [420, 297] : [297, 420];
+  const vizOf = m => (m.projekts || {})[vizKey(m)] || [];
+  const vizEsc = t => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+  function vizSvgs(m) {
+    const L = vizOf(m); if (!L.length) return "";
+    const [W, H] = vizDims(m);
+    return `<style>@media screen{svg.a3.vizl{background:#fff}${arOn(m) ? "" : "svg.a3.vizl{margin-top:14mm}"}}</style>` + L.map((S, si) => `<svg class="a3 vizl" data-part="viz" data-vs="${si}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" role="img" aria-label="${vizEsc(S.n || "Vizualizācijas")}"><rect width="${W}" height="${H}" fill="#fff"/>`
+      + `<rect x="20" y="10" width="${W - 30}" height="${H - 20}" fill="none" stroke="#111" stroke-width=".5"/>`
+      + (S.n ? `<text x="26" y="21" font-size="5" font-weight="600" letter-spacing=".4" fill="#111" font-family="Arial,Helvetica,sans-serif">${vizEsc(S.n.toUpperCase())}</text>` : "")
+      + (S.im || []).map((q, i) => `<g class="vimg" data-i="${i}" transform="rotate(${q.r || 0} ${q.x + q.w / 2} ${q.y + q.h / 2})"><image xlink:href="${vizEsc(q.src)}" x="${q.x}" y="${q.y}" width="${q.w}" height="${q.h}" preserveAspectRatio="none"/></g>`).join("") + `</svg>`).join("");
+  }
   // pamatu plāns: lapu sadalījums (tas pats, kas mm-pamati.js pamSheetsOf)
   const PAMV = [["stabi", "Stabu plāns"], ["vainags", "Vainaga plāns"], ["kopa", "Stabi un 1. stāva plānojums"]];
   function pamSheetsOf(PP) {
@@ -803,6 +816,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (X.arOn) h = h.replace("window.MODEL_SHEET=true", "window.MODEL_SHEET=false").replace("@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}",
         "@page{size:420mm 297mm;margin:0} svg.a3{width:420mm!important;height:297mm!important;display:inline-block;vertical-align:top;margin:0 14mm 14mm 0} body{width:870mm}");
     }
+    { const vs = vizSvgs(m); if (vs) { const i = h.lastIndexOf("</body>"); if (i > 0) h = h.slice(0, i) + vs + h.slice(i); } }   // vizualizāciju lapas (pēc visām pārējām)
     if (edit || arView) { // galds aiz lapas: neitrāli pelēks, lapa balta ar vieglu ēnu (tikai ekrānā, PDF/druka nemainās)
       const dk = (getComputedStyle(document.documentElement).getPropertyValue("--desk") || "#c3c8ce").trim();
       const st = `<style>@media screen{html{background:${dk}!important}body{background:transparent!important}svg.a3{background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.08),0 2px 10px rgba(0,0,0,.16)}}</style>`;
@@ -861,6 +875,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "undo") doUndo();
     else if (d.t === "redo") doRedo();
     else if (d.t === "delete") del();
+    else if (d.t === "vizFile") vizAdd(d.files, d.s, d.at);
     else if (d.t === "hint") { $("hint").textContent = d.text; if (d.text) status(d.text); }
     else if (d.t === "bmat") { BMAT = Object.assign({ hist: BMAT.hist }, d.mat); if (BMAT.ral && !BMAT.col && RAL[BMAT.ral]) BMAT.col = RAL[BMAT.ral][1]; if (placing && placing.t === "bucket") placing.mat = clone(BMAT); bktSync(); }
     else if (d.t === "placed") { endPlace(); if ("pamMode" in d) pamSetMode(null); }
@@ -1223,6 +1238,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (s.k === "stamp") { const L = lvOf(m, s); return L && (L.rooms || [])[s.i] ? { stamp: 1 } : null; }
     if (s.k === "gut") return ((m.projekts || {}).notekas || {})[s.i] === false ? null : { gut: s.i };
     if (s.k === "fmk") return ((m.projekts || {}).fHide || []).includes(s.i) ? null : { fmk: s.i };
+    if (s.k === "vimg") return ((vizOf(m)[s.s] || {}).im || [])[s.i];
     if (s.k === "alvl") return ((m.projekts || {}).lvlHide || []).includes(s.i) ? null : { alvl: s.i };
     if (s.k === "dim") { const L = lvOf(m, s); return L && (L.userDims || [])[s.i]; }
     if (s.k === "idim") { const L = lvOf(m, s); return L && (L.innerDims || (s.lv === "loft" ? m.innerDims : null) || [])[s.i]; }
@@ -1564,13 +1580,65 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       off.forEach(k => { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "↺ " + GUTN(k); b2.onclick = () => { const n = clone(model); delete n.projekts.notekas[k]; commit(n); }; r.appendChild(b2); });
       g4.appendChild(r);
     }
-    facSheetGroup(host); stampGroup(host);
+    facSheetGroup(host); stampGroup(host); vizGroup(host);
   }
   function stampGroup(host) {   // telpu zīmogi (nosaukums, Nr., m²): kopējais izmērs un slēpšana
     const P2 = model.projekts || {}, gz = group("Zonu zīmogi", host);
     gz.appendChild(field("Zonu zīmogi", P2.stampMode || "all", (n, v) => { n.projekts = n.projekts || {}; if (v === "all") delete n.projekts.stampMode; else n.projekts.stampMode = v; }, { all: "Nosaukums, Nr., m²", nonam: "Tikai Nr. un m² (bez nosaukuma)", off: "Nerādīt" }, "full"));
     gz.appendChild(field("Visu zīmogu izmērs, %", +P2.stampMul || 100, (n, v) => { n.projekts = n.projekts || {}; v = Math.max(30, Math.min(250, Math.round(v))); if (v === 100) delete n.projekts.stampMul; else n.projekts.stampMul = v; }));
     const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Attiecas uz visām zonām plānos (arī AR). Atsevišķu zīmogu joprojām maina ar velkot vai paneli."; gz.appendChild(nt);
+  }
+  // bilžu pievienošana vizualizāciju lapai: faili tiek samazināti (līdz 2000 px, JPEG), lai modelis neuzbriest
+  function vizLoad(file) {
+    return new Promise((ok, no) => {
+      const r = new FileReader();
+      r.onerror = () => no(new Error("Fails nav nolasāms"));
+      r.onload = () => { const im = new Image(); im.onerror = () => no(new Error("Nav bilde")); im.onload = () => {
+        const k = Math.min(1, 2000 / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+        const x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+        ok({ src: c.toDataURL("image/jpeg", .88), ar: c.height / c.width });
+      }; im.src = r.result; };
+      r.readAsDataURL(file);
+    });
+  }
+  function vizAdd(files, si, at) {   // si: lapa (nav = atlasītā vai pirmā; ja lapu nav, izveido), at: bildes centrs lapas mm
+    files = [...files].filter(f => /^image\//.test(f.type)); if (!files.length) return;
+    status("Ielādē bildi…");
+    Promise.all(files.map(vizLoad)).then(arr => {
+      const n = clone(model); n.projekts = n.projekts || {}; const k = vizKey(n), L = n.projekts[k] = (n.projekts[k] || []).slice();
+      if (!L.length) L.push({ n: "Vizualizācijas", im: [] });
+      si = si != null && L[si] ? si : (sel && sel.k === "vimg" && L[sel.s] ? sel.s : 0);
+      const [W, H] = vizDims(n), S = L[si]; S.im = (S.im || []).slice();
+      arr.forEach(a => {
+        const bw = (W - 30) * .7, bh = (H - 20) * .7, w = Math.min(bw, bh / a.ar), h = w * a.ar, o = (S.im.length % 5) * 8;
+        const cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v)), cx = at ? cl(at[0], 20 + w / 2, W - 10 - w / 2) : 20 + (W - 30) / 2 + o, cy = at ? cl(at[1], 10 + h / 2, H - 10 - h / 2) : 10 + (H - 20) / 2 + o;
+        S.im.push({ src: a.src, x: Math.round((cx - w / 2) * 10) / 10, y: Math.round((cy - h / 2) * 10) / 10, w: Math.round(w * 10) / 10, h: Math.round(h * 10) / 10, r: 0 });
+      });
+      if (!S.im.length || S.im.length === arr.length) view = null; sel = { k: "vimg", s: si, i: S.im.length - 1, lv: "main" }; commit(n); status("Bilde pievienota. Velc, maini izmēru vai pagriez.");
+    }).catch(e => status("Bildi neizdevās ielādēt: " + (e.message || e)));
+  }
+  document.addEventListener("paste", e => {
+    const t = e.target; if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    const fs = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f => /^image\//.test(f.type)); if (fs.length) { e.preventDefault(); vizAdd(fs); }
+  });
+  document.addEventListener("dragover", e => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
+  document.addEventListener("drop", e => { const fs = [...((e.dataTransfer && e.dataTransfer.files) || [])].filter(f => /^image\//.test(f.type)); if (fs.length) { e.preventDefault(); vizAdd(fs); } });
+  function vizGroup(host) {
+    const g = group("Vizualizāciju lapas", host), L = vizOf(model);
+    const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = (arOn(model) ? "AR lapām" : "Skices lapai") + ": papildu lapa ar bildēm (renderi, foto). Ielīmē bildi ar Ctrl+V, ievelc to no mapes vai spied «+ Bilde». Bildi var pārbīdīt, mainīt izmēru un pagriezt."; g.appendChild(nt);
+    L.forEach((S, si) => {
+      g.appendChild(field(`${si + 1}. lapas nosaukums`, S.n || "", (n, v) => { vizOf(n)[si].n = v.trim(); }, "text", "full"));
+      const r = document.createElement("div"); r.className = "row full";
+      const up = document.createElement("input"); up.type = "file"; up.accept = "image/*"; up.multiple = true; up.hidden = true; up.onchange = () => { vizAdd(up.files, si); up.value = ""; };
+      const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "+ Bilde"; b1.onclick = () => up.click();
+      const b2 = document.createElement("button"); b2.type = "button"; b2.className = "del"; b2.textContent = "Dzēst lapu";
+      b2.onclick = () => { if (!(S.im || []).length || confirm("Dzēst lapu kopā ar tās bildēm?")) { const n = clone(model), k = vizKey(n); n.projekts[k].splice(si, 1); if (!n.projekts[k].length) delete n.projekts[k]; sel = null; commit(n); } };
+      r.append(up, b1, b2); g.appendChild(r);
+    });
+    const r0 = document.createElement("div"); r0.className = "row full";
+    const b0 = document.createElement("button"); b0.type = "button"; b0.textContent = "+ Jauna vizualizāciju lapa";
+    b0.onclick = () => { const n = clone(model); n.projekts = n.projekts || {}; const k = vizKey(n); n.projekts[k] = (n.projekts[k] || []).concat([{ n: "Vizualizācijas", im: [] }]); view = null; commit(n); };
+    r0.appendChild(b0); g.appendChild(r0);
   }
   function facSheetGroup(host) {   // fasāžu bloku nobīde lapā un noņemto mēru atjaunošana (Skicei un AR atsevišķi)
     const P2 = model.projekts || {}, ar = arOn(model), MPm = ar ? "ar:" : "", g5 = group("Fasādes lapā", host);
@@ -1596,12 +1664,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       g5.appendChild(r);
     }
   }
-  const MAJA_ORDER = ["Mājas izmēri", "Pamati", "Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi", "Konstrukcijas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Fasādes lapā", "Zonu zīmogi", "Specifikācijas noformējums"];
+  const MAJA_ORDER = ["Mājas izmēri", "Pamati", "Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi", "Konstrukcijas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Fasādes lapā", "Zonu zīmogi", "Vizualizāciju lapas", "Specifikācijas noformējums"];
   // cilne Māja pa tēmām: viena tēma redzama, pārslēgs augšā; izvēle paliek arī pēc pārzīmēšanas
   const MAJA_SEC = [
     ["izmeri", "Izmēri", ["Mājas izmēri", "Stāvi"]],
     ["jumts", "Jumts", ["Jumts", "Notekas"]],
-    ["izskats", "Izskats", ["Krāsas", "Visi logi", "Zonu zīmogi", "Fasādes lapā"]],
+    ["izskats", "Izskats", ["Krāsas", "Visi logi", "Zonu zīmogi", "Fasādes lapā", "Vizualizāciju lapas"]],
     ["konstr", "Konstrukcijas", ["Pamati", "Konstrukcijas (pīrāgi)", "Specifikācijas noformējums"]],
     ["pamplans", "Pamatu plāns", ["Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi"]],
   ];
@@ -2045,6 +2113,22 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst mēru"; b.onclick = del; r.appendChild(b); p.append(r);
       return;
     }
+    if (sel.k === "vimg") {
+      h.textContent = "Bilde"; sub.textContent = (vizOf(model)[sel.s].n || "Vizualizāciju lapa") + " · velc, lai pārbīdītu; stūri maina izmēru, aplītis virs bildes griež · Delete dzēš";
+      const Q = n => vizOf(n)[sel.s].im[sel.i], rs = (q, w) => { const k = q.h / q.w, cx = q.x + q.w / 2, cy = q.y + q.h / 2; q.w = Math.max(10, w); q.h = q.w * k; q.x = cx - q.w / 2; q.y = cy - q.h / 2; };
+      g.append(field("Platums, mm", Math.round(it.w * 10) / 10, (n, v) => rs(Q(n), v)), field("Augstums, mm", Math.round(it.h * 10) / 10, (n, v) => { const q = Q(n); rs(q, v * q.w / q.h); }),
+        field("Pagrieziens, °", Math.round((it.r || 0) * 10) / 10, (n, v) => { Q(n).r = ((v % 360) + 360) % 360; }));
+      p.append(h, sub, g);
+      const r = document.createElement("div"); r.className = "row";
+      const bt = (t, fn, cls) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; if (cls) b.className = cls; b.onclick = fn; r.appendChild(b); };
+      bt("Pagriezt 90°", () => { const n = clone(model); const q = Q(n); q.r = (((q.r || 0) + 90) % 360); commit(n); });
+      bt("Ietilpināt lapā", () => { const n = clone(model), q = Q(n), [W, H] = vizDims(n), rot = Math.round(((q.r || 0) % 180) / 90) % 2 === 1, bw = W - 30 - 12, bh = H - 20 - 12 - (vizOf(n)[sel.s].n ? 10 : 0), ow = rot ? q.h : q.w, oh = rot ? q.w : q.h, k = Math.min(bw / ow, bh / oh), cx = 20 + (W - 30) / 2, cy = 10 + 6 + (vizOf(n)[sel.s].n ? 10 : 0) + bh / 2; q.w *= k; q.h *= k; q.x = cx - q.w / 2; q.y = cy - q.h / 2; commit(n); });
+      bt("Uz priekšu", () => { const n = clone(model), a = vizOf(n)[sel.s].im, [q] = a.splice(sel.i, 1); a.push(q); sel = { k: "vimg", s: sel.s, i: a.length - 1, lv: "main" }; commit(n); });
+      bt("Uz aizmuguri", () => { const n = clone(model), a = vizOf(n)[sel.s].im, [q] = a.splice(sel.i, 1); a.unshift(q); sel = { k: "vimg", s: sel.s, i: 0, lv: "main" }; commit(n); });
+      bt("Dzēst bildi", del, "del");
+      p.appendChild(r);
+      return;
+    }
     if (sel.k === "alvl") {
       h.textContent = "Augstuma atzīme"; sub.textContent = ({ north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" }[sel.i.split(":")[0]] || "") + " fasāde · Delete dzēš · vilkšana bīda visu atzīmju kolonnu";
       p.append(h, sub);
@@ -2237,6 +2321,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (sel.k === "fdim") { n.projekts.fdims.splice(sel.i, 1); if (!n.projekts.fdims.length) delete n.projekts.fdims; }
     else if (sel.k === "guide") n.projekts.guides.splice(sel.i, 1);
     else if (sel.k === "fmk") { n.projekts = n.projekts || {}; n.projekts.fHide = (n.projekts.fHide || []).concat([sel.i]); }
+    else if (sel.k === "vimg") vizOf(n)[sel.s].im.splice(sel.i, 1);
     else if (sel.k === "alvl") { n.projekts = n.projekts || {}; n.projekts.lvlHide = (n.projekts.lvlHide || []).concat([sel.i]); }
     else if (sel.k === "gut") { n.projekts = n.projekts || {}; (n.projekts.notekas = n.projekts.notekas || {})[sel.i] = false; }
     else if (sel.k === "dim") lvOf(n, sel).userDims.splice(sel.i, 1);

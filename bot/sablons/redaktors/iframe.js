@@ -2413,6 +2413,105 @@
   window.MMZ_CANCEL = () => { drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); drawSel(); };   // otrs pirksts: atceļ vilkšanu, sāk tuvināšanu
   window.MMZ_ON = () => { if (!drag) drawSel(); clearTimeout(vt); vt = setTimeout(() => window.MMZ && post({ t: "view", view: window.MMZ.get() }), 120); };
 
+  // ---- vizualizāciju lapas: bilžu atlase, bīdīšana, izmērs (stūri), pagriešana, ielīmēšana un ievilkšana ----
+  const vKey = () => (window.MODEL_SHEET ? "vizl" : "ar_vizl");
+  const vList = () => (M.projekts && M.projekts[vKey()]) || [];
+  const vSvg = si => document.querySelector(`svg.a3.vizl[data-vs="${si}"]`);
+  const vQ = (si, i) => ((vList()[si] || {}).im || [])[i];
+  const vImgFiles = dt => [...((dt && dt.files) || [])].filter(f => /^image\//.test(f.type));
+  const vPt = (sv, e) => { const r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal; return [(e.clientX - r.left) / r.width * vb.width, (e.clientY - r.top) / r.height * vb.height]; };
+  function vApply(si, i) {   // tiešraides priekšskatījums vilkšanas laikā
+    const sv = vSvg(si), q = vQ(si, i), g = sv && sv.querySelector(`g.vimg[data-i="${i}"]`); if (!g || !q) return;
+    g.setAttribute("transform", `rotate(${q.r || 0} ${q.x + q.w / 2} ${q.y + q.h / 2})`);
+    const im = g.querySelector("image"); ["x", "y", "width", "height"].forEach(a => im.setAttribute(a, { x: q.x, y: q.y, width: q.w, height: q.h }[a]));
+  }
+  function drawV() {
+    document.querySelectorAll("svg.a3.vizl g.vov").forEach(o => o.remove());
+    vList().forEach((S, si) => {
+      const sv = vSvg(si); if (!sv) return;
+      const vb = sv.viewBox.baseVal, u = vb.width / (sv.getBoundingClientRect().width || vb.width), o = mk(sv, "g", { class: "mm-ov vov" });   // u = lapas mm uz 1 ekrāna pikseli
+      if (!(S.im || []).length) {
+        mk(o, "rect", { x: 28, y: 30, width: vb.width - 46, height: vb.height - 50, fill: "rgba(34,102,216,.04)", stroke: ACC, "stroke-width": 1.2 * u, "stroke-dasharray": `${6 * u} ${5 * u}`, "pointer-events": "none" });
+        const t = mk(o, "text", { x: 20 + (vb.width - 30) / 2, y: vb.height / 2, "text-anchor": "middle", "font-size": 4.2, fill: ACC, "pointer-events": "none" }); t.textContent = "Ielīmē bildi (Ctrl+V) vai ievelc to šeit";
+      }
+      if (!sel || sel.k !== "vimg" || sel.s !== si) return;
+      const q = vQ(si, sel.i); if (!q) return;
+      const g = mk(o, "g", { transform: `rotate(${q.r || 0} ${q.x + q.w / 2} ${q.y + q.h / 2})` });
+      mk(g, "rect", { x: q.x, y: q.y, width: q.w, height: q.h, fill: "none", stroke: ACC, "stroke-width": 1.4 * u, "pointer-events": "none" });
+      const hs = 9 * u;
+      [["nw", q.x, q.y], ["ne", q.x + q.w, q.y], ["se", q.x + q.w, q.y + q.h], ["sw", q.x, q.y + q.h]].forEach(([n, cx, cy]) => mk(g, "rect", { x: cx - hs / 2, y: cy - hs / 2, width: hs, height: hs, fill: "#fff", stroke: ACC, "stroke-width": 1.4 * u, "data-vh": n, style: `cursor:${n === "nw" || n === "se" ? "nwse" : "nesw"}-resize`, "pointer-events": "all" }));
+      mk(g, "line", { x1: q.x + q.w / 2, y1: q.y, x2: q.x + q.w / 2, y2: q.y - 22 * u, stroke: ACC, "stroke-width": 1.2 * u, "pointer-events": "none" });
+      mk(g, "circle", { cx: q.x + q.w / 2, cy: q.y - 22 * u, r: 6 * u, fill: "#fff", stroke: ACC, "stroke-width": 1.4 * u, "data-vh": "rot", style: "cursor:grab", "pointer-events": "all" });
+      const tx = mk(g, "text", { x: q.x, y: q.y + q.h + 15 * u, "font-size": 11 * u, fill: ACC, "pointer-events": "none" }); tx.textContent = `${Math.round(q.w)} × ${Math.round(q.h)} mm` + (q.r ? ` · ${Math.round(q.r)}°` : "");
+    });
+  }
+  { const ds0 = drawSel; drawSel = function () { ds0(); drawV(); }; }
+  let vd = null;
+  { const prev = window.MMZ_HOOK;
+    window.MMZ_HOOK = e => {
+      const sv = e.target && e.target.closest && e.target.closest("svg.a3.vizl");
+      if (!sv || place || e.button !== 0) return prev(e);
+      const si = +sv.dataset.vs, hd = e.target.closest("[data-vh]"), gi = e.target.closest("g.vimg");
+      if (!hd && !gi) return prev(e);   // tukša lapas vieta: atlase tiek noņemta, lapa bīdās
+      const i = hd ? (sel && sel.k === "vimg" ? sel.i : -1) : +gi.dataset.i, q = vQ(si, i); if (!q) return prev(e);
+      sel = { k: "vimg", s: si, i, lv: "main" }; post({ t: "sel", sel }); drawSel();
+      const r = sv.getBoundingClientRect(), vb = sv.viewBox.baseVal;
+      vd = { mode: hd ? (hd.dataset.vh === "rot" ? "rot" : "size") : "move", hd: hd && hd.dataset.vh, si, i, q0: clone(q), x0: e.clientX, y0: e.clientY, k: vb.width / r.width, W: vb.width, H: vb.height, sv, moved: false };
+      document.body.style.cursor = vd.mode === "move" ? "move" : vd.mode === "rot" ? "grabbing" : "nwse-resize"; return true;
+    };
+  }
+  addEventListener("pointermove", e => {
+    if (!vd) return;
+    const d = vd, q = vQ(d.si, d.i), q0 = d.q0; if (!q) return;
+    if (Math.hypot(e.clientX - d.x0, e.clientY - d.y0) > 3) d.moved = true;
+    if (!d.moved) return;
+    if (d.mode === "move") {
+      let x = q0.x + (e.clientX - d.x0) * d.k, y = q0.y + (e.clientY - d.y0) * d.k;
+      if (!e.altKey && !q0.r) {   // pielīp lapas rāmim un vidum (Alt izslēdz)
+        const sn = (v, w, a, b) => { const c = [[a, 0], [b - w, 0], [(a + b) / 2 - w / 2, 0]].map(t => t[0]); let best = v, bd = 3; c.forEach(t => { if (Math.abs(t - v) < bd) { bd = Math.abs(t - v); best = t; } }); return best; };
+        x = sn(x, q0.w, 20, d.W - 10); y = sn(y, q0.h, 10, d.H - 10);
+      }
+      q.x = x; q.y = y;
+    } else if (d.mode === "rot") {
+      const p = vPt(d.sv, e), c = [q0.x + q0.w / 2, q0.y + q0.h / 2];
+      let a = Math.atan2(p[1] - c[1], p[0] - c[0]) * 180 / Math.PI + 90;
+      a = e.shiftKey ? Math.round(a / 15) * 15 : Math.round(a);
+      a = ((a % 360) + 360) % 360; [0, 90, 180, 270, 360].forEach(t => { if (!e.shiftKey && Math.abs(a - t) < 3) a = t % 360; });
+      q.r = a;
+    } else {
+      const th = (q0.r || 0) * Math.PI / 180, cs = Math.cos(th), sn = Math.sin(th), c = [q0.x + q0.w / 2, q0.y + q0.h / 2], p = vPt(d.sv, e);
+      const sx = /e/.test(d.hd) ? 1 : -1, sy = /s/.test(d.hd) ? 1 : -1, ox = -sx * q0.w / 2, oy = -sy * q0.h / 2;
+      const vx = (p[0] - c[0]) * cs + (p[1] - c[1]) * sn, vy = -(p[0] - c[0]) * sn + (p[1] - c[1]) * cs;
+      const dx = sx * q0.w, dy = sy * q0.h, s = Math.max(10 / q0.w, ((vx - ox) * dx + (vy - oy) * dy) / (dx * dx + dy * dy));
+      const w = q0.w * s, h = q0.h * s, lx = ox + sx * w / 2, ly = oy + sy * h / 2;
+      q.w = w; q.h = h; q.x = c[0] + lx * cs - ly * sn - w / 2; q.y = c[1] + lx * sn + ly * cs - h / 2;
+    }
+    vApply(d.si, d.i); drawV();
+  });
+  addEventListener("pointerup", () => {
+    if (!vd) return;
+    const d = vd; vd = null; document.body.style.cursor = "";
+    if (!d.moved) return;
+    const q = vQ(d.si, d.i); ["x", "y", "w", "h"].forEach(k => { q[k] = Math.round(q[k] * 10) / 10; });
+    post({ t: "edit", model: clone(M), sel });
+  });
+  addEventListener("keydown", e => {
+    if (e.key === "Escape" && vd) { Object.assign(vQ(vd.si, vd.i), vd.q0); vApply(vd.si, vd.i); vd = null; document.body.style.cursor = ""; drawV(); return; }
+    if (!sel || sel.k !== "vimg" || vd || !/^Arrow(Left|Right|Up|Down)$/.test(e.key) || e.ctrlKey || e.metaKey) return;
+    const q = vQ(sel.s, sel.i); if (!q) return;
+    e.preventDefault(); const N = clone(M), n = N.projekts[vKey()][sel.s].im[sel.i], st = e.shiftKey ? 10 : 1;
+    n.x += { ArrowLeft: -st, ArrowRight: st }[e.key] || 0; n.y += { ArrowUp: -st, ArrowDown: st }[e.key] || 0;
+    post({ t: "edit", model: N, sel });
+  });
+  addEventListener("paste", e => { const fs = vImgFiles(e.clipboardData); if (!fs.length) return; e.preventDefault(); post({ t: "vizFile", files: fs, s: sel && sel.k === "vimg" ? sel.s : null }); });
+  addEventListener("dragover", e => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
+  addEventListener("drop", e => {
+    const fs = vImgFiles(e.dataTransfer); if (!fs.length) return; e.preventDefault();
+    const sv = e.target.closest && e.target.closest("svg.a3.vizl");
+    post({ t: "vizFile", files: fs, s: sv ? +sv.dataset.vs : null, at: sv ? vPt(sv, e) : null });
+  });
+  drawV();
+
   addEventListener("load", () => setTimeout(() => {
     drawSel();
     let out = [];
