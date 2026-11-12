@@ -120,7 +120,7 @@
   if ($("bRazos")) $("bRazos").onclick = () => { dlg.hidden = false; };
   window.MM_PROD = { build, open: () => { dlg.hidden = false; } };
   const b = document.createElement("button"); b.type = "button"; b.className = "it"; b.id = "bProd"; b.innerHTML = "<b>Ražošanas pakete</b><small>Izvēlies lapas: skice, pamati, logu plāns un specifikācijas</small>";
-  b.onclick = () => { $("exp").hidden = true; dlg.hidden = false; };
+  b.onclick = () => { dlg.hidden = false; };
   $("bJson").parentNode.insertBefore(b, $("bJson"));
   addEventListener("keydown", e => { if (!dlg.hidden && e.key === "Escape") close(); });
 })();

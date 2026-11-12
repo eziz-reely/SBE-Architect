@@ -579,6 +579,63 @@ header .tb > button.pri .bi { opacity: 1; }
   .tabs button { min-height: 40px; }
   header { gap: 4px; overflow-x: auto; flex-wrap: nowrap; }
 }
+/* === SketchUp veida izkārtojums (2026-11): augšā tikai lapas lietas, visi rīki kreisajā joslā, labajā sakļaujamas sadaļas, apakšā statuss un mērījumu lauks === */
+main { grid-template-columns: 86px 1fr 330px; }
+#rail { overflow-y: auto; scrollbar-width: none; padding: 6px 0 8px; }
+#rail::-webkit-scrollbar { display: none; }
+#railT { display: grid; grid-template-columns: 38px 38px; gap: 2px; justify-content: center; }
+#railT hr { grid-column: 1 / -1; width: 64px; margin: 3px auto; }
+#rail button { width: 38px; height: 38px; flex: none; }
+#rail > button { width: 78px; }
+#rail > button svg { width: 22px; height: 22px; }
+#rail > #b3d { color: var(--accent); }
+header .tb > #bRib { margin-left: 10px; }
+aside#tray { gap: 0; padding: 0; display: block; }
+aside#tray > * { padding: 0; }
+details.tr { border-bottom: 1px solid var(--line2); }
+details.tr[hidden] { display: none; }
+details.tr > summary { display: flex; align-items: center; gap: 8px; padding: 9px 14px; cursor: pointer; list-style: none; background: var(--hover); font: 600 12px/1 var(--f-ui); letter-spacing: .06em; text-transform: uppercase; color: var(--ink); user-select: none; position: sticky; top: 0; z-index: 2; }
+details.tr > summary::-webkit-details-marker { display: none; }
+details.tr > summary::before { content: ""; width: 6px; height: 6px; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted); transform: rotate(-45deg); transition: transform .12s; flex: none; margin-right: 2px; }
+details.tr[open] > summary::before { transform: rotate(45deg); }
+details.tr > summary:hover { background: var(--line); }
+details.tr > summary > span:first-child { flex: 1; }
+details.tr > .trb { padding: 12px 14px 14px; padding-right: max(14px, env(safe-area-inset-right, 0px)); display: grid; gap: 8px; }
+details.tr > .trb > .cap { margin: 4px 0 0; }
+details.tr .selcard { padding: 0; border: 0; background: none; }
+details.tr[data-pane="sel"] > .trb { background: var(--field); }
+#tray .tseg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--field); border: 1px solid var(--line2); border-radius: 4px; padding: 2px; gap: 2px; }
+#tray .tseg button { background: transparent; border: 0; height: 28px; padding: 0 10px; border-radius: 3px; font-weight: 600; color: var(--muted); }
+#tray .tseg button:hover { color: var(--ink); }
+#tray .tseg button[aria-checked="true"] { background: var(--accent-fill, var(--accent)); color: #fff; }
+#tray #bRazos, #tray #bReset { display: flex; align-items: center; justify-content: center; gap: 7px; height: 32px; background: var(--field); color: var(--ink); border: 1px solid var(--line2); border-radius: 4px; }
+#tray #bRazos:hover, #tray #bReset:hover { background: var(--hover); }
+#tray #bReset[hidden] { display: none; }
+#tray #bReset .bi { width: 16px; height: 16px; }
+#tray #confirm { font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+#tray #confirm[hidden] { display: none; }
+#tray #confirm button { background: var(--field); color: var(--ink); border: 1px solid var(--line2); padding: 5px 12px; }
+#bExp { display: none !important; }
+#exp.pop { position: static; width: auto; max-width: none; max-height: none; padding: 0; border: 0; box-shadow: none; background: none; overflow: visible; }
+#exp.pop[hidden] { display: none; }
+#exp.pop > .pcap:first-child { display: none; }
+#sbar { gap: 12px; padding: 2px 8px 2px 12px; min-height: 28px; }
+#sbTool { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#sbSave { white-space: nowrap; }
+#sbVcb { display: flex; flex-direction: row; align-items: center; gap: 6px; white-space: nowrap; border-left: 1px solid var(--line2); padding-left: 10px; font-size: 12px; color: var(--muted); }
+#sbVal { width: 120px; height: 22px; padding: 0 6px; border: 1px solid var(--line2); border-radius: 3px; background: var(--field); color: var(--ink); font: 600 12px/1 var(--f-ui); font-variant-numeric: tabular-nums; }
+#sbVal:disabled { background: transparent; }
+@media (max-width: 760px) {
+  main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto minmax(0, 38dvh); }
+  #rail { flex-direction: row; overflow-x: auto; overflow-y: hidden; padding: 4px 6px; align-items: center; }
+  #railT { display: flex; gap: 4px; }
+  #railT hr { display: block; flex: none; width: 1px; height: 28px; margin: 0 2px; border: 0; border-left: 1px solid var(--line2); align-self: center; }
+  #rail button, #rail > button { width: 44px; min-width: 44px; height: 44px; }
+  #sbar { display: flex; order: 4; padding: 2px 8px; }
+  #sbSave, #sbLab { display: none; }
+  #sbVal { width: 96px; height: 28px; font-size: 16px; }
+  details.tr > summary { padding: 12px 14px; }
+}
 </style>
 
 <header>
@@ -590,11 +647,7 @@ header .tb > button.pri .bi { opacity: 1; }
     <button id="bUndo" class="ico" type="button" title="Atsaukt (Ctrl+Z)" aria-label="Atsaukt" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button id="bRedo" class="ico" type="button" title="Atkārtot (Ctrl+Y)" aria-label="Atkārtot" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <button id="bFit" class="ico" type="button" title="Rādīt visu lapu" aria-label="Visa lapa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><rect x="8" y="8" width="8" height="8" rx="1"/></svg></button>
-    <button id="bReset" type="button" title="Atgriezt bota izveidoto versiju"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg><span>Atiestatīt</span></button>
-    <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
     <button id="bRib" type="button" aria-expanded="false" title="Sienu, līniju un teksta noformējums"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Noformējums</span></button>
-    <span class="tseg modeseg" id="topMode" role="radiogroup" aria-label="Režīms"><button type="button" data-m="skice" role="radio">Skice</button><button type="button" data-m="ar" role="radio">AR</button></span><button type="button" id="bRazos" title="Ražošanas pakete: izvēlies lapas un izveido komplektu">Ražošana</button>
-    <span class="tseg" id="topLang" role="radiogroup" aria-label="Valoda"><button type="button" data-lg="lv" role="radio">LV</button><button type="button" data-lg="en" role="radio">EN</button></span>
     <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M14 4v16M14 9.5h7M14 14.5h7"/></svg><span>Rakstlaukums</span></button>
       <div id="tbp" class="pop" hidden role="dialog" aria-label="Rakstlaukums">
         <p class="pcap">Lapas</p>
@@ -614,95 +667,89 @@ header .tb > button.pri .bi { opacity: 1; }
         <input id="tbFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden><input id="arFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden>
         <p class="pnote" id="tbNote">PNG, JPG vai SVG. Rakstlaukuma tumšais lauks paliek arī bez logo.</p>
       </div></span>
-    <span class="expw"><button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg><span>Eksportēt</span></button>
-      <div id="exp" class="pop" hidden role="dialog" aria-label="Eksports">
-        <p class="pcap">PDF rasējums · A3</p>
-        <div class="seg" role="radiogroup" aria-label="Kvalitāte">
-          <button type="button" data-dpi="150" role="radio">150 dpi<small>ātri</small></button><button type="button" data-dpi="300" role="radio">300 dpi<small>druka</small></button><button type="button" data-dpi="600" role="radio">600 dpi<small>maks.</small></button>
-        </div>
-        <button id="bPdf" type="button" class="pri wide">Lejupielādēt PDF</button>
-        <p class="pcap">Citi formāti</p>
-        <button type="button" class="it" id="bSvg"><b>SVG vektors</b><small>Bez rastra, atveras Illustrator, Inkscape</small></button>
-        <button type="button" class="it" id="bDxf"><b>DXF (AutoCAD, ArchiCAD)</b><small>Vektoru lapa mm, slāņi; DWG ar Save As</small></button>
-        <button type="button" class="it" id="bSkp"><b>SketchUp 3D modelis</b><small>Imports ar MM Homes paplašinājumu</small></button>
-        <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
-        <button type="button" class="it" id="bJson"><b>model.json</b><small>Modeļa dati botam</small></button>
-      </div></span>
-    <button id="b3d" type="button" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg><span>3D un Gemini</span></button>
     <button id="bSave" class="pri" type="button"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-7H7v7M7 3v4h8"/></svg><span>Saglabāt</span></button>
   </div>
 </header>
 <div id="ribbon" role="toolbar" aria-label="Noformējums"></div>
 <main>
-  <nav id="rail" aria-label="Rīki"></nav>
+  <nav id="rail" aria-label="Rīki"><div id="railT"></div><span class="sp"></span><button id="b3d" type="button" aria-label="3D skats" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg></button><button type="button" id="bKeys" title="Taustiņi" aria-label="Taustiņi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/></svg></button></nav>
   <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" stroke-dasharray="2 2"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span>Dzēst palīglīnijas</span></button></div>
-  <aside>
-    <section class="selcard" aria-live="polite">
-      <div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Jaunu logu, durvis vai mēbeli izvēlies no saraksta zemāk.</p></div>
-    </section>
-    <nav class="tabs" role="tablist" aria-label="Rīki">
-      <button type="button" role="tab" data-tab="add" aria-selected="true">Pievienot</button>
-      <button type="button" role="tab" data-tab="house" aria-selected="false">Māja</button>
-      <button type="button" role="tab" data-tab="check" aria-selected="false">Pārbaude <span class="badge" id="nCheck" hidden></span></button>
-      <button type="button" role="tab" data-tab="keys" aria-selected="false">Taustiņi</button>
-      <button type="button" role="tab" data-tab="help" aria-selected="false" aria-label="Palīdzība">?</button>
-    </nav>
-    <div class="tabpanes">
-      <section data-pane="add">
-        <p class="cap">Logi un durvis</p>
-        <div class="lib" id="libOpenings"></div>
-        <div class="lib" id="libOpen" hidden></div>
-        <p class="cap">Terase, fasāde, zonas, stabi</p>
-        <div class="lib" id="libTer"></div>
-        <div id="bktBox" class="group" hidden><p class="cap">Materiāls spainim</p><div class="grid" id="bktGrid"></div></div>
-        <p id="hint"></p>
-        <div class="caprow"><p class="cap">Mēbeles un kāpnes</p></div>
-        <div class="seg" id="detail" role="group" aria-label="Mēbeļu detalizācija visai lapai"><button type="button" data-v="1" aria-pressed="false">Vienkāršs</button><button type="button" data-v="2" aria-pressed="true">Standarta</button><button type="button" data-v="3" aria-pressed="false">Detalizēts</button></div>
-                <div class="lib" id="libFurn"></div>
-      </section>
-      <section data-pane="house" hidden>
-        <div id="mats"></div>
-      </section>
-      <section data-pane="check" hidden>
-        <p class="cap">MM noteikumi</p>
-        <ul id="check"><li class="ok">Gaida rasējumu…</li></ul>
-      </section>
-      <section data-pane="keys" hidden>
-        <p class="cap">Īsinājumtaustiņi</p>
-        <div id="keysPane"></div>
-      </section>
-      <section data-pane="help" hidden>
-        <p class="cap">Kā lietot</p>
-        <ul class="help">
-        <li>Peles ritenītis tuvina un attālina, tukšas vietas vilkšana pārvieto lapu.</li>
-        <li>Logu, durvis vai mēbeli velc ar peli. Plānā logs slīd gar sienu. Mēbele paliek telpā un pielīp sienai.</li>
-        <li>Izvēlētajam elementam sarkanais <b>×</b> kreisajā augšējā stūrī to dzēš.</li>
-        <li>Mēbeli pagriež oranžais aplis: klikšķis 90°, vilkšana brīvi ar soli 15° (ar <kbd>Shift</kbd> 1°). Taustiņš <kbd>R</kbd> arī 90°. Baltie kvadrātiņi malu vidū maina izmēru, pretējā mala paliek vietā.</li>
-        <li>Noteku vai katru notekcauruli atsevišķi fasādē uzklikšķini un dzēs ar ×. Atjaunot var sadaļā Materiāli.</li>
-        <li>Mērs: <kbd>D</kbd> vai "Mērs", tad uzklikšķini abus galus plānā. Pildīts kvadrāts rāda, ka gals pielipis sienai, logam vai asij. Mēra līnija pielīp citiem tās pašas ass mēriem, lai ķēde būtu vienā taisnē.</li>
-        <li>Visus mērus, arī automātiskās ķēdes, var vilkt un dzēst. <kbd>Esc</kbd> atceļ jebko: likšanu, vilkšanu, izvēli.</li>
-        <li>Izvēlētām vai velkamām durvīm un logiem plānā redzami mēri līdz tuvākajām šķērssienām.</li>
-        <li>Telpas nosaukumu maina, uzklikšķinot uz tā. Tas mainās arī eksplikācijā.</li>
-        <li>Durvīm dubultklikšķis vai <kbd>F</kbd> apgriež vēršanos uz otru pusi, <kbd>H</kbd> (vai <kbd>Shift</kbd>+dubultklikšķis) pārliek eņģes.</li>
-        <li>Mēbele neiet citā mēbelē: tā atgrūžas un pielīp blakus esošajai.</li>
-        <li>Sienu velc aiz tās vidus: blakus telpas un sienas pagarinās līdzi.</li>
-        <li>Pievienot: izvēlies elementu, tad uzklikšķini vietā, kur to likt (logu uz ārsienas plānā vai fasādē, slīpo logu gala fasādē virs dzegas). <kbd>Esc</kbd> atceļ.</li>
-        <li>Fasādē loga sānu malas maina platumu, augšējā un apakšējā mala augstumu. Rāmja profils paliek tas pats.</li>
-        <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> pārvieto par 10 mm, ar <kbd>Shift</kbd> par 100 mm. <kbd>Delete</kbd> dzēš, <kbd>Ctrl</kbd>+<kbd>Z</kbd> atsauc.</li>
-        <li>Vairākus elementus atlasa ar <kbd>Shift</kbd>+klikšķi (logus, durvis, mēbeles vienā stāvā); vilkšana pārvieto visus kopā. Ar <kbd>Ctrl</kbd> turot vilkšanu elements (vai visa atlasītā grupa) tiek nokopēts. <kbd>Ctrl</kbd>+<kbd>C</kbd> un <kbd>Ctrl</kbd>+<kbd>V</kbd> kopē un iekopē, <kbd>Delete</kbd> dzēš visu grupu.</li>
-        <li>Mēbele pielīp sienai tikai pavisam tuvu. Ar <kbd>Alt</kbd> vilkšanas laikā pielipšanu un pagriešanu pie sienas izslēdz. <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> pārvieto mēbeli precīzi, bez pielipšanas un pagriešanas.</li>
-        <li>Logs un durvis, velkot gar sienu, pielīp telpas sienas vidum (rāda raustītu līniju). <kbd>Alt</kbd> to izslēdz.</li>
-        <li>Starpsiena: "Starpsiena", uzklikšķini sākumu pie sienas un beigas pie citas sienas. Siena pielīp citu sienu virsmām. Pilna siena sadala telpu divās. "Izgriezt sienu": divi klikšķi uz iekšējās sienas izgriež posmu (durvis tajā pazūd); divi klikšķi vienā vietā izgriež visu posmu.</li>
-        <li>Mēri, atzīmes un eksplikācija pārrēķinās pēc katra labojuma.</li>
+  <aside id="tray" aria-label="Īpašības un iestatījumi">
+    <details class="tr" data-pane="sel" open><summary><span>Īpašības</span></summary><div class="trb">
+      <div class="selcard" aria-live="polite"><div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Rīkus izvēlies kreisajā joslā.</p></div></div>
+    </div></details>
+    <details class="tr" data-pane="tool" open hidden><summary><span>Rīka opcijas</span></summary><div class="trb">
+      <div id="bktBox" class="group" hidden><p class="cap">Materiāls spainim</p><div class="grid" id="bktGrid"></div></div>
+    </div></details>
+    <details class="tr" data-pane="add" open><summary><span>Mēbeles un kāpnes</span></summary><div class="trb">
+      <div class="seg" id="detail" role="group" aria-label="Mēbeļu detalizācija visai lapai"><button type="button" data-v="1" aria-pressed="false">Vienkāršs</button><button type="button" data-v="2" aria-pressed="true">Standarta</button><button type="button" data-v="3" aria-pressed="false">Detalizēts</button></div>
+      <div class="lib" id="libFurn"></div>
+    </div></details>
+    <details class="tr" data-pane="house"><summary><span>Māja</span></summary><div class="trb">
+      <div id="mats"></div>
+    </div></details>
+    <details class="tr" data-pane="sheet"><summary><span>Lapa un eksports</span></summary><div class="trb">
+      <p class="cap">Lapas</p>
+      <span class="tseg modeseg" id="topMode" role="radiogroup" aria-label="Režīms"><button type="button" data-m="skice" role="radio">Skice</button><button type="button" data-m="ar" role="radio">AR</button></span>
+      <p class="cap">Valoda</p>
+      <span class="tseg" id="topLang" role="radiogroup" aria-label="Valoda"><button type="button" data-lg="lv" role="radio">LV</button><button type="button" data-lg="en" role="radio">EN</button></span>
+      <p class="cap">Komplekti</p>
+      <button type="button" id="bRazos" title="Ražošanas pakete: izvēlies lapas un izveido komplektu">Ražošanas komplekts</button>
+      <p class="cap">Eksports</p>
+      <button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg><span>Eksportēt</span></button>
+      <div id="exp" class="pop" hidden role="dialog" aria-label="Eksports">
+      <p class="pcap">PDF rasējums · A3</p>
+      <div class="seg" role="radiogroup" aria-label="Kvalitāte">
+      <button type="button" data-dpi="150" role="radio">150 dpi<small>ātri</small></button><button type="button" data-dpi="300" role="radio">300 dpi<small>druka</small></button><button type="button" data-dpi="600" role="radio">600 dpi<small>maks.</small></button>
+      </div>
+      <button id="bPdf" type="button" class="pri wide">Lejupielādēt PDF</button>
+      <p class="pcap">Citi formāti</p>
+      <button type="button" class="it" id="bSvg"><b>SVG vektors</b><small>Bez rastra, atveras Illustrator, Inkscape</small></button>
+      <button type="button" class="it" id="bDxf"><b>DXF (AutoCAD, ArchiCAD)</b><small>Vektoru lapa mm, slāņi; DWG ar Save As</small></button>
+      <button type="button" class="it" id="bSkp"><b>SketchUp 3D modelis</b><small>Imports ar MM Homes paplašinājumu</small></button>
+      <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
+      <button type="button" class="it" id="bJson"><b>model.json</b><small>Modeļa dati botam</small></button>
+      </div>
+      <p class="pnote" id="expNo">Eksports ir pieejams programmā „SBE projekti”.</p>
+      <p class="cap">Bota versija</p>
+      <button id="bReset" type="button" title="Atgriezt bota izveidoto versiju"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4L3 8"/><path d="M3 3v5h5"/></svg><span>Atiestatīt</span></button>
+      <span id="confirm" hidden>Atgriezt bota versiju? <button id="bResetYes" type="button">Jā</button><button id="bResetNo" type="button">Nē</button></span>
+    </div></details>
+    <details class="tr" data-pane="check"><summary><span>Pārbaude</span><span class="badge" id="nCheck" hidden></span></summary><div class="trb">
+      <p class="cap">MM noteikumi</p>
+      <ul id="check"><li class="ok">Gaida rasējumu…</li></ul>
+    </div></details>
+    <details class="tr" data-pane="keys"><summary><span>Taustiņi</span></summary><div class="trb">
+      <div id="keysPane"></div>
+    </div></details>
+    <details class="tr" data-pane="help"><summary><span>Palīdzība</span></summary><div class="trb">
+      <ul class="help">
+      <li>Peles ritenītis tuvina un attālina, tukšas vietas vilkšana pārvieto lapu.</li>
+      <li>Logu, durvis vai mēbeli velc ar peli. Plānā logs slīd gar sienu. Mēbele paliek telpā un pielīp sienai.</li>
+      <li>Izvēlētajam elementam sarkanais <b>×</b> kreisajā augšējā stūrī to dzēš.</li>
+      <li>Mēbeli pagriež oranžais aplis: klikšķis 90°, vilkšana brīvi ar soli 15° (ar <kbd>Shift</kbd> 1°). Taustiņš <kbd>R</kbd> arī 90°. Baltie kvadrātiņi malu vidū maina izmēru, pretējā mala paliek vietā.</li>
+      <li>Noteku vai katru notekcauruli atsevišķi fasādē uzklikšķini un dzēs ar ×. Atjaunot var sadaļā Materiāli.</li>
+      <li>Mērs: <kbd>D</kbd> vai "Mērs", tad uzklikšķini abus galus plānā. Pildīts kvadrāts rāda, ka gals pielipis sienai, logam vai asij. Mēra līnija pielīp citiem tās pašas ass mēriem, lai ķēde būtu vienā taisnē.</li>
+      <li>Visus mērus, arī automātiskās ķēdes, var vilkt un dzēst. <kbd>Esc</kbd> atceļ jebko: likšanu, vilkšanu, izvēli.</li>
+      <li>Izvēlētām vai velkamām durvīm un logiem plānā redzami mēri līdz tuvākajām šķērssienām.</li>
+      <li>Telpas nosaukumu maina, uzklikšķinot uz tā. Tas mainās arī eksplikācijā.</li>
+      <li>Durvīm dubultklikšķis vai <kbd>F</kbd> apgriež vēršanos uz otru pusi, <kbd>H</kbd> (vai <kbd>Shift</kbd>+dubultklikšķis) pārliek eņģes.</li>
+      <li>Mēbele neiet citā mēbelē: tā atgrūžas un pielīp blakus esošajai.</li>
+      <li>Sienu velc aiz tās vidus: blakus telpas un sienas pagarinās līdzi.</li>
+      <li>Pievienot: izvēlies elementu, tad uzklikšķini vietā, kur to likt (logu uz ārsienas plānā vai fasādē, slīpo logu gala fasādē virs dzegas). <kbd>Esc</kbd> atceļ.</li>
+      <li>Fasādē loga sānu malas maina platumu, augšējā un apakšējā mala augstumu. Rāmja profils paliek tas pats.</li>
+      <li><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> pārvieto par 10 mm, ar <kbd>Shift</kbd> par 100 mm. <kbd>Delete</kbd> dzēš, <kbd>Ctrl</kbd>+<kbd>Z</kbd> atsauc.</li>
+      <li>Vairākus elementus atlasa ar <kbd>Shift</kbd>+klikšķi (logus, durvis, mēbeles vienā stāvā); vilkšana pārvieto visus kopā. Ar <kbd>Ctrl</kbd> turot vilkšanu elements (vai visa atlasītā grupa) tiek nokopēts. <kbd>Ctrl</kbd>+<kbd>C</kbd> un <kbd>Ctrl</kbd>+<kbd>V</kbd> kopē un iekopē, <kbd>Delete</kbd> dzēš visu grupu.</li>
+      <li>Mēbele pielīp sienai tikai pavisam tuvu. Ar <kbd>Alt</kbd> vilkšanas laikā pielipšanu un pagriešanu pie sienas izslēdz. <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> pārvieto mēbeli precīzi, bez pielipšanas un pagriešanas.</li>
+      <li>Logs un durvis, velkot gar sienu, pielīp telpas sienas vidum (rāda raustītu līniju). <kbd>Alt</kbd> to izslēdz.</li>
+      <li>Starpsiena: "Starpsiena", uzklikšķini sākumu pie sienas un beigas pie citas sienas. Siena pielīp citu sienu virsmām. Pilna siena sadala telpu divās. "Izgriezt sienu": divi klikšķi uz iekšējās sienas izgriež posmu (durvis tajā pazūd); divi klikšķi vienā vietā izgriež visu posmu.</li>
+      <li>Mēri, atzīmes un eksplikācija pārrēķinās pēc katra labojuma.</li>
       </ul>
-      </section>
-    </div>
-    <footer class="savebar">
-      <p id="status">Labojumi vēl nav saglabāti.</p>
-          </footer>
+    </div></details>
+    <div hidden><div class="lib" id="libOpenings"></div><div class="lib" id="libOpen"></div><div class="lib" id="libTer"></div><p id="hint"></p><p id="status">Labojumi vēl nav saglabāti.</p></div>
   </aside>
 </main>
-<div id="sbar"><span id="sbTool"></span><span class="sp"></span><span id="sbSave"></span></div>
+<div id="sbar"><span id="sbTool"></span><span class="sp"></span><span id="sbSave"></span><label id="sbVcb" title="Mērījumu lauks: ieraksti izmēru un Enter. Divi izmēri: 1200;900"><span id="sbLab">Izmērs</span><input id="sbVal" type="text" inputmode="decimal" autocomplete="off" disabled></label></div>
 <div id="keys" hidden></div>
 
 <div id="v3" hidden role="dialog" aria-label="3D skats un Gemini">
@@ -1130,7 +1177,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (onBtn === b) { endPlace(); toFrame({ mmPlace: null }); return; }
       endPlace(); if (moveOn) setMove(false); placing = clone(spec); onBtn = b; b.classList.add("on"); if (placing.t === "bucket") { placing.mat = clone(BMAT); bktSync(); }
       if (placing.vy) placing.entry[0] = typeV(placing.entry[0], detail);
-      $("hint").textContent = spec.t === "bucket" ? "Krāsas spainis: klikšķis uz stabu, terasi vai fasādi uzliek materiālu. Alt+klikšķis paņem materiālu no elementa. Materiālu izvēlies zem pogas." : spec.t === "post" ? "Uzklikšķini plānā, kur likt stabu. Pēc tam: Ctrl+vilkt kopē, ieraksti /5 un Enter, lai attālumu sadalītu ar 5 stabiem (vai *3, lai atkārtotu)." : spec.t === "terrace" && spec.rect ? "Uzklikšķini terases pirmo stūri, tad pretējo stūri. Shift: brīvi, Esc atceļ." : spec.t === "terrace" ? "Uzklikšķini terases stūrus (Shift: brīvs leņķis, Backspace: atpakaļ). Dubultklikšķis, Enter vai klikšķis uz pirmā punkta noslēdz." : spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Plānā: uzklikšķini mēra pirmo galu (pielīp sienām). Fasādē: uzklikšķini punktu un izvēlies augstuma atzīmi vai lineāru mēru." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
+      $("hint").textContent = spec.t === "bucket" ? "Krāsas spainis: klikšķis uz stabu, terasi vai fasādi uzliek materiālu. Alt+klikšķis paņem materiālu no elementa. Materiālu izvēlies labajā joslā, sadaļā „Rīka opcijas”." : spec.t === "post" ? "Uzklikšķini plānā, kur likt stabu. Pēc tam: Ctrl+vilkt kopē, ieraksti /5 un Enter, lai attālumu sadalītu ar 5 stabiem (vai *3, lai atkārtotu)." : spec.t === "terrace" && spec.rect ? "Uzklikšķini terases pirmo stūri, tad pretējo stūri. Shift: brīvi, Esc atceļ." : spec.t === "terrace" ? "Uzklikšķini terases stūrus (Shift: brīvs leņķis, Backspace: atpakaļ). Dubultklikšķis, Enter vai klikšķis uz pirmā punkta noslēdz." : spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Plānā: uzklikšķini mēra pirmo galu (pielīp sienām). Fasādē: uzklikšķini punktu un izvēlies augstuma atzīmi vai lineāru mēru." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "zone" ? (spec.poly ? "Uzklikšķini telpas stūrus plānā (taisnleņķa kontūrs). Klikšķis pirmajā punktā noslēdz." : "Divi klikšķi plānā pretējos stūros: jauna telpa tiek nogriezta no esošās.") : spec.t === "decor" ? (spec.rect ? "Divi klikšķi fasādē pretējos stūros." : "Uzklikšķini stūrus fasādē. Klikšķis pirmajā punktā noslēdz."): spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
       toFrame({ mmPlace: spec }); railSync();
     };
     b.title = item.n + " · " + item.s;
@@ -1138,12 +1185,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     return b;
   }
   function startDim() { const b = [...document.querySelectorAll("#libOpen button")].find(x => /Mērs/.test(x.textContent)); if (b && onBtn !== b) b.click(); }
-  function endPlace() { placing = null; if (onBtn) onBtn.classList.remove("on"); onBtn = null; $("hint").textContent = ""; try { railSync(); } catch (_) {} }
+  function endPlace() { placing = null; if (onBtn) onBtn.classList.remove("on"); onBtn = null; $("hint").textContent = ""; try { railSync(); bktSync(); } catch (_) {} }
   // ---- krāsas spainis: materiāls (RAL vai brīva krāsa, vai tekstūra) ----
   const RAL_OPTS = () => Object.fromEntries(Object.entries(RAL).map(([k, v]) => [k, `${k} · ${v[0]}`]));
   function bktSync() {
     const box = $("bktBox"), g = $("bktGrid"); if (!box || !g) return;
-    box.hidden = !(placing && placing.t === "bucket"); if (box.hidden) return;
+    box.hidden = !(placing && placing.t === "bucket"); { const tr = box.closest("details"); if (tr) { tr.hidden = box.hidden; if (!box.hidden) tr.open = true; } } if (box.hidden) return;
     g.textContent = ""; const up = (fn) => { fn(BMAT); if (placing && placing.t === "bucket") { placing.mat = clone(BMAT); toFrame({ mmPlace: placing }); } bktSync(); };
     const sw = document.createElement("div"); sw.style.cssText = "grid-column:1/-1;height:34px;border:1px solid #b4bac2;border-radius:4px;background:" + (BMAT.tex ? `url(${BMAT.tex}) center/cover` : BMAT.col || "#fff"); sw.title = BMAT.tex ? "Tekstūra" : (BMAT.ral || BMAT.col || ""); g.appendChild(sw);
     const chips = (title, list) => { const w = document.createElement("div"); w.style.cssText = "grid-column:1/-1"; const c = document.createElement("p"); c.className = "cap"; c.textContent = title; const row = document.createElement("div"); row.style.cssText = "display:flex;flex-wrap:wrap;gap:4px"; list.forEach(([hex, nm, fn]) => { const b = document.createElement("button"); b.type = "button"; b.title = nm; b.style.cssText = "width:24px;height:24px;padding:0;border:1px solid #8b939c;border-radius:4px;background:" + hex + (BMAT.col === hex ? ";outline:2px solid #2266d8" : ""); b.onclick = () => up(fn); row.appendChild(b); }); w.append(c, row); g.appendChild(w); };
@@ -1189,12 +1236,19 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const ACTIONS = [
     { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); setMove(false); railSync(); } },
     ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
-    { id: "ter", n: "Terase", k: "t", ic: "ter", run: () => { const b = OPENB[11]; if (b) b.click(); railSync(); } },
-    { id: "bk", n: "Krāsas spainis", k: "b", ic: "bucket", run: () => { const b = OPENB[OPEN.findIndex(o => o.p.t === "bucket")]; if (b) b.click(); railSync(); } },
     { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
+    ...[[7, "gv", "", "gv"], [8, "gh", "", "gh"], [9, "gs", "", "gs"], [11, "ter", "t", "ter"], [12, "terp", "", "terp"], [13, "dec", "", "dec"], [14, "decp", "", "decp"], [15, "post", "", "post"], [16, "zone", "", "zone"], [17, "zonep", "", "zonep"], [18, "bk", "b", "bucket"]]
+      .map(([i, id, k, ic]) => ({ id, n: OPEN[i].n, k, ic, oi: i, run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gx", run: () => { $("bGuideClr").click(); } },
   ];
-  const RAIL = ["sel", "t3", "t4", "ter", "bk", "er", "t5", "t6", "gc"];   // kreisajā joslā tikai CAD rīki; logi un durvis ir labajā panelī
+  // kreisā josla: visi rīki grupās (atlase | ailas | sienas un telpas | mēri un palīglīnijas | terase, fasāde, stabi | materiāls)
+  const RAIL = [["sel", "er"], ["t0", "t1", "t2"], ["t3", "t4", "zone", "zonep"], ["t5", "t6", "gv", "gh", "gs", "gc"], ["ter", "terp", "dec", "decp", "post"], ["bk"]];
+  const OPEN_ID = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "gh", "gs", "er", "ter", "terp", "dec", "decp", "post", "zone", "zonep", "bk"];
+  IC.terp = '<path d="M3.5 18.5 5.5 9h7l1-4h6.5l-2 13.5z"/>';
+  IC.dec = '<path d="M3 20.5V10l9-6.5 9 6.5v10.5"/><rect x="8.5" y="12" width="7" height="6"/>';
+  IC.decp = '<path d="M3 20.5V10l9-6.5 9 6.5v10.5"/><path d="M8 18.5v-5l4-3 4 3v5z"/>';
+  IC.zone = '<rect x="3.5" y="5.5" width="17" height="13" stroke-dasharray="3 2"/><path d="M9 12h6"/>';
+  IC.zonep = '<path d="M3.5 5.5h10v6h7v7h-17z" stroke-dasharray="3 2"/>';
   IC.sel = '<path d="M5 3.5 18.5 10l-6 1.8-2.6 5.7z"/><path d="m12.6 11.9 5 5"/>';
   const DEF = Object.fromEntries(ACTIONS.map(a => [a.id, a.k]));
   let keyMap = Object.assign({}, DEF), keyCap = null;
@@ -1203,18 +1257,18 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const comboOf = e => (e.shiftKey ? "shift+" : "") + e.key.toLowerCase().replace(/^shift\+/, "");
   const keyLbl = k => k ? k.replace("shift+", "⇧").toUpperCase() : "—";
   function railBuild() {
-    const r = $("rail"); r.innerHTML = "";
-    ACTIONS.filter(a => RAIL.includes(a.id)).forEach((a, i) => {
-      if (a.id === "t3" || a.id === "t5" || a.id === "t6") r.appendChild(document.createElement("hr"));
-      const b = document.createElement("button"); b.type = "button"; b.dataset.id = a.id; b.setAttribute("aria-label", a.n); b.title = a.n + (keyMap[a.id] ? " (" + keyLbl(keyMap[a.id]) + ")" : "");
-      b.innerHTML = icon(a.ic) + (keyMap[a.id] ? "<kbd>" + keyLbl(keyMap[a.id]) + "</kbd>" : ""); b.onclick = a.run; r.appendChild(b);
+    const r = $("railT"); r.innerHTML = "";
+    RAIL.forEach((grp, gi) => {
+      if (gi) r.appendChild(document.createElement("hr"));
+      grp.forEach(id => { const a = ACTIONS.find(x => x.id === id); if (!a) return;
+        const b = document.createElement("button"); b.type = "button"; b.dataset.id = a.id; b.setAttribute("aria-label", a.n); b.title = a.n + (keyMap[a.id] ? " (" + keyLbl(keyMap[a.id]) + ")" : "") + (a.oi != null || /^t\d$/.test(a.id) ? " · " + OPEN[a.oi != null ? a.oi : +a.id.slice(1)].s : "");
+        b.innerHTML = icon(a.ic) + (keyMap[a.id] ? "<kbd>" + keyLbl(keyMap[a.id]) + "</kbd>" : ""); b.onclick = a.run; r.appendChild(b); });
     });
-    const sp = document.createElement("span"); sp.className = "sp"; r.appendChild(sp);
-    const kb = document.createElement("button"); kb.type = "button"; kb.title = "Taustiņi"; kb.setAttribute("aria-label", "Taustiņi"); kb.innerHTML = icon("kb"); kb.onclick = () => { tab("keys"); keysDraw(); }; r.appendChild(kb);
     railSync();
   }
+  $("bKeys").onclick = () => { tab("keys"); keysDraw(); };
   function railSync() {
-    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = moveOn && on < 0 ? "mv" : on >= 0 ? ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "", "", "", "er", "ter", "", "", "", "", "", "", "bk"][on] : onBtn ? null : "sel";
+    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = moveOn && on < 0 ? "mv" : on >= 0 ? OPEN_ID[on] : onBtn ? null : "sel";
     document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
     syncBar();
   }
@@ -1243,6 +1297,26 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   addEventListener("keydown", e => { if (keyCap) keyCapture(e); }, true);
   railBuild(); keysDraw(); ribbon();
+  // ---- mērījumu lauks statusa joslā (kā SketchUp): rāda izvēlētā elementa pirmo izmēru; skaitlis un Enter to maina, "1200;900" maina pirmos divus ----
+  const vcbNums = () => [...document.querySelectorAll("#panel input[type=number]")].filter(i => !i.disabled);
+  function vcbSync() {
+    const f = vcbNums(), v = $("sbVal"); if (document.activeElement === v) return;
+    v.disabled = !f.length; $("sbLab").textContent = f.length ? (f[0].dataset.lab || "Izmērs").replace(/, mm$/, "") + (f.length > 1 && /platums|garums/i.test(f[0].dataset.lab || "") && /augstums|platums|dziļums/i.test(f[1].dataset.lab || "") ? " × " + f[1].dataset.lab.replace(/, mm$/, "").toLowerCase() : "") : "Izmērs";
+    v.value = f.length ? (f.length > 1 && $("sbLab").textContent.includes("×") ? f[0].value + " × " + f[1].value : f[0].value) : ""; v.placeholder = f.length ? "" : "—";
+  }
+  new MutationObserver(() => { clearTimeout(vcbSync.t); vcbSync.t = setTimeout(vcbSync, 30); }).observe($("panel"), { childList: true, subtree: true });
+  $("sbVal").addEventListener("focus", () => $("sbVal").select());
+  $("sbVal").addEventListener("blur", () => setTimeout(vcbSync, 0));
+  $("sbVal").addEventListener("keydown", e => {
+    e.stopPropagation();
+    if (e.key === "Escape") { $("sbVal").blur(); return; }
+    if (e.key !== "Enter") return;
+    const q = $("sbVal").value.replace(/,/g, ".").split(/[;x×*\s]+/).filter(Boolean).map(Number);
+    if (!q.length || q.some(n => !isFinite(n))) { status("Mērījumu laukā ieraksti skaitli, piem. 1200 vai 1200;900."); return; }
+    q.slice(0, 2).forEach((n, i) => { const f = vcbNums()[i]; if (f && +f.value !== n) { f.value = n; f.dispatchEvent(new Event("change")); } });
+    $("sbVal").blur();
+  });
+
 
   // ---- selected item ----
   const lvOf = (m, s) => (s.lv === "loft" ? m.loft : m);
@@ -2099,7 +2173,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const p = $("panel"); p.textContent = ""; fid = 0;
     if (pst && pstCard(p)) return;
     const it = itemOf(model, sel);
-    if (!it) { const e = document.createElement("p"); e.className = "empty"; e.textContent = "Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Jaunu logu, durvis vai mēbeli izvēlies no saraksta zemāk."; p.appendChild(e); return; }
+    if (!it) { const e = document.createElement("p"); e.className = "empty"; e.textContent = "Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Rīkus izvēlies kreisajā joslā."; p.appendChild(e); return; }
     const h = document.createElement("p"), sub = document.createElement("p"), g = document.createElement("div");
     h.className = "sel-name"; sub.className = "sel-sub"; g.className = "grid";
     const where = sel.lv === "loft" ? "Mansards" : "1. stāvs";
@@ -2438,17 +2512,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   // cilnes; pēdējā izvēlētā paliek (tikai šajā pārlūkā)
   function tab(t) {
-    document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", String(b.dataset.tab === t)));
-    document.querySelectorAll("[data-pane]").forEach(p => { p.hidden = p.dataset.pane !== t; });
-    try { localStorage.setItem("mmTab", t); } catch (_) {}
+    const d = document.querySelector(`details.tr[data-pane="${t}"]`); if (!d) return;
+    d.open = true; try { d.scrollIntoView({ block: "nearest" }); } catch (_) {}
   }
-  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
-    const as = document.querySelector("aside"), same = b.getAttribute("aria-selected") === "true";
-    // telefonā: atkārtots klikšķis uz aktīvās cilnes paslēpj/parāda paneli, cita cilne to atver
-    if (matchMedia("(max-width: 760px)").matches) as.classList.toggle("shut", same && !as.classList.contains("shut")); 
-    tab(b.dataset.tab);
-  });
-  try { const t = localStorage.getItem("mmTab"); if (t && document.querySelector(`[data-pane="${t}"]`)) tab(t); } catch (_) {}
+  { const TR = [...document.querySelectorAll("details.tr")], keep = () => { try { localStorage.setItem("mmTray", JSON.stringify(TR.filter(d => d.open).map(d => d.dataset.pane))); } catch (_) {} };
+    try { const o = JSON.parse(localStorage.getItem("mmTray") || "null"); if (Array.isArray(o)) TR.forEach(d => { if (d.dataset.pane !== "sel" && d.dataset.pane !== "tool") d.open = o.includes(d.dataset.pane); }); } catch (_) {}
+    TR.forEach(d => d.addEventListener("toggle", keep)); }
   if ((model.projekts || {}).tikai_pamati) { tab("house"); majaSec = "pamplans"; if (((model.projekts || {}).pamatu_plans || {}).zimet) pamSetMode("rect0"); }   // projekts "Tikai stabu plāns": uzreiz pamatu plāna vadība
   function showCheck(out) {
     const ul = $("check"); ul.textContent = "";
@@ -2552,7 +2621,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   let expQ = "300"; try { const v = localStorage.getItem("mmPdfQ"); if (["150", "300", "600"].includes(v)) expQ = v; } catch (e) {}
   const segs = [...document.querySelectorAll("#exp .seg button")], showQ = () => segs.forEach(b => b.setAttribute("aria-checked", String(b.dataset.dpi === expQ)));
   segs.forEach(b => b.onclick = () => { expQ = b.dataset.dpi; showQ(); try { localStorage.setItem("mmPdfQ", expQ); } catch (e) {} }); showQ();
-  const pop = $("exp"), openPop = o => { pop.hidden = !o; $("bExp").setAttribute("aria-expanded", String(o)); };
+  const pop = $("exp"), openPop = o => {};   // eksports ir labās joslas sadaļā "Lapa un eksports", nevis uznirstošs
   $("bExp").onclick = e => { e.stopPropagation(); openPop(pop.hidden); };
   document.addEventListener("click", e => { if (!pop.hidden && !pop.contains(e.target)) openPop(false); });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !pop.hidden) openPop(false); });
@@ -3014,7 +3083,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   (async () => {
     if (!window.claude || !window.claude.use) return;
     const [d, l] = await Promise.all([claude.use("db").catch(() => null), claude.use("downloads").catch(() => null)]);
-    db = d; dl = l; $("bExp").hidden = !dl;
+    db = d; dl = l; $("bExp").hidden = !dl; $("exp").hidden = !dl; $("expNo").hidden = !!dl;
     if (!db) return;
     let done = false; const tm = setTimeout(() => { done = true; }, 10000);
     try {
