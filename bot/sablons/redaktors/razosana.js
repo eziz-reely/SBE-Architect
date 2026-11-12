@@ -6,6 +6,7 @@
     ["logplans", "Logu plāns (SVG)", true],
     ["logspec", "Logu specifikācija", true],
     ["durspec", "Ārdurvju specifikācija", true],
+    ["elektr", "Elektrības plāns (automātisks priekšlikums)", false],
   ];
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
   const SIDE = { north: "Ziemeļi", south: "Dienvidi", east: "Austrumi", west: "Rietumi" };
@@ -43,11 +44,58 @@
       svg += `<rect x="${a[0]}" y="${a[1]}" width="${a[2]}" height="${a[3]}" fill="#d6a36a" stroke="#531" stroke-width="20"/><text x="${h ? d.x + d.w / 2 : d.x + 330}" y="${h ? d.y + 400 : d.y + d.w / 2}" font-size="190" text-anchor="middle" fill="#531">D${i + 1}</text>`; });
     return svg + "</svg>";
   }
+
+  // ---- elektrības plāns: automātisks priekšlikums pēc telpām un durvīm (ligzdas, slēdži, gaismekļi, sadales skapis) ----
+  const WET = /vann|wc|duš|dus|santeh|sanit|mezgl|bath|toilet/i, KITCH = /virtuv|kitchen/i, BED = /guļ|gul|bed/i, HALL = /priekšn|priekšnams|gaitenis|hall|entr/i, TECH = /tehn|katl|boiler|utility|noliktav/i;
+  function roomSpec(n, area) {
+    const lights = Math.max(1, Math.round(area / 12e6));
+    if (WET.test(n)) return { lights, sockets: 1, wet: true };
+    if (KITCH.test(n)) return { lights, sockets: 6 };
+    if (BED.test(n)) return { lights, sockets: 4 };
+    if (HALL.test(n)) return { lights, sockets: 1 };
+    if (TECH.test(n)) return { lights, sockets: 2 };
+    return { lights, sockets: Math.max(3, Math.round(area / 5e6)) };
+  }
+  function elecPlan(m) {
+    const T = 195, rooms = (m.rooms || []).filter(r => !r.void && r.r && r.r[0]), pts = [], doors = m.doors || [];
+    const poly = (m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [m.W, 0], [m.W, m.D], [0, m.D]]);
+    rooms.forEach(rm => {
+      const q = rm.r[0], [x, y, w, h] = q, area = rm.r.reduce((s2, a) => s2 + a[2] * a[3], 0), sp = roomSpec(rm.n || "", area);
+      // gaismekļi: telpas centrs vai režģis
+      const nl = sp.lights, cols = Math.ceil(Math.sqrt(nl * w / h)), rows = Math.ceil(nl / cols);
+      for (let i = 0; i < nl; i++) { const cx = i % cols, cy = Math.floor(i / cols); pts.push({ k: "light", x: x + w * (cx + .5) / cols, y: y + h * (cy + .5) / rows, room: rm.n }); }
+      // ligzdas gar sienām, vienmērīgi pa perimetru (no 400 mm no stūriem)
+      const per = [[x + 400, y + 120, 1, 0, w - 800], [x + w - 120, y + 400, 0, 1, h - 800], [x + w - 400, y + h - 120, -1, 0, w - 800], [x + 120, y + h - 400, 0, -1, h - 800]];
+      const tot = per.reduce((s2, e) => s2 + Math.max(0, e[4]), 0); let d = tot / (sp.sockets * 2), placed = 0;
+      for (let i = 0; i < sp.sockets; i++) {
+        let t = d * (2 * i + 1); for (const e of per) { const L = Math.max(0, e[4]); if (t <= L) { pts.push({ k: sp.wet ? "wet" : "socket", x: e[0] + e[2] * t, y: e[1] + e[3] * t, room: rm.n }); placed++; break; } t -= L; }
+      }
+      // slēdzis pie telpas durvīm (iekšpusē, 150 mm no ailas)
+      const dr = doors.find(dd => { const c = dd.o === "h" ? [dd.x + dd.w / 2, dd.y] : [dd.x, dd.y + dd.w / 2]; return c[0] >= x - 350 && c[0] <= x + w + 350 && c[1] >= y - 350 && c[1] <= y + h + 350; });
+      if (dr) { const H = dr.o === "h"; const cx = H ? dr.x + dr.w + 200 : (dr.x < x + w / 2 ? x + 120 : x + w - 120), cy = H ? (dr.y < y + h / 2 ? y + 120 : y + h - 120) : dr.y + dr.w + 200; pts.push({ k: "switch", x: Math.min(x + w - 120, Math.max(x + 120, cx)), y: Math.min(y + h - 120, Math.max(y + 120, cy)), room: rm.n }); }
+    });
+    const ent = doors.find(d => d.entry) || doors[0], panel = ent ? { k: "panel", x: ent.x + (ent.o === "h" ? ent.w + 500 : 400), y: ent.y + (ent.o === "h" ? -300 : ent.w + 500) } : null;
+    if (panel) pts.push(panel);
+    const pad = 1200, cnt = k => pts.filter(p => p.k === k).length;
+    let svg = `<svg viewBox="${-pad} ${-pad} ${m.W + 2 * pad} ${m.D + 2 * pad}" xmlns="http://www.w3.org/2000/svg"><polygon points="${poly.map(p => p.join(",")).join(" ")}" fill="#fafafa" stroke="#222" stroke-width="40"/>`;
+    rooms.forEach(rm => rm.r.forEach(([x, y, w, h]) => { svg += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="#bbb" stroke-width="15"/>`; }));
+    rooms.forEach(rm => { const [x, y, w, h] = rm.r[0]; svg += `<text x="${x + w / 2}" y="${y + h / 2 + 330}" font-size="170" text-anchor="middle" fill="#999">${esc(rm.n || "")}</text>`; });
+    pts.forEach(p => {
+      const c = { x: Math.round(p.x), y: Math.round(p.y) };
+      if (p.k === "light") svg += `<g stroke="#b8860b" stroke-width="22" fill="#fff8dc"><circle cx="${c.x}" cy="${c.y}" r="150"/><path d="M${c.x - 106} ${c.y - 106}L${c.x + 106} ${c.y + 106}M${c.x + 106} ${c.y - 106}L${c.x - 106} ${c.y + 106}"/></g>`;
+      else if (p.k === "switch") svg += `<g stroke="#145" stroke-width="22" fill="#fff"><circle cx="${c.x}" cy="${c.y}" r="80"/><path d="M${c.x} ${c.y}L${c.x + 170} ${c.y - 170}"/></g>`;
+      else if (p.k === "socket" || p.k === "wet") svg += `<g stroke="${p.k === "wet" ? "#0a6" : "#b00"}" stroke-width="22" fill="#fff"><circle cx="${c.x}" cy="${c.y}" r="95"/><path d="M${c.x - 95} ${c.y}L${c.x + 95} ${c.y}"/>${p.k === "wet" ? `<text x="${c.x + 140}" y="${c.y - 100}" font-size="110" fill="#0a6" stroke="none">IP44</text>` : ""}</g>`;
+      else if (p.k === "panel") svg += `<g><rect x="${c.x - 160}" y="${c.y - 100}" width="320" height="200" fill="#d6a36a" stroke="#531" stroke-width="22"/><text x="${c.x}" y="${c.y + 45}" font-size="120" text-anchor="middle" fill="#531">SP</text></g>`;
+    });
+    svg += "</svg>";
+    const rows = [["Sadales skapis (SP)", cnt("panel")], ["Gaismekļi griestos", cnt("light")], ["Kontaktligzdas", cnt("socket")], ["Kontaktligzdas IP44 (slapjās telpas)", cnt("wet")], ["Slēdži", cnt("switch")]];
+    return `<section><h2>Elektrības plāns (automātisks priekšlikums)</h2>${svg}<p class="s">Izvietojums ir aptuvens priekšlikums pēc telpu platības un durvīm; precizē pēc elektriķa projekta un spēkā esošajām normām.</p></section>` + tableHtml("Elektroiekārtu saraksts", ["Elements", "Skaits"], rows);
+  }
   function build(sel) {
     const m = MM_VIZ3D.model(), out = [];
     if (sel.skice || sel.pamati) out.push([m.id + "_skice_pamati.html", sheetHtml(m, false)]);
-    const body = (sel.logplans ? `<section><h2>Logu plāns</h2>${winPlan(m)}</section>` : "") + (sel.logspec ? winSchedule(m) : "") + (sel.durspec ? durSchedule(m) : "");
-    if (body) out.push([m.id + "_logi_durvis.html", page(m, "Logu un durvju dokumentācija", body)]);
+    const body = (sel.logplans ? `<section><h2>Logu plāns</h2>${winPlan(m)}</section>` : "") + (sel.logspec ? winSchedule(m) : "") + (sel.durspec ? durSchedule(m) : "") + (sel.elektr ? elecPlan(m) : "");
+    if (body) out.push([m.id + "_logi_durvis.html", page(m, "Ražošanas dokumentācija", body)]);
     return out;
   }
   const dlg = document.createElement("div"); dlg.id = "prod"; dlg.hidden = true; dlg.setAttribute("role", "dialog"); dlg.setAttribute("aria-label", "Ražošanas pakete");

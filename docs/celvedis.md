@@ -60,4 +60,5 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Piebūve (taisnstūra spārns dienvidu/austrumu pusē, Māja → Izmēri) | gatavs (pamata; ārsienu vilkšana taisnstūrim jau bija) |
 | Ieliekumi, piebūve ziemeļos/rietumos, brīva kontūra, izolēts viewport režīms | nav |
 | Mēru pielipšana pret asīm/C24/apdari, mēru ķēžu vilkšana | nav |
-| Elektrības plāns, mēbeļu bibliotēka no egmalt/house-planner (MIT) | nav |
+| Elektrības plāns: automātisks priekšlikums ražošanas paketē (ligzdas, slēdži, gaismekļi, SP, saraksts) | gatavs (pamata, bez trasēm un ķēdēm) |
+| Mēbeļu bibliotēka no egmalt/house-planner (MIT) | nav |
