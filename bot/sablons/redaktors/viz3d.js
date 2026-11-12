@@ -68,6 +68,7 @@
       x.fillStyle = "#3d4247"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#2a2e32"; for (let i = 0; i < 64; i += 16) x.fillRect(0, i, 64, 2);
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
     }
+    function D0(m) { return m.D; }
     function buildScene(m) {
       const P = m.projekts || {}, tk = V.tone || lv0(), wallHex = (tk === lv0() && P.sienas_hex) || TONES[tk].sw, frameHex = hexOf(P.logu_tonis || TONES[tk].logi);
       const geo = []; skpRb(m, geo);
@@ -94,6 +95,29 @@
         const top = new THREE.MeshLambertMaterial({ map: bt }), side = new THREE.MeshLambertMaterial({ color: "#383e42" });
         const box = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, h, y1 - y0), [side, side, top, side, side, side]);
         box.position.set((x0 + x1) / 2, topZ - h / 2, (y0 + y1) / 2); grp.add(box);
+      }
+      // terases jumts (viena slīpuma; pilns vai tikai spāres) + stabi
+      const R = tr && terr().roof;
+      if (R && R.mode) {
+        const t = terr(), dp = +t.depth || 1100, ov = 250, L = (tr[2] - tr[0]) + 2 * ov, hw = +R.h || 2500, sl = Math.max(2, Math.min(35, +R.sl || 10)) * Math.PI / 180, th = +R.th || 200;
+        const run = dp + ov, dh = run * Math.tan(sl), len = Math.hypot(run, dh), ho = hw - dh;
+        const side = t.side, lateral = (side === "south" || side === "north") ? [(tr[0] + tr[2]) / 2, side === "south" ? D0(m) : 0] : [side === "east" ? m.W : 0, (tr[1] + tr[3]) / 2];
+        const yaw = { south: 0, north: Math.PI, east: Math.PI / 2, west: -Math.PI / 2 }[side];
+        const lat = (side === "south" || side === "north") ? (tr[2] - tr[0]) : (tr[3] - tr[1]), Lm = lat + 2 * ov;
+        const rg = new THREE.Group(); rg.position.set(lateral[0], 0, lateral[1]); rg.rotation.y = yaw;
+        const rm = mats.M_ROOF, wood = mat("#b89868");
+        if (R.mode === "pilns") {
+          const sb = new THREE.Mesh(new THREE.BoxGeometry(Lm, 40, len), rm); sb.position.set(0, hw - dh / 2, run / 2); sb.rotation.x = Math.atan2(dh, run); rg.add(sb);
+          const fb = new THREE.Mesh(new THREE.BoxGeometry(Lm, th, 40), wood); fb.position.set(0, ho - th / 2, run); rg.add(fb);
+        }
+        const sp = new THREE.Group();
+        const n = Math.max(2, Math.round(Lm / 600) + 1), step = Lm / (n - 1);
+        for (let i = 0; i < n; i++) { const r = new THREE.Mesh(new THREE.BoxGeometry(60, th, len), wood); r.position.set(-Lm / 2 + i * step, hw - dh / 2 - (R.mode === "pilns" ? th / 2 + 20 : 0), run / 2); r.rotation.x = Math.atan2(dh, run); sp.add(r); }
+        rg.add(sp);
+        const bm2 = new THREE.Mesh(new THREE.BoxGeometry(Lm, th, 60), wood); bm2.position.set(0, ho - th / 2, run); if (R.mode !== "pilns") rg.add(bm2);
+        const pn = Math.max(2, Math.ceil(lat / 3000) + 1), ps = lat / (pn - 1);
+        for (let i = 0; i < pn; i++) { const ph = ho - th - 25; const po = new THREE.Mesh(new THREE.BoxGeometry(140, ph, 140), wood); po.position.set(-lat / 2 + i * ps, -25 + ph / 2, dp - 100); rg.add(po); }
+        grp.add(rg);
       }
       // zeme
       const gr = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshLambertMaterial({ color: "#aab39a" }));
@@ -195,7 +219,7 @@
     }
     function terraceUI() {
       const t = terr(); $("v3tOn").checked = !!t; $("v3tBox").hidden = !t;
-      if (t) { $("v3tSide").value = t.side; $("v3tDepth").value = t.depth; $("v3tA").value = t.a || 0; $("v3tB").value = t.b || 0; }
+      if (t) { const R = t.roof || {}; $("v3rMode").value = R.mode || ""; $("v3rH").value = R.h || 2500; $("v3rSl").value = R.sl || 10; $("v3tSide").value = t.side; $("v3tDepth").value = t.depth; $("v3tA").value = t.a || 0; $("v3tB").value = t.b || 0; }
     }
     async function savePng() {
       const r = V.renderer, w0 = V.w, h0 = V.h, pr = r.getPixelRatio();
@@ -228,6 +252,7 @@
       $("v3free").onchange = e => { V.free = e.target.checked; if (V.free) { V.el = 12; V.dist0 = null; } draw(); };
       $("v3tOn").onchange = e => saveTerrace(e.target.checked ? {} : null);
       $("v3tSide").onchange = e => saveTerrace({ side: e.target.value });
+      [["v3rMode", "mode"], ["v3rH", "h"], ["v3rSl", "sl"]].forEach(([id, k]) => { $(id).onchange = e => saveTerrace({ roof: Object.assign({}, (terr() || {}).roof, { [k]: k === "mode" ? e.target.value : +e.target.value || 0 }) }); });
       [["v3tDepth", "depth"], ["v3tA", "a"], ["v3tB", "b"]].forEach(([id, k]) => { $(id).onchange = e => saveTerrace({ [k]: Math.max(0, +e.target.value || 0) }); });
       $("v3copy").onclick = copyPrompt; $("v3png").onclick = savePng; $("v3close").onclick = close;
       $("v3reset").onclick = () => { V.dist0 = null; V.free = false; $("v3free").checked = false; draw(); };
