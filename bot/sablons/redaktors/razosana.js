@@ -55,16 +55,21 @@
   dlg.innerHTML = `<div style="background:#fff;color:#1d1d1d;border-radius:10px;padding:20px 22px;width:min(440px,92vw);box-shadow:0 10px 40px rgba(0,0,0,.3)"><b style="font-size:16px">Ražošanas pakete</b><p style="color:#666;margin:6px 0 12px">Izvēlies lapas, kuras iekļaut komplektā.</p><div id="prodList" style="display:grid;gap:8px"></div><div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button type="button" id="prodX">Atcelt</button><button type="button" id="prodGo" class="pri">Izveidot komplektu</button></div></div>`;
   document.body.appendChild(dlg);
   const list = dlg.querySelector("#prodList");
-  ITEMS.forEach(([k, t, on]) => { const l = document.createElement("label"), c = document.createElement("input"); c.type = "checkbox"; c.checked = on; c.dataset.k = k; l.style.cssText = "display:flex;gap:8px;align-items:center"; l.append(c, document.createTextNode(t)); list.appendChild(l); });
+  ITEMS.forEach(([k, t, on]) => { const l = document.createElement("label"), c = document.createElement("input"); c.type = "checkbox"; c.checked = on; c.dataset.k = k; l.style.cssText = "display:flex;flex-direction:row;gap:10px;align-items:center;justify-content:flex-start;text-align:left;margin:0"; c.style.cssText = "width:auto;margin:0;flex:0 0 auto"; l.append(c, document.createTextNode(t)); list.appendChild(l); });
   const close = () => { dlg.hidden = true; };
   dlg.querySelector("#prodX").onclick = close; dlg.addEventListener("click", e => { if (e.target === dlg) close(); });
   dlg.querySelector("#prodGo").onclick = async () => {
     const sel = {}; list.querySelectorAll("input").forEach(c => { sel[c.dataset.k] = c.checked; });
     const files = build(sel); close();
     if (!files.length) { status("Nekas nav izvēlēts."); return; }
-    for (const [n, d] of files) await save(n, d);
+    const put = async (n, d) => {
+      if (typeof dl !== "undefined" && dl) return save(n, d);
+      const u = URL.createObjectURL(new Blob([d], { type: "text/html" })), a = document.createElement("a"); a.href = u; a.download = n; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);   // atvērtā failā bez programmas
+    };
+    for (const [n, d] of files) { await put(n, d); await new Promise(r => setTimeout(r, 300)); }
     status("Ražošanas pakete: " + files.map(f => f[0]).join(", "));
   };
+  if ($("bRazos")) $("bRazos").onclick = () => { dlg.hidden = false; };
   window.MM_PROD = { build, open: () => { dlg.hidden = false; } };
   const b = document.createElement("button"); b.type = "button"; b.className = "it"; b.id = "bProd"; b.innerHTML = "<b>Ražošanas pakete</b><small>Izvēlies lapas: skice, pamati, logu plāns un specifikācijas</small>";
   b.onclick = () => { $("exp").hidden = true; dlg.hidden = false; };

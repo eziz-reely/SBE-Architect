@@ -52,7 +52,7 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Ražošanas pakete (izvēle, logu plāns, logu/ārdurvju specifikācija) | gatavs (pamata, skice/pamati caur esošo lapu) |
 | Pamatu plāns: sarkana apdares līnija, Ø110, kolektors, spoks (3 režīmi) | gatavs |
 | Loga platums/augstums 3D ar taustiņiem (← → + - PgUp PgDn) gatavs; peles rokturi, stabu vilkšana 3D, tekstūras 3D, eyedropper | nav |
-| Trīs dokumentācijas režīmi kā atsevišķi profili | nav |
+| Trīs režīmi: Skice, AR (noformējums), Ražošana (poga augšā atver komplekta izvēli) | gatavs |
 | Vienots štampa logs, paneļa sadalījums Lapa/Ēka/Rīki | daļēji (Rakstlaukums jau bija) |
 | Pamatu poligons (taisnleņķa L/U/T kontūra, sadalās taisnstūros) | gatavs (tikai projektā "Tikai stabu plāns"); brīvas diagonāles un diagonālie mēri nav |
 | Jumta pārkare pa malām (`projekts.ov_side`, 0 = fasāde līdz jumtam): fasādes, 3D, redaktora lauki | gatavs (divslīpju jumts; četrslīpju tikai tuvināti) |
