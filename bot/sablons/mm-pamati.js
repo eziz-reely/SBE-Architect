@@ -160,9 +160,17 @@ function pamContour(g, L, k, dash) {   // katra kontūra (C24 karkasa ārmala); 
 }
 
 // 1) stabu plāns ar izmēriem
+// plānojuma "spoks": telpu kontūras un nosaukumi pustaustrāmi zem stabu plāna (PP.spoks), lai komunikāciju ievadus nelikt uz stabiem
+function pamGhost(g, v, k) {
+  if (!(pamPP() || {}).spoks || AR.projekts.tikai_pamati) return;
+  const s = 1 / k, gg = el("g", { opacity: .35, "pointer-events": "none" }, g);
+  (v.rooms || []).forEach(rm => (rm.r || []).forEach(q => el("rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: rm.void ? "none" : "#9fb4cc", "fill-opacity": .25, stroke: "#5b7fa8", "stroke-width": .15 * s }, gg)));
+  (v.rooms || []).filter(rm => !rm.void).forEach(rm => { const q = rm.r[0]; if (q) T_(gg, q[0] + q[2] / 2, q[1] + q[3] / 2, rm.n, { fs: 1.7 * s, a: "middle", fill: "#555" }); });
+}
 function pamViewStabi(g, v, L, k, tx) {
   const s = 1 / k, A = v.axes.x.map(a => a[0]), B = v.axes.y.map(a => a[0]), SH = pamShadow(L.parts);
   pamAxes(g, v, k, { n: 26 * s, s: 6 * s, w: 26 * s, e: 6 * s });
+  pamGhost(g, v, k);
   pamContour(g, L, k); pamPir(g, L, k);
   const P_ = key => L.pts.find(p => p.key === key);
   L.parts.forEach(P => {
