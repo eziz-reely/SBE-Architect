@@ -1252,6 +1252,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (s.k === "ter") return (m.terraces || [])[s.i];
     if (s.k === "post") return (m.posts || [])[s.i];
     if (s.k === "porch") return m.porch || null;
+    if (s.k === "wall") return s.w ? { wall: 1 } : null;
     if (s.k === "decor") return (m.decor || [])[s.i];
     if (s.k === "fdim") return ((m.projekts || {}).fdims || [])[s.i];
     if (s.k === "axo") return { axo: s.i };
@@ -2124,6 +2125,23 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Dzēšot pazūd klājs, pakāpiens un lieveņa statņi; mājas kontūra un jumts paliek. Atsaukt var ar Ctrl+Z."; p.appendChild(nt);
       return;
     }
+    if (sel.k === "wall") {   // izvēlēta siena: garums / pārbīde ar skaitli (to pašu var ierakstīt rasējumā: skaitlis un Enter)
+      const w = sel.w, X = w.axis === "x", S = X ? model.D : model.W, ext = !!w.ext, sideN = X ? (w.lo <= 0 ? "rietumu" : "austrumu") : (w.lo <= 0 ? "ziemeļu" : "dienvidu");
+      const far = (X ? sel.at[1] : sel.at[0]) >= S / 2, L = ext ? S : Math.round((w.v1 != null ? w.v1 : S) - (w.v0 != null ? w.v0 : 0));
+      const act = (lab, val, fn, cls) => field(lab, val, (n, v) => { fn(v); throw "async"; }, null, cls);
+      h.textContent = ext ? "Ārsiena" : "Starpsiena"; sub.textContent = (ext ? sideN + " siena · " : "") + "garums " + Math.round(L) + " mm · biezums " + Math.round(w.hi - w.lo) + " mm";
+      if (ext) {
+        g.append(act("Garums, mm", L, v => { if (Math.abs(v - L) >= 1) toFrame({ mmWall: { len: v - L } }); }),
+          act("Pagarināt (+) / saīsināt (−) par, mm", 0, v => { if (v) toFrame({ mmWall: { len: v } }); }));
+        const el = document.createElement("label"), es = document.createElement("select"); el.className = "full"; el.textContent = "Kustīgais gals (otrs paliek vietā)";
+        [["lo", X ? "Ziemeļu gals" : "Rietumu gals"], ["hi", X ? "Dienvidu gals" : "Austrumu gals"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if ((v === "hi") === far) o.selected = true; es.append(o); });
+        es.onchange = () => toFrame({ mmWall: { end: es.value } }); el.append(es); g.append(el);
+        g.append(act("Pārbīdīt sienu " + (X ? "pa X" : "pa Y") + " par, mm (mainās mājas " + (X ? "garums" : "platums") + ")", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, "full"));
+      } else g.append(act("Pārbīdīt " + (X ? "pa X" : "pa Y") + " par, mm", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, "full"));
+      p.append(h, sub, g);
+      const nt = document.createElement("p"); nt.className = "note"; nt.textContent = ext ? "Rasējumā: uzklikšķini uz ārsienas, ieraksti, piem., -1000 un Enter: siena saīsinās par 1000 mm tajā galā, kuram tuvāk uzklikšķināts (oranžais kvadrāts). Telpas, mājas kontūra, lievenis un terases seko. Bultiņas pārbīda sienu pa 10 mm (ar Shift 100 mm)." : "Rasējumā: ieraksti mm un Enter vai spied bultiņas, lai pārbīdītu starpsienu. Garumu maina gala rokturis."; p.appendChild(nt);
+      return;
+    }
     if (sel.k === "axo") { axoPanel(p, h, sub, g); return; }
     if (sel.k === "fdim") {   // [TRE] fasādes mērs
       const D0 = ((model.projekts || {}).fdims || [])[sel.i] || {};
@@ -2396,6 +2414,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       sel = null; commit(n); return;
     }
     const it = itemOf(model, sel); if (!it) return;
+    if (sel.k === "wall") { status(sel.w.ext ? "Ārsienu dzēst nevar." : "Starpsienu dzēš ar dzēšgumiju (X)."); return; }
     const n = clone(model);
     if (sel.k === "post") n.posts.splice(sel.i, 1);
     else if (sel.k === "porch") delete n.porch;

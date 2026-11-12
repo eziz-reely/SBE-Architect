@@ -422,6 +422,16 @@
     drawGuides();
     document.querySelectorAll("g.mm-ov").forEach(o => o.remove());
     if (!sel) return;
+    if (sel.k === "wall") {   // izvēlēta siena: josla, garums un kustīgais gals (ārsienai)
+      const bl = blocks().find(b => b.type === "plan" && b.lv === sel.lv), w = sel.w; if (!bl || !w) return;
+      const k = ek(bl), o = overlay(bl.g), X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T);
+      const bb = X ? [w.lo, a, w.hi, b] : [a, w.lo, b, w.hi];
+      mk(o, "rect", { x: bb[0], y: bb[1], width: bb[2] - bb[0], height: bb[3] - bb[1], fill: "rgba(217,72,15,.18)", stroke: ACC, "stroke-width": 0.6 / k });
+      if (w.ext) { const far = (X ? sel.at[1] : sel.at[0]) >= S / 2, e = far ? S : 0, c = (w.lo + w.hi) / 2, q = X ? [c, e] : [e, c], r = 2.2 / k;   // kustīgais gals: tas, kuram tuvāk uzklikšķināts
+        mk(o, "rect", { x: q[0] - r, y: q[1] - r, width: 2 * r, height: 2 * r, fill: ACC, stroke: "#fff", "stroke-width": 0.4 / k }); }
+      label(o, X ? w.hi + 2 / k : (a + b) / 2, X ? (a + b) / 2 : w.lo - 2 / k, `${Math.round(b - a)} mm` + (wBuf ? `   ⌨ ${wBuf}` : ""), k);
+      return;
+    }
     blocks().forEach(bl => items(bl).forEach(it => {
       if (!same(it, sel) && !linked(it, sel)) return;
       const k = ek(bl), o = overlay(bl.g);
@@ -799,7 +809,14 @@
     mapModel(N, w.axis, f);
     const key = X ? "W" : "D", old = N[key];
     N[key] = +(origin ? old - d : (w.hi >= old - 1 ? old + d : old)).toFixed(1);
-    if (N.poly) N.poly = null;
+    if (w.ext) {   // ārsiena: mājas kontūra (poly), lievenis, terases un brīvie stabi seko sienai (agrāk kontūra tika atmesta un ārtelpas palika vietā)
+      const fo = origin ? (v => (v <= w.hi + 1 ? v : v - d)) : (v => (v >= w.lo - 1 ? v + d : v)), ai = X ? 0 : 1, mp = P => P.map(q => { const c = q.slice(); c[ai] = +fo(c[ai]).toFixed(1); return c; });
+      if (N.poly) N.poly = mp(N.poly);
+      if (N.porch) { const pc = N.porch; if (pc.poly) pc.poly = mp(pc.poly); if (pc.stepPoly) pc.stepPoly = mp(pc.stepPoly); if (pc.posts) pc.posts = mp(pc.posts);
+        if (pc.step) { pc.step[ai] = +fo(pc.step[ai]).toFixed(1); pc.step[ai + 2] = +fo(pc.step[ai + 2]).toFixed(1); } }
+      (N.terraces || []).forEach(t => { t.poly = mp(t.poly); if (t.posts) t.posts = mp(t.posts); });
+      (N.posts || []).forEach(q => { const k2 = X ? "x" : "y"; q[k2] = +fo(q[k2]).toFixed(1); });
+    }
     if (!X && N[key] !== old) {   // jumta kore paliek tajā pašā augstumā; piecstūra logs paliek kores asī
       const t = Math.tan(((N.jumts && N.jumts.pitch) || 25) * Math.PI / 180);
       if (N.jumts && N.jumts.eave) N.jumts.eave = Math.round(N.jumts.eave - (N[key] - old) / 2 * t);
@@ -1549,6 +1566,41 @@
     sel = { k, i: h.it.i, lv: h.it.lv };
     post({ t: "edit", model: N, sel }); post({ t: "hint", text: "Iestatījumi uzlikti." }); return true;
   }
+  // ---- izvēlēta siena: ierakstīts skaitlis + Enter. Ārsiena: garuma izmaiņa (kustas gals, kuram tuvāk uzklikšķināts); starpsiena: pārbīde. Bultiņas: pārbīde pa 10 / 100 mm
+  let wBuf = "";
+  function wallDone(N, nsel) {
+    if (!N) { post({ t: "hint", text: "Tā nevar: kāda telpa kļūtu šaurāka par 600 mm vai mainītos citas sienas biezums." }); return; }
+    if (bathFix(N)) { post({ t: "hint", text: BATHMSG }); return; }
+    sel = nsel || sel; post({ t: "edit", model: N, sel, resized: 1 });
+  }
+  function wallLen(d) {   // ārsienas garums +d mm: pārbīda šķērsenisko ārsienu kustīgajā galā
+    const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, far = (X ? sel.at[1] : sel.at[0]) >= S / 2, ax = X ? "y" : "x";
+    const N = far ? moveWall({ axis: ax, lo: S - T, hi: S, ext: true }, d) : moveWall({ axis: ax, lo: 0, hi: T, ext: true }, -d);
+    const at = sel.at.slice(); if (far) at[X ? 1 : 0] += d;
+    wallDone(N, Object.assign({}, sel, { at }));
+  }
+  function wallShift(d) {   // siena pa savu šķērsvirzienu (koordinātu virzienā); ārsienai mainās mājas izmērs
+    const w = sel.w, origin = w.lo <= 0, N = moveWall(w, d);
+    const nw = origin ? w : Object.assign({}, w, { lo: +(w.lo + d).toFixed(1), hi: +(w.hi + d).toFixed(1) });
+    wallDone(N, Object.assign({}, sel, { w: nw, i: nw.axis + ":" + Math.round(nw.lo) }));
+  }
+  function wallKey(e) {
+    if (!sel || sel.k !== "wall" || e.ctrlKey || e.metaKey || e.altKey) return false;
+    const k = e.key, ext = sel.w.ext, show = () => { drawSel(); post({ t: "hint", text: (ext ? "Garuma izmaiņa, mm: " : "Pārbīde, mm: ") + (wBuf || "…") + "   (Enter apstiprina, Esc atceļ)" }); };
+    if (/^[0-9]$/.test(k) || ((k === "-" || k === "+") && !wBuf)) { wBuf += k; show(); return true; }
+    if (k === "Backspace" && wBuf) { wBuf = wBuf.slice(0, -1); show(); return true; }
+    if (k === "Enter" && wBuf) { const v = parseFloat(wBuf); wBuf = ""; if (v) { if (ext) wallLen(v); else wallShift(v); } else drawSel(); return true; }
+    if (k === "Escape" && wBuf) { wBuf = ""; drawSel(); post({ t: "hint", text: "" }); return true; }
+    const st = e.shiftKey ? 100 : 10, X = sel.w.axis === "x", dv = X ? { ArrowLeft: -st, ArrowRight: st }[k] : { ArrowUp: -st, ArrowDown: st }[k];
+    if (dv) { wallShift(dv); return true; }
+    if (/^Arrow/.test(k)) return true;
+    if (k === "Delete" || k === "Backspace") { post({ t: "hint", text: ext ? "Ārsienu dzēst nevar. Garumu maini ar skaitli un Enter." : "Starpsienu dzēš ar dzēšgumiju (X) vai Delete, turot kursoru virs sienas bez izvēles." }); return true; }
+    return false;
+  }
+  addEventListener("message", e => { const m = e.data && e.data.mmWall; if (!m || !sel || sel.k !== "wall") return;
+    if (m.end) { const X = sel.w.axis === "x", S = X ? M.D : M.W, at = sel.at.slice(); at[X ? 1 : 0] = m.end === "hi" ? S : 0; sel = Object.assign({}, sel, { at }); drawSel(); post({ t: "sel", sel }); }
+    else if (m.len) { if (sel.w.ext) wallLen(+m.len); else wallShift(+m.len); }
+    else if (m.shift) wallShift(+m.shift); });
   let moveMode = false;
   const MVC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='%23e0201b' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'><path d='M16 2l5 6h-3.4v6.6H24V11l6 5-6 5v-3.6h-6.4V24H21l-5 6-5-6h3.4v-6.6H8V21l-6-5 6-5v3.6h6.4V8H11z'/></g></svg>\") 16 16, move";
   const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";
@@ -1687,6 +1739,13 @@
     }
     const d = drag; drag = null; document.body.style.cursor = ""; clearTimeout(d.dwT);
     if (d.zone === "rot") { const deg = d.moved ? d.ang : 90; if (deg) post({ t: "edit", model: rotate(clone(M), d.h.it.lv, d.h.it.i, d.boxes, deg), sel }); else drawSel(); return; }
+    if (!d.moved && d.h && d.h.wall) {   // klikšķis uz sienas (bez vilkšanas): siena kļūst izvēlēta; tad var ierakstīt mm (piem. -1000 un Enter)
+      const w = d.h.it.w; wBuf = "";
+      sel = { k: "wall", i: w.axis + ":" + Math.round(w.lo), lv: d.h.it.lv, w: { axis: w.axis, lo: w.lo, hi: w.hi, ext: !!w.ext, v0: w.v0, v1: w.v1 }, at: [Math.round(d.h.p[0]), Math.round(d.h.p[1])] };
+      drawSel(); post({ t: "sel", sel });
+      post({ t: "hint", text: w.ext ? "Ārsiena izvēlēta. Ieraksti mm (piem. -1000) un Enter: siena pagarinās vai saīsinās. Bultiņas pārbīda sienu." : "Starpsiena izvēlēta. Ieraksti mm un Enter vai spied bultiņas: siena pārbīdās." });
+      return;
+    }
     if (!d.moved) return;
     const N = applyC(d, d.dx, d.dy);
     if (N && d.grp && d.ghost) { if (d.copy) sel = Object.assign({}, d.ghost[0], { more: d.ghost.slice(1) }); post({ t: "edit", model: N, sel }); return; }
@@ -1709,6 +1768,7 @@
   }
   addEventListener("keydown", e => {
     if (place && place.t === "decor" && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "q" || e.key === "Q")) { e.preventDefault(); e.stopImmediatePropagation(); decQ(); return; }
+    if (!place && !drag && wallKey(e)) { e.preventDefault(); return; }
     if (sel && sel.k === "post" && sel.from != null && !divBuf && (e.key === "/" || e.key === "*") && !e.ctrlKey) { e.preventDefault(); divBuf = { op: e.key, s: "" }; post({ t: "hint", text: (e.key === "/" ? "Dalīt ar: " : "Atkārtot reizes: ") + "ieraksti skaitli un Enter" }); return; }
     if (divBuf) {
       if (/^[0-9]$/.test(e.key)) { e.preventDefault(); divBuf.s += e.key; post({ t: "hint", text: (divBuf.op === "/" ? "Dalīt ar: " : "Atkārtot reizes: ") + divBuf.s + "  (Enter apstiprina)" }); return; }
