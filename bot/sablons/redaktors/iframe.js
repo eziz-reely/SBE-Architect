@@ -676,9 +676,15 @@
     (L.windows || []).forEach(w => { if ((w.o === "h") === X) c.push(X ? w.x : w.y, (X ? w.x : w.y) + w.len); });
     (L.doors || []).forEach(d => { if ((d.o === "h") === X) c.push(X ? d.x : d.y, (X ? d.x : d.y) + d.w); });
     ((M.axes || {})[axis] || []).forEach(a => c.push(a[0]));
+    { // C24 karkasa ārmala (fasādes apdares biezums no sienas konstrukcijas): pielipšana pret karkasu, ne tikai pret apšuvuma virsmu
+      let c24 = 0; try { const PPc = (AR.projekts || {}).pamatu_plans || {}, S1 = (AR.layers && AR.layers.S1 && AR.layers.S1.layers) || [], ik = S1.findIndex(l => /karkas/i.test(l[0]));
+        c24 = PPc.c24 != null ? +PPc.c24 : ik > 0 ? S1.slice(0, ik).reduce((q, l) => q + (+l[1] || 0), 0) : 0; } catch (_) { c24 = 0; }
+      if (c24 > 5) c.push(c24, (X ? M.W : M.D) - c24);
+    }
     GUIDES().forEach(g => { if ((g.o === "v" && X) || (g.o === "h" && !X)) c.push(g.at); });   // palīglīnijas: viegli pielīp
     return c;
   }
+  window.MMSNAP = { pts: snapPts };   // pārbaudei (konsolē): visi pielipšanas punkti pa asi
   function furnEdges(l, axis) {   // mēbeļu malas (mēram un sienu galiem)
     const bl = blocks().find(b => b.type === "plan" && b.lv === l); if (!bl) return [];
     let bx; try { bx = furnBoxes(bl); } catch (_) { return []; }
