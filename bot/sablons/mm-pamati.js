@@ -323,7 +323,11 @@ function pamKomDraw(g0, v, k, base) {
     el("line", { x1: out[0], y1: out[1], x2: x, y2: y, stroke: c, "stroke-width": .55 * s }, g);
     el("circle", { cx: x, cy: y, r: 2.6 * s, fill: "transparent", "data-hit": "1", style: "cursor:move" }, g);
     if (q.sym === "kan") el("circle", { cx: x, cy: y, r: 1.1 * s, fill: c, stroke: C.ink, "stroke-width": .12 * s }, g);
-    else if (q.sym === "kolektors") el("rect", { x: x - 2 * s, y: y - 1.2 * s, width: 4 * s, height: 2.4 * s, fill: c, stroke: C.ink, "stroke-width": .12 * s }, g);
+    else if (q.sym === "kolektors") {   // kolektora bloks īstos mm: platums 500/700/900, perpendikulāri pievadam (n/s pievads: horizontāls; w/e: vertikāls)
+      const kw = +q.kw || 700, kd = 160, vert = q.rot != null ? +q.rot === 90 : (sd === "w" || sd === "e");
+      el("rect", { x: x - (vert ? kd : kw) / 2, y: y - (vert ? kw : kd) / 2, width: vert ? kd : kw, height: vert ? kw : kd, fill: c, "fill-opacity": .85, stroke: C.ink, "stroke-width": .12 * s }, g);
+      for (let j = 0; j < 4; j++) { const t = (j + .5) / 4 - .5; el("circle", { cx: x + (vert ? 0 : t * kw), cy: y + (vert ? t * kw : 0), r: 22, fill: "#fff", stroke: C.ink, "stroke-width": .08 * s }, g); }
+    }
     else el("rect", { x: x - 1.6 * s, y: y - .7 * s, width: 3.2 * s, height: 1.4 * s, fill: c }, g);
     const lw = (String(q.n || "").length * 1.05 + 2) * s, horiz = sd === "n" || sd === "s";
     const lx = horiz ? out[0] + .8 * s : sd === "w" ? out[0] - lw : out[0], ly = horiz ? (sd === "n" ? out[1] - 3 * s : out[1]) : out[1] - 3.2 * s;

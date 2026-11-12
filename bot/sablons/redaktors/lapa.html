@@ -1963,6 +1963,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const lc = document.createElement("label"); lc.textContent = "Krāsa"; lc.appendChild(c);
       g.append(field("Nosaukums", q.n || "", (n, v) => { pamKom(n)[i].n = String(v).trim(); }, "text", "full"), lc,
         field("Simbols", q.sym || "ievads", (n, v) => { pamKom(n)[i].sym = v; }, { ievads: "Ievads", kolektors: "Kolektors", kan: "Kanalizācija (aka)" }),
+        ...(q.sym === "kolektors" ? [field("Kolektora platums", String(q.kw || 700), (n, v) => { pamKom(n)[i].kw = +v; }, { 500: "500 mm", 700: "700 mm", 900: "900 mm" }), field("Pagrieziens", String(q.rot == null ? "" : q.rot), (n, v) => { if (v === "") delete pamKom(n)[i].rot; else pamKom(n)[i].rot = +v; }, { "": "Perpendikulāri pievadam", 0: "Horizontāli", 90: "Vertikāli" })] : []),
         field("Ienāk no", q.side || "n", (n, v) => { pamKom(n)[i].side = v; }, { n: "Ziemeļiem (augša)", s: "Dienvidiem (apakša)", w: "Rietumiem (kreisā)", e: "Austrumiem (labā)" }, "full"),
         field("No ass 1, mm", q.x, (n, v) => { pamKom(n)[i].x = Math.round(v); }), field("No ass A, mm", q.y, (n, v) => { pamKom(n)[i].y = Math.round(v); }));
       p.append(h, sub, g, arrows());
