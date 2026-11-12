@@ -1191,6 +1191,7 @@
     g.querySelectorAll("circle[data-pst]").forEach(e => { if (e === skip) return; const x = +e.getAttribute("cx"), y = +e.getAttribute("cy"), r = +e.getAttribute("r"); c.push([x, y], [x - r, y], [x + r, y], [x, y - r], [x, y + r]); });
     g.querySelectorAll("rect[data-snap]").forEach(e => { const x = +e.getAttribute("x"), y = +e.getAttribute("y"), w = +e.getAttribute("width"), h = +e.getAttribute("height"); c.push([x, y], [x + w, y], [x, y + h], [x + w, y + h], [x + w / 2, y], [x + w / 2, y + h], [x, y + h / 2], [x + w, y + h / 2]); });
     (M.axes.x || []).forEach(([x]) => (M.axes.y || []).forEach(([y]) => c.push([x, y])));
+    const pend = pPoly && pPoly.g === g ? pPoly.pts : []; pend.forEach(q => c.push([q[0], q[1]]));   // zīmējamā poligona stūri (arī sākuma punkts, lai varētu noslēgt)
     let best = null, bd = tol; c.forEach(q => { const d = Math.hypot(q[0] - p[0], q[1] - p[1]); if (d < bd) { bd = d; best = q; } });
     if (best) return { p: best, hit: true };
     const r = [Math.round(p[0] / 10) * 10, Math.round(p[1] / 10) * 10], hx = [], hy = [];
@@ -1199,6 +1200,7 @@
       // kontūras malas un stabu centru līnijas gar malām (mala ± pusdiametrs)
       g.querySelectorAll("rect[data-snap]").forEach(e => { const x = +e.getAttribute("x"), y = +e.getAttribute("y"), w = +e.getAttribute("width"), h = +e.getAttribute("height"); X.push(x, x + w, x + r, x + w - r, x + w / 2); Y.push(y, y + h, y + r, y + h - r, y + h / 2); });
       (M.axes.x || []).forEach(([x]) => X.push(x)); (M.axes.y || []).forEach(([y]) => Y.push(y));
+      pend.forEach(q => { X.push(q[0]); Y.push(q[1]); });   // līnijas pa zīmētā poligona stūriem
       const nb = (A, v) => A.reduce((b, a) => Math.abs(a - v) < tol && (b == null || Math.abs(a - v) < Math.abs(b - v)) ? a : b, null);
       const sx = nb(X, p[0]), sy = nb(Y, p[1]); if (sx != null) { r[0] = sx; hx.push(sx); } if (sy != null) { r[1] = sy; hy.push(sy); }
     }
@@ -1225,7 +1227,7 @@
   }
   // poligona kontūra: taisnleņķa stūri ar klikšķiem (nākamais punkts pa x vai y no iepriekšējā), noslēdz klikšķis pirmajā punktā vai Enter; sadalās taisnstūros (katram savs stabu režģis)
   let pPoly = null;
-  const polyClean = () => { if (pPoly) { pPoly.el.remove(); pPoly = null; } };
+  const polyClean = () => { if (pPoly) { pPoly.el.remove(); if (pPoly.dot) pPoly.dot.remove(); pPoly = null; } };
   function polyRects(P) {   // taisnleņķa daudzstūris -> taisnstūri (horizontālas joslas, vienādi blakus esošie apvienoti)
     const ys = [...new Set(P.map(q => q[1]))].sort((a, b) => a - b), out = [];
     for (let i = 0; i < ys.length - 1; i++) {
@@ -1244,6 +1246,7 @@
     if (P.length >= 3 && Math.hypot(p[0] - P[0][0], p[1] - P[0][1]) * pK(g) < 3) return polyClose();
     if (last && p[0] === last[0] && p[1] === last[1]) return true;
     P.push(p); pPoly.el.setAttribute("points", P.map(q => q.join(",")).join(" "));
+    if (P.length === 1) { const dot = document.createElementNS(NS, "circle"), k = pK(g); dot.setAttribute("cx", p[0]); dot.setAttribute("cy", p[1]); dot.setAttribute("r", 2.4 / k); dot.setAttribute("fill", "#fff"); dot.setAttribute("stroke", ACC); dot.setAttribute("stroke-width", .5 / k); g.appendChild(dot); pPoly.dot = dot; }
     post({ t: "hint", text: P.length < 3 ? "Poligons: nākamais stūris (taisnleņķis). Noslēdz ar klikšķi pirmajā punktā vai Enter." : "Poligons: vēl stūri vai Enter / klikšķis pirmajā punktā noslēdz." }); return true;
   }
   function polyClose() {
@@ -1347,7 +1350,7 @@
   }
   addEventListener("pointermove", e => {
     if (!pDrag && /^(post|rect0?|ax[xy]|poly)$/.test(pPlace || "")) { const sv = e.target && e.target.closest && e.target.closest("svg.a3"), g = sv && sv.querySelector("g[data-pview=stabi]"); pHov(g, g && pSnap(g, pLocal(g, e.clientX, e.clientY), true)); }
-    if (pPoly && pPlace === "poly") { const g = pPoly.g, P = pPoly.pts, last = P[P.length - 1]; if (last) { let p = pSnap(g, pLocal(g, e.clientX, e.clientY), true).p; if (Math.abs(p[0] - last[0]) >= Math.abs(p[1] - last[1])) p = [p[0], last[1]]; else p = [last[0], p[1]]; pPoly.el.setAttribute("points", P.concat([p]).map(q => q.join(",")).join(" ")); } }
+    if (pPoly && pPlace === "poly") { const g = pPoly.g, P = pPoly.pts, last = P[P.length - 1]; if (last) { const sn0 = pSnap(g, pLocal(g, e.clientX, e.clientY), true); pHov(g, sn0); let p = sn0.p; if (pPoly.dot) { const near = P.length >= 3 && Math.hypot(p[0] - P[0][0], p[1] - P[0][1]) * pK(g) < 3; pPoly.dot.setAttribute("fill", near ? ACC : "#fff"); if (near) p = P[0].slice(); } if (Math.abs(p[0] - last[0]) >= Math.abs(p[1] - last[1])) p = [p[0], last[1]]; else p = [last[0], p[1]]; pPoly.el.setAttribute("points", P.concat([p]).map(q => q.join(",")).join(" ")); } }
     if (!pDrag) return;
     const p = pLocal(pDrag.g, e.clientX, e.clientY), dx = p[0] - pDrag.p0[0], dy = p[1] - pDrag.p0[1];
     if (!pDrag.moved && Math.hypot(dx, dy) * pK(pDrag.g) < .6) return;
