@@ -1,6 +1,6 @@
 # Ceļvedis: MM Home pārbūve
 
-Statuss: plāns (nav īstenots). Pamatprincips: **viena patiesība ir `model.json`**; 2D, 3D, SketchUp un ražošanas lapas tikai lasa to. Vilkšana un rīki raksta atpakaļ modelī un pārbūvē skatu (`rebuild()`), nekad nelabo 3D tīklu tieši.
+Statuss 2026-11-12: daļēji īstenots, skat. tabulu beigās. Pamatprincips: **viena patiesība ir `model.json`**; 2D, 3D, SketchUp un ražošanas lapas tikai lasa to. Vilkšana un rīki raksta atpakaļ modelī un pārbūvē skatu (`rebuild()`), nekad nelabo 3D tīklu tieši.
 
 ## Esošais stāvoklis (pārbaudīts kodā)
 - `viz3d.js` jau ir Three.js skats: kamera griežas (azimuts, brīvais režīms), tālummaiņa ar ritenīti, `Raycaster` klikšķis uz fasādes (terases piesaiste), terase ar dēļu tekstūru.
@@ -40,3 +40,22 @@ Piesaistes (asis, C24 mala, apdares mala), mēru ķēžu vilkšana, polilīnijas
 
 ## Riski
 Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.html` jau 2900 rindu, jauno kodu likt atsevišķos failos (`bot/sablons/redaktors/`), lai neaugtu monolīts.
+
+
+## Īstenošanas statuss (2026-11-12)
+| Darbs | Statuss |
+|---|---|
+| 0. fāze: logu/durvju ID 3D, klikšķis izceļ | gatavs |
+| Loga vilkšana pa sienu 3D (raksta `model.json`) | gatavs |
+| Labā paneļa kartītes kompaktas, spaiņa kļūda | gatavs |
+| Mobilais izkārtojums (apakšējā rīku josla, panelis zem) | gatavs (pamata) |
+| Ražošanas pakete (izvēle, logu plāns, logu/ārdurvju specifikācija) | gatavs (pamata, skice/pamati caur esošo lapu) |
+| Pamatu plāns: sarkana apdares līnija, Ø110, kolektors, spoks (3 režīmi) | gatavs |
+| Loga platuma/augstuma rokturi 3D, stabu vilkšana 3D, tekstūras 3D, eyedropper | nav |
+| Trīs dokumentācijas režīmi kā atsevišķi profili | nav |
+| Vienots štampa logs, paneļa sadalījums Lapa/Ēka/Rīki | daļēji (Rakstlaukums jau bija) |
+| Pamatu polilīnija, auto/manuāli stabi ar /N poligonam, diagonālie mēri | nav (/N taisnstūrim jau bija) |
+| Jumti: pārkare pa malām, L krustošanās, terases jumts un spāres | nav (ROOF.ov ir globāls šablonā, vajag atsevišķu refaktoru) |
+| Ārsienu izvilkšana/ieliekumi, rediģēšanas viewport, bloku pārrēķins | nav |
+| Mēru pielipšana pret asīm/C24/apdari, mēru ķēžu vilkšana | nav |
+| Elektrības plāns, mēbeļu bibliotēka no egmalt/house-planner (MIT) | nav |

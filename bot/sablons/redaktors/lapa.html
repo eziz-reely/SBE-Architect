@@ -566,6 +566,19 @@ header .tb > button.pri .bi { opacity: 1; }
 .pmktop input[type=color] { width: 30px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: none; }
 .pmktop button.del { width: 26px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--field); color: var(--bad); cursor: pointer; }
 .note.warn { color: var(--bad); }
+/* telefons: rīku josla kļūst par horizontālu apakšējo joslu, labais panelis zem rasējuma ar ritināšanu; lielāki pieskārienu laukumi */
+@media (max-width: 760px) {
+  main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto minmax(0, 38vh); }
+  #rail { display: flex; flex-direction: row; order: 2; overflow-x: auto; border-right: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 4px 6px; gap: 4px; }
+  #rail hr { display: none; }
+  #rail .sp { display: none; }
+  #rail button { min-width: 44px; min-height: 44px; flex: 0 0 auto; }
+  aside { order: 3; border-left: 0; }
+  #stage { order: 1; touch-action: none; }
+  .lib { grid-template-columns: 1fr 1fr 1fr; }
+  .tabs button { min-height: 40px; }
+  header { gap: 4px; overflow-x: auto; flex-wrap: nowrap; }
+}
 </style>
 
 <header>
