@@ -229,7 +229,7 @@
   },
   "toni": {
     "peleks": {
-      "tex": "tex/peleks.jpg",
+      "tex": "tex/peleks.jpg", "lum": 0.237,
       "lv": [
         "Fasāde: vertikāls apdares dēlis,",
         "krāsota grafīta pelēka"
@@ -242,7 +242,7 @@
       "logi": "RAL 7016"
     },
     "sarkans": {
-      "tex": "tex/sarkans.jpg",
+      "tex": "tex/sarkans.jpg", "lum": 0.292,
       "lv": [
         "Fasāde: vertikāls apdares dēlis,",
         "krāsota norvēģu sarkana"
@@ -257,7 +257,7 @@
       "logi": "RAL 9016"
     },
     "koks": {
-      "tex": "tex/koks.jpg",
+      "tex": "tex/koks.jpg", "lum": 0.469,
       "lv": [
         "Fasāde: vertikāls apdares dēlis,",
         "dabīgs koks, eļļots"
@@ -270,7 +270,7 @@
       "logi": "RAL 7016"
     },
     "zals": {
-      "tex": "tex/zals.jpg",
+      "tex": "tex/zals.jpg", "lum": 0.314,
       "lv": [
         "Fasāde: vertikāls apdares dēlis,",
         "krāsota tumši zaļa"
@@ -283,7 +283,7 @@
       "logi": "RAL 9016"
     },
     "balts": {
-      "tex": "tex/balts.jpg",
+      "tex": "tex/balts.jpg", "lum": 0.735,
       "lv": [
         "Fasāde: vertikāls apdares dēlis,",
         "krāsota gaiši pelēka (balta)"

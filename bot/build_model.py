@@ -69,6 +69,51 @@ def _ov_per_edge(cad):
     return cad
 
 
+def _mm_extra(cad):
+    """[MM] papildinājumi pēc _ov_per_edge: stabu augstums (q.h, nogriežas pie jumta pārkares), fasādes tonis pa pusēm, pārkares tonis."""
+    TINT = ('function mmTint(g, hex) {   // [MM] apdares tekstūras pārkrāsošana ar SVG filtru (saglabā dēļu zīmējumu): out = krāsa × (0,55 + 0,45 × gaišums / vidējais)\n'
+            '  const id = "tn" + Math.random().toString(36).slice(2, 8), L = Math.max(.05, +((window.AR && AR.projekts && AR.projekts.fasade_lum) || .25)), k = .45 / L;\n'
+            '  const c = [1, 3, 5].map(i => parseInt(String(hex).slice(i, i + 2), 16) / 255 || 0);\n'
+            '  const f = el("filter", { id, "color-interpolation-filters": "sRGB", x: 0, y: 0, width: 1, height: 1 }, g);\n'
+            '  el("feColorMatrix", { type: "matrix", values: c.map(v => [v * k * .299, v * k * .587, v * k * .114, 0, v * .55].map(n => n.toFixed(4)).join(" ")).join(" ") + " 0 0 0 1 0" }, f);\n'
+            '  return id;\n}\n'
+            'function mmSideHex(side) { const q = ((window.AR && AR.projekts && AR.projekts.fasade_side) || {})[side]; return q ? (q.hex || q) : null; }\n')
+    a = 'function cadPlan(parent, v, opt = {}) {'
+    assert a in cad, 'SBE cad.js: nav atrasts cadPlan'
+    cad = cad.replace(a, TINT + a, 1)
+    for a, b in [
+        # stabs fasādē: augstums q.h (mm virs ±0,000); virs jumta pārkares apakšas tiek nogriezts pa pārkari (gala fasādē pa slīpumu)
+        ('    el("rect", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);',
+         '    const pzc = uu => gable ? eEdge + (Math.min(uu, span - uu) + (uu < span / 2 ? OVL : OVR)) * tan : eEdge, ph = pq && +pq.h > 0 ? +pq.h : 0, pzL = ph ? Math.min(ph, pzc(u)) : eEdge, pzR = ph ? Math.min(ph, pzc(u + s)) : eEdge, pzm = Math.min(pzL, pzR);\n'
+         '    if (window.__FDF && window.__FDF[side]) window.__FDF[side].pz = [gable ? 1 : 0, OVL, OVR, tan];\n'
+         '    el("polygon", { points: [P(u, -fT), P(u + s, -fT), P(u + s, pzR), P(u, pzL)].join(" "), fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);'),
+        ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
+         'el("line", { x1: u + k * 50, y1: -(pzL + (pzR - pzL) * k * 50 / s) + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);'),
+        # fasādes tonis tikai vienai pusei (krāsas spainis): projekts.fasade_side[side]
+        ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span,',
+         '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span,'),
+        # jumta pārkares tonis (projekts.parkare_hex): gala fasādes pārkare, vēja kaste, garās fasādes spāres gals
+        ('      const BC = FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";\n',
+         '      const PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null, BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
+        ('        if (!FAS) {   // fasādes dēļu tekstūra, pagriezta pa jumta slīpumu (dēļi gar spāri)\n',
+         '        if (!FAS || PKH) {   // fasādes dēļu tekstūra, pagriezta pa jumta slīpumu (dēļi gar spāri)\n'),
+        ('          const tg = el("g", { transform: `rotate(${th} ${cx} ${cy})` }, el("g", { "clip-path": `url(#${cid})` }, g));\n',
+         '          const tg = el("g", { transform: `rotate(${th} ${cx} ${cy})` }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));\n'),
+        ('fill: FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555"), stroke: C.ink, "stroke-width": 12 }, g);',
+         'fill: AR.projekts.parkare_hex || (FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555")), stroke: C.ink, "stroke-width": 12 }, g);'),
+        ('      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54") }, g);\n'
+         '      if (!FAS) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
+         '        const tg = el("g", { transform: "rotate(-90)" }, el("g", { "clip-path": `url(#${cid})` }, g));',
+         '      const PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null;\n'
+         '      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: PKH || (FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54")) }, g);\n'
+         '      if (!FAS || PKH) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
+         '        const tg = el("g", { transform: "rotate(-90)" }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));'),
+    ]:
+        assert a in cad, 'SBE cad.js (mm_extra): nav atrasts ' + a[:60]
+        cad = cad.replace(a, b, 1)
+    return cad
+
+
 def build(model_path, langs=None):
     m = json.load(open(model_path, encoding='utf-8'))
     cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
@@ -105,6 +150,10 @@ def build(model_path, langs=None):
         pr['tonis_sw'] = pr['fasade_hex']
         if pr.get('fasade_ral'):
             pr['tonis_lv'] = pr['tonis_en'] = pr['fasade_ral']
+    # [MM] fasādes tonis pa pusēm (projekts.fasade_side) un pārkares tonis (projekts.parkare_hex): apdares tekstūru pārkrāso SVG filtrs,
+    # tam vajag tekstūras vidējo gaišumu (toņa "lum" konfigurācijā vai izvēlētās krāsas gaišums)
+    _hx = pr.get('fasade_hex') if pr.get('fasade_tex') else None
+    pr['fasade_lum'] = (sum(k * int(_hx[i:i + 2], 16) for k, i in ((.299, 1), (.587, 3), (.114, 5))) / 255) if _hx else tone.get('lum', 0.25)
     pr['sturi'] = tone.get('sturi', 0)   # sarkanajam tonim: balti 90 mm stūru dēļi (norvēģu standarts)
     so = pr.get('sturi_opc')   # dekoratīvie stūra dēļi: nav / balts / melns / tonis (bez vējmalas); citādi pēc toņa
     if so:
@@ -381,6 +430,7 @@ def build(model_path, langs=None):
         if a_ in cad: cad = cad.replace(a_, b_, 1)
         else: print('BRĪDINĀJUMS: cad.js neatrasts:', a_[:50])
     cad = _ov_per_edge(cad)
+    cad = _mm_extra(cad)
     cad = cad.replace('/*AR*/', ar + '\n' + sheet, 1)
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
