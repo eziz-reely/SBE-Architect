@@ -232,14 +232,29 @@
       $("v3copy").onclick = copyPrompt; $("v3png").onclick = savePng; $("v3close").onclick = close;
       $("v3reset").onclick = () => { V.dist0 = null; V.free = false; $("v3free").checked = false; draw(); };
       let dr = null;
-      V.canvas.addEventListener("pointerdown", e => { dr = { x: e.clientX, y: e.clientY, moved: 0 }; V.canvas.setPointerCapture(e.pointerId); });
+      const rayOf = e => { const r = V.canvas.getBoundingClientRect(), ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1)), V.cam); return ray; };
+      V.canvas.addEventListener("pointerdown", e => {
+        dr = { x: e.clientX, y: e.clientY, moved: 0 }; V.canvas.setPointerCapture(e.pointerId); V.dragWin = null;
+        const ph = rayOf(e).intersectObjects(V.picks || [], false)[0], rf = ph && ph.object.userData.ref;
+        if (rf && rf.k === "win" && V.picked === ph.object) {   // izvēlēta loga vilkšana pa sienu
+          const o = model.windows[rf.i], nrm = ph.face.normal.clone().transformDirection(ph.object.matrixWorld);
+          V.dragWin = { i: rf.i, o: o.o, p0: ph.point.clone(), plane: new THREE.Plane().setFromNormalAndCoplanarPoint(nrm, ph.point), x0: o.o === "h" ? o.x : o.y, len: o.len, moved: false };
+        }
+      });
       V.canvas.addEventListener("pointermove", e => {
         if (!dr) return; const dx = e.clientX - dr.x, dy = e.clientY - dr.y; dr.moved += Math.abs(dx) + Math.abs(dy); dr.x = e.clientX; dr.y = e.clientY;
+        if (V.dragWin) {
+          const w = V.dragWin, pt = new THREE.Vector3(); if (!rayOf(e).ray.intersectPlane(w.plane, pt)) return;
+          const del = w.o === "h" ? pt.x - w.p0.x : pt.z - w.p0.z, lim = w.o === "h" ? model.W : model.D;
+          const nv = Math.round(Math.max(0, Math.min(lim - w.len, w.x0 + del)) / 10) * 10, n = clone(model), o = n.windows[w.i];
+          if ((w.o === "h" ? o.x : o.y) !== nv) { if (w.o === "h") o.x = nv; else o.y = nv; w.moved = true; commit(n); const keep = w.i; rebuild(); const mm = (V.picks || []).find(q => q.userData.ref && q.userData.ref.k === "win" && q.userData.ref.i === keep); if (mm) { V.picked = mm; mm.material.emissive && mm.material.emissive.setHex(0x2266d8); draw(); } }
+          return;
+        }
         V.az = (V.az - dx * .4 + 360) % 360; if (V.free) V.el = Math.max(-3, Math.min(80, V.el + dy * .3));
         document.querySelectorAll("#v3views button").forEach(b => b.setAttribute("aria-pressed", "false")); draw();
       });
       V.canvas.addEventListener("pointerup", e => {
-        const moved = dr && dr.moved; dr = null; if (moved > 4) { snapName(); return; }
+        const moved = dr && dr.moved; dr = null; if (V.dragWin) { const mv = V.dragWin.moved; V.dragWin = null; if (mv || moved > 4) return; } if (moved > 4) { snapName(); return; }
         const r = V.canvas.getBoundingClientRect(), ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1)), V.cam);
         const ph = ray.intersectObjects(V.picks || [], false)[0];
         if (ph) { pickOpening(ph.object); return; }
@@ -271,5 +286,5 @@
     function close() { V.open = false; $("v3").hidden = true; }
     $("b3d").onclick = openV;
     addEventListener("keydown", e => { if (V.open && e.key === "Escape") close(); });
-    window.MM_VIZ3D = { open: openV, state: V, prompt: promptText };
+    window.MM_VIZ3D = { open: openV, state: V, prompt: promptText, model: () => model };
   })();
