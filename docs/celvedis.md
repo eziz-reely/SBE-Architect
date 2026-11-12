@@ -51,7 +51,7 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Mobilais izkārtojums (apakšējā rīku josla, panelis zem) | gatavs (pamata) |
 | Ražošanas pakete (izvēle, logu plāns, logu/ārdurvju specifikācija) | gatavs (pamata, skice/pamati caur esošo lapu) |
 | Pamatu plāns: sarkana apdares līnija, Ø110, kolektors, spoks (3 režīmi) | gatavs |
-| Loga platuma/augstuma rokturi 3D, stabu vilkšana 3D, tekstūras 3D, eyedropper | nav |
+| Loga platums/augstums 3D ar taustiņiem (← → + - PgUp PgDn) gatavs; peles rokturi, stabu vilkšana 3D, tekstūras 3D, eyedropper | nav |
 | Trīs dokumentācijas režīmi kā atsevišķi profili | nav |
 | Vienots štampa logs, paneļa sadalījums Lapa/Ēka/Rīki | daļēji (Rakstlaukums jau bija) |
 | Pamatu polilīnija, auto/manuāli stabi ar /N poligonam, diagonālie mēri | nav (/N taisnstūrim jau bija) |

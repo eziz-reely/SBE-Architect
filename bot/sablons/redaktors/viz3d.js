@@ -285,6 +285,22 @@
     }
     function close() { V.open = false; $("v3").hidden = true; }
     $("b3d").onclick = openV;
-    addEventListener("keydown", e => { if (V.open && e.key === "Escape") close(); });
+    // izvēlēta loga labošana ar taustiņiem: ←→ pārbīda (Shift = 100 mm, citādi 10), +/- platums, PgUp/PgDn augstums (loga augša)
+    function winKey(e) {
+      const r = V.picked && V.picked.userData.ref; if (!V.open || !r || r.k !== "win") return false;
+      const st = e.shiftKey ? 100 : 10, n = clone(model), o = n.windows[r.i], H = o.o === "h", lim = H ? model.W : model.D; if (!o) return false;
+      const pos = H ? "x" : "y"; let ok = true;
+      if (e.key === "ArrowLeft") o[pos] = Math.max(0, o[pos] - st);
+      else if (e.key === "ArrowRight") o[pos] = Math.min(lim - o.len, o[pos] + st);
+      else if (e.key === "+" || e.key === "=") o.len = Math.min(lim - o[pos], o.len + 100);
+      else if (e.key === "-") o.len = Math.max(300, o.len - 100);
+      else if (e.key === "PageUp") o.head = (o.head || 2100) + 100;
+      else if (e.key === "PageDown") o.head = Math.max((o.sill || 0) + 300, (o.head || 2100) - 100);
+      else ok = false;
+      if (!ok) return false;
+      e.preventDefault(); e.stopPropagation(); commit(n); const keep = r.i; rebuild();
+      const mm = (V.picks || []).find(q => q.userData.ref && q.userData.ref.k === "win" && q.userData.ref.i === keep); if (mm) pickOpening(mm); return true;
+    }
+    addEventListener("keydown", e => { if (V.open && e.key === "Escape") close(); else if (winKey(e)) return; }, true);
     window.MM_VIZ3D = { open: openV, state: V, prompt: promptText, model: () => model };
   })();
