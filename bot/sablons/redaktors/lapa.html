@@ -1826,7 +1826,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "+"; b2.title = "Vairāk"; b2.onclick = plus;
     r.append(l, b1, v, b2); return r;
   }
-  const PAM_MODE_TXT = { rect: "Velc kontūru (paneli) stabu plānā: pielīp stūriem un malām. Esc beidz.", rect0: "Velc pirmo kontūru: tā aizstās visas esošās. Pēc tam velc nākamos paneļus. Esc beidz.",
+  const PAM_MODE_TXT = { poly: "Poligons: klikšķini taisnleņķa stūrus; Enter vai klikšķis pirmajā punktā noslēdz, Esc beidz.", rect: "Velc kontūru (paneli) stabu plānā: pielīp stūriem un malām. Esc beidz.", rect0: "Velc pirmo kontūru: tā aizstās visas esošās. Pēc tam velc nākamos paneļus. Esc beidz.",
     axx: "Klikšķini, kur likt vertikālu būvasi (pielīp kontūru malām un stabu līnijām). Esc atceļ.", axy: "Klikšķini, kur likt horizontālu būvasi (pielīp kontūru malām un stabu līnijām). Esc atceļ.",
     post: "Klikšķini, kur likt stabu: pielīp stabu līnijām, centriem un kontūru malām. Esc beidz.", dim: "Mērs: klikšķini pirmo punktu (pielīp stabu centriem un malām). Esc atceļ.", kom: "Klikšķini vietu, kur pievads ienāk mājā. Esc atceļ." };
   let pamTool = null;
@@ -1839,7 +1839,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const g = group("Pamatu plāns", host);
     if (PP) {   // rīku josla: viss, ko liek ar klikšķi lapā; Esc beidz
       const tb = document.createElement("div"); tb.className = "pmtools full";
-      const T = [...(P.tikai_pamati ? [["rect", "▭ Kontūra", "Velc taisnstūri vai klikšķini stūri un ieraksti garums;platums, Enter"]] : []),
+      const T = [...(P.tikai_pamati ? [["rect", "▭ Kontūra", "Velc taisnstūri vai klikšķini stūri un ieraksti garums;platums, Enter"], ["poly", "⬠ Poligons", "Taisnleņķa kontūra ar vairākiem stūriem (L, U, T formas): klikšķini stūrus, noslēdz ar Enter vai klikšķi pirmajā punktā"]] : []),
         ["post", "● Stabs", "Klikšķini lapā: pielīp stabu rindām, kontūras malām un malu vidum"],
         ...(P.tikai_pamati ? [["axx", "↕ Ass", "Vertikāla būvass (1, 2, 3): klikšķis lapā"], ["axy", "↔ Ass", "Horizontāla būvass (A, B, C): klikšķis lapā"]] : []),
         ["dim", "⟷ Mērs", "Divi punkti (pielīp stabiem), trešais klikšķis: mēra līnijas vieta"], ["kom", "⊕ Pievads", "Klikšķini, kur komunikācija ienāk mājā"]];

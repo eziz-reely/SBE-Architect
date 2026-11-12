@@ -1217,6 +1217,45 @@
     }, { pamMode: "rect" });
     post({ t: "hint", text: "Kontūra pievienota. Velc nākamo paneli, ieraksti izmērus, lai labotu šo, vai spied Esc." });
   }
+  // poligona kontūra: taisnleņķa stūri ar klikšķiem (nākamais punkts pa x vai y no iepriekšējā), noslēdz klikšķis pirmajā punktā vai Enter; sadalās taisnstūros (katram savs stabu režģis)
+  let pPoly = null;
+  const polyClean = () => { if (pPoly) { pPoly.el.remove(); pPoly = null; } };
+  function polyRects(P) {   // taisnleņķa daudzstūris -> taisnstūri (horizontālas joslas, vienādi blakus esošie apvienoti)
+    const ys = [...new Set(P.map(q => q[1]))].sort((a, b) => a - b), out = [];
+    for (let i = 0; i < ys.length - 1; i++) {
+      const y0 = ys[i], y1 = ys[i + 1], xs = [];
+      for (let j = 0; j < P.length; j++) { const a = P[j], b = P[(j + 1) % P.length]; if (a[0] === b[0] && Math.min(a[1], b[1]) <= y0 && Math.max(a[1], b[1]) >= y1) xs.push(a[0]); }
+      xs.sort((a, b) => a - b); for (let k = 0; k + 1 < xs.length; k += 2) out.push([xs[k], y0, xs[k + 1] - xs[k], y1 - y0]);
+    }
+    const merged = []; out.forEach(r => { const m = merged.find(q => q[0] === r[0] && q[2] === r[2] && Math.abs(q[1] + q[3] - r[1]) < 1); if (m) m[3] += r[3]; else merged.push(r.slice()); });
+    return merged;
+  }
+  function polyAdd(g, raw) {
+    if (!pPoly || pPoly.g !== g) { polyClean(); const el = document.createElementNS(NS, "polyline"), k = pK(g); el.setAttribute("fill", "rgba(34,102,216,.10)"); el.setAttribute("stroke", ACC); el.setAttribute("stroke-width", .4 / k); el.setAttribute("stroke-dasharray", `${1.5 / k} ${1 / k}`); g.appendChild(el); pPoly = { g, pts: [], el }; }
+    let p = pSnap(g, raw, true).p.map(Math.round);
+    const P = pPoly.pts, last = P[P.length - 1];
+    if (last) { if (Math.abs(p[0] - last[0]) >= Math.abs(p[1] - last[1])) p[1] = last[1]; else p[0] = last[0]; }   // taisnleņķis
+    if (P.length >= 3 && Math.hypot(p[0] - P[0][0], p[1] - P[0][1]) * pK(g) < 3) return polyClose();
+    if (last && p[0] === last[0] && p[1] === last[1]) return true;
+    P.push(p); pPoly.el.setAttribute("points", P.map(q => q.join(",")).join(" "));
+    post({ t: "hint", text: P.length < 3 ? "Poligons: nākamais stūris (taisnleņķis). Noslēdz ar klikšķi pirmajā punktā vai Enter." : "Poligons: vēl stūri vai Enter / klikšķis pirmajā punktā noslēdz." }); return true;
+  }
+  function polyClose() {
+    if (!pPoly) return true; let P = pPoly.pts.slice();
+    // slēgšana: pēdējam punktam jāsakrīt ar pirmā x vai y; pievieno stūri, ja vajag
+    if (P.length >= 3) { const a = P[0], z = P[P.length - 1]; if (a[0] !== z[0] && a[1] !== z[1]) P.push([a[0], z[1]]); }
+    P = P.filter((q, i, A) => { const o = A[(i + A.length - 1) % A.length], n = A[(i + 1) % A.length]; return !((o[0] === q[0] && q[0] === n[0]) || (o[1] === q[1] && q[1] === n[1])); });
+    polyClean();
+    if (P.length < 4) { post({ t: "hint", text: "Poligonam vajag vismaz 4 taisnleņķa stūrus." }); return true; }
+    const R = polyRects(P).map(r => r.map(Math.round)).filter(r => r[2] >= 300 && r[3] >= 300);
+    if (!R.length) { post({ t: "hint", text: "Poligons par mazu vai nav taisnleņķa." }); return true; }
+    pEdit((Q) => {
+      delete Q.zimet;
+      if (!(Q.parts || []).length) { ["nx", "ny", "mov", "rmov", "cmov", "del", "doff"].forEach(f => delete Q[f]); Q.ext = (Q.ext || []).filter(q => Array.isArray(q)); Q.parts = []; }
+      const i0 = Q.parts.length; R.forEach(r => Q.parts.push({ r })); pst = "p:" + i0;
+    }, { pamMode: "poly" });
+    post({ t: "hint", text: `Poligons pievienots (${R.length} ${R.length === 1 ? "kontūra" : "kontūras"}). Zīmē nākamo vai spied Esc.` }); return true;
+  }
   // ierakstītie izmēri: "garums;platums" (arī ar x vai *), Enter. Velkot: no pirmā stūra uz peles pusi; pēc tam: maina izvēlētās kontūras izmērus
   function pType(e) {
     const rectOn = pPlace === "rect" || pPlace === "rect0" || (pDrag && pDrag.kind === "rect"); if (!rectOn) return false;
@@ -1249,7 +1288,7 @@
     const dimMode = pPlace === "dim" || (place && place.t === "dim"), sv = e.target && e.target.closest && e.target.closest("svg.a3");
     // ārpus zīmējuma (tukšā lapas vietā) ņem tuvāko skatu: stabu plānu vai vienīgo skatu lapā
     // kontūras, stabi un asis vienmēr stabu plāna koordinātās (arī klikšķinot ārpus tā, piem. zem tā uz vainaga skata)
-    const gs = sv && /^(rect0?|post|ax[xy])$/.test(pPlace || "") ? sv.querySelector("g[data-pview=stabi]") : null;
+    const gs = sv && /^(rect0?|post|ax[xy]|poly)$/.test(pPlace || "") ? sv.querySelector("g[data-pview=stabi]") : null;
     const g = gs || pView(e.target) || ((pPlace || dimMode) && sv ? (sv.querySelector("g[data-pview=stabi]") || sv.querySelector("g[data-pview]")) : null);
     if (g && dimMode) {
       const sn = pSnap(g, pLocal(g, e.clientX, e.clientY));
@@ -1261,6 +1300,7 @@
       return true;
     }
     if (pDrag && pDrag.kind === "rect" && pDrag.cl) { pDrag.b = pSnap(pDrag.g, pLocal(pDrag.g, e.clientX, e.clientY), true).p; pRectDone(pDrag); pDrag = null; return true; }   // otrais klikšķis
+    if (g && pPlace === "poly") return polyAdd(g, pLocal(g, e.clientX, e.clientY));
     if (g && (pPlace === "rect" || pPlace === "rect0")) {   // kontūra: velk vai 2 klikšķi, pielīp stūriem; izmērus var ierakstīt (2450;600 Enter) kā SketchUp
       pHov(null); const a = pSnap(g, pLocal(g, e.clientX, e.clientY), true).p, r = document.createElementNS(NS, "rect"), k = pK(g);
       r.setAttribute("fill", "rgba(34,102,216,.10)"); r.setAttribute("stroke", ACC); r.setAttribute("stroke-width", .4 / k); r.setAttribute("stroke-dasharray", `${1.5 / k} ${1 / k}`); g.appendChild(r);
@@ -1300,7 +1340,8 @@
     return false;
   }
   addEventListener("pointermove", e => {
-    if (!pDrag && /^(post|rect0?|ax[xy])$/.test(pPlace || "")) { const sv = e.target && e.target.closest && e.target.closest("svg.a3"), g = sv && sv.querySelector("g[data-pview=stabi]"); pHov(g, g && pSnap(g, pLocal(g, e.clientX, e.clientY), true)); }
+    if (!pDrag && /^(post|rect0?|ax[xy]|poly)$/.test(pPlace || "")) { const sv = e.target && e.target.closest && e.target.closest("svg.a3"), g = sv && sv.querySelector("g[data-pview=stabi]"); pHov(g, g && pSnap(g, pLocal(g, e.clientX, e.clientY), true)); }
+    if (pPoly && pPlace === "poly") { const g = pPoly.g, P = pPoly.pts, last = P[P.length - 1]; if (last) { let p = pSnap(g, pLocal(g, e.clientX, e.clientY), true).p; if (Math.abs(p[0] - last[0]) >= Math.abs(p[1] - last[1])) p = [p[0], last[1]]; else p = [last[0], p[1]]; pPoly.el.setAttribute("points", P.concat([p]).map(q => q.join(",")).join(" ")); } }
     if (!pDrag) return;
     const p = pLocal(pDrag.g, e.clientX, e.clientY), dx = p[0] - pDrag.p0[0], dy = p[1] - pDrag.p0[1];
     if (!pDrag.moved && Math.hypot(dx, dy) * pK(pDrag.g) < .6) return;
@@ -1332,6 +1373,8 @@
   const C_INK = "#111";
   addEventListener("keydown", e => {
     if (!e.ctrlKey && !e.metaKey && !e.altKey && pType(e)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
+    if (pPlace === "poly" && pPoly && e.key === "Enter") { e.preventDefault(); e.stopImmediatePropagation(); polyClose(); return; }
+    if (e.key === "Escape" && pPoly) polyClean();
     if (e.key === "Escape" && pDrag && pDrag.kind === "rect") { pDrag.el.remove(); pDrag.tx.remove(); pDrag = null; pBuf = ""; }
     if (e.key === "Escape" && (pPlace || pDim)) { pClear(); pEnd(); pBuf = ""; post({ t: "placed", pamMode: null }); }
     if (!pst || e.ctrlKey || e.metaKey || e.altKey) return;
