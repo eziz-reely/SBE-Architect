@@ -173,10 +173,11 @@ function pamWc(g, v, k) {
     T_(g, x + 120, y, "Ø110", { fs: 1.6 * s, a: "start", fill: "#7a4a2a" });
   });
 }
-// plānojuma "spoks": telpu kontūras un nosaukumi pustaustrāmi zem stabu plāna (PP.spoks), lai komunikāciju ievadus nelikt uz stabiem
+// plānojuma "spoks" (tikai redaktora palīglīdzeklis, slēdzis Māja → Pamatu plāns): telpu kontūras un nosaukumi pustaustrāmi zem stabu plāna (PP.spoks), lai komunikāciju ievadus nelikt uz stabiem
 function pamGhost(g, v, k) {
-  if (!(pamPP() || {}).spoks || AR.projekts.tikai_pamati) return;
-  const s = 1 / k, gg = el("g", { opacity: .35, "pointer-events": "none" }, g);
+  const mode = (pamPP() || {}).spoks, edit = !!window.MM_EDITOR;   // "ed" = tikai redaktorā (eksportā nav), "lapa" vai true = arī gala lapā
+  if (!mode || AR.projekts.tikai_pamati || (mode === "ed" && !edit)) return;
+  const s = 1 / k, gg = el("g", { class: mode === "ed" ? "mm-ghost-ed" : "mm-ghost", opacity: .35, "pointer-events": "none" }, g);
   (v.rooms || []).forEach(rm => (rm.r || []).forEach(q => el("rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: rm.void ? "none" : "#9fb4cc", "fill-opacity": .25, stroke: "#5b7fa8", "stroke-width": .15 * s }, gg)));
   (v.rooms || []).filter(rm => !rm.void).forEach(rm => { const q = rm.r[0]; if (q) T_(gg, q[0] + q[2] / 2, q[1] + q[3] / 2, rm.n, { fs: 1.7 * s, a: "middle", fill: "#555" }); });
 }
