@@ -142,10 +142,10 @@ function pamCells(g, L, k) {   // laukuma vidus stabs: raustīts krusts pār lau
     T_(g, ex + w / 2, ey + .65 * s, c.t.toUpperCase(), { fs: 1.75 * s, a: "middle", fw: 600, fill: "#2e8b57" });
   });
 }
-// sienas pīrāgs aiz C24 karkasa (PP.pir mm): raustīta līnija ap kontūru apvienojumu (salaidumos nezīmē)
+// fasādes apdares mala ārpus C24 karkasa (PP.pir mm, noklusējums = apdares slāņu biezums): sarkana raustīta līnija ap kontūru apvienojumu (salaidumos nezīmē)
 function pamPir(g, L, k) {
-  const t = +((pamPP() || {}).pir) || 0; if (!t || !L.parts.length) return;
-  const E = L.parts.map(P => [P.x0 - t, P.y0 - t, P.x1 + t, P.y1 + t]), st = { stroke: "#555", "stroke-width": .2 / k, "stroke-dasharray": `${1.6 / k} ${.9 / k}`, fill: "none" };
+  const PPp = pamPP() || {}, t = PPp.pir != null ? (+PPp.pir || 0) : pamC24(); if (!t || !L.parts.length) return;   // pēc noklusējuma apdares biezums no sienas konstrukcijas (līdz C24 karkasam); 0 izslēdz
+  const E = L.parts.map(P => [P.x0 - t, P.y0 - t, P.x1 + t, P.y1 + t]), st = { stroke: "#d62828", "stroke-width": .2 / k, "stroke-dasharray": `${1.6 / k} ${.9 / k}`, fill: "none" };
   const cut = (a0, a1, v, hz, me) => { let seg = [[a0, a1]];
     E.forEach((Q, j) => { if (j === me) return; const inV = hz ? v > Q[1] + .5 && v < Q[3] - .5 : v > Q[0] + .5 && v < Q[2] - .5; if (!inV) return;
       const q0 = hz ? Q[0] : Q[1], q1 = hz ? Q[2] : Q[3]; seg = seg.flatMap(([s0, s1]) => [[s0, Math.min(s1, q0)], [Math.max(s0, q1), s1]].filter(([u, w]) => w - u > .5)); });
