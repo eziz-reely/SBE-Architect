@@ -1174,7 +1174,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { id: "sel", n: "Atlasīt", k: "a", ic: "sel", run: () => { endPlace(); toFrame({ mmPlace: null }); setMove(false); railSync(); } },
     ...OPEN.slice(0, 7).map((o, i) => ({ id: "t" + i, n: o.n, k: ["w", "q", "o", "s", "e", "d", "g"][i], ic: o.ic || (o.p.t === "win" ? "win" : o.p.t === "gwin" ? "gwin" : "door"), run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
     { id: "ter", n: "Terase", k: "t", ic: "ter", run: () => { const b = OPENB[11]; if (b) b.click(); railSync(); } },
-    { id: "bk", n: "Krāsas spainis", k: "b", ic: "bucket", run: () => { const b = OPENB[17]; if (b) b.click(); railSync(); } },
+    { id: "bk", n: "Krāsas spainis", k: "b", ic: "bucket", run: () => { const b = OPENB[OPEN.findIndex(o => o.p.t === "bucket")]; if (b) b.click(); railSync(); } },
     { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gx", run: () => { $("bGuideClr").click(); } },
   ];
@@ -1198,7 +1198,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     railSync();
   }
   function railSync() {
-    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = moveOn && on < 0 ? "mv" : on >= 0 ? ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "", "", "", "er"][on] : onBtn ? null : "sel";
+    const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = moveOn && on < 0 ? "mv" : on >= 0 ? ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "", "", "", "er", "ter", "", "", "", "", "", "", "bk"][on] : onBtn ? null : "sel";
     document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
     syncBar();
   }
