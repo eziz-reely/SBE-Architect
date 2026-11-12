@@ -55,6 +55,8 @@ def main():
     tones = {k: dict(t, tex=base64.b64encode(open(os.path.join(HERE, 'sablons', t['tex']), 'rb').read()).decode()) for k, t in cfg['toni'].items()}
     viz3d = open(os.path.join(d, 'viz3d.js'), encoding='utf-8').read().replace('__MM_ATMOS__', jsstr(cfg['atmosferas']))
     three = open(os.path.join(d, 'three.min.js'), encoding='utf-8').read().replace('</script', '<\\/script')
+    razos = open(os.path.join(d, 'razosana.js'), encoding='utf-8').read()
+    page = page.replace('/*@@RAZOSANA@@*/', razos)
     page = page.replace('/*@@VIZ3D@@*/', viz3d).replace('__MM_THREE__', three)
     for k, v in {'__MM_TONES__': jsstr(tones), '__MM_LAYERS__': jsstr(cfg['layers']), '__MM_TEMPLATE__': jsstr(tpl), '__MM_MODEL__': jsstr(m), '__MM_FRAME_JS__': jsstr(checker() + '\n' + frame),
                  '__MM_NAME__': (m.get('projekts') or {}).get('modela_nosaukums') or m['nosaukums'], '__MM_ID__': m['id']}.items():
