@@ -136,6 +136,11 @@ kbd { font: 600 11px var(--f-ui); border: 1px solid var(--line); border-bottom-w
 .lib button { display: grid; grid-template-columns: 34px 1fr; column-gap: 8px; align-items: center; }
 .lib button svg { grid-row: span 2; width: 34px; height: 26px; color: var(--ink); }
 .lib button small { grid-column: 2; }
+/* Terases, fasādes, zonu un stabu rīki: kompakti, garais apraksts ir norādē (title) */
+#libTer button { grid-template-columns: 1fr; padding: 8px 9px; min-height: 0; }
+#libTer button svg { display: none; }
+#libTer button small { display: none; }
+#libTer button[data-hide] { display: none; }
 .seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
 .seg button { border: 0; border-radius: 0; background: var(--field); color: var(--muted); padding: 7px 4px; font-size: 12px; }
 .seg button + button { border-left: 1px solid var(--line); }
@@ -634,7 +639,7 @@ header .tb > button.pri .bi { opacity: 1; }
         <p class="cap">Logi un durvis</p>
         <div class="lib" id="libOpenings"></div>
         <div class="lib" id="libOpen" hidden></div>
-        <p class="cap">Terase un stabi</p>
+        <p class="cap">Terase, fasāde, zonas, stabi</p>
         <div class="lib" id="libTer"></div>
         <div id="bktBox" class="group" hidden><p class="cap">Materiāls spainim</p><div class="grid" id="bktGrid"></div></div>
         <p id="hint"></p>
@@ -1104,7 +1109,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function libButton(host, item, spec) {
     const b = document.createElement("button"); b.type = "button"; if (item.wide) b.className = "wide";
     b.innerHTML = icon(item.ic || (spec.t === "win" ? "win" : spec.t === "gwin" ? "gwin" : "door"));
-    b.append(item.n); const sm = document.createElement("small"); sm.textContent = item.s; b.appendChild(sm);
+    b.append(item.n); const sm = document.createElement("small"); sm.textContent = item.s; b.appendChild(sm); b.title = item.n + ": " + item.s; if (spec.t === "bucket") b.dataset.hide = "1";   // spainis ir kreisajā joslā
     b.onclick = () => {
       if (onBtn === b) { endPlace(); toFrame({ mmPlace: null }); return; }
       endPlace(); if (moveOn) setMove(false); placing = clone(spec); onBtn = b; b.classList.add("on"); if (placing.t === "bucket") { placing.mat = clone(BMAT); bktSync(); }
