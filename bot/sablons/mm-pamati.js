@@ -160,6 +160,19 @@ function pamContour(g, L, k, dash) {   // katra kontūra (C24 karkasa ārmala); 
 }
 
 // 1) stabu plāns ar izmēriem
+// tualete plānojumā: Ø110 kanalizācijas izvads 80 mm no starpsienas, uz pamatu plāna (PP.wc110); izvadu var pārvietot ar PP.wcmov { "i": [dx, dy] }
+function pamWc(g, v, k) {
+  const PP = pamPP() || {}; if (!PP.wc110 || AR.projekts.tikai_pamati) return;
+  const s = 1 / k, mv = PP.wcmov || {};
+  (v.wcs || []).forEach((f, i) => {
+    const [cx, wy, dir, side] = f; let x = cx, y = wy;
+    if (side === "e") x = cx - 80; else if (side === "w") x = cx + 80; else y = wy + (dir < 0 ? -80 : 80);
+    const o = mv[i] || [0, 0]; x += o[0]; y += o[1];
+    el("circle", { cx: x, cy: y, r: 55, fill: "#fff", stroke: "#7a4a2a", "stroke-width": .3 * s }, g);
+    el("circle", { cx: x, cy: y, r: 55, fill: "#7a4a2a", "fill-opacity": .18, stroke: "none" }, g);
+    T_(g, x + 120, y, "Ø110", { fs: 1.6 * s, a: "start", fill: "#7a4a2a" });
+  });
+}
 // plānojuma "spoks": telpu kontūras un nosaukumi pustaustrāmi zem stabu plāna (PP.spoks), lai komunikāciju ievadus nelikt uz stabiem
 function pamGhost(g, v, k) {
   if (!(pamPP() || {}).spoks || AR.projekts.tikai_pamati) return;
@@ -171,7 +184,7 @@ function pamViewStabi(g, v, L, k, tx) {
   const s = 1 / k, A = v.axes.x.map(a => a[0]), B = v.axes.y.map(a => a[0]), SH = pamShadow(L.parts);
   pamAxes(g, v, k, { n: 26 * s, s: 6 * s, w: 26 * s, e: 6 * s });
   pamGhost(g, v, k);
-  pamContour(g, L, k); pamPir(g, L, k);
+  pamContour(g, L, k); pamPir(g, L, k); pamWc(g, v, k);
   const P_ = key => L.pts.find(p => p.key === key);
   L.parts.forEach(P => {
     // režģa līnijas pa stabu centriem

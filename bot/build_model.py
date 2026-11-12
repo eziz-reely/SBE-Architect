@@ -28,6 +28,7 @@ def rev_block(m, rev=REV):
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
+    rv['wcs'] = [f[1:] for f in m.get('furniture', []) if f[0] == 'toilet']   # tualetes pamatu plāna Ø110 izvadam (mm-pamati.js)
     calls = []
     def call(f):
         if f[0] == '_rot':   # pagriezta mēbele: ["_rot", grādi, cx, cy, [mēbele]] (redaktors)

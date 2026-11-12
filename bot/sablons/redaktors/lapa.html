@@ -1805,6 +1805,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     g.appendChild(sk);
     const cur = Object.keys(PAM_LAPAS).find(k => JSON.stringify(PAM_LAPAS[k]) === JSON.stringify(PP.lapas || PAM_LAPAS[1])) || "1";
     g.appendChild(field("Lapu sadalījums", cur, (n, v) => { pamPP(n).lapas = PAM_LAPAS[v]; }, { 1: "Visi skati vienā lapā", "2a": "Stabi + vainags | plānojums", "2b": "Stabi | vainags + plānojums", 3: "Katrs skats savā lapā" }, "full"));
+    if (!P.tikai_pamati) g.appendChild(field("Tualetes Ø110 izvads", PP.wc110 ? "1" : "0", (n, v) => { if (v === "1") pamPP(n).wc110 = true; else delete pamPP(n).wc110; }, { 0: "Izslēgts", 1: "Ieslēgts (80 mm no sienas)" }, "full"));
     if (!P.tikai_pamati) g.appendChild(field("Plānojums fonā", PP.spoks ? "1" : "0", (n, v) => { if (v === "1") pamPP(n).spoks = true; else delete pamPP(n).spoks; }, { 0: "Izslēgts", 1: "Pustaustrāms (stabi nebūs zem iekārtām)" }, "full"));
     g.appendChild(field("Mērogs", PP.brivs ? "1" : "0", (n, v) => { pamPP(n).brivs = v === "1"; }, { 0: "Lielākais standarta mērogs", 1: "Maksimāli liels (bez mēroga)" }, "full"));
     { const nt = document.createElement("p"); nt.className = "note full"; const L = pamSheetsOf(PP);
