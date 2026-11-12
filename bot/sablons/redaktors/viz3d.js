@@ -71,7 +71,7 @@
     function buildScene(m) {
       const P = m.projekts || {}, tk = V.tone || lv0(), wallHex = (tk === lv0() && P.sienas_hex) || TONES[tk].sw, frameHex = hexOf(P.logu_tonis || TONES[tk].logi);
       const geo = []; skpRb(m, geo);
-      const grp = new THREE.Group(), walls = [];
+      const grp = new THREE.Group(), walls = [], picks = [];
       const mat = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c, side: THREE.DoubleSide }, o));
       const mats = { M_WALL: mat(wallHex), M_INT: mat("#f2efe9"), M_FLOOR: mat(P.pamati === "platne" ? "#9a9a96" : hexOf(P.cokols || "RAL 9005")), M_ROOF: mat("#40464b"), M_STAIR: mat("#c9a77c") };
       const frameM = mat(frameHex), glassM = mat("#7fa5b8", { transparent: true, opacity: .75 });
@@ -79,10 +79,10 @@
       geo.forEach(g => {
         if (g.k === "s") { const me = extrude(g, mats[g.mat] || mats.M_WALL); if (g.mat === "M_WALL") walls.push(me); if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
         else if (g.k === "g") {
-          const p3 = g.pts.map(T3); grp.add(planeMesh(p3, glassM, 0)); frameAround(p3, frameM, grp, 80, 90);
+          const p3 = g.pts.map(T3); { const gm = planeMesh(p3, glassM.clone(), 0); gm.userData.ref = g.ref; picks.push(gm); grp.add(gm); } frameAround(p3, frameM, grp, 80, 90);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) { if (g.pts.some(p => p[2] > (m.jumts && m.jumts.eave || 2600) - 400) || g.pts.length > 4) facts.gable[sd] = (facts.gable[sd] || 0) + 1; else facts.win[sd]++; }
         } else if (g.k === "d") {
-          const p3 = g.pts.map(T3); grp.add(planeMesh(p3, frameM, 0)); frameAround(p3, frameM, grp, 90, 100);
+          const p3 = g.pts.map(T3); { const dm = planeMesh(p3, frameM.clone(), 0); dm.userData.ref = g.ref; picks.push(dm); grp.add(dm); } frameAround(p3, frameM, grp, 90, 100);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) facts.door[sd]++;
         }
       });
@@ -98,7 +98,7 @@
       // zeme
       const gr = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshLambertMaterial({ color: "#aab39a" }));
       gr.rotation.x = -Math.PI / 2; gr.position.y = -301; grp.add(gr);
-      return { grp, walls, facts, tr };
+      return { grp, walls, facts, tr, picks };
     }
     // ---------- kamera ----------
     function bbox(m) {
@@ -140,7 +140,7 @@
     function rebuild() {
       if (!V.scene) return;
       if (V.grp) V.scene.remove(V.grp);
-      const r = buildScene(model); V.grp = r.grp; V.walls = r.walls; V.facts = r.facts; V.scene.add(V.grp); draw(); promptUpdate();
+      const r = buildScene(model); V.grp = r.grp; V.walls = r.walls; V.picks = r.picks; V.picked = null; V.facts = r.facts; V.scene.add(V.grp); draw(); promptUpdate();
     }
     // ---------- prompts (viz.py angļu teksti) ----------
     const KEEP = "DO NOT CHANGE (the reference image is exact): camera position and angle, house outline and proportions, roof shape and pitch, position, width, height and number of every window and door. Do not add, remove, merge, enlarge or divide any opening. Window and door frames keep the colour shown.";
@@ -241,6 +241,9 @@
       V.canvas.addEventListener("pointerup", e => {
         const moved = dr && dr.moved; dr = null; if (moved > 4) { snapName(); return; }
         const r = V.canvas.getBoundingClientRect(), ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1)), V.cam);
+        const ph = ray.intersectObjects(V.picks || [], false)[0];
+        if (ph) { pickOpening(ph.object); return; }
+        pickOpening(null);
         const hit = ray.intersectObjects(V.walls, false)[0]; if (!hit || !hit.face) return;
         const nrm = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
         const side = Math.abs(nrm.x) > Math.abs(nrm.z) ? (nrm.x > 0 ? "east" : "west") : (nrm.z > 0 ? "south" : "north");
@@ -248,6 +251,14 @@
       });
       V.canvas.addEventListener("wheel", e => { e.preventDefault(); const f = V.dist0 || V.dist; V.dist0 = Math.max(6000, Math.min(150000, f * (e.deltaY > 0 ? 1.08 : .92))); draw(); }, { passive: false });
       addEventListener("resize", () => { if (V.open) resize(); });
+    }
+    function pickOpening(mesh) {   // klikšķis uz loga/durvīm: izcelšana un izmēri (ID sakrīt ar plāna izvēli k/i)
+      if (V.picked && V.picked.material.emissive) V.picked.material.emissive.setHex(0);
+      V.picked = mesh; if (!mesh) { draw(); return; }
+      mesh.material.emissive && mesh.material.emissive.setHex(0x2266d8); const r = mesh.userData.ref || {};
+      const o = ({ win: model.windows, door: model.doors, gwin: model.gableWins }[r.k] || [])[r.i];
+      const nm = { win: "Logs", door: "Durvis", gwin: "Gala logs" }[r.k] || "Elements";
+      status(o ? `${nm} ${r.i + 1}: ${Math.round(o.len || o.w || 0) || ""}${o.head != null ? " × " + Math.round(o.head - (o.sill || 0)) : ""} mm` : nm); draw();
     }
     function snapName() {   // tuvākais iepriekšiestatītais skats prompta tekstam
       let best = VIEWS[0], bd = 999; VIEWS.forEach(v => { const d = Math.min(Math.abs(v[2] - V.az), 360 - Math.abs(v[2] - V.az)); if (d < bd) { bd = d; best = v; } });
