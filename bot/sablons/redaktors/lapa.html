@@ -1566,6 +1566,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         gs.appendChild(cf);
       }
       gs.appendChild(field("Jumta slīpums, °", J.pitch || 30, (n, v) => { n.jumts = n.jumts || {}; n.jumts.pitch = Math.max(10, Math.min(55, Math.round(v))); roofFix(n); }));
+      { // piebūve: taisnstūra spārns dienvidu vai austrumu pusē (kontūra kļūst L veida); pārējais modelis paliek
+        const gx = group("Piebūve", host), EX = EXT;
+        const row = (lab, key, opts) => gx.appendChild(field(lab, EX[key], (n, v) => { EX[key] = opts ? v : Math.round(+v); throw "async"; }, opts || null));
+        row("Mala", "side", { south: "Dienvidu", east: "Austrumu" }); row("Garums gar sienu, mm", "len"); row("Dziļums, mm", "dep"); row("Nobīde no stūra, mm", "off");
+        const b = document.createElement("button"); b.type = "button"; b.className = "wide"; b.textContent = "Pievienot piebūvi"; b.onclick = () => addExtension(EX);
+        gx.appendChild(b); const nx = document.createElement("p"); nx.className = "note full"; nx.textContent = "Pievieno taisnstūra spārnu ar savu telpu un ārsienām. Jumts sanāk pār visu ēkas gabarītu. Logi, kas paliek piebūves vietā, tiek noņemti.";  gx.appendChild(nx); }
       const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = `Kore no grīdas paneļa apakšas. Dzega sanāk ${J.eave || "–"} mm virs ±0,000. Garums un platums pārvieto austrumu un dienvidu ārsienu, telpas stiepjas līdzi.`; gs.appendChild(nt);
     }
     { // jumta pārkare no sienas un vēja kaste
@@ -1689,6 +1695,34 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   const MAJA_ORDER = ["Mājas izmēri", "Pamati", "Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi", "Konstrukcijas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Fasādes lapā", "Zonu zīmogi", "Vizualizāciju lapas", "Specifikācijas noformējums"];
   // cilne Māja pa tēmām: viena tēma redzama, pārslēgs augšā; izvēle paliek arī pēc pārzīmēšanas
+  const EXT = { side: "south", len: 4000, dep: 3000, off: 0 };
+  function addExtension(EX) {
+    const n = clone(model), Tt = +((TPL.match(/const T = ([\d.]+), t = ([\d.]+);/) || [0, 283.5])[1]), S = EX.side === "east", W = n.W, D = n.D;
+    if (n.poly && n.poly.length > 4) { status("Kontūra jau nav taisnstūris. Piebūvi pagaidām var pievienot tikai taisnstūra mājai."); return; }
+    const ln = Math.round(EX.len), dp = Math.round(EX.dep), span = S ? D : W;
+    if (ln < 2 * Tt + 1500 || dp < 2 * Tt + 1500) { status("Piebūve par mazu: garums un dziļums vismaz " + Math.round(2 * Tt + 1500) + " mm."); return; }
+    if (ln > span) { status("Piebūve nevar būt garāka par sienu (" + span + " mm)."); return; }
+    const a0 = Math.max(0, Math.min(span - ln, Math.round(EX.off || 0))), a1 = a0 + ln;
+    const overlap = (u0, u1) => u0 < a1 && u1 > a0;
+    n.poly = S ? [[0, 0], [W, 0], [W, a0], [W + dp, a0], [W + dp, a1], [W, a1], [W, D], [0, D]] : [[0, 0], [W, 0], [W, D], [a1, D], [a1, D + dp], [a0, D + dp], [a0, D], [0, D]];
+    n.poly = n.poly.filter((q, i, A) => { const o = A[(i + A.length - 1) % A.length]; return q[0] !== o[0] || q[1] !== o[1]; });   // dubultie punkti
+    n.poly = n.poly.filter((q, i, A) => { const o = A[(i + A.length - 1) % A.length], nx = A[(i + 1) % A.length]; return !((o[0] === q[0] && q[0] === nx[0]) || (o[1] === q[1] && q[1] === nx[1])); });   // punkti uz taisnas līnijas
+    const nW0 = W, nD0 = D;
+    if (S) n.W = W + dp; else n.D = D + dp;
+    // ārsienas ailas, kas nonāk piebūves vietā, noņem
+    const hit = (o, along, w) => S ? o.o === "v" && Math.abs((o.x || 0) - (nW0 - Tt)) < 2 && overlap(o[along], o[along] + w) : o.o === "h" && Math.abs((o.y || 0) - (nD0 - Tt)) < 2 && overlap(o[along], o[along] + w);
+    const w0 = (n.windows || []).length, d0 = (n.doors || []).length;
+    n.windows = (n.windows || []).filter(w => !hit(w, S ? "y" : "x", w.len)); n.doors = (n.doors || []).filter(d => !hit(d, S ? "y" : "x", d.w));
+    // piebūves telpa: iekšējā virsma no esošās ārsienas ārmalas līdz jaunajām ārsienām
+    const r = S ? [nW0, a0 + Tt, dp - Tt, ln - 2 * Tt] : [a0 + Tt, nD0, ln - 2 * Tt, dp - Tt];
+    n.rooms = (n.rooms || []).concat([{ n: "Piebūve", en: "Extension", r: [r] }]);
+    // asis: jauna ārsiena
+    n.axes = n.axes || { x: [], y: [] };
+    if (S) { const last = n.axes.x[n.axes.x.length - 1]; n.axes.x.push([n.W, String((+last[1] || n.axes.x.length) + 1)]); } else { const last = n.axes.y[n.axes.y.length - 1]; n.axes.y.push([n.D, String.fromCharCode(String(last[1]).charCodeAt(0) + 1)]); }
+    // jumta kore paliek tajā pašā augstumā, ja platums palielinās
+    if (!S && n.jumts && n.jumts.eave) { const t = Math.tan(((n.jumts.pitch) || 25) * Math.PI / 180); n.jumts.eave = Math.round(n.jumts.eave - dp / 2 * t); }
+    commit(n); status(`Piebūve ${ln} × ${dp} mm pievienota` + ((w0 - n.windows.length) + (d0 - n.doors.length) ? `, noņemti ${w0 - n.windows.length} logi un ${d0 - n.doors.length} durvis` : "") + ".");
+  }
   const MAJA_SEC = [
     ["izmeri", "Izmēri", ["Mājas izmēri", "Stāvi"]],
     ["jumts", "Jumts", ["Jumts", "Notekas"]],

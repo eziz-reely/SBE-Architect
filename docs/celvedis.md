@@ -57,6 +57,7 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Pamatu polilīnija, auto/manuāli stabi ar /N poligonam, diagonālie mēri | nav (/N taisnstūrim jau bija) |
 | Jumta pārkare pa malām (`projekts.ov_side`, 0 = fasāde līdz jumtam): fasādes, 3D, redaktora lauki | gatavs (divslīpju jumts; četrslīpju tikai tuvināti) |
 | Jumti: L krustošanās, terases jumts un spāres | nav |
-| Ārsienu izvilkšana/ieliekumi, rediģēšanas viewport, bloku pārrēķins | nav |
+| Piebūve (taisnstūra spārns dienvidu/austrumu pusē, Māja → Izmēri) | gatavs (pamata; ārsienu vilkšana taisnstūrim jau bija) |
+| Ieliekumi, piebūve ziemeļos/rietumos, brīva kontūra, izolēts viewport režīms | nav |
 | Mēru pielipšana pret asīm/C24/apdari, mēru ķēžu vilkšana | nav |
 | Elektrības plāns, mēbeļu bibliotēka no egmalt/house-planner (MIT) | nav |
