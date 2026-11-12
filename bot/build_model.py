@@ -40,6 +40,35 @@ def rev_block(m, rev=REV):
             % (m['id'], js(rv), '\n'.join(calls)))
 
 
+def _ov_per_edge(cad):
+    """[MM] jumta pārkare pa malām: projekts.ov_side = {north, south, east, west} (mm, 0 = fasāde līdz jumtam). Nav norādīts = jumts.ov visām malām (izvade nemainās).
+    Fasādes skatā kreisā/labā mala un mala pie sienas tiek ņemtas no šīs malas pārkares, nevis no globālā ROOF.ov."""
+    import re
+    i = cad.index('function elevation(parent, v, side')
+    j = cad.index('\nfunction ', i + 10)
+    body = cad[i:j]
+    k = body.index('const eEdge = ROOF.eave - ROOF.ov * tan')
+    head, rest = body[:k], body[k:]
+    ins = ('const _OV = (window.AR && AR.projekts && AR.projekts.ov_side) || {}, _od = q => (_OV[q] != null && !isNaN(+_OV[q])) ? +_OV[q] : ROOF.ov;\n'
+           '  const _LR = { south: ["west", "east"], north: ["east", "west"], east: ["south", "north"], west: ["north", "south"] }[side] || ["west", "east"];\n'
+           '  const OVL = _od(_LR[0]), OVR = _od(_LR[1]), OVV = endV ? ROOF.ov : _od(side);\n  ')
+    rest = rest.replace('const eEdge = ROOF.eave - ROOF.ov * tan', 'const eEdge = ROOF.eave - OVV * tan', 1)
+    rest = rest.replace('(v.D / 2 + ROOF.ov) * tan', '(v.D / 2 + OVV) * tan', 1)
+    for a, b in [('span + 2 * ROOF.ov', 'span + OVL + OVR'), ('span / 2 + ROOF.ov', 'span / 2 + OVR'), ('span + ROOF.ov', 'span + OVR'),
+                 ('(uV + ROOF.ov)', '(uV + OVL)'), ('ROOF.ov + LCX', 'OVL + LCX'), ('ROOF.ov + 1300', 'OVR + 1300'), ('-ROOF.ov', '-OVL')]:
+        rest = rest.replace(a, b)
+    # gala fasāde: spāru gali kreisajā un labajā pusē var būt dažādā augstumā
+    rest = rest.replace('const eT = eEdge + thV, cov', 'const eT = eEdge + thV, eTL = ROOF.eave - OVL * tan + thV, eTR = ROOF.eave - OVR * tan + thV, cov', 1)
+    rest = rest.replace('const zA = sd < 0 ? eT : ridgeTop, zB = sd < 0 ? ridgeTop : eT;', 'const zA = sd < 0 ? eTL : ridgeTop, zB = sd < 0 ? ridgeTop : eTR;', 1)
+    rest = rest.replace('P(-OVL, eT - vt), P(-OVL, eT), P(span / 2, ridgeTop), P(span + OVR, eT), P(span + OVR, eT - vt)', 'P(-OVL, eTL - vt), P(-OVL, eTL), P(span / 2, ridgeTop), P(span + OVR, eTR), P(span + OVR, eTR - vt)', 1)
+    rest = rest.replace('P(-OVL - 20, eT + 5), P(span / 2, ridgeTop + 5), P(span + OVR + 20, eT + 5), P(span + OVR + 20, eT - cov), P(span / 2, ridgeTop - cov), P(-OVL - 20, eT - cov)',
+                        'P(-OVL - 20, eTL + 5), P(span / 2, ridgeTop + 5), P(span + OVR + 20, eTR + 5), P(span + OVR + 20, eTR - cov), P(span / 2, ridgeTop - cov), P(-OVL - 20, eTL - cov)', 1)
+    rest = rest.replace('if (ROOF.ov > 0 && !FAS) {', 'if ((OVL > 0 || OVR > 0) && !FAS) {', 1)
+    rest = rest.replace('if (ROOF.ov > 0 && !gable)', 'if (OVV > 0 && !gable)', 1)
+    cad = cad[:i] + head + ins + rest + cad[j:]
+    return cad
+
+
 def build(model_path, langs=None):
     m = json.load(open(model_path, encoding='utf-8'))
     cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
@@ -351,6 +380,7 @@ def build(model_path, langs=None):
     ]:
         if a_ in cad: cad = cad.replace(a_, b_, 1)
         else: print('BRĪDINĀJUMS: cad.js neatrasts:', a_[:50])
+    cad = _ov_per_edge(cad)
     cad = cad.replace('/*AR*/', ar + '\n' + sheet, 1)
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
