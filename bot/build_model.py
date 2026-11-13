@@ -143,7 +143,7 @@ def build(model_path, langs=None):
     pr['piezimes_en'] = pam['en'] + ([f'Ceiling height under the loft {g} mm.' if lf else f'Ceiling height {g} mm.'] if g else []) + (pr.get('piezimes_en') or extra)
     # grīdas pīrāgs fasādēs: stabveida pamatiem apdare līdz grīdas apakšai (−G1), metāla cokols līdz 40 mm virs zemes
     if pr.get('pamati', 'stabveida') == 'stabveida':
-        cfg['floor'] = {'foundation': 'stabi', 'above': cfg['floor'].get('posts_ground', 600)}
+        cfg['floor'] = {'foundation': 'stabi', 'above': pr.get('pamatu_augstums') or cfg['floor'].get('posts_ground', 600)}
     tone = cfg['toni'][pr.get('tonis', 'peleks')]
     pr['tonis_lv'], pr['tonis_en'], pr['tonis_sw'] = tone['lv'], tone['en'], tone['sw']
     if pr.get('fasade_hex'):   # fasādes krāsa pēc izvēles (RAL vai brīva krāsa)
