@@ -313,6 +313,8 @@ main { grid-template-columns: 44px 1fr 320px; }
 #rail button.on { background: var(--brand); color: #f2f4f6; }
 #rail button kbd { position: absolute; right: 2px; bottom: 1px; font: 600 9px/1 var(--f-cap); color: var(--muted); }
 #rail button.on kbd { color: #cfd5dc; }
+#rail .rcap { grid-column: 1 / -1; width: 100%; text-align: center; font: 600 8.5px/1 var(--f-cap); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 6px 0 3px; }
+#rail .rcap:first-child { margin-top: 0; }
 #rail hr { width: 24px; border: 0; border-top: 1px solid var(--line); margin: 4px 0; }
 #rail .sp { flex: 1; }
 #sbar { display: flex; gap: 16px; align-items: center; background: var(--paper); border-top: 1px solid var(--line); padding: 3px 12px; font-size: 12px; color: var(--muted); min-height: 24px; }
@@ -1268,7 +1270,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gx", run: () => { $("bGuideClr").click(); } },
   ];
   // kreisā josla: visi rīki grupās (atlase | ailas | sienas un telpas | mēri un palīglīnijas | terase, fasāde, stabi | materiāls)
-  const RAIL = [["sel", "er"], ["t0", "t1", "t2"], ["t3", "t4", "zone", "zonep"], ["t5", "t6", "gv", "gh", "gs", "gc"], ["ter", "terp", "dec", "decp", "post"], ["bk"]];
+  const RAIL = ["Rīki", ["sel", "er", "bk"], ["t5", "t6", "gv", "gh", "gs", "gc"], "Elementi", ["t0", "t1", "t2"], ["t3", "t4", "zone", "zonep"], ["ter", "terp", "dec", "decp", "post"]];
   const OPEN_ID = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "gh", "gs", "er", "ter", "terp", "dec", "decp", "post", "zone", "zonep", "bk"];
   IC.terp = '<path d="M3.5 18.5 5.5 9h7l1-4h6.5l-2 13.5z"/>';
   IC.dec = '<path d="M3 20.5V10l9-6.5 9 6.5v10.5"/><rect x="8.5" y="12" width="7" height="6"/>';
@@ -1284,8 +1286,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const keyLbl = k => k ? k.replace("shift+", "⇧").toUpperCase() : "—";
   function railBuild() {
     const r = $("railT"); r.innerHTML = "";
-    RAIL.forEach((grp, gi) => {
-      if (gi) r.appendChild(document.createElement("hr"));
+    let first = true;
+    RAIL.forEach(grp => {
+      if (typeof grp === "string") { const c = document.createElement("div"); c.className = "rcap"; c.textContent = grp; r.appendChild(c); first = true; return; }   // instrumenti (atlase, mēri, palīglīnijas, spainis) atsevišķi no 3D elementiem (logi, durvis, sienas, terase, stabi)
+      if (!first) r.appendChild(document.createElement("hr")); first = false;
       grp.forEach(id => { const a = ACTIONS.find(x => x.id === id); if (!a) return;
         const b = document.createElement("button"); b.type = "button"; b.dataset.id = a.id; b.setAttribute("aria-label", a.n); b.title = a.n + (keyMap[a.id] ? " (" + keyLbl(keyMap[a.id]) + ")" : "") + (a.oi != null || /^t\d$/.test(a.id) ? " · " + OPEN[a.oi != null ? a.oi : +a.id.slice(1)].s : "");
         b.innerHTML = icon(a.ic) + (keyMap[a.id] ? "<kbd>" + keyLbl(keyMap[a.id]) + "</kbd>" : ""); b.onclick = a.run; r.appendChild(b); });
