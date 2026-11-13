@@ -59,7 +59,8 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Terases jumts (pilns vai tikai redzamas spāres, stabi, slīpums, augstums; 3D panelī) | gatavs |
 | Jumti: L krustošanās | nav |
 | Piebūve (taisnstūra spārns dienvidu/austrumu pusē, Māja → Izmēri) | gatavs (pamata; ārsienu vilkšana taisnstūrim jau bija) |
-| Ieliekumi, piebūve ziemeļos/rietumos, brīva kontūra, izolēts viewport režīms | nav |
+| Ieliekums (Māja → Izmēri): taisnstūra izgriezums jebkurā malā vai stūrī, vairāki dod L/U/T formu; telpas apgriež, ailas noņem, fasāžu `recess` pārrēķina | gatavs (jumts paliek pār gabarītu) |
+| Piebūve ziemeļos/rietumos, brīva kontūra ar vilkšanu, izolēts viewport režīms | nav |
 | Mēru pielipšana pret asīm/C24/apdari, mēru ķēžu vilkšana | nav |
 | Elektrības plāns: automātisks priekšlikums ražošanas paketē (ligzdas, slēdži, gaismekļi, SP, saraksts) | gatavs (pamata, bez trasēm un ķēdēm) |
 | Mēbeļu bibliotēka no egmalt/house-planner (MIT) | nav |
@@ -71,3 +72,4 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Visas terases vilkšana pielīp sienām, stabiem, asīm, palīglīnijām | gatavs |
 | Pārbaudes `tests/t1..t5` (Playwright): `node tests/t1_lievenis_stabi_spainis.js` utt. | gatavs |
 | Krāsas spainis un pipete 3D skatā (fasāde pa pusēm, pārkare, stabi, terase, lievenis; Shift visa māja, Alt paņem) | gatavs (tikai krāsa, tekstūras 3D nav) |
+| Programma rāda, ka GitHub ir jaunāka versija, un atjauninās ar pogu (git pull) | gatavs (pārbaudīts tikai uz Linux) |
