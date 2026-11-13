@@ -294,7 +294,7 @@ def build(model_path, langs=None):
         ("pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);",
          "(pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT) - (pc.up || 0), ROOF.plinth - 40);"),
         ("  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
-         "  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));\n  (v.posts || []).forEach(q => { el(\"rect\", { x: q.x, y: q.y, width: q.w, height: q.d, fill: q.tex ? `url(#${terPat(g, q, q.x, q.y)})` : (q.col || (window.AR && AR.projekts && AR.projekts.tonis_sw) || \"#fff\"), stroke: C.ink, \"stroke-width\": 12 }, g); if (false) el(\"path\", { d: `M ${q.x} ${q.y} L ${q.x + q.w} ${q.y + q.d} M ${q.x + q.w} ${q.y} L ${q.x} ${q.y + q.d}`, stroke: C.ink, \"stroke-width\": 6 }, g); });   // [MM] brīvie stabi"),
+         "  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));\n  (v.posts || []).forEach(q => { el(\"rect\", { x: q.x, y: q.y, width: q.w, height: q.d, fill: \"#fff\", stroke: C.ink, \"stroke-width\": 12 }, g); el(\"path\", { d: `M ${q.x} ${q.y} L ${q.x + q.w} ${q.y + q.d} M ${q.x + q.w} ${q.y} L ${q.x} ${q.y + q.d}`, stroke: C.ink, \"stroke-width\": 6 }, g); });   // [MM] brīvie stabi"),
         ("  // openings\n  const reveal =",
          "  (v.posts || []).forEach(q => { if (!postVisible(v, side, q)) return; const a = endV ? q.y : q.x, l = endV ? q.d : q.w; postsU.push([Math.min(map(a), map(a + l)), l, q]); });   // [MM] brīvie stabi fasādēs\n  // openings\n  const reveal ="),
         # [MM] ja apakšā ir aploda, palodze paliek ailas apakšā
