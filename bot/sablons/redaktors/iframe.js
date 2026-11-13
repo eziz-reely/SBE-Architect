@@ -216,6 +216,7 @@
       const p = toLocal(bl.g, cx, cy);
       items(bl).forEach(it => {
         if (!inB(p, it.b, it.pad)) return;
+        if (it.k === "stamp") { const rr = bl.g.getBoundingClientRect(); if (cx < rr.left || cx > rr.right || cy < rr.top || cy > rr.bottom) return; }   // zīmes tiek meklētas tikai savā blokā (citā blokā tās lokālās koordinātes var sakrist)
         if (it.k === "fblk" && place) return;
         if (it.k === "porch" && !inPoly(p, X0.porch.poly)) return;
         if (it.k === "ter" && X0.terraces && X0.terraces[it.i] && !inPoly(p, X0.terraces[it.i].poly)) return;   // terase atlasāma tikai savā kontūrā (L formas terase neaizsedz sienu, kas ir tās ierobežojošā taisnstūrī)

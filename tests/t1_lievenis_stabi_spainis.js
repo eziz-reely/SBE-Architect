@@ -2,7 +2,7 @@
 const T = require('./lib'); const path = require('path');
 (async () => {
   const html = T.build(process.argv[2] || path.join(__dirname, 'modeli', 'lievenis-stabi.json'));
-  const { browser, page, errs } = await T.open(html);
+  const { browser, page, errs } = await T.open(html, { width: 1600, height: 1150 });
   let m = await T.model(page);
   T.ok(!!m.porch, 'modelī ir lievenis');
   // --- lievenis: klikšķis tā laukumā (prom no pakāpiena un stabiem), tad Delete
