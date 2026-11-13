@@ -178,3 +178,28 @@
     });
     Ln(x, y + h - 30, x + w, y + h - 30, { dash: 1, sw: 1.6 });
   };
+
+  // ---------- Papildu mēbeles un tehnika: viens simbols mmF(x, y, w, h, veids) ----------
+  // Veidu saraksts un noklusētie izmēri ņemti no egmalt/house-planner mēbeļu kataloga (MIT licence, skat. docs/TRESO_PUSU_LICENCES.md);
+  // plāna simboli zīmēti šeit ar SBE palīgiem. Priekšpuse ir apakšējā (dienvidu) mala; pagriež redaktors.
+  const mmF = (x, y, w, h, k) => {
+    const cx = x + w / 2, cy = y + h / 2, m = Math.min(w, h);
+    if (k === "augs") { Ci(cx, cy, m / 2); Ci(cx, cy, m * .18, { sw: 3 }); for (let a = 0; a < 6; a++) { const t = a * Math.PI / 3; Ln(cx + Math.cos(t) * m * .2, cy + Math.sin(t) * m * .2, cx + Math.cos(t) * m * .46, cy + Math.sin(t) * m * .46, { sw: 2.5 }); } return; }
+    if (k === "boilers") { Ci(cx, cy, m / 2); Ci(cx, cy, m * .34, { sw: 2.5 }); Ln(cx - m * .12, cy, cx + m * .12, cy, { sw: 3 }); Ln(cx, cy - m * .12, cx, cy + m * .12, { sw: 3 }); return; }
+    if (k === "bkresls") { Ci(cx, cy, m * .42); Pth(`M ${cx - m * .36} ${cy - m * .3} Q ${cx} ${cy - m * .62} ${cx + m * .36} ${cy - m * .3}`, { sw: 6 }); for (let a = 0; a < 5; a++) { const t = a * 2 * Math.PI / 5 + .3; Ln(cx, cy, cx + Math.cos(t) * m * .5, cy + Math.sin(t) * m * .5, { sw: 2 }); } return; }
+    R(x, y, w, h, { rx: k === "vanna" ? 60 : 12 });
+    if (k === "kumode") { const n = Math.max(2, Math.round(w / 500)); for (let i = 1; i < n; i++) Ln(x + w * i / n, y, x + w * i / n, y + h, { sw: 2.5 }); Ln(x, y + h - 30, x + w, y + h - 30, { sw: 2, dash: 1 }); for (let i = 0; i < n; i++) Ci(x + w * (i + .5) / n, y + h + 22, 12, { sw: 2.5 }); }
+    else if (k === "plaukts") { const n = Math.max(2, Math.round(w / 400)); for (let i = 1; i < n; i++) Ln(x + w * i / n, y, x + w * i / n, y + h, { sw: 2.5 }); Ln(x, y + 30, x + w, y + 30, { sw: 2.5 }); }
+    else if (k === "zgalds") { R(x + 50, y + 50, w - 100, h - 100, { rx: 8, sw: 2.5 }); }
+    else if (k === "tvgalds") { Ln(x, y + h - 40, x + w, y + h - 40, { sw: 2.5 }); const n = Math.max(2, Math.round(w / 550)); for (let i = 1; i < n; i++) Ln(x + w * i / n, y + h - 40, x + w * i / n, y + h, { sw: 2.5 }); }
+    else if (k === "ledus") { Ln(x, y, x + w, y + h, { sw: 2 }); Ln(x + w, y, x, y + h, { sw: 2 }); Ln(x + 40, y + h + 22, x + w * .45, y + h + 22, { sw: 5 }); }
+    else if (k === "tmasina") { R(x + 40, y + 40, w - 80, h - 80, { rx: 10, sw: 2.5 }); Ci(cx, cy - 20, Math.min(90, m * .16), { sw: 2 }); Ln(x + 80, y + h - 90, x + w - 80, y + h - 90, { sw: 3 }); }
+    else if (k === "plits") { const r = m * .15; [[.28, .28, 1.1], [.72, .28, .85], [.28, .72, .85], [.72, .72, 1.1]].forEach(([a, b, q]) => { Ci(x + w * a, y + h * b, r * q, { sw: 3 }); Ci(x + w * a, y + h * b, r * q * .5, { sw: 2 }); }); }
+    else if (k === "vanna") { R(x + 70, y + 70, w - 140, h - 140, { rx: Math.min(260, (h - 140) / 2), sw: 3 }); Ci(x + 230, cy, 28, { sw: 2.5 }); Ci(x + 110, cy, 22, { sw: 2.5 }); }
+    else if (k === "vskapis") { R(cx - Math.min(w * .35, 260), y + 60, Math.min(w * .7, 520), h - 150, { rx: 70, sw: 3 }); Ci(cx, y + 45, 18, { sw: 2.5 }); Ci(cx, cy, 16, { sw: 2.5 }); }
+    else if (k === "pakaramais") { Ln(x + 40, cy, x + w - 40, cy, { sw: 5 }); const n = Math.max(3, Math.round(w / 160)); for (let i = 0; i < n; i++) { const px = x + 80 + (w - 160) * i / (n - 1); Ln(px - 30, y + 40, px + 30, y + h - 40, { sw: 2.5 }); } }
+    else if (k === "apavi") { Ln(x, cy, x + w, cy, { sw: 2.5 }); const n = Math.max(2, Math.round(w / 400)); for (let i = 1; i < n; i++) Ln(x + w * i / n, y, x + w * i / n, y + h, { sw: 2.5 }); }
+    else if (k === "kamins") { R(x + w * .18, y + h * .3, w * .64, h * .7, { sw: 3 }); Pth(`M ${cx - w * .12} ${y + h * .9} Q ${cx - w * .16} ${y + h * .62} ${cx} ${y + h * .45} Q ${cx + w * .16} ${y + h * .62} ${cx + w * .12} ${y + h * .9}`, { sw: 2.5 }); Ci(cx, y + h * .14, Math.min(90, m * .12), { sw: 2.5 }); }
+    else if (k === "krasns") { R(x + 60, y + 60, w - 120, h - 120, { sw: 3 }); Ci(x + w * .3, y + h * .32, Math.min(110, m * .14), { sw: 2.5 }); R(x + w * .25, y + h - 60, w * .5, 60, { sw: 4 }); Ln(x, y, x + 60, y + 60, { sw: 2 }); Ln(x + w, y, x + w - 60, y + 60, { sw: 2 }); }
+    else if (k === "gkatls") { R(x + 40, y + 40, w - 80, h - 80, { rx: 8, sw: 2.5 }); Ci(cx - w * .2, y + h + 26, 14, { sw: 2.5 }); Ci(cx + w * .2, y + h + 26, 14, { sw: 2.5 }); Ln(cx - 50, cy, cx + 50, cy, { sw: 3 }); }
+  };
