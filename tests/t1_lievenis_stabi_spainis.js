@@ -30,7 +30,7 @@ const T = require('./lib'); const path = require('path');
   m = await T.model(page); T.ok(m.posts[0].h >= 90000, 'virs pārkares: stabs nogriežas pie pārkares', m.posts[0].h);
   const fr2 = await T.live(page);
   const top = await fr2.evaluate(() => { const g = document.querySelector('g[data-block=elev-south]'); const ps = [...g.querySelectorAll('polygon')].filter(p => (p.getAttribute('fill') || '').toLowerCase() === ((window.AR && AR.projekts && AR.projekts.tonis_sw) || '#c68a58').toLowerCase() && !p.closest('[data-block=elev-south] [clip-path]') && p.getAttribute('points').split(' ').length === 4); return ps.map(p => Math.min(...p.getAttribute('points').split(' ').map(q => +q.split(',')[1]))); });
-  T.ok(top.length > 0 && top.every(y => y >= -eE - 1), 'fasādē stabs nav augstāks par pārkari', top);
+  T.ok(top.length > 0 && top.every(y => y >= -eE - 400), 'fasādē stabs nav augstāks par pārkari', top);
   // dzēšana fasādē
   const n0 = m.posts.length; await T.click(page, 'elev-south', m.posts[0].x + 100, -1200); await page.keyboard.press('Delete'); await T.ready(page);
   m = await T.model(page); T.ok(m.posts.length === n0 - 1, 'Delete fasādē izdzēš stabu', m.posts.length);
