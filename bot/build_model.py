@@ -374,6 +374,9 @@ def build(model_path, langs=None):
          '      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: "none", stroke: C.ink, "stroke-width": 12 }, g);\n'
          '    }\n'
          '    // sarkanajam: balta fascija ar mazu jumta toņa skārda lentu; pārējiem tikai tieva (100 mm) skārda mala, dēļi iet līdz jumtam\n    if (FAS) {'),
+        # [MM] zemes līnija fasādē: viss, kas iet zem zemes (terases, stabi, pamati), tiek aizsegts; māja stāv aiz zemes līnijas
+        ('  const axU = ax.map(([a]) => map(a)), AG =',
+         '  { el("rect", { x: -1600, y: ROOF.plinth, width: span + 3200, height: 300, fill: "#fff" }, g); let d = ""; for (let x = -1400; x < span + 1400 - 260; x += 200) d += `M ${x} ${ROOF.plinth + 260} L ${x + 260} ${ROOF.plinth} `; el("path", { d, stroke: "#666", "stroke-width": 8, fill: "none" }, g);\n    el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth, stroke: C.ink, "stroke-width": 45, "data-keep": 1 }, g); }   // [MM] zemes līnija virs visa, kas zem tās\n  const axU = ax.map(([a]) => map(a)), AG ='),
     ]:
         assert a in cad, 'SBE cad.js: nav atrasts ' + a[:50]
         cad = cad.replace(a, b, 1)
