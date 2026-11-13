@@ -672,7 +672,7 @@ details.tr[data-pane="sel"] > .trb { background: var(--field); }
 </header>
 <div id="ribbon" role="toolbar" aria-label="Noformējums"></div>
 <main>
-  <nav id="rail" aria-label="Rīki"><div id="railT"></div><span class="sp"></span><button id="b3d" type="button" aria-label="3D skats" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg></button><button type="button" id="bKeys" title="Taustiņi" aria-label="Taustiņi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/></svg></button></nav>
+  <nav id="rail" aria-label="Rīki"><div id="railT"></div><span class="sp"></span><button id="b3d" type="button" aria-label="3D skats" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg></button><button type="button" id="bIso" title="Izolēt skatu: plāns vai fasāde pa visu logu (dubultklikšķis tukšā vietā skatā; Esc atgriež)" aria-label="Izolēt skatu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5" stroke-dasharray="2.5 2"/><rect x="7.5" y="8" width="9" height="8"/></svg></button><button type="button" id="bKeys" title="Taustiņi" aria-label="Taustiņi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/></svg></button></nav>
   <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" stroke-dasharray="2 2"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span>Dzēst palīglīnijas</span></button></div>
   <aside id="tray" aria-label="Īpašības un iestatījumi">
     <details class="tr" data-pane="sel" open><summary><span>Īpašības</span></summary><div class="trb">
@@ -774,12 +774,18 @@ details.tr[data-pane="sel"] > .trb { background: var(--field); }
       <label>Slīpums, °<input id="v3rSl" type="number" step="1" min="2" max="35"></label>
       <p class="pnote">Klikšķis uz fasādes 3D skatā piesprauž terasi pie tās.</p>
     </div>
+    <p class="pcap">Terases pie fasādēm</p>
+    <label class="v3chk"><input type="checkbox" id="v3add"> Pievienot terasi ar klikšķi uz fasādes</label>
+    <label>Jaunās terases dziļums, mm<input id="v3addDep" type="number" step="100" min="300" value="2000"></label>
+    <div id="v3tList"></div>
+    <p class="pnote">Katrs klikšķis uz sienas pieliek terasi visā šīs sienas garumā. Terases var būt pie vairākām fasādēm; izmērus precizē šeit vai plānā.</p>
     <p class="pcap">Krāsas spainis</p>
     <label class="v3chk"><input type="checkbox" id="v3bk"> Krāsot ar klikšķi</label>
     <div id="v3bkBox" hidden>
       <label>RAL tonis<select id="v3bkRal"></select></label>
       <label>Brīva krāsa<input type="color" id="v3bkCol"></label>
-      <p class="pnote">Klikšķis krāso vienu fasādi, jumta pārkari, stabu, terasi vai lieveni. Shift+klikšķis uz fasādes: visa māja. Alt+klikšķis paņem krāsu.</p>
+      <div class="v3row"><button id="v3bkTex" type="button" class="v3b">Tekstūra no faila</button><button id="v3bkNoTex" type="button" class="v3b" hidden>Bez tekstūras</button></div><input id="v3bkFile" type="file" accept="image/*" hidden>
+      <p class="pnote">Klikšķis krāso vienu fasādi, jumta pārkari, stabu, terasi vai lieveni. Shift+klikšķis uz fasādes: visa māja. Alt+klikšķis paņem krāsu. Tekstūra der stabam, terasei un lievenim.</p>
     </div>
     <p class="pcap">Prompts Gemini</p>
     <label>Fasādes tonis<select id="v3tone"></select></label>
@@ -935,6 +941,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       try { nf.contentWindow.focus(); } catch (_) {}
       showCheck(d.check || []);
       if (placing) toFrame({ mmPlace: placing });
+      if (isoName) toFrame({ mmIso: isoName, keep: true });   // izolētais skats paliek arī pēc pārzīmēšanas
       if (moveOn) toFrame({ mmMove: true });
       return;
     }
@@ -946,7 +953,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "pstKey") pstKey(d.key, d.shiftKey);
     else if (d.t === "pstDrag") { pst = d.key; pstMove(d.dx, d.dy); }
     else if (d.t === "view") view = d.view;
-    else if (d.t === "edit") { if (d.resized) roofFix(d.model); if (d.pst !== undefined) pst = d.pst; pamSetMode(d.pamMode || null); sel = d.sel || sel; if (d.placed) endPlace(); if (d.place) placeNext = true; commit(d.model); if (d.nameFocus) setTimeout(() => { const i = document.querySelector("#panel input[type=text]"); if (i) { i.focus(); i.select(); } }, 800); }
+    else if (d.t === "iso") { isoName = d.name || null; $("bIso").classList.toggle("on", !!isoName); status(isoName ? "Izolēts skats. Esc vai dubultklikšķis tukšā vietā atgriež visu lapu." : "Redzama visa lapa."); }
+    else if (d.t === "edit") { if (d.wing) wingCut(d.model, d.wing); if (d.resized) roofFix(d.model); if (d.pst !== undefined) pst = d.pst; pamSetMode(d.pamMode || null); sel = d.sel || sel; if (d.placed) endPlace(); if (d.place) placeNext = true; commit(d.model); if (d.nameFocus) setTimeout(() => { const i = document.querySelector("#panel input[type=text]"); if (i) { i.focus(); i.select(); } }, 800); }
     else if (d.t === "undo") doUndo();
     else if (d.t === "redo") doRedo();
     else if (d.t === "delete") del();
@@ -1050,7 +1058,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function buttons() { ribbon(); try { topSync(); } catch (e) {} { const g = $("gClr"); if (g) g.hidden = !((model.projekts || {}).guides || []).length; } $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
   $("bRib").onclick = e => { e.stopPropagation(); ribToggle(!ribOpen); };
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
-  $("bFit").onclick = () => { view = null; try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
+  $("bFit").onclick = () => { view = null; if (isoName) { toFrame({ mmIso: null }); return; } try { FR[live].contentWindow.MMZ.reset(); } catch (_) { render(); } };
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
   $("bResetNo").onclick = () => { $("confirm").hidden = true; $("bReset").hidden = false; };
   $("bResetYes").onclick = () => { $("confirm").hidden = true; $("bReset").hidden = false; sel = null; commit(clone(BASE)); };
@@ -1113,6 +1121,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Pods klasisks", s: "ar tvertni, 450 × 660", e: ["toilet", 0, 0, 1, null, "k"], center: true, ic: "wck" },
     { n: "Duša", s: "900 × 900", e: ["shower", 0, 0, 900, ["n", "w"]], w: 900, h: 900, ic: "sh" },
     { n: "Veļasmašīna", s: "600 × 600", e: ["washer", 0, 0], w: 600, h: 600, ic: "wm" },
+    // papildu mēbeles un tehnika (veidi un izmēri no egmalt/house-planner kataloga, MIT)
+    ...[["Kumode", 1000, 450, "kumode", "fx1"], ["Grāmatplaukts", 800, 350, "plaukts", "fx1"], ["Apavu skapis", 800, 320, "apavi", "fx1"], ["Pakaramais", 1000, 350, "pakaramais", "fx1"], ["Žurnālgalds", 1100, 600, "zgalds", "fx2"], ["TV galdiņš", 1600, 420, "tvgalds", "fx2"], ["Biroja krēsls", 650, 650, "bkresls", "fx2"], ["Augs", 450, 450, "augs", "fx2"],
+      ["Ledusskapis", 600, 650, "ledus", "fx3"], ["Trauku mašīna", 600, 600, "tmasina", "fx3"], ["Plīts", 600, 600, "plits", "fx3"], ["Vanna", 1700, 750, "vanna", "fx3"], ["Izlietne ar skapīti", 800, 480, "vskapis", "fx3"],
+      ["Boileris", 450, 450, "boilers", "fx4"], ["Gāzes katls", 440, 340, "gkatls", "fx4"], ["Kamīns", 1000, 550, "kamins", "fx4"], ["Mūrēta krāsns", 1150, 900, "krasns", "fx4"]]
+      .map(([n, w, h, k, grp]) => ({ n, s: `${w} × ${h}`, e: ["mmF", 0, 0, w, h, k], w, h, ic: "f_" + k, grp })),
     { n: "Taisnas kāpnes", s: "3600 × 900", e: ["kapnes", 0, 0, 3600, 900, "e"], w: 3600, h: 900, ic: "st", vy: 1 },
     { n: "L kāpnes", s: "2700 × 2400, laukums", e: ["kapnesL", 0, 0, 2700, 2400, 900, "r", "lauk", 0], w: 2700, h: 2400, ic: "stL", vy: 1 },
   ];
@@ -1154,6 +1167,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     wck: '<rect x="6.5" y="2.5" width="11" height="5" rx="1"/><circle cx="12" cy="5" r=".8"/><path d="M8 7.5c-.3 4.3.3 9 1.9 11.3Q10.9 21 12 21t2.1-2.2C15.7 16.5 16.3 11.8 16 7.5z"/><path d="M9.9 10.2c-.2 3 .3 6.3 2.1 7.6 1.8-1.3 2.3-4.6 2.1-7.6z"/>',
     sh: '<rect x="4" y="4" width="16" height="16" rx="1"/><path d="M4 4l6.6 6.6M20 4l-6.6 6.6M4 20l6.6-6.6M20 20l-6.6-6.6"/><circle cx="12" cy="12" r="2"/>',
     wm: '<rect x="5" y="3.5" width="14" height="17" rx="1.5"/><circle cx="12" cy="13" r="4.5"/><path d="M8 6.5h3"/>',
+    f_kumode: '<rect x="3" y="7" width="18" height="10" rx="1"/><path d="M9 7v10M15 7v10"/>', f_plaukts: '<rect x="3" y="8" width="18" height="8" rx="1"/><path d="M3 10.5h18M9 8v8M15 8v8"/>', f_apavi: '<rect x="3" y="8" width="18" height="8" rx="1"/><path d="M3 12h18M12 8v8"/>',
+    f_pakaramais: '<rect x="3" y="8" width="18" height="8" rx="1"/><path d="M5 12h14M8 9.5l1 5M12 9.5l1 5M16 9.5l1 5"/>', f_zgalds: '<rect x="3" y="7" width="18" height="10" rx="1"/><rect x="5.5" y="9.5" width="13" height="5" rx=".5"/>', f_tvgalds: '<rect x="2.5" y="9" width="19" height="6" rx="1"/><path d="M2.5 13h19M9 13v2M15 13v2"/>',
+    f_bkresls: '<circle cx="12" cy="13" r="5"/><path d="M7 9.5q5-4 10 0"/>', f_augs: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 7v3M12 14v3M7 12h3M14 12h3"/>',
+    f_ledus: '<rect x="5.5" y="4" width="13" height="16" rx="1"/><path d="m5.5 4 13 16M18.5 4l-13 16"/>', f_tmasina: '<rect x="5" y="4.5" width="14" height="15" rx="1"/><rect x="7" y="6.5" width="10" height="11" rx=".5"/><circle cx="12" cy="11" r="2"/>', f_plits: '<rect x="4.5" y="4.5" width="15" height="15" rx="1"/><circle cx="9" cy="9" r="2"/><circle cx="15" cy="9" r="1.5"/><circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="2"/>',
+    f_vanna: '<rect x="2.5" y="6.5" width="19" height="11" rx="2"/><rect x="4.5" y="8.5" width="15" height="7" rx="3.5"/><circle cx="7.5" cy="12" r=".8"/>', f_vskapis: '<rect x="3.5" y="6.5" width="17" height="11" rx="1"/><rect x="7" y="8.5" width="10" height="6.5" rx="2.5"/><circle cx="12" cy="11.5" r=".7"/>',
+    f_boilers: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="4.5"/><path d="M10.5 12h3M12 10.5v3"/>', f_gkatls: '<rect x="5" y="6" width="14" height="11" rx="1"/><path d="M10 11.5h4M9 17v2.5M15 17v2.5"/>', f_kamins: '<rect x="3.5" y="5.5" width="17" height="13" rx="1"/><path d="M7 18.5v-8h10v8"/><path d="M10 18c-.8-2.5.5-4 2-5.5 1.500 1.500 2.800 3 2 5.500"/>', f_krasns: '<rect x="3.500" y="4.500" width="17" height="15" rx="1"/><rect x="6" y="7" width="12" height="10"/><circle cx="9.500" cy="10.500" r="1.800"/>',
     st: '<rect x="2" y="7" width="20" height="10"/><path d="M6 7v10M10 7v10M14 7v10M18 7v10"/><path d="M3.5 12h15M16.5 10l2.5 2-2.5 2"/>',
     stL: '<path d="M2.5 13.5H14V3h7.5v18H2.5z"/><path d="M6.5 13.5V21M10.5 13.5V21M14 7h7.5M14 10.5h7.5"/><path d="M4 17.3h13.7V6M16 7.8l1.7-2.3 1.8 2.3"/>',
   };
@@ -1235,9 +1254,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     $("libOpen").appendChild(b); }
   $("gClr").onclick = () => $("bGuideClr").click();
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
-  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk", "tv"]], ["Virtuve un vannas istaba", ["kit", "ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]]], host = $("libFurn");
+  { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk", "tv"]], ["Virtuve un vannas istaba", ["kit", "ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]], ["Glabāšana un priekšnams", "fx1"], ["Dzīvojamā, kabinets", "fx2"], ["Tehnika un vannas istaba", "fx3"], ["Apkure", "fx4"]], host = $("libFurn");
     GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
-      FURN_LIB.filter(f => ics.includes(f.ic)).forEach(f => libButton(host, f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy })); }); }
+      FURN_LIB.filter(f => typeof ics === "string" ? f.grp === ics : ics.includes(f.ic)).forEach(f => libButton(host, f, { t: "furn", entry: f.e, w: f.w, h: f.h, center: !!f.center, vy: !!f.vy })); }); }
 
   // ---- CAD rīku josla, pielāgojami taustiņi, statusa rinda ----
   const ACTIONS = [
@@ -1274,6 +1293,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     railSync();
   }
   $("bKeys").onclick = () => { tab("keys"); keysDraw(); };
+  // izolēts skats: poga izolē izvēlētā elementa skatu (plānu vai fasādi); bez izvēles pietiek ar dubultklikšķi tukšā vietā skatā
+  let isoName = null;
+  const ISO_OF = s => !s ? null : s.side ? "elev-" + s.side : s.lv === "loft" ? "plan-loft" : "plan";
+  $("bIso").onclick = () => { if (isoName) { toFrame({ mmIso: null }); return; } const b = ISO_OF(sel) || "plan"; toFrame({ mmIso: b }); };
   function railSync() {
     const on = onBtn ? OPENB.indexOf(onBtn) : -1, id = moveOn && on < 0 ? "mv" : on >= 0 ? OPEN_ID[on] : onBtn ? null : "sel";
     document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
@@ -1658,10 +1681,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         gs.appendChild(cf);
       }
       gs.appendChild(field("Jumta slīpums, °", J.pitch || 30, (n, v) => { n.jumts = n.jumts || {}; n.jumts.pitch = Math.max(10, Math.min(55, Math.round(v))); roofFix(n); }));
+      if ((model.poly || []).length === 6) gs.appendChild(field("Jumts L formas mājai", J.L ? "1" : "", (n, v) => { n.jumts = n.jumts || {}; if (v === "1") n.jumts.L = true; else delete n.jumts.L; }, { "": "Viens jumts pār visu gabarītu", "1": "L jumts ar ieleju (3D un SketchUp)" }));
       { // piebūve: taisnstūra spārns dienvidu vai austrumu pusē (kontūra kļūst L veida); pārējais modelis paliek
         const gx = group("Piebūve", host), EX = EXT;
         const row = (lab, key, opts) => gx.appendChild(field(lab, EX[key], (n, v) => { EX[key] = opts ? v : Math.round(+v); throw "async"; }, opts || null));
-        row("Mala", "side", { south: "Dienvidu", east: "Austrumu" }); row("Garums gar sienu, mm", "len"); row("Dziļums, mm", "dep"); row("Nobīde no stūra, mm", "off");
+        row("Mala", "side", { south: "Dienvidu", east: "Austrumu", north: "Ziemeļu", west: "Rietumu" }); row("Garums gar sienu, mm", "len"); row("Dziļums, mm", "dep"); row("Nobīde no stūra, mm", "off");
         const b = document.createElement("button"); b.type = "button"; b.className = "wide"; b.textContent = "Pievienot piebūvi"; b.onclick = () => addExtension(EX);
         gx.appendChild(b); const nx = document.createElement("p"); nx.className = "note full"; nx.textContent = "Pievieno taisnstūra spārnu ar savu telpu un ārsienām. Jumts sanāk pār visu ēkas gabarītu. Logi, kas paliek piebūves vietā, tiek noņemti.";  gx.appendChild(nx); }
       { // ieliekums: taisnstūra izgriezums jebkurā malā (lodžija, ieejas niša, U vai L forma); jumts paliek pār visu gabarītu
@@ -1832,7 +1856,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   // ieliekums: izgriež taisnstūri no mājas malas (zem tā paša jumta); telpas tiek apgrieztas, ailas izgriezumā noņemtas
   function addRecess(RC) {
     const n = clone(model), W = n.W, D = n.D, ln = Math.round(+RC.len), dp = Math.round(+RC.dep), H = RC.side === "south" || RC.side === "north", span = H ? W : D;
-    const Tt = +((TPL.match(/const T = ([\d.]+), t = ([\d.]+);/) || [0, 283.5])[1]), Tw = Math.max(100, Math.min(Tt, ...((n.rooms || []).flatMap(r => r.r).map(q => q[0]).filter(v => v > 50))));
+    const Tw = wallTw(n);
     if (ln < 600 || dp < 300) { status("Ieliekums par mazu: garums vismaz 600 mm, dziļums vismaz 300 mm."); return; }
     if (ln >= span - 2 * Tw) { status("Ieliekums nevar aizņemt visu malu. Lai saīsinātu māju, izvēlies ārsienu un ieraksti izmaiņu ar mīnusu."); return; }
     if (dp >= (H ? D : W) - 2 * Tw - 1500) { status("Ieliekums par dziļu šai mājai."); return; }
@@ -1841,6 +1865,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const base = n.poly && n.poly.length > 2 ? n.poly : [[0, 0], [W, 0], [W, D], [0, D]], np = polyCut(base, R);
     if (!np) { status("Šādu ieliekumu nevar izgriezt: māja sadalītos divās daļās."); return; }
     const bx = np.map(q => q[0]), by = np.map(q => q[1]); if (Math.min(...bx) > .5 || Math.min(...by) > .5 || Math.max(...bx) < W - .5 || Math.max(...by) < D - .5) { status("Ieliekums nogrieztu visu mājas malu. Izmanto ārsienas garuma maiņu."); return; }
+    const res = rectCut(n, R, Tw, np); n.recess = recessOf(n);
+    if (RC.ter === "1") { n.terraces = (n.terraces || []).concat([{ name: "Terase ieliekumā", poly: [[R[0], R[1]], [R[2], R[1]], [R[2], R[3]], [R[0], R[3]]], th: 300, corners: false, texRot: 0 }]); }
+    sel = null; commit(n); status(`Ieliekums ${ln} × ${dp} mm izgriezts` + (res.ow ? `, noņemtas ${res.ow} ailas` : "") + (res.gone ? `, pazudušas ${res.gone} telpas` : "") + ". Pārbaudi telpas un mēbeles ap to.");
+  }
+  const wallTw = n => { const Tt = +((TPL.match(/const T = ([\d.]+), t = ([\d.]+);/) || [0, 283.5])[1]); return Math.max(100, Math.min(Tt, ...((n.rooms || []).flatMap(r => r.r).map(q => q[0]).filter(v => v > 50)))); };
+  // izgriež taisnstūri R no modeļa: kontūra (np = jau aprēķināta), telpas, ailas, mēbeles (abos stāvos)
+  function rectCut(n, R, Tw, np) {
     n.poly = np;
     const X = [R[0] - Tw, R[1] - Tw, R[2] + Tw, R[3] + Tw], inX = (x, y, pad = 0) => x > X[0] - pad && x < X[2] + pad && y > X[1] - pad && y < X[3] + pad;
     const cut = q => { const [x, y, w, h] = q, x1 = x + w, y1 = y + h; if (x >= X[2] || x1 <= X[0] || y >= X[3] || y1 <= X[1]) return [q]; const o = [];
@@ -1855,11 +1886,22 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (L.furniture) L.furniture = L.furniture.filter(f => { const g = f[0] === "_rot" ? f[4] : f; return !(typeof g[1] === "number" && typeof g[2] === "number" && inX(g[1], g[2])); });
     };
     lvl(n); lvl(n.loft);
-    n.recess = recessOf(n);
-    if (RC.ter === "1") { n.terraces = (n.terraces || []).concat([{ name: "Terase ieliekumā", poly: [[R[0], R[1]], [R[2], R[1]], [R[2], R[3]], [R[0], R[3]]], th: 300, corners: false, texRot: 0 }]); }
-    sel = null; commit(n); status(`Ieliekums ${ln} × ${dp} mm izgriezts` + (ow ? `, noņemtas ${ow} ailas` : "") + (gone ? `, pazudušas ${gone} telpas` : "") + ". Pārbaudi telpas un mēbeles ap to.");
+    return { ow, gone };
+  }
+  // piebūve ziemeļos/rietumos: redaktors jau ir pastiepis māju par dziļumu; šeit nogriež visu ārpus spārna
+  function wingCut(n, g) {
+    const dp = Math.abs(+g.d), W = n.W, D = n.D, a0 = +g.off, a1 = a0 + +g.len, Tw = wallTw(n), span = g.side === "west" ? D : W;
+    const Rs = (g.side === "west" ? [[0, 0, dp, a0], [0, a1, dp, D]] : [[0, 0, a0, dp], [a1, 0, W, dp]]).filter(R => R[2] - R[0] > 1 && R[3] - R[1] > 1);
+    void span; Rs.forEach(R => { const np = polyCut(n.poly && n.poly.length > 2 ? n.poly : [[0, 0], [W, 0], [W, D], [0, D]], R); if (np) rectCut(n, R, Tw, np); });
+    n.recess = recessOf(n); status(`Piebūve ${Math.round(g.len)} × ${Math.round(dp)} mm pievienota ${g.side === "west" ? "rietumu" : "ziemeļu"} pusē. Blakus telpas ir pastieptas piebūvē.`);
   }
   function addExtension(EX) {
+    if (EX.side === "north" || EX.side === "west") {   // sākuma pusē: redaktors pastiepj māju (viss pabīdās), tad nogriež malas ārpus spārna
+      const span = EX.side === "west" ? model.D : model.W, ln = Math.round(EX.len), dp = Math.round(EX.dep), tw = wallTw(model);
+      if (ln < 2 * tw + 1500 || dp < tw + 1500) { status("Piebūve par mazu: garums un dziļums vismaz " + Math.round(2 * tw + 1500) + " mm."); return; }
+      if (ln > span) { status("Piebūve nevar būt garāka par sienu (" + span + " mm)."); return; }
+      toFrame({ mmGrow: { side: EX.side, d: dp, len: ln, off: Math.max(0, Math.min(span - ln, Math.round(EX.off || 0))) } }); return;
+    }
     const n = clone(model), Tt = +((TPL.match(/const T = ([\d.]+), t = ([\d.]+);/) || [0, 283.5])[1]), S = EX.side === "east", W = n.W, D = n.D;
     if (n.poly && n.poly.length > 4) { status("Kontūra jau nav taisnstūris. Piebūvi pagaidām var pievienot tikai taisnstūra mājai."); return; }
     const ln = Math.round(EX.len), dp = Math.round(EX.dep), span = S ? D : W;
@@ -2470,7 +2512,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const mv = (n, k, v) => { const f = S(n), d = v - B(n)[k]; B(n)[k] = v; if (wrapped) f[k === 1 ? 2 : 3] += d; };
       if (nm === "Ln") g.append(field("X1", base[1], (n, v) => { B(n)[1] = v; }), field("Y1", base[2], (n, v) => { B(n)[2] = v; }), field("X2", base[3], (n, v) => { B(n)[3] = v; }), field("Y2", base[4], (n, v) => { B(n)[4] = v; }));
       else g.append(field("X, mm", base[1], (n, v) => mv(n, 1, v)), field("Y, mm", base[2], (n, v) => mv(n, 2, v)));
-      if (["bed", "sofa", "sofaL", "R", "basin", "wardrobe", "desk", "galds", "kitchen"].includes(nm) && typeof base[3] === "number" && typeof base[4] === "number")
+      if (["bed", "sofa", "sofaL", "R", "basin", "wardrobe", "desk", "galds", "kitchen", "mmF"].includes(nm) && typeof base[3] === "number" && typeof base[4] === "number")
         g.append(field("Garums, mm", base[3], (n, v) => { B(n)[3] = Math.max(200, v); }), field(nm === "sofaL" ? "Dziļums, mm" : "Platums, mm", base[4], (n, v) => { B(n)[4] = Math.max(200, v); }));
       if (nm === "sofa" || nm === "sofaL") {
         g.append(field("Forma", nm === "sofa" ? "i" : base[6] === "l" ? "l" : "r", (n, v) => {
@@ -2798,6 +2840,38 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     } catch (e) { $("tbNote").textContent = "Logo neizdevās: " + (e.message || e); }
   };
 
+  // ---- L formas jumts: divi divslīpju jumti ar ieleju (jumts.L). Atgriež null, ja kontūra nav L vai jumts ir četrslīpju. ----
+  // Galvenā daļa ir pilna garuma josla, spārna kore ieiet galvenās daļas slīpnē; izvēlas dalījumu, kurā spārns nav platāks par galveno daļu.
+  function roofL(m) {
+    const J = m.jumts || {}, P = m.projekts || {}, W = m.W, D = m.D, poly = m.poly || [];
+    if (!J.L || poly.length !== 6 || +J.hip || /^(cetr|četr)/i.test(J.forma || "")) return null;
+    if (!poly.every((p, i) => { const q = poly[(i + 1) % 6]; return Math.abs(p[0] - q[0]) < 1 || Math.abs(p[1] - q[1]) < 1; })) return null;
+    const r = poly.find(p => p[0] > 1 && p[0] < W - 1 && p[1] > 1 && p[1] < D - 1); if (!r) return null;
+    const has = (x, y) => poly.some(p => Math.abs(p[0] - x) < 1 && Math.abs(p[1] - y) < 1), c = [[0, 0], [W, 0], [W, D], [0, D]].find(q => !has(q[0], q[1])); if (!c) return null;
+    const tan = Math.tan((J.pitch || 30) * Math.PI / 180), eave = J.eave || 2600, ov = +J.ov || 0, OS = P.ov_side || {}, od = q => (OS[q] != null && !isNaN(+OS[q])) ? +OS[q] : ov;
+    const cw = Math.abs(r[0] - c[0]), cd = Math.abs(r[1] - c[1]), A = (W - cw) <= (D - cd) ? 0 : 1;   // A = kores ass galvenajai daļai (0 = x, 1 = y)
+    // kanoniskās koordinātas: u gar galveno kori, v no galvenās daļas malas, pie kuras ir spārns (spārns ir v < 0)
+    const U = A ? D : W, cu = A ? c[1] : c[0], cv = A ? c[0] : c[1], nu = A ? cd : cw, nv = A ? cw : cd, V = A ? W : D;
+    const a = cu === 0 ? nu : 0, b = cu === 0 ? U : U - nu, s = cv === 0 ? 1 : -1, v0 = cv === 0 ? nv : V - nv, dm = V - nv, dw = nv, hw = (b - a) / 2, wc = (a + b) / 2;
+    const w3 = (u, v, z) => { const q = v0 + s * v; return A ? [q, u, z] : [u, q, z]; }, toUV = (x, y) => { const u = A ? y : x, q = A ? x : y; return [u, (q - v0) * s]; };
+    const sd = A ? { u0: "north", u1: "south", far: s > 0 ? "east" : "west", wg: s > 0 ? "west" : "east" } : { u0: "west", u1: "east", far: s > 0 ? "south" : "north", wg: s > 0 ? "north" : "south" };
+    const oN = od(sd.wg), oF = od(sd.far), oG = oN, o0 = a === 0 ? oN : od(sd.u0), o1 = b === U ? oN : od(sd.u1), h = d => eave + d * tan, hr = h(dm / 2), hg = h(hw);
+    const dv = (du, dvv) => { const q = w3(du, dvv * s === 0 ? 0 : dvv, 0), o = w3(0, 0, 0); return [q[0] - o[0], q[1] - o[1], 2]; };
+    const z = (x, y) => { const [u, v] = toUV(x, y); if (v < 0) return h(Math.min(u - a, b - u)); let d = Math.min(v, dm - v); if (u > a && u < b && v <= dm / 2) d = Math.max(d, Math.min(u - a, b - u)); return h(d); };
+    const near = [[-o0, -oN, h(-oN)], [a - oN, -oN, h(-oN)], [wc, hw, hg], [b + oN, -oN, h(-oN)], [U + o1, -oN, h(-oN)], [U + o1, dm / 2, hr], [-o0, dm / 2, hr]];
+    const slopes = [
+      { name: "Jumts, galvenā tālā slīpne", pts: [[-o0, dm + oF, h(-oF)], [U + o1, dm + oF, h(-oF)], [U + o1, dm / 2, hr], [-o0, dm / 2, hr]], dir: dv(0, 1) },
+      { name: "Jumts, galvenā slīpne ar ieleju", pts: near, dir: dv(0, -1) },
+      { name: "Jumts, spārna slīpne 1", pts: [[a - oN, -dw - oG, h(-oN)], [a - oN, -oN, h(-oN)], [wc, hw, hg], [wc, -dw - oG, hg]], dir: dv(-1, 0) },
+      { name: "Jumts, spārna slīpne 2", pts: [[b + oN, -dw - oG, h(-oN)], [b + oN, -oN, h(-oN)], [wc, hw, hg], [wc, -dw - oG, hg]], dir: dv(1, 0) },
+    ].map(q => ({ name: q.name, dir: q.dir, pts: q.pts.map(([u, v, zz]) => w3(u, v, zz)) }));
+    // dzegas notekām: [sākums, beigas, mala]; 60 mm ārpus jumta malas
+    const E = (u0, v0_, u1, v1, zz, key) => [w3(u0, v0_, zz), w3(u1, v1, zz), key], eaves = [E(-o0, dm + oF + 60, U + o1, dm + oF + 60, h(-oF), sd.far)];
+    if (a > 0) { eaves.push(E(-o0, -oN - 60, a - oN, -oN - 60, h(-oN), sd.wg)); eaves.push(E(a - oN - 60, -oN, a - oN - 60, -dw - oG, h(-oN), sd.u0)); } else eaves.push(E(a - oN - 60, dm / 2 * 0 - oN, a - oN - 60, -dw - oG, h(-oN), sd.u0));
+    if (b < U) { eaves.push(E(b + oN, -oN - 60, U + o1, -oN - 60, h(-oN), sd.wg)); eaves.push(E(b + oN + 60, -oN, b + oN + 60, -dw - oG, h(-oN), sd.u1)); } else eaves.push(E(b + oN + 60, -oN, b + oN + 60, -dw - oG, h(-oN), sd.u1));
+    return { z, slopes, eaves, ridge: Math.max(hr, hg), A };
+  }
+
   // ---- SketchUp: lapa pati uzraksta Ruby skriptu (.rb), kas SketchUp uzbūvē 3D modeli; iepakots .zip ----
   function skpRb(m, geo) {
     const W = m.W, D = m.D, J = m.jumts || {}, pitch = J.pitch || 30, tan = Math.tan(pitch * Math.PI / 180), eave = J.eave || 2600, ov = +J.ov || 0;
@@ -2812,7 +2886,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const glass = (pts, ref, n) => (geo && geo.push({ k: "g", pts, ref, n }), put(`glass(ents, ${L(pts)})`));
     // ārsienas pa plāna kontūru (arī L un T): katra mala ir vertikāla siena līdz jumta apakšai, ar logu un durvju ailām
     const hipDeg = +J.hip || (/^(cetr|četr)/i.test(J.forma || "") ? pitch : 0) || +((TPL.match(/"roof":\s*\{[^}]*?"hip":\s*([\d.]+)/) || [])[1] || 0), tanH = hipDeg ? Math.tan(hipDeg * Math.PI / 180) : 0;
-    const ridgeU = eave + D / 2 * tan, roofZ = (x, y) => eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity), roofAt = y => roofZ(W / 2, y);
+    const ridgeU = eave + D / 2 * tan, RL = tanH ? null : roofL(m), roofZ = (x, y) => RL ? RL.z(x, y) : eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity), roofAt = y => roofZ(W / 2, y);
     const poly = (m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [W, 0], [W, D], [0, D]]).map(p => [+p[0], +p[1]]);
     const inPoly = (px, py) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const [xi, yi] = poly[i], [xj, yj] = poly[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c; } return c; };
     const segD = (px, py, [ax, ay], [bx, by]) => { const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l)); return Math.hypot(px - ax - u * dx, py - ay - u * dy); };
@@ -2868,9 +2942,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     // jumta pārkare pa malām (projekts.ov_side {north,south,east,west}; nav norādīts = jumts.ov); 0 = siena iet līdz jumtam
     const OS = P.ov_side || {}, od = q => (OS[q] != null && !isNaN(+OS[q])) ? +OS[q] : ov, oN = od("north"), oS = od("south"), oW = od("west"), oE = od("east");
     const zN = eave - oN * tan, zS = eave - oS * tan, zR = eave + D / 2 * tan, rI = tanH ? Math.min((D / 2 + ov) * tan / tanH, W / 2 + ov) : 0;   // četrslīpju: kores saīsinājums no gala
+    if (RL) RL.slopes.forEach(q => solid(q.name, "M_ROOF", q.pts, [], th, q.dir)); else {
     solid("Jumts ziemeļi", "M_ROOF", [[-oW, -oN, zN], [W + oE, -oN, zN], [W + oE - rI, D / 2, zR], [-oW + rI, D / 2, zR]], [], th, [0, -1, 2]);
     solid("Jumts dienvidi", "M_ROOF", [[-oW, D + oS, zS], [W + oE, D + oS, zS], [W + oE - rI, D / 2, zR], [-oW + rI, D / 2, zR]], [], th, [0, 1, 2]);
-    if (tanH) { solid("Jumts rietumi", "M_ROOF", [[-oW, -oN, zN], [-oW, D + oS, zS], [-oW + rI, D / 2, zR]], [], th, [-1, 0, 2]); solid("Jumts austrumi", "M_ROOF", [[W + oE, -oN, zN], [W + oE, D + oS, zS], [W + oE - rI, D / 2, zR]], [], th, [1, 0, 2]); }
+    if (tanH) { solid("Jumts rietumi", "M_ROOF", [[-oW, -oN, zN], [-oW, D + oS, zS], [-oW + rI, D / 2, zR]], [], th, [-1, 0, 2]); solid("Jumts austrumi", "M_ROOF", [[W + oE, -oN, zN], [W + oE, D + oS, zS], [W + oE - rI, D / 2, zR]], [], th, [1, 0, 2]); } }
     // kāpnes: masīvi pakāpieni līdz 2. stāva grīdai
     const stairs = [];
     const lv = [[m.furniture || [], 0]];
@@ -3174,7 +3249,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       model = m; status("Atvērta saglabātā versija (" + new Date(v.saved).toLocaleString("lv-LV") + ")."); panel(); render();
     } catch (_) { clearTimeout(tm); }
   })();
-  window.MMAPI = { addRecess, recessOf, polyCut, model: () => model, sel: () => sel, commit: m => commit(m), frame: () => FR[live], select: s => { sel = s; panel(); render(); } };   // pārbaudēm (tests/) un konsolei
+  window.MMAPI = { addExtension, addRecess, recessOf, polyCut, model: () => model, sel: () => sel, commit: m => commit(m), frame: () => FR[live], select: s => { sel = s; panel(); render(); } };   // pārbaudēm (tests/) un konsolei
 /*@@RAZOSANA@@*/
 /*@@VIZ3D@@*/
 })();

@@ -97,7 +97,7 @@
     function details(m, geo, grp, mat, frameM, T) {
       const P = m.projekts || {}, J = m.jumts || {}, W = m.W, D = m.D, pitch = J.pitch || 30, tan = Math.tan(pitch * Math.PI / 180), eave = J.eave || 2600, ov = +J.ov || 0;
       const hip = +J.hip || (/^(cetr|četr)/i.test(J.forma || "") ? pitch : 0), tanH = hip ? Math.tan(hip * Math.PI / 180) : 0;
-      const roofZ = (x, y) => eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity);
+      const RL = tanH ? null : roofL(m), roofZ = (x, y) => RL ? RL.z(x, y) : eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity);
       const steel = mat("#c9cdd1"), glassD = mat("#8fb0c0", { transparent: true, opacity: .8 }), gutM = mat(hexOf(P.noteku_tonis || "RAL 7016"));
       geo.forEach(g => {
         if ((g.k !== "g" && g.k !== "d") || !g.n) return;
@@ -129,20 +129,23 @@
           if (!nearWall(w[0], w[1])) return; const o2 = [top[0] - w[0], top[1] - w[1]], l2 = Math.hypot(o2[0], o2[1]) || 1, wp = [w[0] + o2[0] / l2 * 60, w[1] + o2[1] / l2 * 60];
           grp.add(cyl(T3(top), T3([wp[0], wp[1], top[2] - Math.max(250, l2 * .8)]), 45, gutM)); grp.add(cyl(T3([wp[0], wp[1], top[2] - Math.max(250, l2 * .8)]), T3([wp[0], wp[1], -250]), 45, gutM)); });
       };
+      const wallOf = t => { let best = null, bd = 1e9; poly.forEach((p0, i) => { const p1 = poly[(i + 1) % poly.length], dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((t[0] - p0[0]) * dx + (t[1] - p0[1]) * dy) / l)), q = [p0[0] + u * dx, p0[1] + u * dy], d2 = Math.hypot(t[0] - q[0], t[1] - q[1]); if (d2 < bd) { bd = d2; best = q; } }); return best; };
+      if (RL) RL.eaves.forEach(([p, q, key]) => run(p, q, wallOf, key)); else {
       run([-oW, -oN - 60, eave - oN * tan], [W + oE, -oN - 60, eave - oN * tan], t => [Math.max(60, Math.min(W - 60, t[0])), 0], "north");
       run([-oW, D + oS + 60, eave - oS * tan], [W + oE, D + oS + 60, eave - oS * tan], t => [Math.max(60, Math.min(W - 60, t[0])), D], "south");
       if (tanH) { const zW = eave - oW * tanH, zE = eave - oE * tanH;
         run([-oW - 60, -oN, zW], [-oW - 60, D + oS, zW], t => [0, Math.max(60, Math.min(D - 60, t[1]))], "west");
-        run([W + oE + 60, -oN, zE], [W + oE + 60, D + oS, zE], t => [W, Math.max(60, Math.min(D - 60, t[1]))], "east"); }
+        run([W + oE + 60, -oN, zE], [W + oE + 60, D + oS, zE], t => [W, Math.max(60, Math.min(D - 60, t[1]))], "east"); } }
       // stabi: līdz jumta apakšai vai līdz savam augstumam (posts[i].h)
-      const wood = c => mat(c || "#b98a5c");
-      (m.posts || []).forEach((q, i) => { const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = q.h && q.h < 99999 ? +q.h : roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); b.userData.bk = { k: "post", i }; grp.add(b); });
+      const texOf = (o, k) => { if (!o || !o.tex) return null; const t = new THREE.TextureLoader().load(o.tex, () => draw()); t.wrapS = t.wrapT = THREE.RepeatWrapping; const w = Math.max(100, +o.texW || 1000); t.repeat.set(k / w, k / w); if (o.texRot) t.rotation = o.texRot * Math.PI / 180; return t; };
+      const wood = (c, o) => { const t = texOf(o, 300); return t ? new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide }) : mat(c || "#b98a5c"); };
+      (m.posts || []).forEach((q, i) => { const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = q.h && q.h < 99999 ? +q.h : roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col, q)); b.position.set(cx, (top - 300) / 2, cy); b.userData.bk = { k: "post", i }; grp.add(b); });
       ((m.porch && m.porch.posts) || []).forEach(q => { if (!q || q.x == null) return; const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); grp.add(b); });
       // terases un lievenis pa kontūru
-      const deck = (pl, top, th, col, bk) => { if (!pl || pl.length < 3) return; const tx = stripeTex(600, 4, .45, .12), me = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(p => new THREE.Vector2(p[0], p[1]))), { depth: th, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: col || "#4a4f55", map: tx, side: THREE.DoubleSide }));
+      const deck = (pl, top, th, col, bk, o) => { if (!pl || pl.length < 3) return; const own = texOf(o, 1), tx = own || stripeTex(600, 4, .45, .12); if (own) col = "#ffffff"; me = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(p => new THREE.Vector2(p[0], p[1]))), { depth: th, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: col || "#4a4f55", map: tx, side: THREE.DoubleSide }));
         me.rotation.x = Math.PI / 2; me.position.y = top; me.userData.bk = bk; grp.add(me); };
-      (m.terraces || []).forEach((t, i) => deck(t.poly, -25, Math.max(60, (+t.th || 300) - 25), t.col, { k: "ter", i }));
-      if (m.porch) { deck(m.porch.poly, -25, 275, m.porch.col, { k: "porch" }); const s = m.porch.step, sp = m.porch.stepPoly || (s && [[s[0], s[1]], [s[2], s[1]], [s[2], s[3]], [s[0], s[3]]]); if (sp) deck(sp, -165, 135, m.porch.col, { k: "porch" }); }
+      (m.terraces || []).forEach((t, i) => deck(t.poly, -25, Math.max(60, (+t.th || 300) - 25), t.col, { k: "ter", i }, t));
+      if (m.porch) { deck(m.porch.poly, -25, 275, m.porch.col, { k: "porch" }, m.porch); const s = m.porch.step, sp = m.porch.stepPoly || (s && [[s[0], s[1]], [s[2], s[1]], [s[2], s[3]], [s[0], s[3]]]); if (sp) deck(sp, -165, 135, m.porch.col, { k: "porch" }); }
     }
     function buildScene(m) {
       const P = m.projekts || {}, tk = V.tone || lv0(), wallHex = (tk === lv0() && P.sienas_hex) || TONES[tk].sw, frameHex = hexOf(P.logu_tonis || TONES[tk].logi);
@@ -207,7 +210,8 @@
     // ---------- kamera ----------
     function bbox(m) {
       const J = m.jumts || {}, eave = J.eave || 2600, ridge = eave + m.D / 2 * Math.tan((J.pitch || 30) * Math.PI / 180), tr = terraceRect(m) || [0, 0, 0, 0];
-      const x0 = Math.min(0, tr[0]), x1 = Math.max(m.W, tr[2]), y0 = Math.min(0, tr[1]), y1 = Math.max(m.D, tr[3]);
+      const ex = (m.terraces || []).flatMap(t => t.poly || []).concat((m.posts || []).flatMap(q => [[q.x, q.y], [q.x + (+q.w || 0), q.y + (+q.d || 0)]]));   // terases un stabi arī ietilpst kadrā
+      const x0 = Math.min(0, tr[0], ...ex.map(q => q[0])), x1 = Math.max(m.W, tr[2], ...ex.map(q => q[0])), y0 = Math.min(0, tr[1], ...ex.map(q => q[1])), y1 = Math.max(m.D, tr[3], ...ex.map(q => q[1]));
       return { x0, x1, y0, y1, z0: -300, z1: ridge };
     }
     function camFor(az, bb) {   // fotogrāfa kadrs: līmenis horizonts, 1,6 m augstumā, kameras nobīde (shift)
@@ -340,9 +344,13 @@
       [["v3rMode", "mode"], ["v3rH", "h"], ["v3rSl", "sl"]].forEach(([id, k]) => { $(id).onchange = e => saveTerrace({ roof: Object.assign({}, (terr() || {}).roof, { [k]: k === "mode" ? e.target.value : +e.target.value || 0 }) }); });
       [["v3tDepth", "depth"], ["v3tA", "a"], ["v3tB", "b"]].forEach(([id, k]) => { $(id).onchange = e => saveTerrace({ [k]: Math.max(0, +e.target.value || 0) }); });
       $("v3bkRal").innerHTML = `<option value="">Brīva krāsa</option>` + Object.entries(RAL).map(([k, v]) => `<option value="${k}">${k} · ${v[0]}</option>`).join("");
-      $("v3bk").onchange = e => { V.bucket = e.target.checked; bkUI(); };
+      $("v3bk").onchange = e => { V.bucket = e.target.checked; if (V.bucket) { V.addTer = false; $("v3add").checked = false; } bkUI(); };
+      $("v3add").onchange = e => { V.addTer = e.target.checked; if (V.addTer) { V.bucket = false; $("v3bk").checked = false; } bkUI(); V.canvas.style.cursor = V.addTer ? "crosshair" : ""; };
       $("v3bkRal").onchange = e => { const k = e.target.value; if (k) { BMAT.ral = k; BMAT.col = RAL[k][1]; BMAT.tex = null; } else BMAT.ral = null; bkUI(); };
       $("v3bkCol").onchange = e => { BMAT.col = e.target.value; BMAT.ral = null; BMAT.tex = null; bkUI(); };
+      $("v3bkTex").onclick = () => $("v3bkFile").click();
+      $("v3bkFile").onchange = () => { const f = $("v3bkFile").files[0]; $("v3bkFile").value = ""; if (f) terUpload(f, url => { BMAT.tex = url; BMAT.ral = null; bkUI(); status("Tekstūra izvēlēta: klikšķis uz staba, terases vai lieveņa to uzliek."); }); };
+      $("v3bkNoTex").onclick = () => { BMAT.tex = null; bkUI(); };
       $("v3copy").onclick = copyPrompt; $("v3png").onclick = savePng; $("v3close").onclick = close;
       $("v3reset").onclick = () => { V.dist0 = null; V.free = false; $("v3free").checked = false; draw(); };
       let dr = null;
@@ -372,6 +380,7 @@
         const r = V.canvas.getBoundingClientRect(), ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1)), V.cam);
         const ph = ray.intersectObjects(V.picks || [], false)[0];
         if (V.bucket) { bucket3d(ray, e); return; }
+        if (V.addTer) { addTer3d(ray); return; }
         if (ph) { pickOpening(ph.object); return; }
         pickOpening(null);
         const hit = ray.intersectObjects(V.walls, false)[0]; if (!hit || !hit.face) return;
@@ -396,10 +405,34 @@
       if (t.k === "fas" && e.shiftKey) { n.projekts.fasade_hex = col; if (ral) n.projekts.fasade_ral = ral; else delete n.projekts.fasade_ral; delete n.projekts.fasade_side; status("Visa māja nokrāsota vienā tonī."); }
       else if (t.k === "fas") { const fs = n.projekts.fasade_side = Object.assign({}, n.projekts.fasade_side); fs[t.side] = ral ? { hex: col, ral } : { hex: col }; status("Nokrāsota " + SN[t.side] + " fasāde."); }
       else if (t.k === "ov") { n.projekts.parkare_hex = col; if (ral) n.projekts.parkare_ral = ral; else delete n.projekts.parkare_ral; status("Jumta pārkare nokrāsota."); }
-      else { const o = t.k === "post" ? n.posts[t.i] : t.k === "ter" ? n.terraces[t.i] : n.porch; if (!o) return; o.col = col; if (ral) o.ral = ral; else delete o.ral; delete o.tex; status("Nokrāsots."); }
+      else { const o = t.k === "post" ? n.posts[t.i] : t.k === "ter" ? n.terraces[t.i] : n.porch; if (!o) return; if (BMAT.tex) { o.tex = BMAT.tex; o.texW = BMAT.texW || 1000; delete o.col; delete o.ral; status("Tekstūra uzlikta."); } else { o.col = col; if (ral) o.ral = ral; else delete o.ral; delete o.tex; status("Nokrāsots."); } }
       V.tone = lv0(); if ($("v3tone")) $("v3tone").value = V.tone; commit(n); rebuild();
     }
-    function bkUI() { $("v3bkBox").hidden = !V.bucket; $("v3bkCol").value = /^#[0-9a-f]{6}$/i.test(BMAT.col || "") ? BMAT.col : "#c68a58"; $("v3bkRal").value = BMAT.ral || ""; V.canvas.style.cursor = V.bucket ? "crosshair" : ""; }
+    // terases pie fasādēm: klikšķis uz sienas pieliek terasi (model.terraces, tās pašas, ko zīmē plāns un fasādes) visā sienas posma garumā
+    function addTer3d(ray) {
+      const hit = ray.intersectObjects(V.walls, false)[0]; if (!hit || !hit.face) { status("Uzklikšķini uz mājas sienas."); return; }
+      const nrm = hit.face.normal.clone().transformDirection(hit.object.matrixWorld), px = hit.point.x, py = hit.point.z, m = model;
+      const o = Math.abs(nrm.x) > Math.abs(nrm.z) ? [Math.sign(nrm.x), 0] : [0, Math.sign(nrm.z)];
+      const poly = m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [m.W, 0], [m.W, m.D], [0, m.D]]; let best = null, bd = 1e9;
+      poly.forEach((a, i) => { const b = poly[(i + 1) % poly.length], vert = Math.abs(a[0] - b[0]) < .5; if (vert !== (o[0] !== 0)) return;
+        const lo = vert ? Math.min(a[1], b[1]) : Math.min(a[0], b[0]), hi = vert ? Math.max(a[1], b[1]) : Math.max(a[0], b[0]), u = vert ? py : px, d = Math.abs((vert ? px - a[0] : py - a[1])); if (u >= lo - 50 && u <= hi + 50 && d < bd) { bd = d; best = { vert, c: vert ? a[0] : a[1], lo, hi }; } });
+      if (!best || bd > 700) { status("Šai sienai terasi neizdevās piesaistīt."); return; }
+      const dp = Math.max(300, +$("v3addDep").value || 2000), c = best.c, c2 = c + (best.vert ? o[0] : o[1]) * dp, n = clone(m);
+      const pl = best.vert ? [[Math.min(c, c2), best.lo], [Math.max(c, c2), best.lo], [Math.max(c, c2), best.hi], [Math.min(c, c2), best.hi]] : [[best.lo, Math.min(c, c2)], [best.hi, Math.min(c, c2)], [best.hi, Math.max(c, c2)], [best.lo, Math.max(c, c2)]];
+      n.terraces = (n.terraces || []).concat([{ name: "Terase " + ((n.terraces || []).length + 1), poly: pl, th: 300, corners: false, texRot: 0 }]);
+      commit(n); rebuild(); terList(); status("Terase pievienota. Vari klikšķināt uz nākamās fasādes.");
+    }
+    function terList() {   // terašu saraksts: izmērs, dziļuma maiņa (taisnstūrim), dzēšana
+      const h = $("v3tList"); if (!h) return; h.textContent = "";
+      (model.terraces || []).forEach((t, i) => {
+        const xs = t.poly.map(q => q[0]), ys = t.poly.map(q => q[1]), w = Math.max(...xs) - Math.min(...xs), d = Math.max(...ys) - Math.min(...ys);
+        const r = document.createElement("div"); r.className = "v3row"; r.style.cssText = "grid-template-columns:1fr auto;align-items:center;margin:2px 0";
+        const s = document.createElement("span"); s.textContent = `${t.name || "Terase"} · ${Math.round(w)} × ${Math.round(d)} mm`;
+        const b = document.createElement("button"); b.type = "button"; b.className = "v3b"; b.textContent = "Dzēst"; b.onclick = () => { const n = clone(model); n.terraces.splice(i, 1); commit(n); rebuild(); terList(); };
+        r.append(s, b); h.appendChild(r);
+      });
+    }
+    function bkUI() { $("v3bkBox").hidden = !V.bucket; $("v3bkCol").value = /^#[0-9a-f]{6}$/i.test(BMAT.col || "") ? BMAT.col : "#c68a58"; $("v3bkRal").value = BMAT.ral || ""; $("v3bkNoTex").hidden = !BMAT.tex; $("v3bkTex").textContent = BMAT.tex ? "Mainīt tekstūru" : "Tekstūra no faila"; V.canvas.style.cursor = V.bucket ? "crosshair" : ""; }
     function pickOpening(mesh) {   // klikšķis uz loga/durvīm: izcelšana un izmēri (ID sakrīt ar plāna izvēli k/i)
       if (V.picked && V.picked.material.emissive) V.picked.material.emissive.setHex(0);
       V.picked = mesh; if (!mesh) { draw(); return; }
@@ -414,7 +447,7 @@
     }
     function openV() {
       V.open = true; $("v3").hidden = false; init(); if (!V.renderer) return;
-      V.tone = V.tone || lv0(); $("v3lens").value = V.lens; $("v3tone").value = V.tone; $("v3atm").value = V.atm; terraceUI(); rebuild(); resize(); setView(V.view);
+      V.tone = V.tone || lv0(); $("v3lens").value = V.lens; $("v3tone").value = V.tone; $("v3atm").value = V.atm; terraceUI(); terList(); rebuild(); resize(); setView(V.view);
     }
     function close() { V.open = false; $("v3").hidden = true; }
     $("b3d").onclick = openV;

@@ -501,7 +501,7 @@
     if (t === "kapnes" || t === "kapnesL") return { x: 3, y: 4 };
     if (t === "shower" || t === "armchair") return { x: 3, y: 3 };
     if (t === "Ci") return { x: 3, y: 3, ci: true };
-    if (["R", "wardrobe", "desk", "basin", "sofa", "galds", "kitchen"].includes(t)) return { x: 3, y: 4 };
+    if (["R", "wardrobe", "desk", "basin", "sofa", "galds", "kitchen", "mmF"].includes(t)) return { x: 3, y: 4 };
     return null;
   }
   // grow one end of a piece along its own x or y by g mm (negative shrinks)
@@ -1602,6 +1602,11 @@
     if (k === "Delete" || k === "Backspace") { post({ t: "hint", text: ext ? "Ārsienu dzēst nevar. Garumu maini ar skaitli un Enter." : "Starpsienu dzēš ar dzēšgumiju (X) vai Delete, turot kursoru virs sienas bez izvēles." }); return true; }
     return false;
   }
+  // piebūve ziemeļos vai rietumos: māja aug sākuma (0) pusē, viss pārējais pabīdās; spārna malas pēc tam izgriež ārējā lapa
+  addEventListener("message", e => { const g = e.data && e.data.mmGrow; if (!g) return;
+    const N = moveWall({ axis: g.side === "west" ? "x" : "y", lo: 0, hi: T, ext: true }, -Math.abs(+g.d));
+    if (!N) { post({ t: "hint", text: "Piebūvi šajā pusē neizdevās pievienot." }); return; }
+    sel = null; post({ t: "edit", model: N, resized: 1, wing: g }); });
   addEventListener("message", e => { const m = e.data && e.data.mmWall; if (!m || !sel || sel.k !== "wall") return;
     if (m.end) { const X = sel.w.axis === "x", S = X ? M.D : M.W, at = sel.at.slice(); at[X ? 1 : 0] = m.end === "hi" ? S : 0; sel = Object.assign({}, sel, { at }); drawSel(); post({ t: "sel", sel }); }
     else if (m.len) { if (sel.w.ext) wallLen(+m.len); else wallShift(+m.len); }
@@ -1821,9 +1826,24 @@
     if (what === "side") d.side = -(d.side || 1); else d.hinge = d.hinge === "e" ? "s" : "e";
     return N;
   }
+  // ---- izolēts skats: viens bloks (plāns, fasāde, eksplikācija) palielināts pa visu logu, pārējie pieklusināti un nav klikšķināmi ----
+  let isoB = null;
+  function iso(name, keep) {
+    let st = document.getElementById("mmIso"); if (!st) { st = document.createElement("style"); st.id = "mmIso"; document.head.appendChild(st); }
+    const g = name && [...document.querySelectorAll("svg.a3 g[data-block]")].find(x => x.getAttribute("data-block") === name);
+    isoB = g ? name : null;
+    st.textContent = isoB ? `@media screen{svg.a3 g[data-block]:not([data-block="${isoB}"]){opacity:.08;pointer-events:none}svg.a3 g[data-block="${isoB}"] g[data-block]{opacity:1;pointer-events:auto}}` : "";
+    if (isoB && !keep && window.MMZ) { const r = g.getBoundingClientRect(), z = MMZ.get(), lx = (r.left - z.x) / z.s, ly = (r.top - z.y) / z.s, lw = r.width / z.s, lh = r.height / z.s, s2 = Math.min(innerWidth / lw, innerHeight / lh) * .88;
+      MMZ.set({ s: s2, x: (innerWidth - lw * s2) / 2 - lx * s2, y: (innerHeight - lh * s2) / 2 - ly * s2 }); }
+    if (!isoB && !keep && window.MMZ && MMZ.reset) MMZ.reset();
+    if (!keep) post({ t: "iso", name: isoB });
+  }
+  addEventListener("message", e => { const d = e.data; if (d && "mmIso" in d) iso(d.mmIso, d.keep); });
+  addEventListener("keydown", e => { if (e.key === "Escape" && isoB && !place && !sel && !drag) iso(null); });
   addEventListener("dblclick", e => {
     if (place && place.t === "terrace") { terFinish(); return; }
     const h = hit(e.clientX, e.clientY);
+    if (!h && !place) { const el = document.elementFromPoint(e.clientX, e.clientY), g = el && el.closest && el.closest("g[data-block]"); if (isoB) iso(null); else if (g) iso(g.getAttribute("data-block")); return; }
     if (h && h.it.k === "door" && !h.del) { sel = { k: "door", i: h.it.i, lv: h.it.lv }; post({ t: "edit", model: flipDoor(clone(M), sel, e.shiftKey ? "hinge" : "side"), sel }); }
   });
 
