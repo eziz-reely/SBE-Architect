@@ -2730,7 +2730,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const out = [], put = s => out.push(s);
     const dd = a => a.filter((p, i) => { const q = a[(i + a.length - 1) % a.length]; return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) > 0.5; });
     const solid = (name, mat, outer, holes, d, dir) => (outer = dd(outer)).length > 2 && (geo && geo.push({ k: "s", name, mat, outer, holes, d, dir }), put(`solid(ents, ${JSON.stringify(name)}, ${mat}, ${L(outer)}, [${holes.map(L).join(",")}], ${f1(d)}, [${f1(dir[0])},${f1(-dir[1])},${f1(dir[2])}])`));
-    const glass = (pts, ref) => (geo && geo.push({ k: "g", pts, ref }), put(`glass(ents, ${L(pts)})`));
+    const glass = (pts, ref, n) => (geo && geo.push({ k: "g", pts, ref, n }), put(`glass(ents, ${L(pts)})`));
     // ārsienas pa plāna kontūru (arī L un T): katra mala ir vertikāla siena līdz jumta apakšai, ar logu un durvju ailām
     const hipDeg = +J.hip || (/^(cetr|četr)/i.test(J.forma || "") ? pitch : 0) || +((TPL.match(/"roof":\s*\{[^}]*?"hip":\s*([\d.]+)/) || [])[1] || 0), tanH = hipDeg ? Math.tan(hipDeg * Math.PI / 180) : 0;
     const ridgeU = eave + D / 2 * tan, roofZ = (x, y) => eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity), roofAt = y => roofZ(W / 2, y);
@@ -2741,7 +2741,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; if (!inPoly(mx + n[0] * 5, my + n[1] * 5)) n = [-n[0], -n[1]];
       const o = Math.abs(d[1]) < 1e-6 ? "h" : Math.abs(d[0]) < 1e-6 ? "v" : "d", st = o === "h" ? (n[1] > 0 ? a[1] : a[1] - T) : o === "v" ? (n[0] > 0 ? a[0] : a[0] - T) : null;
       return { a, b, L, n, o, st, lo: o === "h" ? Math.min(a[0], b[0]) : Math.min(a[1], b[1]), hi: o === "h" ? Math.max(a[0], b[0]) : Math.max(a[1], b[1]) }; });
-    const onEdge = (o, s, p0, p1) => edges.find(e => e.o === o && Math.abs(e.st - s) < 2 && p0 >= e.lo - 2 && p1 <= e.hi + 2);
+    const onEdge = (o, s, p0, p1) => edges.find(e => e.o === o && Math.abs(e.st - s) < 45 && p0 >= e.lo - 2 && p1 <= e.hi + 2);
     const exDoors = (m.doors || []).filter(d => onEdge(d.o, d.o === "h" ? d.y : d.x, d.o === "h" ? d.x : d.y, (d.o === "h" ? d.x : d.y) + d.w));
     const gwPts = g => {   // slīpais/piecstūra logs gala sienā, punkti (y, z)
       const yy = u => (g.side === "west" ? D - u : u), u0 = g.u0, u1 = g.u1, xs = g.side === "west" ? 0 : W, top = u => roofZ(xs, yy(u)) - 350;
@@ -2763,8 +2763,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
           const pp = gwPts(g); if (pp.every(([y]) => y >= e.lo - 1 && y <= e.hi + 1)) { const h = pp.map(([y, z]) => [ax, y, z]); holes.push(h); glz.push({ h, ref: { k: "gwin", i: (m.gableWins || []).indexOf(g) } }); } });
       }
       solid("Ārsiena " + (ei + 1), "M_WALL", [[ax, ay, 0], [bx, by, 0], ...top], holes, T, [e.n[0], e.n[1], 0]);
-      glz.forEach(({ h, ref }) => glass(h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z]), ref));
-      if (geo) drs.forEach(({ h, d, i }) => geo.push({ k: "d", pts: h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z]), hinge: d.hinge, ref: { k: "door", i } }));
+      glz.forEach(({ h, ref }) => glass(h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z]), ref, e.n));
+      if (geo) drs.forEach(({ h, d, i }) => geo.push({ k: "d", pts: h.map(([x, y, z]) => [x + e.n[0] * T / 2, y + e.n[1] * T / 2, z]), hinge: d.hinge, n: e.n, ref: { k: "door", i } }));
     });
     // starpsienas starp telpām (sprauga 100..200 mm), pagarinātas caur mezgliem; durvju ailas 2100
     const R = (m.rooms || []).flatMap(r => r.r), walls = [];

@@ -69,16 +69,91 @@
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
     }
     function D0(m) { return m.D; }
+    // joslu tekstūra (pelēktoņi, krāsu dod materiāls): fasādes dēļi, jumta valči, terases dēļi. mod = viena raksta platums mm
+    function stripeTex(mod, n, gap, vary) {
+      const c = document.createElement("canvas"); c.width = 64 * n; c.height = 8; const x = c.getContext("2d");
+      for (let i = 0; i < n; i++) { const l = Math.round(255 * (1 - vary * ((i * 37 % 10) / 10))); x.fillStyle = `rgb(${l},${l},${l})`; x.fillRect(i * 64, 0, 64, 8); x.fillStyle = `rgba(0,0,0,${gap})`; x.fillRect(i * 64, 0, 4, 8); x.fillStyle = "rgba(255,255,255,.16)"; x.fillRect(i * 64 + 4, 0, 2, 8); }
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / mod, 1 / 1000); t.anisotropy = 8; return t;
+    }
+    const sideOfN = n => { const ox = -n[0], oy = -n[1]; return Math.abs(ox) > Math.abs(oy) ? (ox > 0 ? "east" : "west") : (oy > 0 ? "south" : "north"); };   // n = sienas iekšējā normāle plānā
+    function obox(c, t, len, dep, hgt, mat) {   // kaste plāna koordinātās: centrs [x,y,z], garums pa t, dziļums šķērsām, augstums
+      const b = new THREE.Mesh(new THREE.BoxGeometry(len, hgt, dep), mat); b.position.set(c[0], c[2], c[1]); b.rotation.y = Math.atan2(-t[1], t[0]); return b;
+    }
+    function cyl(a, b, r, mat) {
+      const d = new THREE.Vector3().subVectors(b, a), L = d.length(), me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 14), mat);
+      me.position.copy(a).addScaledVector(d, .5); me.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); return me;
+    }
+    function edgeBoards(P3, o3, cw, th, mat, out, skipBottom) {   // aplodas ap ailu (arī piecstūra logam): dēlis gar katru malu ārpusē
+      const c = P3.reduce((s, p) => s.add(p), new THREE.Vector3()).multiplyScalar(1 / P3.length), minY = Math.min(...P3.map(p => p.y));
+      P3.forEach((a, i) => {
+        const b = P3[(i + 1) % P3.length], d = new THREE.Vector3().subVectors(b, a), L = d.length(); if (L < 1) return; d.normalize();
+        const mid = a.clone().add(b).multiplyScalar(.5); if (skipBottom && Math.abs(d.y) < .01 && mid.y <= minY + 1) return;
+        let w = new THREE.Vector3().crossVectors(o3, d).normalize(); if (w.dot(mid.clone().sub(c)) < 0) { w.negate(); d.negate(); }
+        const bx = new THREE.Mesh(new THREE.BoxGeometry(L + cw, cw, th), mat);
+        bx.applyMatrix4(new THREE.Matrix4().makeBasis(d, w, o3).setPosition(mid.addScaledVector(w, cw / 2).addScaledVector(o3, th / 2))); out.add(bx);
+      });
+    }
+    // fasādes detaļas kā rasējumā: aplodas, palodzes, dalījumi, durvju stikls un rokturis, notekas, stabi, terases, lievenis
+    function details(m, geo, grp, mat, frameM, T) {
+      const P = m.projekts || {}, J = m.jumts || {}, W = m.W, D = m.D, pitch = J.pitch || 30, tan = Math.tan(pitch * Math.PI / 180), eave = J.eave || 2600, ov = +J.ov || 0;
+      const hip = +J.hip || (/^(cetr|četr)/i.test(J.forma || "") ? pitch : 0), tanH = hip ? Math.tan(hip * Math.PI / 180) : 0;
+      const roofZ = (x, y) => eave + Math.min(Math.min(y, D - y) * tan, tanH ? Math.min(x, W - x) * tanH : Infinity);
+      const steel = mat("#c9cdd1"), glassD = mat("#8fb0c0", { transparent: true, opacity: .8 }), gutM = mat(hexOf(P.noteku_tonis || "RAL 7016"));
+      geo.forEach(g => {
+        if ((g.k !== "g" && g.k !== "d") || !g.n) return;
+        const o = [-g.n[0], -g.n[1]], o3 = new THREE.Vector3(o[0], 0, o[1]), face = g.pts.map(p => T3([p[0] + o[0] * T / 2, p[1] + o[1] * T / 2, p[2]]));
+        const w = g.k === "g" ? (g.ref.k === "win" ? (m.windows || [])[g.ref.i] : (m.gableWins || [])[g.ref.i]) : (m.doors || [])[g.ref.i], cas = w && w.casing === 0 ? 0 : 1;
+        if (cas) edgeBoards(face, o3, 100, 24, frameM, grp, !(w && w.casingAll));
+        const z0 = Math.min(...g.pts.map(p => p[2])), z1 = Math.max(...g.pts.map(p => p[2])), bot = g.pts.filter(p => p[2] <= z0 + 1);
+        if (bot.length >= 2) {
+          const a = bot[0], b = bot[bot.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), t = [(b[0] - a[0]) / L, (b[1] - a[1]) / L], cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2, at = (f, off, z) => [a[0] + (b[0] - a[0]) * f + o[0] * off, a[1] + (b[1] - a[1]) * f + o[1] * off, z];
+          if (g.k === "g") {
+            grp.add(obox([cx + o[0] * (T / 2 + 25), cy + o[1] * (T / 2 + 25), z0 - 8], t, L + 70, 90, 16, frameM));   // skārda palodze
+            const cuts = []; if (w && w.parts && w.parts.length > 1) { let u = 0; w.parts.slice(0, -1).forEach(q => { u += +q.len || 0; cuts.push(u / (w.len || L)); }); } else if (w && /^slide/.test(w.kind || "")) cuts.push(.5);
+            cuts.forEach(f => grp.add(obox(at(f, 15, (z0 + z1) / 2), t, 70, 80, z1 - z0, frameM)));   // dalījuma statnis
+          } else {
+            const fl = g.hinge === "e" ? 1 : 0, f = x => fl ? 1 - x : x;
+            grp.add(obox(at(f(.76), 14, 1100), t, Math.min(140, L * .16), 10, 1500, glassD));   // šaura stikla josla
+            grp.add(obox(at(f(.9), 70, 1050), t, 30, 30, 1000, steel)); [650, 1450].forEach(z => grp.add(obox(at(f(.9), 40, z), t, 24, 60, 24, steel)));   // garais rokturis
+            grp.add(obox([cx + o[0] * (T / 2 + 20), cy + o[1] * (T / 2 + 20), -10], t, L + 40, 120, 20, steel));   // slieksnis
+          }
+        }
+      });
+      // notekas gar dzegām un notekcaurules pie stūriem (ja tur ir siena)
+      const OS = P.ov_side || {}, od = q => (OS[q] != null && !isNaN(+OS[q])) ? +OS[q] : ov, oN = od("north"), oS = od("south"), oW = od("west"), oE = od("east");
+      const poly = (m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [W, 0], [W, D], [0, D]]), nearWall = (x, y) => poly.some((a, i) => { const b = poly[(i + 1) % poly.length], dx = b[0] - a[0], dy = b[1] - a[1], l = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / l)); return Math.hypot(x - a[0] - u * dx, y - a[1] - u * dy) < 120; });
+      const NK = P.notekas || {}, run = (p, q, wallAt, key) => {
+        if (NK[key] === false || NK.visas === false) return;
+        grp.add(cyl(T3([p[0], p[1], p[2] - 35]), T3([q[0], q[1], q[2] - 35]), 62, gutM));
+        [p, q].forEach((e, i) => { const f = i ? q : p, g2 = i ? p : q, L = Math.hypot(g2[0] - f[0], g2[1] - f[1]) || 1, d = [(g2[0] - f[0]) / L, (g2[1] - f[1]) / L], top = [f[0] + d[0] * (i ? 250 + oE : 250 + oW), f[1] + d[1] * 250, f[2] - 60], w = wallAt(top);
+          if (!nearWall(w[0], w[1])) return; const o2 = [top[0] - w[0], top[1] - w[1]], l2 = Math.hypot(o2[0], o2[1]) || 1, wp = [w[0] + o2[0] / l2 * 60, w[1] + o2[1] / l2 * 60];
+          grp.add(cyl(T3(top), T3([wp[0], wp[1], top[2] - Math.max(250, l2 * .8)]), 45, gutM)); grp.add(cyl(T3([wp[0], wp[1], top[2] - Math.max(250, l2 * .8)]), T3([wp[0], wp[1], -250]), 45, gutM)); });
+      };
+      run([-oW, -oN - 60, eave - oN * tan], [W + oE, -oN - 60, eave - oN * tan], t => [Math.max(60, Math.min(W - 60, t[0])), 0], "north");
+      run([-oW, D + oS + 60, eave - oS * tan], [W + oE, D + oS + 60, eave - oS * tan], t => [Math.max(60, Math.min(W - 60, t[0])), D], "south");
+      // stabi: līdz jumta apakšai vai līdz savam augstumam (posts[i].h)
+      const wood = c => mat(c || "#b98a5c");
+      (m.posts || []).forEach(q => { const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = q.h && q.h < 99999 ? +q.h : roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); grp.add(b); });
+      ((m.porch && m.porch.posts) || []).forEach(q => { if (!q || q.x == null) return; const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); grp.add(b); });
+      // terases un lievenis pa kontūru
+      const deck = (pl, top, th, col) => { if (!pl || pl.length < 3) return; const tx = stripeTex(600, 4, .45, .12), me = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(p => new THREE.Vector2(p[0], p[1]))), { depth: th, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: col || "#4a4f55", map: tx, side: THREE.DoubleSide }));
+        me.rotation.x = Math.PI / 2; me.position.y = top; grp.add(me); };
+      (m.terraces || []).forEach(t => deck(t.poly, -25, Math.max(60, (+t.th || 300) - 25), t.col));
+      if (m.porch) { deck(m.porch.poly, -25, 275, m.porch.col); const s = m.porch.step, sp = m.porch.stepPoly || (s && [[s[0], s[1]], [s[2], s[1]], [s[2], s[3]], [s[0], s[3]]]); if (sp) deck(sp, -165, 135, m.porch.col); }
+    }
     function buildScene(m) {
       const P = m.projekts || {}, tk = V.tone || lv0(), wallHex = (tk === lv0() && P.sienas_hex) || TONES[tk].sw, frameHex = hexOf(P.logu_tonis || TONES[tk].logi);
       const geo = []; skpRb(m, geo);
       const grp = new THREE.Group(), walls = [], picks = [];
       const mat = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c, side: THREE.DoubleSide }, o));
-      const mats = { M_WALL: mat(wallHex), M_INT: mat("#f2efe9"), M_FLOOR: mat(P.pamati === "platne" ? "#9a9a96" : hexOf(P.cokols || "RAL 9005")), M_ROOF: mat("#40464b"), M_STAIR: mat("#c9a77c") };
+      const cladTex = stripeTex(600, 4, .5, .1), seamTex = stripeTex(500, 1, .35, 0), sideHex = (tk === lv0() && P.fasade_side) || {}, wallM = {};
+      const wallMat = sd => wallM[sd] || (wallM[sd] = [mat((sideHex[sd] && sideHex[sd].hex) || wallHex, { map: cladTex }), mat((sideHex[sd] && sideHex[sd].hex) || wallHex)]);   // [fasādes plakne ar dēļiem, ailu un galu malas]
+      const mats = { M_WALL: mat(wallHex), M_INT: mat("#f2efe9"), M_FLOOR: mat(P.pamati === "platne" ? "#9a9a96" : hexOf(P.cokols || "RAL 9005")), M_ROOF: mat("#454b50", { map: seamTex }), M_STAIR: mat("#c9a77c") };
       const frameM = mat(frameHex), glassM = mat("#7fa5b8", { transparent: true, opacity: .75 });
       const facts = { win: { south: 0, north: 0, east: 0, west: 0 }, door: { south: 0, north: 0, east: 0, west: 0 }, gable: { east: 0, west: 0 } };
       geo.forEach(g => {
-        if (g.k === "s") { const me = extrude(g, mats[g.mat] || mats.M_WALL); if (g.mat === "M_WALL") walls.push(me); if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
+        if (g.k === "s") { const me = extrude(g, g.mat === "M_WALL" ? wallMat(sideOfN(g.dir)) : mats[g.mat] || mats.M_WALL);
+          if (g.mat === "M_ROOF" && P.parkare_hex && tk === lv0()) { const sf = extrude(Object.assign({}, g, { d: 18 }), mat(P.parkare_hex)); sf.position.addScaledVector(new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), -19); grp.add(sf); } /* jumta pārkares apakša savā tonī */ if (g.mat === "M_WALL") walls.push(me); if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
         else if (g.k === "g") {
           const p3 = g.pts.map(T3); { const gm = planeMesh(p3, glassM.clone(), 0); gm.userData.ref = g.ref; picks.push(gm); grp.add(gm); } frameAround(p3, frameM, grp, 80, 90);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) { if (g.pts.some(p => p[2] > (m.jumts && m.jumts.eave || 2600) - 400) || g.pts.length > 4) facts.gable[sd] = (facts.gable[sd] || 0) + 1; else facts.win[sd]++; }
@@ -87,6 +162,7 @@
           const sd = sideOf(g.pts, m.W, m.D); if (sd) facts.door[sd]++;
         }
       });
+      { const wg = geo.find(g => g.k === "s" && g.mat === "M_WALL"); try { details(m, geo, grp, mat, frameM, wg ? wg.d : 283.5); } catch (e) { console.error("3D detaļas:", e); } }
       // terase
       const tr = terraceRect(m);
       if (tr) {
@@ -120,8 +196,9 @@
         grp.add(rg);
       }
       // zeme
-      const gr = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshLambertMaterial({ color: "#aab39a" }));
+      const gr = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshLambertMaterial({ color: "#939c84" }));
       gr.rotation.x = -Math.PI / 2; gr.position.y = -301; grp.add(gr);
+      grp.traverse(o => { if (o.isMesh && o !== gr && !(o.material && o.material.transparent)) { o.castShadow = true; o.receiveShadow = true; } }); gr.receiveShadow = true;
       return { grp, walls, facts, tr, picks };
     }
     // ---------- kamera ----------
@@ -160,7 +237,10 @@
       V.renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); V.renderer.setSize(w, h, false);
       V.canvas.style.width = w + "px"; V.canvas.style.height = h + "px"; draw();
     }
-    function draw() { if (!V.renderer) return; applyCam(); V.light.position.copy(V.cam.position).add(new THREE.Vector3(-7000, 9000, 0)); V.renderer.render(V.scene, V.cam); }
+    function draw() { if (!V.renderer) return; applyCam(); sun(); V.renderer.render(V.scene, V.cam); }
+    function sun() {   // saule no kameras puses, pa kreisi un augstu: fasāde izgaismota, pārkare met ēnu
+      const a = (V.az + 35) * Math.PI / 180, cx = V.cx || 0, cz = V.cz || 0; V.light.target.position.set(cx, 1200, cz); V.light.position.set(cx + Math.sin(a) * 30000, 26000, cz + Math.cos(a) * 30000); V.light.target.updateMatrixWorld();
+    }
     function rebuild() {
       if (!V.scene) return;
       if (V.grp) V.scene.remove(V.grp);
@@ -223,7 +303,7 @@
     }
     async function savePng() {
       const r = V.renderer, w0 = V.w, h0 = V.h, pr = r.getPixelRatio();
-      V.w = 2400; V.h = 1600; r.setPixelRatio(1); r.setSize(2400, 1600, false); applyCam(); V.light.position.copy(V.cam.position).add(new THREE.Vector3(-7000, 9000, 0)); r.render(V.scene, V.cam);
+      V.w = 2400; V.h = 1600; r.setPixelRatio(1); r.setSize(2400, 1600, false); applyCam(); sun(); r.render(V.scene, V.cam);
       const blob = await new Promise(ok => V.canvas.toBlob(ok, "image/png"));
       V.w = w0; V.h = h0; r.setPixelRatio(pr); r.setSize(w0, h0, false); draw();
       const name = `${model.id}_ref_${V.view}.png`;
@@ -240,7 +320,9 @@
       if (!window.THREE) { $("v3stage").innerHTML = "<p class='v3msg'>3D bibliotēka nav ielādēta.</p>"; return; }
       V.canvas = $("v3canvas"); V.renderer = new THREE.WebGLRenderer({ canvas: V.canvas, antialias: true, preserveDrawingBuffer: true });
       V.renderer.setClearColor(0xe8ecef, 1); V.scene = new THREE.Scene(); V.scene.background = new THREE.Color(0xe8ecef);
-      V.scene.add(new THREE.HemisphereLight(0xffffff, 0x99a090, .8)); V.light = new THREE.DirectionalLight(0xffffff, .6); V.scene.add(V.light);
+      V.scene.add(new THREE.HemisphereLight(0xffffff, 0x99a090, .8)); V.light = new THREE.DirectionalLight(0xffffff, .75); V.scene.add(V.light); V.scene.add(V.light.target);
+      V.renderer.shadowMap.enabled = true; V.renderer.shadowMap.type = THREE.PCFSoftShadowMap; V.light.castShadow = true; V.light.shadow.mapSize.set(4096, 4096); V.light.shadow.bias = -0.0004; V.light.shadow.normalBias = 40;
+      { const c = V.light.shadow.camera; c.left = c.bottom = -22000; c.right = c.top = 22000; c.near = 1000; c.far = 120000; c.updateProjectionMatrix(); }
       V.cam = new THREE.PerspectiveCamera(fovOf(V.lens), ASPECT, 100, 400000);
       $("v3views").innerHTML = VIEWS.map(v => `<button type="button" data-v="${v[0]}" aria-pressed="false">${v[1]}</button>`).join("");
       $("v3views").onclick = e => { const b = e.target.closest("button"); if (b) setView(b.dataset.v); };
