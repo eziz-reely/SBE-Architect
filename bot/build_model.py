@@ -384,6 +384,12 @@ def build(model_path, langs=None):
          'OUT.forEach((o, oi) => { const y2 = yy + (oi + 1) * RH; cell(c1 / 2, y2, String(n + 1 + oi), { a: "middle" }); cell(c1 + 2, y2, o.name || (o === v.porch ? "Lievenis" : "Terase")); cell(WX - 2, y2, f2(polyArea(o.poly)), { a: "end" }); });'),
         ("(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
          "(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + (v.terraces || []).slice(0, ti).filter(q => !q.up).length));"),
+        # [MM] loga ārējā aploda nedrīkst iziet ārpus ieejas nišas (ieliekuma) uz blakus sienu: ailu sānu aplodas apgriež pie nišas malas
+        ("const win = (u0, u1, z0, z1, PN, cas) => {", "const win = (u0, u1, z0, z1, PN, cas, cl = cas, cr = cas) => {"),
+        ("      R(u0 - cas, u1 + cas, z0 - CB, z1 + cas, { fill: cc, ...ln });",
+         "      R(u0 - cl, u1 + cr, z0 - CB, z1 + cas, { fill: cc, ...ln });"),
+        ("    window.MM_CASB = !!w.casingAll; win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), w.casing ?? (window.AR && window.AR.win && window.AR.win.casing) ?? 0);",
+         "    window.MM_CASB = !!w.casingAll;\n    const cs0 = w.casing ?? (window.AR && window.AR.win && window.AR.win.casing) ?? 0, nz = (rc || []).map(r => [Math.min(map(r[0]), map(r[1])), Math.max(map(r[0]), map(r[1]))]).find(r => u0 >= r[0] - 1 && u1 <= r[1] + 1);\n    win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), cs0, nz ? Math.max(0, Math.min(cs0, u0 - nz[0])) : cs0, nz ? Math.max(0, Math.min(cs0, nz[1] - u1)) : cs0);"),
     ]:
         assert a in cad, 'SBE cad.js: nav atrasts ' + a[:50]
         cad = cad.replace(a, b, 1)
