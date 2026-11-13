@@ -390,6 +390,9 @@ def build(model_path, langs=None):
          "      R(u0 - cl, u1 + cr, z0 - CB, z1 + cas, { fill: cc, ...ln });"),
         ("    window.MM_CASB = !!w.casingAll; win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), w.casing ?? (window.AR && window.AR.win && window.AR.win.casing) ?? 0);",
          "    window.MM_CASB = !!w.casingAll;\n    const cs0 = w.casing ?? (window.AR && window.AR.win && window.AR.win.casing) ?? 0, nz = (rc || []).map(r => [Math.min(map(r[0]), map(r[1])), Math.max(map(r[0]), map(r[1]))]).find(r => u0 >= r[0] - 1 && u1 <= r[1] + 1);\n    win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), cs0, nz ? Math.max(0, Math.min(cs0, u0 - nz[0])) : cs0, nz ? Math.max(0, Math.min(cs0, nz[1] - u1)) : cs0);"),
+        # [MM] frontona pārkare fasādē: spāru gali
+        ('  // axes\n  const ax = endV ? v.axes.y : v.axes.x;',
+         '  if (gable && _OV[side] > 0) {   // [MM] frontona pārkare (projekts.ov_side šai pusei): fasādē redzami spāru gali, kas iznāk uz āru pār terasi\n    const th_ = Math.atan(tan), ct_ = Math.cos(th_), st_ = Math.sin(th_), RW_ = 60, RH_ = 220, eTop_ = ROOF.eave - OVL * tan + thV, eTopR_ = ROOF.eave - OVR * tan + thV;\n    const rafters_ = (u0, z0, u1, z1, nx, nz) => { const L_ = Math.hypot(u1 - u0, z1 - z0), tx = (u1 - u0) / L_, tz = (z1 - z0) / L_; for (let s_ = 150; s_ < L_ - 60; s_ += 600) { const p0 = [u0 + tx * s_, z0 + tz * s_], q = [[0, 0], [RW_, 0], [RW_, RH_], [0, RH_]].map(([a_, b_]) => [p0[0] + tx * a_ + nx * b_, p0[1] + tz * a_ + nz * b_]);\n      el("polygon", { points: q.map(c_ => P(c_[0], c_[1])).join(" "), fill: "#b08a5e", stroke: C.ink, "stroke-width": 7 }, g); } };\n    rafters_(-OVL, eTop_, span / 2, ridgeTop, st_, -ct_); rafters_(span / 2, ridgeTop, span + OVR, eTopR_, -st_, -ct_);\n  }\n  // axes\n  const ax = endV ? v.axes.y : v.axes.x;'),
     ]:
         assert a in cad, 'SBE cad.js: nav atrasts ' + a[:50]
         cad = cad.replace(a, b, 1)
