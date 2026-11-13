@@ -14,5 +14,11 @@ const T = require('./lib'); const path = require('path');
   T.ok(r.cols.includes('#7a3b2e'), 'dienvidu fasāde savā krāsā (projekts.fasade_side)');
   T.ok(r.cols.includes('#d8d2c4'), 'jumta pārkare savā tonī (projekts.parkare_hex)');
   T.ok(r.postH.includes(1800), 'stabs ar h = 1500 ir īsāks (1500 + 300 zem nulles)', r.postH);
+  T.ok(r.cyls >= 8, 'četrslīpju jumtam notekas arī galos', r.cyls);
+  // spainis 3D: klikšķis kadra vidū (dienvidu/rietumu fasāde) krāso vienu pusi
+  await page.click('#v3views button[data-v=W]'); await page.check('#v3bk'); await page.selectOption('#v3bkRal', 'RAL 7035');
+  const bb = await (await page.$('#v3canvas')).boundingBox(), q = await page.evaluate(() => { const V = window.MM_VIZ3D.state, v = V.cam.position.clone().set(-2, 1700, 900).project(V.cam); return [(v.x + 1) / 2, (1 - v.y) / 2]; });   // punkts uz rietumu sienas (x=0, y=900, z=1700)
+  await page.mouse.click(bb.x + bb.width * q[0], bb.y + bb.height * q[1]); await page.waitForTimeout(600);
+  const m = await T.model(page); T.ok(m.projekts.fasade_side && m.projekts.fasade_side.west && m.projekts.fasade_side.west.ral === 'RAL 7035' && m.projekts.fasade_side.south.hex === '#7a3b2e', '3D spainis nokrāso rietumu fasādi, dienvidu paliek', m.projekts.fasade_side);
   await browser.close(); T.done(errs);
 })();

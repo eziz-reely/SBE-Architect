@@ -131,15 +131,18 @@
       };
       run([-oW, -oN - 60, eave - oN * tan], [W + oE, -oN - 60, eave - oN * tan], t => [Math.max(60, Math.min(W - 60, t[0])), 0], "north");
       run([-oW, D + oS + 60, eave - oS * tan], [W + oE, D + oS + 60, eave - oS * tan], t => [Math.max(60, Math.min(W - 60, t[0])), D], "south");
+      if (tanH) { const zW = eave - oW * tanH, zE = eave - oE * tanH;
+        run([-oW - 60, -oN, zW], [-oW - 60, D + oS, zW], t => [0, Math.max(60, Math.min(D - 60, t[1]))], "west");
+        run([W + oE + 60, -oN, zE], [W + oE + 60, D + oS, zE], t => [W, Math.max(60, Math.min(D - 60, t[1]))], "east"); }
       // stabi: līdz jumta apakšai vai līdz savam augstumam (posts[i].h)
       const wood = c => mat(c || "#b98a5c");
-      (m.posts || []).forEach(q => { const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = q.h && q.h < 99999 ? +q.h : roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); grp.add(b); });
+      (m.posts || []).forEach((q, i) => { const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = q.h && q.h < 99999 ? +q.h : roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); b.userData.bk = { k: "post", i }; grp.add(b); });
       ((m.porch && m.porch.posts) || []).forEach(q => { if (!q || q.x == null) return; const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); grp.add(b); });
       // terases un lievenis pa kontūru
-      const deck = (pl, top, th, col) => { if (!pl || pl.length < 3) return; const tx = stripeTex(600, 4, .45, .12), me = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(p => new THREE.Vector2(p[0], p[1]))), { depth: th, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: col || "#4a4f55", map: tx, side: THREE.DoubleSide }));
-        me.rotation.x = Math.PI / 2; me.position.y = top; grp.add(me); };
-      (m.terraces || []).forEach(t => deck(t.poly, -25, Math.max(60, (+t.th || 300) - 25), t.col));
-      if (m.porch) { deck(m.porch.poly, -25, 275, m.porch.col); const s = m.porch.step, sp = m.porch.stepPoly || (s && [[s[0], s[1]], [s[2], s[1]], [s[2], s[3]], [s[0], s[3]]]); if (sp) deck(sp, -165, 135, m.porch.col); }
+      const deck = (pl, top, th, col, bk) => { if (!pl || pl.length < 3) return; const tx = stripeTex(600, 4, .45, .12), me = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(p => new THREE.Vector2(p[0], p[1]))), { depth: th, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: col || "#4a4f55", map: tx, side: THREE.DoubleSide }));
+        me.rotation.x = Math.PI / 2; me.position.y = top; me.userData.bk = bk; grp.add(me); };
+      (m.terraces || []).forEach((t, i) => deck(t.poly, -25, Math.max(60, (+t.th || 300) - 25), t.col, { k: "ter", i }));
+      if (m.porch) { deck(m.porch.poly, -25, 275, m.porch.col, { k: "porch" }); const s = m.porch.step, sp = m.porch.stepPoly || (s && [[s[0], s[1]], [s[2], s[1]], [s[2], s[3]], [s[0], s[3]]]); if (sp) deck(sp, -165, 135, m.porch.col, { k: "porch" }); }
     }
     function buildScene(m) {
       const P = m.projekts || {}, tk = V.tone || lv0(), wallHex = (tk === lv0() && P.sienas_hex) || TONES[tk].sw, frameHex = hexOf(P.logu_tonis || TONES[tk].logi);
@@ -153,7 +156,7 @@
       const facts = { win: { south: 0, north: 0, east: 0, west: 0 }, door: { south: 0, north: 0, east: 0, west: 0 }, gable: { east: 0, west: 0 } };
       geo.forEach(g => {
         if (g.k === "s") { const me = extrude(g, g.mat === "M_WALL" ? wallMat(sideOfN(g.dir)) : mats[g.mat] || mats.M_WALL);
-          if (g.mat === "M_ROOF" && P.parkare_hex && tk === lv0()) { const sf = extrude(Object.assign({}, g, { d: 18 }), mat(P.parkare_hex)); sf.position.addScaledVector(new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), -19); grp.add(sf); } /* jumta pārkares apakša savā tonī */ if (g.mat === "M_WALL") walls.push(me); if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
+          if (g.mat === "M_ROOF" && P.parkare_hex && tk === lv0()) { const sf = extrude(Object.assign({}, g, { d: 18 }), mat(P.parkare_hex)); sf.userData.bk = { k: "ov" }; sf.position.addScaledVector(new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), -19); grp.add(sf); } /* jumta pārkares apakša savā tonī */ if (g.mat === "M_WALL") { walls.push(me); me.userData.bk = { k: "fas", side: sideOfN(g.dir) }; } if (g.mat === "M_ROOF") me.userData.bk = { k: "ov" }; if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
         else if (g.k === "g") {
           const p3 = g.pts.map(T3); { const gm = planeMesh(p3, glassM.clone(), 0); gm.userData.ref = g.ref; picks.push(gm); grp.add(gm); } frameAround(p3, frameM, grp, 80, 90);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) { if (g.pts.some(p => p[2] > (m.jumts && m.jumts.eave || 2600) - 400) || g.pts.length > 4) facts.gable[sd] = (facts.gable[sd] || 0) + 1; else facts.win[sd]++; }
@@ -336,6 +339,10 @@
       $("v3tSide").onchange = e => saveTerrace({ side: e.target.value });
       [["v3rMode", "mode"], ["v3rH", "h"], ["v3rSl", "sl"]].forEach(([id, k]) => { $(id).onchange = e => saveTerrace({ roof: Object.assign({}, (terr() || {}).roof, { [k]: k === "mode" ? e.target.value : +e.target.value || 0 }) }); });
       [["v3tDepth", "depth"], ["v3tA", "a"], ["v3tB", "b"]].forEach(([id, k]) => { $(id).onchange = e => saveTerrace({ [k]: Math.max(0, +e.target.value || 0) }); });
+      $("v3bkRal").innerHTML = `<option value="">Brīva krāsa</option>` + Object.entries(RAL).map(([k, v]) => `<option value="${k}">${k} · ${v[0]}</option>`).join("");
+      $("v3bk").onchange = e => { V.bucket = e.target.checked; bkUI(); };
+      $("v3bkRal").onchange = e => { const k = e.target.value; if (k) { BMAT.ral = k; BMAT.col = RAL[k][1]; BMAT.tex = null; } else BMAT.ral = null; bkUI(); };
+      $("v3bkCol").onchange = e => { BMAT.col = e.target.value; BMAT.ral = null; BMAT.tex = null; bkUI(); };
       $("v3copy").onclick = copyPrompt; $("v3png").onclick = savePng; $("v3close").onclick = close;
       $("v3reset").onclick = () => { V.dist0 = null; V.free = false; $("v3free").checked = false; draw(); };
       let dr = null;
@@ -364,6 +371,7 @@
         const moved = dr && dr.moved; dr = null; if (V.dragWin) { const mv = V.dragWin.moved; V.dragWin = null; if (mv || moved > 4) return; } if (moved > 4) { snapName(); return; }
         const r = V.canvas.getBoundingClientRect(), ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1)), V.cam);
         const ph = ray.intersectObjects(V.picks || [], false)[0];
+        if (V.bucket) { bucket3d(ray, e); return; }
         if (ph) { pickOpening(ph.object); return; }
         pickOpening(null);
         const hit = ray.intersectObjects(V.walls, false)[0]; if (!hit || !hit.face) return;
@@ -374,6 +382,24 @@
       V.canvas.addEventListener("wheel", e => { e.preventDefault(); const f = V.dist0 || V.dist; V.dist0 = Math.max(6000, Math.min(150000, f * (e.deltaY > 0 ? 1.08 : .92))); draw(); }, { passive: false });
       addEventListener("resize", () => { if (V.open) resize(); });
     }
+    // krāsas spainis 3D: tas pats materiāls (BMAT) un tie paši modeļa lauki kā spainim rasējumā
+    function bucket3d(ray, e) {
+      const hs = ray.intersectObjects(V.grp.children, true).filter(h => h.object.userData.bk), t = hs[0] && hs[0].object.userData.bk;
+      if (!t) { status("Spainis 3D: klikšķini uz fasādes, jumta pārkares, staba, terases vai lieveņa."); return; }
+      const P = model.projekts || {}, SN = { north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" };
+      if (e.altKey) {
+        const FS = (P.fasade_side || {})[t.side], o = t.k === "post" ? model.posts[t.i] : t.k === "ter" ? model.terraces[t.i] : t.k === "porch" ? model.porch : t.k === "ov" ? { col: P.parkare_hex, ral: P.parkare_ral } : FS ? { col: FS.hex, ral: FS.ral } : { col: P.fasade_hex || TONES[lv0()].sw, ral: P.fasade_ral };
+        if (!o || !o.col) { status("Šim elementam nav savas krāsas, nav ko paņemt."); return; }
+        BMAT.col = o.col; BMAT.ral = o.ral || null; BMAT.tex = null; bkUI(); status("Krāsa paņemta: " + (o.ral || o.col)); return;
+      }
+      const col = BMAT.col || "#c68a58", ral = BMAT.ral || null, n = clone(model); n.projekts = n.projekts || {};
+      if (t.k === "fas" && e.shiftKey) { n.projekts.fasade_hex = col; if (ral) n.projekts.fasade_ral = ral; else delete n.projekts.fasade_ral; delete n.projekts.fasade_side; status("Visa māja nokrāsota vienā tonī."); }
+      else if (t.k === "fas") { const fs = n.projekts.fasade_side = Object.assign({}, n.projekts.fasade_side); fs[t.side] = ral ? { hex: col, ral } : { hex: col }; status("Nokrāsota " + SN[t.side] + " fasāde."); }
+      else if (t.k === "ov") { n.projekts.parkare_hex = col; if (ral) n.projekts.parkare_ral = ral; else delete n.projekts.parkare_ral; status("Jumta pārkare nokrāsota."); }
+      else { const o = t.k === "post" ? n.posts[t.i] : t.k === "ter" ? n.terraces[t.i] : n.porch; if (!o) return; o.col = col; if (ral) o.ral = ral; else delete o.ral; delete o.tex; status("Nokrāsots."); }
+      V.tone = lv0(); if ($("v3tone")) $("v3tone").value = V.tone; commit(n); rebuild();
+    }
+    function bkUI() { $("v3bkBox").hidden = !V.bucket; $("v3bkCol").value = /^#[0-9a-f]{6}$/i.test(BMAT.col || "") ? BMAT.col : "#c68a58"; $("v3bkRal").value = BMAT.ral || ""; V.canvas.style.cursor = V.bucket ? "crosshair" : ""; }
     function pickOpening(mesh) {   // klikšķis uz loga/durvīm: izcelšana un izmēri (ID sakrīt ar plāna izvēli k/i)
       if (V.picked && V.picked.material.emissive) V.picked.material.emissive.setHex(0);
       V.picked = mesh; if (!mesh) { draw(); return; }

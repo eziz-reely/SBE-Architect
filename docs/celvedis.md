@@ -65,8 +65,9 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Mēbeļu bibliotēka no egmalt/house-planner (MIT) | nav |
 | Lievenis atlasāms, pārdēvējams, krāsojams un dzēšams; pakāpienu var paslēpt | gatavs |
 | Fasādes stabi: dzēšana, platums, augstums (`posts[i].h`), vilkšana līdz pārkarei nogriež pa pārkari, pielipšana logiem un fasādes malām | gatavs |
-| Spainis krāso vienu fasādi (`projekts.fasade_side`), Shift+klikšķis visu māju; jumta pārkares tonis (`projekts.parkare_hex`) | gatavs (materiālu leģenda toņus pa pusēm vēl neuzskaita) |
+| Spainis krāso vienu fasādi (`projekts.fasade_side`), Shift+klikšķis visu māju; jumta pārkares tonis (`projekts.parkare_hex`) | gatavs (leģendā katrai krāsotai fasādei un pārkarei sava rinda) |
 | Ārsienas garums ar skaitli: klikšķis uz sienas, `-1000` un Enter; panelī Garums, Pagarināt, Pārbīdīt | gatavs (L formas mājai izcēlums rāda visu gabarītu) |
-| 3D skats ar fasādes detaļām: dēļu apdare, valču jumts, aplodas, palodzes, statņi, durvju stikls un rokturis, notekas, stabi, terases, lievenis, ēnas; krāsa pa pusēm un pārkares tonis | gatavs (notekas tikai gar garajām dzegām; mēbeles un iekštelpas 3D nav) |
+| 3D skats ar fasādes detaļām: dēļu apdare, valču jumts, aplodas, palodzes, statņi, durvju stikls un rokturis, notekas, stabi, terases, lievenis, ēnas; krāsa pa pusēm un pārkares tonis | gatavs (mēbeles un iekštelpas 3D nav) |
 | Visas terases vilkšana pielīp sienām, stabiem, asīm, palīglīnijām | gatavs |
 | Pārbaudes `tests/t1..t5` (Playwright): `node tests/t1_lievenis_stabi_spainis.js` utt. | gatavs |
+| Krāsas spainis un pipete 3D skatā (fasāde pa pusēm, pārkare, stabi, terase, lievenis; Shift visa māja, Alt paņem) | gatavs (tikai krāsa, tekstūras 3D nav) |

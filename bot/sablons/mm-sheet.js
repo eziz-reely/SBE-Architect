@@ -187,11 +187,17 @@ function modelSheet(v) {
   }
   if (PR.sturi) { const o = PR.sturi_opc || "balts", t = { balts: ["white", "balti"], melns: ["black", "melni"], tonis: ["facade colour", "fasādes tonī"] }[o] || ["white", "balti"];
     ARC.materials.push([PR.sturi_hex || "#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, t[0]] : [`Stūru dēļi ${PR.sturi} mm,`, t[1]])]); }
+  { // fasādes tonis pa pusēm un jumta pārkares tonis (redaktora spainis): katram sava leģendas rinda
+    const SN = L === "en" ? { south: "south", north: "north", east: "east", west: "west" } : { south: "dienvidu", north: "ziemeļu", east: "austrumu", west: "rietumu" }, FS = PR.fasade_side || {};
+    ["south", "north", "east", "west"].forEach(sd => { const q = FS[sd]; if (q && q.hex) ARC.materials.push([q.hex, L === "en" ? `Facade, ${SN[sd]} wall` : `Fasāde, ${SN[sd]} siena`, q.ral || q.hex.toUpperCase()]); });
+    if (PR.parkare_hex) ARC.materials.push([PR.parkare_hex, L === "en" ? "Roof overhang" : "Jumta pārkare", PR.parkare_ral || PR.parkare_hex.toUpperCase()]);
+  }
+  const matN = ARC.materials.length;
   const mg = materials(svg, 26, row2 + 31, true);
   ARC.materials = keep;
   mg.querySelector("text").textContent = tx.matT;
   el("line", { x1: 0, y1: 2.2, x2: 215, y2: 2.2, stroke: C.ink, "stroke-width": .3 }, mg);
-  T_(mg, 156, 9, tx.tone, { fs: 2.1, fill: MM_GREY });
+  if (matN > 6) T_(mg, 215, 0, tx.tone, { fs: 2.1, fill: MM_GREY, a: "end" }); else T_(mg, 156, 9, tx.tone, { fs: 2.1, fill: MM_GREY });   // trešā leģendas kolonna aizņem piezīmes vietu: piezīme virsraksta rindā
 
   mmTitleBlock(svg, v, lf, L);
   return svg;
