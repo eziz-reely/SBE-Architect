@@ -56,6 +56,49 @@
     if (TECH.test(n)) return { lights, sockets: 2 };
     return { lights, sockets: Math.max(3, Math.round(area / 5e6)) };
   }
+  // ---- grupu aprēķins: slodze, strāva, automāts, kabeļa garums, sprieguma kritums, skapja izmērs ----
+  // Aprēķina loģika pārņemta no egmalt/house-planner (MIT licence, sk. docs/TRESO_PUSU_LICENCES.md), pielāgota MM modelim.
+  const EL = { P: { light: 50, socket: 300, wet: 500, power: 3500 }, U: 230, RHO: 0.0175, BELOW: 150, PANEL_H: 1700, TAIL: 1500, RES: 0.15,
+    DEF: { light: ["MCB", "C10", 1.5, 10], socket: ["RCBO", "C16", 2.5, 16], wet: ["RCBO", "C16", 2.5, 16], power: ["MCB", "C32", 6, 32] },
+    DROP: { light: 0, switch: 1500, socket: 2400, wet: 2400, power: 2400 }, SIZES: [12, 18, 24, 36, 48, 54, 72, 96] };
+  // īsākais koks (Manhetenas attālumi) no skapja caur visiem grupas punktiem
+  function mstLen(panel, ps) {
+    const N = [panel, ...ps], inT = [true], best = N.map(p => Math.abs(p.x - panel.x) + Math.abs(p.y - panel.y)); let L = 0;
+    for (let k = 1; k < N.length; k++) { let j = -1; for (let i = 0; i < N.length; i++) if (!inT[i] && (j < 0 || best[i] < best[j])) j = i;
+      inT[j] = true; L += best[j]; for (let i = 0; i < N.length; i++) if (!inT[i]) best[i] = Math.min(best[i], Math.abs(N[i].x - N[j].x) + Math.abs(N[i].y - N[j].y)); }
+    return L;
+  }
+  function circuits(m, pts, panel) {
+    const H = (m.sienas_augstums || m.wallH || 2500), out = [], by = k => pts.filter(p => p.k === k);
+    const split = (arr, max) => { const g = []; let cur = []; let room = null;
+      arr.forEach(p => { if (cur.length >= max || (cur.length && p.room !== room && cur.length + arr.filter(q => q.room === p.room).length > max)) { g.push(cur); cur = []; } cur.push(p); room = p.room; });
+      if (cur.length) g.push(cur); return g; };
+    split(by("light"), 12).forEach((g, i) => out.push({ t: "light", n: "Apgaismojums " + (i + 1), ps: g, sw: by("switch").filter(q => g.some(p => p.room === q.room)) }));
+    const kit = by("socket").filter(p => KITCH.test(p.room || "")), rest = by("socket").filter(p => !KITCH.test(p.room || ""));
+    if (kit.length) out.push({ t: "socket", n: "Virtuves ligzdas", ps: kit });
+    split(rest, 8).forEach((g, i) => out.push({ t: "socket", n: "Ligzdas " + (i + 1), ps: g }));
+    if (by("wet").length) out.push({ t: "wet", n: "Slapjo telpu ligzdas (IP44)", ps: by("wet") });
+    by("power").forEach(p => out.push({ t: "power", n: "Plīts / cepeškrāsns", ps: [p] }));
+    out.forEach((c, i) => {
+      const d = EL.DEF[c.t], all = c.ps.concat(c.sw || []);
+      c.id = "G" + (i + 1); c.dev = d[0]; c.br = d[1]; c.sec = d[2]; c.In = d[3];
+      c.load = c.ps.reduce((s2, p) => s2 + EL.P[p.k], 0); c.I = c.load / EL.U;
+      const drops = all.reduce((s2, p) => s2 + (H - EL.BELOW - EL.DROP[p.k] > 0 ? H - EL.BELOW - EL.DROP[p.k] : 0), 0);
+      c.len = (mstLen(panel, all) + drops + (H - EL.BELOW - EL.PANEL_H) + EL.TAIL) * (1 + EL.RES) / 1000;
+      c.drop = 2 * c.len * c.I * EL.RHO / c.sec / EL.U * 100;
+      c.warn = (c.I > c.In ? "pārslodze, dali grupu" : "") + (c.drop > 5 ? (c.I > c.In ? "; " : "") + "sprieguma kritums virs 5 %" : "");
+    });
+    return out;
+  }
+  function circuitTables(cs) {
+    const f1 = v => v.toFixed(1).replace(".", ","), mods = cs.reduce((s2, c) => s2 + (c.dev === "RCBO" ? 2 : 1), 0) + 4, need = Math.ceil(mods * 1.2), size = EL.SIZES.find(z => z >= need) || need;
+    const rows = cs.map(c => [c.id, c.n, c.ps.length, c.load, f1(c.I), (c.dev === "RCBO" ? "Dif. automāts " : "Automāts ") + c.br, "3×" + String(c.sec).replace(".", ","), f1(c.len), f1(c.drop), c.warn]);
+    const cab = {}; cs.forEach(c => { cab[c.sec] = (cab[c.sec] || 0) + c.len; });
+    const tot = cs.reduce((s2, c) => s2 + c.load, 0);
+    const sum = Object.keys(cab).sort((a, b) => a - b).map(k => ["Kabelis 3×" + k.replace(".", ",") + " mm²", Math.ceil(cab[k]) + " m"]).concat([
+      ["Uzstādītā jauda kopā", (tot / 1000).toFixed(1).replace(".", ",") + " kW"], ["Moduļi skapī (ar ievada slēdzi)", mods], ["Ieteicamais skapis (20 % rezerve)", size + " moduļi"]]);
+    return tableHtml("Grupu saraksts", ["Grupa", "Nosaukums", "Punkti", "Slodze, W", "Strāva, A", "Aizsardzība", "Kabelis, mm²", "Garums, m", "Kritums, %", "Piezīme"], rows) + tableHtml("Kabeļi un sadales skapis", ["Pozīcija", "Daudzums"], sum);
+  }
   function elecPlan(m) {
     const T = 195, rooms = (m.rooms || []).filter(r => !r.void && r.r && r.r[0]), pts = [], doors = m.doors || [];
     const poly = (m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [m.W, 0], [m.W, m.D], [0, m.D]]);
@@ -70,6 +113,7 @@
       for (let i = 0; i < sp.sockets; i++) {
         let t = d * (2 * i + 1); for (const e of per) { const L = Math.max(0, e[4]); if (t <= L) { pts.push({ k: sp.wet ? "wet" : "socket", x: e[0] + e[2] * t, y: e[1] + e[3] * t, room: rm.n }); placed++; break; } t -= L; }
       }
+      if (KITCH.test(rm.n || "")) pts.push({ k: "power", x: x + w / 2, y: y + 120, room: rm.n });   // plīts pieslēgums
       // slēdzis pie telpas durvīm (iekšpusē, 150 mm no ailas)
       const dr = doors.find(dd => { const c = dd.o === "h" ? [dd.x + dd.w / 2, dd.y] : [dd.x, dd.y + dd.w / 2]; return c[0] >= x - 350 && c[0] <= x + w + 350 && c[1] >= y - 350 && c[1] <= y + h + 350; });
       if (dr) { const H = dr.o === "h"; const cx = H ? dr.x + dr.w + 200 : (dr.x < x + w / 2 ? x + 120 : x + w - 120), cy = H ? (dr.y < y + h / 2 ? y + 120 : y + h - 120) : dr.y + dr.w + 200; pts.push({ k: "switch", x: Math.min(x + w - 120, Math.max(x + 120, cx)), y: Math.min(y + h - 120, Math.max(y + 120, cy)), room: rm.n }); }
@@ -85,11 +129,15 @@
       if (p.k === "light") svg += `<g stroke="#b8860b" stroke-width="22" fill="#fff8dc"><circle cx="${c.x}" cy="${c.y}" r="150"/><path d="M${c.x - 106} ${c.y - 106}L${c.x + 106} ${c.y + 106}M${c.x + 106} ${c.y - 106}L${c.x - 106} ${c.y + 106}"/></g>`;
       else if (p.k === "switch") svg += `<g stroke="#145" stroke-width="22" fill="#fff"><circle cx="${c.x}" cy="${c.y}" r="80"/><path d="M${c.x} ${c.y}L${c.x + 170} ${c.y - 170}"/></g>`;
       else if (p.k === "socket" || p.k === "wet") svg += `<g stroke="${p.k === "wet" ? "#0a6" : "#b00"}" stroke-width="22" fill="#fff"><circle cx="${c.x}" cy="${c.y}" r="95"/><path d="M${c.x - 95} ${c.y}L${c.x + 95} ${c.y}"/>${p.k === "wet" ? `<text x="${c.x + 140}" y="${c.y - 100}" font-size="110" fill="#0a6" stroke="none">IP44</text>` : ""}</g>`;
+      else if (p.k === "power") svg += `<g stroke="#b00" stroke-width="22" fill="#fff"><rect x="${c.x - 110}" y="${c.y - 110}" width="220" height="220"/><path d="M${c.x - 110} ${c.y}L${c.x + 110} ${c.y}M${c.x} ${c.y - 110}L${c.x} ${c.y + 110}"/></g>`;
       else if (p.k === "panel") svg += `<g><rect x="${c.x - 160}" y="${c.y - 100}" width="320" height="200" fill="#d6a36a" stroke="#531" stroke-width="22"/><text x="${c.x}" y="${c.y + 45}" font-size="120" text-anchor="middle" fill="#531">SP</text></g>`;
     });
-    svg += "</svg>";
-    const rows = [["Sadales skapis (SP)", cnt("panel")], ["Gaismekļi griestos", cnt("light")], ["Kontaktligzdas", cnt("socket")], ["Kontaktligzdas IP44 (slapjās telpas)", cnt("wet")], ["Slēdži", cnt("switch")]];
-    return `<section><h2>Elektrības plāns (automātisks priekšlikums)</h2>${svg}<p class="s">Izvietojums ir aptuvens priekšlikums pēc telpu platības un durvīm; precizē pēc elektriķa projekta un spēkā esošajām normām.</p></section>` + tableHtml("Elektroiekārtu saraksts", ["Elements", "Skaits"], rows);
+    let svg2 = "";
+    const cs = panel ? circuits(m, pts.filter(p => p.k !== "panel"), panel) : [];
+    pts.forEach(p => { const c = cs.find(q => q.ps.includes(p)); if (c && (p.k === "socket" || p.k === "wet" || p.k === "power")) svg2 += `<text x="${Math.round(p.x) - 130}" y="${Math.round(p.y) + 250}" font-size="100" fill="#555">${c.id}</text>`; });
+    const rows = [["Sadales skapis (SP)", cnt("panel")], ["Gaismekļi griestos", cnt("light")], ["Kontaktligzdas", cnt("socket")], ["Kontaktligzdas IP44 (slapjās telpas)", cnt("wet")], ["Plīts pieslēgums (3,5 kW)", cnt("power")], ["Slēdži", cnt("switch")]];
+    svg += svg2 + "</svg>";
+    return `<section><h2>Elektrības plāns (automātisks priekšlikums)</h2>${svg}<p class="s">Izvietojums ir aptuvens priekšlikums pēc telpu platības un durvīm; precizē pēc elektriķa projekta un spēkā esošajām normām.</p></section>` + tableHtml("Elektroiekārtu saraksts", ["Elements", "Skaits"], rows) + (cs.length ? circuitTables(cs) : "");
   }
   function build(sel) {
     const m = MM_VIZ3D.model(), out = [];
