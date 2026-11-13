@@ -66,8 +66,8 @@
   // room names: rendered bbox per room index, so a name can be moved off the furniture
   function stampBoxes(bl) {
     const inv = bl.g.getCTM().inverse(), boxes = {};
-    bl.g.querySelectorAll("[data-stamp]").forEach(e => {
-      const i = +e.getAttribute("data-stamp"); let bb; try { bb = e.getBBox(); } catch (_) { return; }
+    bl.g.querySelectorAll("[data-stamp],[data-tstamp]").forEach(e => {
+      const i = +(e.getAttribute("data-stamp") != null ? e.getAttribute("data-stamp") : e.getAttribute("data-tstamp")); let bb; try { bb = e.getBBox(); } catch (_) { return; }
       const m = inv.multiply(e.getCTM());
       [[bb.x, bb.y], [bb.x + bb.width, bb.y + bb.height]].forEach(([x, y]) => { const p = new DOMPoint(x, y).matrixTransform(m), b = boxes[i]; boxes[i] = b ? [Math.min(b[0], p.x), Math.min(b[1], p.y), Math.max(b[2], p.x), Math.max(b[3], p.y)] : [p.x, p.y, p.x, p.y]; });
     });
@@ -128,6 +128,10 @@
         });
         if (X.porch && X.porch.poly) { const xs = X.porch.poly.map(q => q[0]), ys = X.porch.poly.map(q => q[1]); out.push({ k: "porch", i: 0, lv: "main", b: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)], pad: 0 }); }   // lievenis: atlasāms un dzēšams
         (X.posts || []).forEach((q, i) => out.push({ k: "post", i, lv: "main", b: [q.x, q.y, q.x + q.w, q.y + q.d], pad: 40 }));
+        { const CH = { n: [], s: [], w: [], e: [] };   // automātiskās ārējās mēru ķēdes: velkamas uz āru/iekšā (projekts.chainOff), jo tās nedrīkst pārklāties ar māju
+          bl.g.querySelectorAll("[data-chain]").forEach(e => { const q = e.getAttribute("data-chain").split(":"), at = +q[1]; if (isNaN(at)) return; const sd = q[0] === "x" ? (at < 0 ? "n" : at > X.D ? "s" : null) : (at < 0 ? "w" : at > X.W ? "e" : null); if (sd) CH[sd].push(at); });
+          Object.entries(CH).forEach(([sd, a]) => { if (!a.length) return; const lo = Math.min(...a) - 260, hi = Math.max(...a) + 260;
+            out.push({ k: "chn", i: sd, lv: "main", b: sd === "n" || sd === "s" ? [0, lo, X.W, hi] : [lo, 0, hi, X.D], pad: 0 }); }); }
         const AO = axO(X);   // asu galu josla katrā pusē: velc uz āru / iekšā, visas šīs puses asis pārvietojas kopā
         const pb = Math.max(300, ep0 ? 10 * ep0 / 7 : 300);   // josla ap asu galiem un burbuļiem ≈ 10 px katrā pusē
         out.push({ k: "axo", i: "n", lv: "main", b: [0, -AO.n - 300 - pb, X.W, -AO.n + pb * .4], pad: 0 }, { k: "axo", i: "s", lv: "main", b: [0, X.D + AO.s - pb * .4, X.W, X.D + AO.s + 300 + pb], pad: 0 },
@@ -240,7 +244,7 @@
     if (h.del) return "del";
     if (h.rz) return h.rz;
     if (h.it.k === "tvert") return "tc";
-    if (h.it.k === "axo") return h.it.i === "n" || h.it.i === "s" ? "t" : "l";
+    if (h.it.k === "axo" || h.it.k === "chn") return h.it.i === "n" || h.it.i === "s" ? "t" : "l";
     if (h.it.k === "tedge") { const t = M.terraces[Math.floor(h.it.i / 100)], j = h.it.i % 100, a = t.poly[j], b = t.poly[(j + 1) % t.poly.length]; return Math.abs(a[1] - b[1]) < 1 ? "t" : Math.abs(a[0] - b[0]) < 1 ? "l" : "move"; }
     if (h.it.k === "gut" || h.it.k === "idim") return "move";
     if (h.it.k === "dim") {   // gali maina garumu, vidus pārvieto mēra līniju
@@ -462,7 +466,7 @@
       if (it.k === "stamp") { const RR = (lv(it.lv, M).rooms[it.i] || { r: [] }).r; RR.forEach(q => mk(o, "rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "rgba(34,102,216,.13)", stroke: "none", "pointer-events": "none" })); if (RR.length) mk(o, "path", { d: unionPath(RR), fill: "none", stroke: ACC, "stroke-width": 0.8 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}`, "pointer-events": "none" }); }   // telpas apjoma kontūra: viena ārējā līnija (nevis katrs taisnstūris atsevišķi)
       if (it.k === "post" && bl.type === "elev") { const s0 = 2 / k; [[it.b[0], it.b[1] / 2], [it.b[2], it.b[1] / 2], [(it.b[0] + it.b[2]) / 2, it.b[1]]].forEach(q => mk(o, "rect", { x: q[0] - s0 / 2, y: q[1] - s0 / 2, width: s0, height: s0, fill: "#fff", stroke: ACC, "stroke-width": 0.35 / k })); }
       if (it.k === "post" && bl.type === "plan") gpts(it.b).forEach((q, j) => mk(o, "circle", { cx: q[0], cy: q[1], r: 1.3 / k, fill: j === 4 ? ACC : "#fff", stroke: ACC, "stroke-width": 0.4 / k }));
-      if (it.k !== "stamp" && it.k !== "axo") delHandle(o, it.b, k);
+      if (it.k !== "stamp" && it.k !== "axo" && it.k !== "chn") delHandle(o, it.b, k);
       if (bl.type === "plan" && (it.k === "door" || it.k === "win")) openDims(o, bl.lv, it, k);
       if (bl.type === "elev" && (it.k === "win" || it.k === "gw" || it.k === "decor")) elevDims(o, bl, it, k);
       if (it.k === "decor") sizeHandles(o, it.b, k);
@@ -1009,6 +1013,10 @@
         else if (Math.abs(a[0] - b[0]) < 1) { const nx = snapAx("main", "x", a[0] + dx, 150); d.fdx = nx - a[0]; d.fdy = 0; a[0] = b[0] = nx; }
         else { a[0] += r10(dx); a[1] += r10(dy); b[0] += r10(dx); b[1] += r10(dy); d.fdx = r10(dx); d.fdy = r10(dy); }
         return N;
+      }
+      if (it.k === "chn") {
+        N.projekts = N.projekts || {}; const o = N.projekts.chainOff = Object.assign({}, N.projekts.chainOff), sg = it.i === "n" || it.i === "w" ? -1 : 1, dv = it.i === "n" || it.i === "s" ? dy : dx;
+        o[it.i] = r10((o[it.i] || 0) + sg * dv); d.fdx = r10(dx); d.fdy = r10(dy); return N;
       }
       if (it.k === "axo") {
         const o = N.axOff = Object.assign({}, axO(M)), sg = it.i === "n" || it.i === "w" ? -1 : 1, dv = it.i === "n" || it.i === "s" ? dy : dx;
