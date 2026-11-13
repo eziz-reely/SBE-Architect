@@ -1626,7 +1626,7 @@
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
-    if (place && place.t === "terrace") { terPreview(e.clientX, e.clientY, e.shiftKey); return; }
+    if (place && place.t === "terrace") { place.lx = e.clientX; place.ly = e.clientY; terPreview(e.clientX, e.clientY, e.shiftKey); return; }
     if (place && place.t === "zone" && place.poly) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
@@ -1789,6 +1789,13 @@
       if (e.key === "Backspace") { e.preventDefault(); divBuf.s = divBuf.s.slice(0, -1); return; }
       if (e.key === "Enter") { e.preventDefault(); const n = +divBuf.s, op = divBuf.op; divBuf = null; if (n >= (op === "/" ? 2 : 1)) postDiv(n, op); return; }
       if (e.key === "Escape") { divBuf = null; post({ t: "hint", text: "" }); return; }
+    }
+    if (place && place.t === "terrace" && !place.rect && (place.pts || []).length && place.cur && /^[0-9]$/.test(e.key) && !e.ctrlKey) { e.preventDefault(); place.buf = (place.buf || "") + e.key; post({ t: "hint", text: "Garums: " + place.buf + " mm, virziens uz peli. Enter apstiprina." }); terPreview(place.lx, place.ly, false); return; }
+    if (place && place.t === "terrace" && place.buf && e.key === "Backspace") { e.preventDefault(); place.buf = place.buf.slice(0, -1); terPreview(place.lx, place.ly, false); return; }
+    if (place && place.t === "terrace" && place.buf && e.key === "Enter") {   // ierakstīts garums: nākamais punkts no pēdējā uz peles pusi (pa x vai y)
+      e.preventDefault(); const a = place.pts[place.pts.length - 1], q = place.cur, v = +place.buf; place.buf = "";
+      const hz = Math.abs(q[0] - a[0]) >= Math.abs(q[1] - a[1]), sg = (hz ? q[0] - a[0] : q[1] - a[1]) >= 0 ? 1 : -1;
+      place.pts.push(hz ? [a[0] + sg * v, a[1]] : [a[0], a[1] + sg * v]); terPreview(place.lx, place.ly, false); return;
     }
     if (place && place.t === "terrace" && e.key === "Enter") { e.preventDefault(); terFinish(); return; }
     if (place && place.t === "terrace" && e.key === "Backspace") { e.preventDefault(); (place.pts || []).pop(); return; }
@@ -2292,8 +2299,8 @@
     const k = ek(bl), g = mk(o, "g", { class: "gh" }), pts = place.pts || [], q = terPt(p, shift), all = place.rect && pts.length ? [pts[0], [q[0], pts[0][1]], q, [pts[0][0], q[1]], pts[0]] : pts.concat([q]);
     if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: pts.length > 1 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
     pts.forEach(a => snapMark(g, a, true, k)); snapMark(g, q, false, k);
-    const last = pts[pts.length - 1];
-    label(g, q[0] + 3 / k, q[1] - 3 / k, !last ? "Terase: uzklikšķini pirmo stūri" : `${Math.round(Math.hypot(q[0] - last[0], q[1] - last[1]))} mm` + (pts.length > 2 ? "  · dubultklikšķis vai Enter noslēdz" : ""), k);
+    const last = pts[pts.length - 1]; place.cur = q;
+    label(g, q[0] + 3 / k, q[1] - 3 / k, place.buf && last ? `⌨ ${place.buf} mm (Enter)` : !last ? "Terase: uzklikšķini pirmo stūri" : `${Math.round(Math.hypot(q[0] - last[0], q[1] - last[1]))} mm` + (pts.length > 2 ? "  · dubultklikšķis vai Enter noslēdz" : ""), k);
   }
   function terCommit(pts, up, name) {
     const N = clone(M); N.terraces = (N.terraces || []).concat([{ name: name || "Terase", poly: pts, th: 120, preset: "deck", tex: null, texRot: 0, texW: 1000, corners: false, up }]);
