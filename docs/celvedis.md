@@ -42,7 +42,7 @@ Piesaistes (asis, C24 mala, apdares mala), mēru ķēžu vilkšana, polilīnijas
 Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.html` jau 2900 rindu, jauno kodu likt atsevišķos failos (`bot/sablons/redaktors/`), lai neaugtu monolīts.
 
 
-## Īstenošanas statuss (2026-11-12)
+## Īstenošanas statuss (2026-11-13)
 | Darbs | Statuss |
 |---|---|
 | 0. fāze: logu/durvju ID 3D, klikšķis izceļ | gatavs |
@@ -53,7 +53,7 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Pamatu plāns: sarkana apdares līnija, Ø110, kolektors, spoks (3 režīmi) | gatavs |
 | Loga platums/augstums 3D ar taustiņiem (← → + - PgUp PgDn) gatavs; peles rokturi, stabu vilkšana 3D, tekstūras 3D, eyedropper | nav |
 | Trīs režīmi: Skice, AR (noformējums), Ražošana (poga augšā atver komplekta izvēli) | gatavs |
-| Vienots štampa logs, paneļa sadalījums Lapa/Ēka/Rīki | daļēji (Rakstlaukums jau bija) |
+| Saskarne kā SketchUp: augšā tikai Noformējums, Rakstlaukums, Saglabāt; visi rīki kreisajā joslā; labajā sakļaujamas sadaļas (Īpašības, Rīka opcijas, Mēbeles, Māja, Lapa un eksports, Pārbaude, Taustiņi, Palīdzība); statusa joslā mērījumu lauks | gatavs |
 | Pamatu poligons (taisnleņķa L/U/T kontūra, sadalās taisnstūros) | gatavs (tikai projektā "Tikai stabu plāns"); brīvas diagonāles un diagonālie mēri nav |
 | Jumta pārkare pa malām (`projekts.ov_side`, 0 = fasāde līdz jumtam): fasādes, 3D, redaktora lauki | gatavs (divslīpju jumts; četrslīpju tikai tuvināti) |
 | Terases jumts (pilns vai tikai redzamas spāres, stabi, slīpums, augstums; 3D panelī) | gatavs |
@@ -63,3 +63,10 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Mēru pielipšana pret asīm/C24/apdari, mēru ķēžu vilkšana | nav |
 | Elektrības plāns: automātisks priekšlikums ražošanas paketē (ligzdas, slēdži, gaismekļi, SP, saraksts) | gatavs (pamata, bez trasēm un ķēdēm) |
 | Mēbeļu bibliotēka no egmalt/house-planner (MIT) | nav |
+| Lievenis atlasāms, pārdēvējams, krāsojams un dzēšams; pakāpienu var paslēpt | gatavs |
+| Fasādes stabi: dzēšana, platums, augstums (`posts[i].h`), vilkšana līdz pārkarei nogriež pa pārkari, pielipšana logiem un fasādes malām | gatavs |
+| Spainis krāso vienu fasādi (`projekts.fasade_side`), Shift+klikšķis visu māju; jumta pārkares tonis (`projekts.parkare_hex`) | gatavs (materiālu leģenda toņus pa pusēm vēl neuzskaita) |
+| Ārsienas garums ar skaitli: klikšķis uz sienas, `-1000` un Enter; panelī Garums, Pagarināt, Pārbīdīt | gatavs (L formas mājai izcēlums rāda visu gabarītu) |
+| 3D skats ar fasādes detaļām: dēļu apdare, valču jumts, aplodas, palodzes, statņi, durvju stikls un rokturis, notekas, stabi, terases, lievenis, ēnas; krāsa pa pusēm un pārkares tonis | gatavs (notekas tikai gar garajām dzegām; mēbeles un iekštelpas 3D nav) |
+| Visas terases vilkšana pielīp sienām, stabiem, asīm, palīglīnijām | gatavs |
+| Pārbaudes `tests/t1..t5` (Playwright): `node tests/t1_lievenis_stabi_spainis.js` utt. | gatavs |

@@ -962,7 +962,12 @@
       }
       if (it.k === "porch") return null;   // lievenis ir mājas kontūras daļa: to atlasa, pārdēvē, krāso un dzēš, bet nepārvieto
       if (it.k === "ter") {
-        const t = N.terraces[it.i], sx = r10(dx), sy = r10(dy);
+        const t = N.terraces[it.i]; let sx = r10(dx), sy = r10(dy);
+        if (!d.nudge) {   // visa terase: tuvākā mala pielīp mājas sienām, stabiem, citām terasēm, asīm un palīglīnijām
+          const sn = (axis, k, dv) => { const own = t.poly.map(q => q[k]), c = snapPts("main", axis).filter(v => !own.some(o => Math.abs(o - v) < .5)); let best = null;
+            [Math.min(...own), Math.max(...own)].forEach(o => c.forEach(v => { const e = v - (o + dv); if (Math.abs(e) < 120 && (best == null || Math.abs(e) < Math.abs(best))) best = e; })); return best == null ? r10(dv) : dv + best; };
+          sx = sn("x", 0, dx); sy = sn("y", 1, dy);
+        }
         t.poly = t.poly.map(q => [q[0] + sx, q[1] + sy]); if (t.posts) t.posts = t.posts.map(q => [q[0] + sx, q[1] + sy, q[2]]);
         d.fdx = sx; d.fdy = sy; return N;
       }
