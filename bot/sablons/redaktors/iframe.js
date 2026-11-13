@@ -1626,7 +1626,7 @@
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
-    if (place && place.t === "terrace") { place.lx = e.clientX; place.ly = e.clientY; terPreview(e.clientX, e.clientY, e.shiftKey); return; }
+    if (place && place.t === "terrace") { place.alt = e.altKey; place.lx = e.clientX; place.ly = e.clientY; terPreview(e.clientX, e.clientY, e.shiftKey); return; }
     if (place && place.t === "zone" && place.poly) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
@@ -2106,8 +2106,10 @@
   // ---- terases rīks: polilīnija plānā (klikšķi punktos; pēc noklusējuma taisni leņķi, Shift = brīvi) ----
   function terBlock() { return blocks().find(b => b.type === "plan" && b.lv === "main"); }
   function terPt(p, shift) {
-    let x = snapAx("main", "x", p[0], 150), y = snapAx("main", "y", p[1], 150);
+    const cm = terBlock() && terBlock().g.getScreenCTM(), rad = place.alt ? 0 : Math.max(25, Math.min(150, 7 / ((cm && Math.abs(cm.a)) || .05)));   // pielipšana ≈ 7 ekrāna pikseļi (nevis 150 mm vienmēr), Alt izslēdz
+    let x = rad ? snapAx("main", "x", p[0], rad) : r10(p[0]), y = rad ? snapAx("main", "y", p[1], rad) : r10(p[1]);
     const pts = place.pts || [];
+    if (rad) pts.forEach(a => { if (Math.abs(x - a[0]) < rad) x = a[0]; if (Math.abs(y - a[1]) < rad) y = a[1]; });   // pielipšana arī pie jau uzliktajiem punktiem (kā ArchiCAD palīglīnija no punkta)
     if (pts.length && !shift && !place.rect) { const a = pts[pts.length - 1]; if (Math.abs(x - a[0]) >= Math.abs(y - a[1])) y = a[1]; else x = a[0]; }
     return [x, y];
   }
@@ -2298,7 +2300,10 @@
     const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
     const k = ek(bl), g = mk(o, "g", { class: "gh" }), pts = place.pts || [], q = terPt(p, shift), all = place.rect && pts.length ? [pts[0], [q[0], pts[0][1]], q, [pts[0][0], q[1]], pts[0]] : pts.concat([q]);
     if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: pts.length > 1 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
-    pts.forEach(a => snapMark(g, a, true, k)); snapMark(g, q, false, k);
+    pts.forEach(a => { snapMark(g, a, true, k);   // palīglīnijas no uzliktajiem punktiem, kad kursors ir uz tās pašas x vai y
+      if (a[0] === q[0]) mk(g, "line", { x1: a[0], y1: Math.min(a[1], q[1]) - 800, x2: a[0], y2: Math.max(a[1], q[1]) + 800, stroke: ACC, "stroke-width": 0.5 / k, "stroke-dasharray": `${1.6 / k} ${1.2 / k}`, "pointer-events": "none" });
+      if (a[1] === q[1]) mk(g, "line", { x1: Math.min(a[0], q[0]) - 800, y1: a[1], x2: Math.max(a[0], q[0]) + 800, y2: a[1], stroke: ACC, "stroke-width": 0.5 / k, "stroke-dasharray": `${1.6 / k} ${1.2 / k}`, "pointer-events": "none" }); });
+    snapMark(g, q, false, k);
     const last = pts[pts.length - 1]; place.cur = q;
     label(g, q[0] + 3 / k, q[1] - 3 / k, place.buf && last ? `⌨ ${place.buf} mm (Enter)` : !last ? "Terase: uzklikšķini pirmo stūri" : `${Math.round(Math.hypot(q[0] - last[0], q[1] - last[1]))} mm` + (pts.length > 2 ? "  · dubultklikšķis vai Enter noslēdz" : ""), k);
   }
@@ -2347,7 +2352,7 @@
     const bl = terBlock(); if (!bl) return true;
     if (place.asking) return true;
     place.pts = place.pts || [];
-    const p = terPt(toLocal(bl.g, e.clientX, e.clientY), e.shiftKey), pts = place.pts;
+    place.alt = e.altKey; const p = terPt(toLocal(bl.g, e.clientX, e.clientY), e.shiftKey), pts = place.pts;
     if (place.rect) {   // taisnstūris: pirmais klikšķis un pretējais stūris
       if (!pts.length) { pts.push(p); terPreview(e.clientX, e.clientY, e.shiftKey); return true; }
       const a = pts[0]; if (Math.abs(p[0] - a[0]) < 100 || Math.abs(p[1] - a[1]) < 100) { post({ t: "hint", text: "Terase par šauru. Uzklikšķini tālāk." }); return true; }
