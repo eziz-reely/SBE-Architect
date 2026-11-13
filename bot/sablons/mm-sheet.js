@@ -80,11 +80,20 @@ function mmTitleBlock(svg, v, lf, L) {
   el("rect", { x: X + 3, y: 73, width: W - 6, height: 7, rx: 3.5, fill: "none", stroke: MM_ACC, "stroke-width": .45 }, g);
   T_(g, cx, 77.8, tx.phase, { fs: 2.3, fw: 700, a: "middle", ls: .5, fill: MM_DARK });
   // model
-  const NONAME = P.modela_nosaukums === "", SH = NONAME ? -20 : 0;   // nosaukums izdzēsts: nav ne "MODELIS", ne vārda
+  const NONAME = P.modela_nosaukums === "";
+  let SH = NONAME ? -20 : 0;   // nosaukums izdzēsts: nav ne "MODELIS", ne vārda
   if (!NONAME) lab(88, tx.model);
   if (!NONAME && P.modela_nosaukums) {   // modeļa vārds (piem. Freya) un zem tā MM + m²
-    T_(g, X + 3, 97, P.modela_nosaukums, { fs: P.modela_nosaukums.length > 9 ? 4.6 : 6.2, fw: 700, fill: MM_DARK });
-    T_(g, X + 3, 102.5, P.modelis || "", { fs: 2.6, fw: 600, fill: MM_ACC, ls: .4 });
+    // nosaukums nedrīkst iziet ārpus rakstlaukuma (34 mm): garu vārdu burtu izmēru samazina, ļoti garu pārlauž divās rindās
+    const nmT = String(P.modela_nosaukums), AVAIL = W - 6, cw = .56, one = Math.min(6.2, AVAIL / (nmT.length * cw));
+    let lines = [nmT], nfs = one;
+    if (one < 4.2 && nmT.includes(" ")) {
+      const sp = [...nmT].map((c, i) => c === " " ? i : -1).filter(i => i >= 0).sort((p, q) => Math.abs(p - nmT.length / 2) - Math.abs(q - nmT.length / 2))[0];
+      lines = [nmT.slice(0, sp), nmT.slice(sp + 1)]; nfs = Math.min(5.2, AVAIL / (Math.max(lines[0].length, lines[1].length) * cw));
+    }
+    lines.forEach((ln, i) => T_(g, X + 3, 97 + i * (nfs * 1.2), ln, { fs: nfs, fw: 700, fill: MM_DARK }));
+    SH += (lines.length - 1) * (nfs * 1.2);   // otra rinda pabīda zemāk esošos laukus
+    T_(g, X + 3, 102.5 + (lines.length - 1) * (nfs * 1.2), P.modelis || "", { fs: 2.6, fw: 600, fill: MM_ACC, ls: .4 });
   } else if (!NONAME) T_(g, X + 3, 98, P.modelis || v.short || "", { fs: 6.2, fw: 700, fill: MM_DARK });
   // key figures
   const I = P.ievade || {}, foot = polyArea(v.poly), net = [...mmRooms(v), ...mmRooms(lf)].reduce((a, rm) => a + area(rm), 0);
@@ -102,8 +111,10 @@ function mmTitleBlock(svg, v, lf, L) {
   ky += 1;
   if ((P.adrese || []).length) {   // bez adreses (--bez-adreses): sadaļu nerāda
     lab(ky, tx.obj);
-    P.adrese.forEach((l, i) => T_(g, X + 3, ky + 5.5 + i * 3.6, l, { fs: 2.3, fill: MM_DARK }));
-    ky += 7 + P.adrese.length * 3.6 + 6;
+    const AD = [];   // adrese nedrīkst iziet ārpus rakstlaukuma: pārlauž pa vārdiem (≈ 29 rakstzīmes rindā)
+    P.adrese.forEach(l => { let cur = ""; String(l).split(/\s+/).forEach(w => { if (cur && (cur + " " + w).length > 29) { AD.push(cur); cur = w; } else cur = cur ? cur + " " + w : w; }); if (cur) AD.push(cur); });
+    AD.forEach((l, i) => T_(g, X + 3, ky + 5.5 + i * 3.6, l, { fs: 2.3, fill: MM_DARK }));
+    ky += 7 + AD.length * 3.6 + 6;
   }
   lab(ky, tx.cont);
   // projekta piezīmes (pamati u.c.): model.json projekts.piezimes, EN: piezimes_en
