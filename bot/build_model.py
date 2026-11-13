@@ -379,7 +379,7 @@ def build(model_path, langs=None):
          '  { const ml = axis === "x" ? L(a0 - 120, at, a1 + 120, at) : L(at, a0 - 120, at, a1 + 120); if (!inner && ml && ml.setAttribute) ml.setAttribute("data-chain", axis + ":" + at); }'),
         # [MM] ieliekums fasādē: papildus ēnai skaidra kontūra (augša, apakša un malas), lai redzams, kas ar fasādi notiek
         ('    [u0, u1].forEach(u => u > 0 && u < span && el("line", { x1: u, y1: ROOF.plinth, x2: u, y2: -eEdge, stroke: C.ink, "stroke-width": 14 }, g));',
-         '    el("rect", { x: u0, y: -eEdge, width: u1 - u0, height: eEdge + ROOF.plinth, fill: "none", stroke: C.ink, "stroke-width": 14 }, g); el("rect", { x: u0 + 12, y: -eEdge + 12, width: u1 - u0 - 24, height: eEdge + ROOF.plinth - 24, fill: "none", stroke: "rgba(255,255,255,.55)", "stroke-width": 8 }, g);'),
+         '    el("rect", { x: u0, y: -eEdge, width: u1 - u0, height: eEdge + ROOF.plinth, fill: "none", stroke: "#000", "stroke-width": 8 }, g);'),
         # [MM] notekas profils gala skatā: valnis, iekšējā loka, kronšteins zem notekas
         ('      if (gOn) el("path", { d: `M ${ue} ${-zt} H ${ue + sd * 160} A 80 80 0 0 ${sd < 0 ? 0 : 1} ${ue} ${-zt} Z`, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);',
          '      if (gOn) { el("path", { d: `M ${ue} ${-zt} H ${ue + sd * 160} A 80 80 0 0 ${sd < 0 ? 0 : 1} ${ue} ${-zt} Z`, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);\n'
