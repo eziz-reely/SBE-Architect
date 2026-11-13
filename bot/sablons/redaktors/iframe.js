@@ -824,12 +824,14 @@
     const key = X ? "W" : "D", old = N[key];
     N[key] = +(origin ? old - d : (w.hi >= old - 1 ? old + d : old)).toFixed(1);
     if (w.ext) {   // ārsiena: mājas kontūra (poly), lievenis, terases un brīvie stabi seko sienai (agrāk kontūra tika atmesta un ārtelpas palika vietā)
-      const fo = origin ? (v => (v <= w.hi + 1 ? v : v - d)) : (v => (v >= w.lo - 1 ? v + d : v)), ai = X ? 0 : 1, mp = P => P.map(q => { const c = q.slice(); c[ai] = +fo(c[ai]).toFixed(1); return c; });
+      // w.world: siena tiek izvilkta (kā ArchiCAD): kontūra seko tikai pašai sienai, bet terases, lievenis un stabi paliek savā vietā pasaulē
+      const fo = origin ? (v => (v <= w.hi + 1 ? v : v - d)) : (w.world ? (v => (inW(v) ? v + d : v)) : (v => (v >= w.lo - 1 ? v + d : v))), ai = X ? 0 : 1, mp = P => P.map(q => { const c = q.slice(); c[ai] = +fo(c[ai]).toFixed(1); return c; });
+      const fw = w.world ? (origin ? (v => v - d) : (v => v)) : fo, mq = P => P.map(q => { const c = q.slice(); c[ai] = +fw(c[ai]).toFixed(1); return c; });
       if (N.poly) N.poly = mp(N.poly);
-      if (N.porch) { const pc = N.porch; if (pc.poly) pc.poly = mp(pc.poly); if (pc.stepPoly) pc.stepPoly = mp(pc.stepPoly); if (pc.posts) pc.posts = mp(pc.posts);
-        if (pc.step) { pc.step[ai] = +fo(pc.step[ai]).toFixed(1); pc.step[ai + 2] = +fo(pc.step[ai + 2]).toFixed(1); } }
-      (N.terraces || []).forEach(t => { t.poly = mp(t.poly); if (t.posts) t.posts = mp(t.posts); });
-      (N.posts || []).forEach(q => { const k2 = X ? "x" : "y"; q[k2] = +fo(q[k2]).toFixed(1); });
+      if (N.porch) { const pc = N.porch; if (pc.poly) pc.poly = mq(pc.poly); if (pc.stepPoly) pc.stepPoly = mq(pc.stepPoly); if (pc.posts) pc.posts = mq(pc.posts);
+        if (pc.step) { pc.step[ai] = +fw(pc.step[ai]).toFixed(1); pc.step[ai + 2] = +fw(pc.step[ai + 2]).toFixed(1); } }
+      (N.terraces || []).forEach(t => { t.poly = mq(t.poly); if (t.posts) t.posts = mq(t.posts); });
+      (N.posts || []).forEach(q => { const k2 = X ? "x" : "y"; q[k2] = +fw(q[k2]).toFixed(1); });
     }
     if (!X && N[key] !== old) {   // jumta kore paliek tajā pašā augstumā; piecstūra logs paliek kores asī
       const t = Math.tan(((N.jumts && N.jumts.pitch) || 25) * Math.PI / 180);
@@ -954,13 +956,14 @@
   function apply(d, dx, dy) {
     const it = d.h.it, z = d.zone;
     if (z === "wx" || z === "wy") {
+      if (d.tbuf) { const w0 = it.w, v0 = parseFloat(d.tbuf) || 0; d.wd = v0; return v0 ? moveWall(w0.ext ? Object.assign({}, w0, { world: true }) : w0, v0) : null; }
       let q = r10(z === "wx" ? dx : dy); const w = it.w, ax = z === "wx" ? "x" : "y", sn = gSnap(d, ax, [w.lo + q, w.hi + q, (w.lo + w.hi) / 2 + q]);
       let al = null;   // pievilkšana citai sienai: abas vienā taisnē
       if (!w.ext && d.shift) wallBands(w.axis, w).forEach(([l2, h2]) => [[l2 - w.lo], [h2 - w.hi], [(l2 + h2) / 2 - (w.lo + w.hi) / 2]].forEach(([df]) => { const t = (() => { const m = d.h.bl.g.getScreenCTM(); return m && m.a ? 12 / Math.abs(m.a) : 80; })(); const e = df - q; if (Math.abs(e) <= t && (!al || Math.abs(e) < Math.abs(al.e))) al = { e, at: (l2 + h2) / 2 }; }));
       if (al && (!sn || Math.abs(al.e) <= Math.abs(sn.df))) { q = +(q + al.e).toFixed(1); d.wd = q; d.snapLine = [ax === "x" ? "y" : "x", al.at]; return moveWall(w, q); }
       if (sn) q = +(q + sn.df).toFixed(1);
       d.wd = q; d.snapLine = sn ? [ax === "x" ? "y" : "x", sn.at] : null;
-      return moveWall(w, q);
+      return moveWall(w.ext ? Object.assign({}, w, { world: true }) : w, q);
     }
     const N = clone(M);
     if (d.h.bl.type === "plan") {
@@ -1602,16 +1605,16 @@
     wallDone(N, Object.assign({}, sel, { at }));
   }
   function wallShift(d) {   // siena pa savu šķērsvirzienu (koordinātu virzienā); ārsienai mainās mājas izmērs
-    const w = sel.w, origin = w.lo <= 0, N = moveWall(w, d);
+    const w = sel.w, origin = w.lo <= 0, N = moveWall(w.ext ? Object.assign({}, w, { world: true }) : w, d);
     const nw = origin ? w : Object.assign({}, w, { lo: +(w.lo + d).toFixed(1), hi: +(w.hi + d).toFixed(1) });
     wallDone(N, Object.assign({}, sel, { w: nw, i: nw.axis + ":" + Math.round(nw.lo) }));
   }
   function wallKey(e) {
     if (!sel || sel.k !== "wall" || e.ctrlKey || e.metaKey || e.altKey) return false;
-    const k = e.key, ext = sel.w.ext, show = () => { drawSel(); post({ t: "hint", text: (ext ? "Garuma izmaiņa, mm: " : "Pārbīde, mm: ") + (wBuf || "…") + "   (Enter apstiprina, Esc atceļ)" }); };
+    const k = e.key, ext = sel.w.ext, show = () => { drawSel(); post({ t: "hint", text: ("Pārbīde, mm: ") + (wBuf || "…") + "   (Enter apstiprina, Esc atceļ)" }); };
     if (/^[0-9]$/.test(k) || ((k === "-" || k === "+") && !wBuf)) { wBuf += k; show(); return true; }
     if (k === "Backspace" && wBuf) { wBuf = wBuf.slice(0, -1); show(); return true; }
-    if (k === "Enter" && wBuf) { const v = parseFloat(wBuf); wBuf = ""; if (v) { if (ext) wallLen(v); else wallShift(v); } else drawSel(); return true; }
+    if (k === "Enter" && wBuf) { const v = parseFloat(wBuf); wBuf = ""; if (v) wallShift(v); else drawSel(); return true; }
     if (k === "Escape" && wBuf) { wBuf = ""; drawSel(); post({ t: "hint", text: "" }); return true; }
     const st = e.shiftKey ? 100 : 10, X = sel.w.axis === "x", dv = X ? { ArrowLeft: -st, ArrowRight: st }[k] : { ArrowUp: -st, ArrowDown: st }[k];
     if (dv) { wallShift(dv); return true; }
@@ -1771,7 +1774,7 @@
       const w = d.h.it.w; wBuf = "";
       sel = { k: "wall", i: w.axis + ":" + Math.round(w.lo), lv: d.h.it.lv, w: { axis: w.axis, lo: w.lo, hi: w.hi, ext: !!w.ext, v0: w.v0, v1: w.v1 }, at: [Math.round(d.h.p[0]), Math.round(d.h.p[1])] };
       drawSel(); post({ t: "sel", sel });
-      post({ t: "hint", text: w.ext ? "Ārsiena izvēlēta. Ieraksti mm (piem. -1000) un Enter: siena pagarinās vai saīsinās. Bultiņas pārbīda sienu." : "Starpsiena izvēlēta. Ieraksti mm un Enter vai spied bultiņas: siena pārbīdās." });
+      post({ t: "hint", text: w.ext ? "Ārsiena izvēlēta. Velc to vai ieraksti mm (piem. -1000) un Enter: siena tiek izvilkta, terases un pārējā māja paliek vietā." : "Starpsiena izvēlēta. Ieraksti mm un Enter vai spied bultiņas: siena pārbīdās." });
       return;
     }
     if (!d.moved) return;
@@ -1794,6 +1797,24 @@
     arr.forEach(([x, y]) => N.posts.push(Object.assign(clone(src), { x: +x.toFixed(1), y: +y.toFixed(1) })));
     post({ t: "edit", model: N, sel: { k: "post", i: sel.i, lv: "main" } });
   }
+  // sienas vilkšanas laikā var ierakstīt precīzu attālumu (kā ArchiCAD): skaitlis, Enter
+  addEventListener("keydown", e => {
+    const d = drag; if (!d || !d.h || !d.h.wall || (d.zone !== "wx" && d.zone !== "wy") || !d.moved || e.ctrlKey || e.metaKey || e.altKey) return;
+    const k = e.key, w = d.h.it.w; let hit = false;
+    if (/^[0-9]$/.test(k) || ((k === "-" || k === "+") && !d.tbuf)) { d.tbuf = (d.tbuf || "") + k; hit = true; }
+    else if (k === "Backspace" && d.tbuf) { d.tbuf = d.tbuf.slice(0, -1); hit = true; }
+    else if (k === "Escape") { drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); post({ t: "hint", text: "" }); e.preventDefault(); e.stopImmediatePropagation(); return; }
+    else if (k === "Enter" && d.tbuf) {
+      const v = parseFloat(d.tbuf); drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (v) wallDone(moveWall(w.ext ? Object.assign({}, w, { world: true }) : w, v), sel);
+      return;
+    }
+    if (!hit) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    d.wd = parseFloat(d.tbuf) || 0; const N = moveWall(w.ext ? Object.assign({}, w, { world: true }) : w, d.wd);
+    showGhost(d, N); post({ t: "hint", text: "Attālums, mm: " + (d.tbuf || "…") + "   (Enter apstiprina, Esc atceļ)" });
+  }, true);
   addEventListener("keydown", e => {
     if (place && place.t === "decor" && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "q" || e.key === "Q")) { e.preventDefault(); e.stopImmediatePropagation(); decQ(); return; }
     if (!place && !drag && wallKey(e)) { e.preventDefault(); return; }
