@@ -638,6 +638,21 @@ details.tr[data-pane="sel"] > .trb { background: var(--field); }
   #sbVal { width: 96px; height: 28px; font-size: 16px; }
   details.tr > summary { padding: 12px 14px; }
 }
+
+/* S06: izvēlētā elementa īpašības augšējā joslā kā ArchiCAD (virs rasējuma) */
+#stage { --pb: 46px; }
+#propBar { position: absolute; left: 0; right: 0; top: 0; z-index: 5; min-height: 46px; max-height: 118px; overflow: auto; background: var(--paper); border-bottom: 1px solid var(--line2); box-shadow: 0 4px 10px -8px rgba(0,0,0,.35); display: flex; align-items: center; padding: 4px 14px; }
+#propBar .selcard { padding: 0; border: 0; background: none; width: 100%; }
+#propBar #panel { display: flex; align-items: flex-end; gap: 6px 18px; flex-wrap: wrap; }
+#propBar #panel > .sel-name { margin: 0; font-size: 14px; align-self: center; white-space: nowrap; }
+#propBar #panel > .sel-sub { align-self: center; margin: 0; max-width: 260px; font-size: 11.5px; }
+#propBar #panel .grid { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: flex-end; }
+#propBar #panel .grid > label { width: 112px; font-size: 11px; }
+#propBar #panel .grid > label.full { width: 190px; }
+#propBar #panel .grid input, #propBar #panel .grid select { height: 28px; }
+#propBar #panel p.empty { margin: 0; }
+#propBar #panel p:not(.empty):not(.sel-name):not(.sel-sub) { display: none; }
+#stage iframe { top: var(--pb) !important; height: calc(100% - var(--pb)) !important; }
 </style>
 
 <header>
@@ -675,11 +690,8 @@ details.tr[data-pane="sel"] > .trb { background: var(--field); }
 <div id="ribbon" role="toolbar" aria-label="Noformējums"></div>
 <main>
   <nav id="rail" aria-label="Rīki"><div id="railT"></div><span class="sp"></span><button id="b3d" type="button" aria-label="3D skats" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg></button><button type="button" id="bIso" title="Izolēt skatu: plāns vai fasāde pa visu logu (dubultklikšķis tukšā vietā skatā; Esc atgriež)" aria-label="Izolēt skatu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5" stroke-dasharray="2.5 2"/><rect x="7.5" y="8" width="9" height="8"/></svg></button><button type="button" id="bKeys" title="Taustiņi" aria-label="Taustiņi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/></svg></button></nav>
-  <div id="stage"><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" stroke-dasharray="2 2"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span>Dzēst palīglīnijas</span></button></div>
+  <div id="stage"><div id="propBar" aria-label="Izvēlētā elementa īpašības"><div class="selcard" aria-live="polite"><div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Rīkus izvēlies kreisajā joslā.</p></div></div></div><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" stroke-dasharray="2 2"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span>Dzēst palīglīnijas</span></button></div>
   <aside id="tray" aria-label="Īpašības un iestatījumi">
-    <details class="tr" data-pane="sel" open><summary><span>Īpašības</span></summary><div class="trb">
-      <div class="selcard" aria-live="polite"><div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Rīkus izvēlies kreisajā joslā.</p></div></div>
-    </div></details>
     <details class="tr" data-pane="tool" open hidden><summary><span>Rīka opcijas</span></summary><div class="trb">
       <div id="bktBox" class="group" hidden><p class="cap">Materiāls spainim</p><div class="grid" id="bktGrid"></div></div>
     </div></details>
@@ -2664,6 +2676,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const d = document.querySelector(`details.tr[data-pane="${t}"]`); if (!d) return;
     d.open = true; try { d.scrollIntoView({ block: "nearest" }); } catch (_) {}
   }
+  { const pb = document.getElementById("propBar"), st = document.getElementById("stage");
+    if (pb && st && window.ResizeObserver) new ResizeObserver(() => { const h = Math.ceil(pb.getBoundingClientRect().height); if (st.style.getPropertyValue("--pb") !== h + "px") { st.style.setProperty("--pb", h + "px"); dispatchEvent(new Event("resize")); } }).observe(pb); }
   { const TR = [...document.querySelectorAll("details.tr")], keep = () => { try { localStorage.setItem("mmTray", JSON.stringify(TR.filter(d => d.open).map(d => d.dataset.pane))); } catch (_) {} };
     try { const o = JSON.parse(localStorage.getItem("mmTray") || "null"); if (Array.isArray(o)) TR.forEach(d => { if (d.dataset.pane !== "sel" && d.dataset.pane !== "tool") d.open = o.includes(d.dataset.pane); }); } catch (_) {}
     TR.forEach(d => d.addEventListener("toggle", keep)); }
