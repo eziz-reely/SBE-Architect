@@ -218,6 +218,7 @@
         if (!inB(p, it.b, it.pad)) return;
         if (it.k === "fblk" && place) return;
         if (it.k === "porch" && !inPoly(p, X0.porch.poly)) return;
+        if (it.k === "ter" && X0.terraces && X0.terraces[it.i] && !inPoly(p, X0.terraces[it.i].poly)) return;   // terase atlasāma tikai savā kontūrā (L formas terase neaizsedz sienu, kas ir tās ierobežojošā taisnstūrī)
         const a = area(it.b) + (it.k === "ter" || it.k === "porch" ? 2e9 : 0) - (it.k === "tvert" ? 1e10 : 0) - (it.k === "decor" && sel && sel.k === "decor" && sel.i === it.i ? 1e10 : 0) + (it.k === "furn" ? 1e8 : it.k === "stamp" ? 5e7 : it.k === "gut" ? 1e9 : it.k === "idim" ? 2e8 : it.k === "fblk" ? 4e8 : 0);   // logi un durvis pirms mēbelēm
         if (!best || a < best.a) best = { a, it, bl, p };
       });
