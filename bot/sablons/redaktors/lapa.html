@@ -2442,6 +2442,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const r0 = document.createElement("div"); r0.className = "row"; const b0 = document.createElement("button"); b0.type = "button"; b0.className = "del"; b0.textContent = "Dzēst"; b0.onclick = del; r0.appendChild(b0); p.appendChild(r0);
       return;
     }
+    if (sel.k === "post" && sel.more && sel.more.length) {   // vairāki stabi (Shift+klikšķis): kopīgs augstums, izmēri, dzēšana
+      const all = [sel, ...sel.more].filter(q => q.k === "post");
+      h.textContent = `Atlasīti ${all.length} stabi`; sub.textContent = "iestatījumi attiecas uz visiem atlasītajiem · Shift+klikšķis pievieno vai noņem · Delete dzēš visus";
+      const first = (model.posts || [])[all[0].i] || {};
+      g.append(field("Platums X, mm", first.w, (n, v) => { all.forEach(q => { if (n.posts[q.i]) n.posts[q.i].w = Math.max(20, v); }); }), field("Dziļums Y, mm", first.d, (n, v) => { all.forEach(q => { if (n.posts[q.i]) n.posts[q.i].d = Math.max(20, v); }); }),
+        field("Augstums virs ±0, mm (0 = līdz jumta pārkarei)", +first.h > 0 && +first.h < 90000 ? first.h : 0, (n, v) => { all.forEach(q => { const o = n.posts[q.i]; if (!o) return; if (v > 0) o.h = Math.round(v); else delete o.h; }); }, null, "full"));
+      p.append(h, sub, g);
+      const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst atlasītos stabus"; b.onclick = () => toFrame({ mmDelGrp: 1 }); r.appendChild(b); p.appendChild(r);
+      return;
+    }
     if ((sel.k === "win" || sel.k === "gw") && sel.more && sel.more.length) {   // [TRE] vairāki logi (Ctrl+klikšķis): kopīgi iestatījumi
       const all = [sel, ...sel.more].filter(q => q.k === "win" || q.k === "gw");
       h.textContent = `Atlasīti ${all.length} logi`; sub.textContent = "iestatījumi attiecas uz visiem atlasītajiem · Ctrl+klikšķis pievieno vai noņem";

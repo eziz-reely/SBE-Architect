@@ -869,6 +869,7 @@
   }
   function delGrp() {
     const N = clone(M), all = [sel, ...(sel.more || [])];
+    if (all.some(s => s.k === "post")) all.filter(s => s.k === "post").map(s => s.i).sort((a, b) => b - a).forEach(i => N.posts.splice(i, 1));
     ["furn", "win", "door"].forEach(k => {
       const idx = all.filter(s => s.k === k).map(s => s.i).sort((a, b) => b - a), L = lv(sel.lv, N), arr = L[k === "furn" ? "furniture" : k === "win" ? "windows" : "doors"];
       idx.forEach(i => arr.splice(i, 1));
@@ -1534,13 +1535,15 @@
     if (e.altKey && !h.wall && ["win", "door", "furn", "gw"].includes(h.it.k)) return pickInject(h, e.ctrlKey || e.metaKey);   // [TRE] Alt+klikšķis paņem objekta iestatījumus, Ctrl+Alt+klikšķis uzliek tos citam tāda paša veida objektam (kā ArchiCAD pipete)
     const grpOk = h.bl.type === "plan" && !h.wall && GRP.includes(h.it.k) && h.it.lv !== "loft";
     const grpE = h.bl.type === "elev" && !h.wall && (h.it.k === "win" || h.it.k === "gw") && sel && (sel.k === "win" || sel.k === "gw");   // [TRE] fasādē logus var atlasīt grupā (Ctrl vai Shift + klikšķis) un mainīt kopīgus iestatījumus
-    if ((e.shiftKey || e.ctrlKey || e.metaKey) && ((grpOk && sel && GRP.includes(sel.k) && sel.lv === h.it.lv) || grpE) && !same(h.it, sel)) {   // Shift/Ctrl+klikšķis: pievieno / noņem no atlasītās grupas
+    const grpP = !h.wall && h.it.k === "post" && sel && sel.k === "post";   // stabus (plānā vai fasādē) var atlasīt grupā ar Shift/Ctrl, kā SketchUp
+    if ((e.shiftKey || e.ctrlKey || e.metaKey) && ((grpOk && sel && GRP.includes(sel.k) && sel.lv === h.it.lv) || grpE || grpP) && !same(h.it, sel)) {   // Shift/Ctrl+klikšķis: pievieno / noņem no atlasītās grupas
       const more = (sel.more || []).slice(), ix = more.findIndex(m => same(m, h.it));
       if (ix >= 0) more.splice(ix, 1); else more.push({ k: h.it.k, i: h.it.i, lv: h.it.lv });
       sel = Object.assign({}, sel, { more }); drawSel(); post({ t: "sel", sel }); return true;
     }
     const inGrp = grpOk && sel && sel.more && sel.more.length && (same(h.it, sel) || sel.more.some(m => same(m, h.it)));
-    if (!h.wall && !inGrp) { sel = h.it.k === "tedge" || h.it.k === "tvert" ? { k: "ter", i: Math.floor(h.it.i / 100), lv: "main" } : { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
+    const inGrpP = grpP && sel.more && sel.more.some(m => same(m, h.it));   // klikšķis uz jau atlasīta grupas stabs neatceļ grupu
+    if (!h.wall && !inGrp && !inGrpP) { sel = h.it.k === "tedge" || h.it.k === "tvert" ? { k: "ter", i: Math.floor(h.it.i / 100), lv: "main" } : { k: h.it.k, i: h.it.i, lv: h.it.lv }; selPt = { g: h.bl.g, p: h.p }; drawSel(); post({ t: "sel", sel }); }
     drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door", "post", "decor"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
     if (h.it.k === "post" && drag.zone === "move") { const pq = M.posts[h.it.i]; drag.gp0 = nearestGrab([pq.x, pq.y, pq.x + pq.w, pq.y + pq.d], h.p); drag.refs = []; }
     if (h.it.k === "fdim") { drag = null; return true; }   // fasādes mēru tikai atlasa (Delete dzēš)
@@ -1607,6 +1610,7 @@
     const N = moveWall({ axis: g.side === "west" ? "x" : "y", lo: 0, hi: T, ext: true }, -Math.abs(+g.d));
     if (!N) { post({ t: "hint", text: "Piebūvi šajā pusē neizdevās pievienot." }); return; }
     sel = null; post({ t: "edit", model: N, resized: 1, wing: g }); });
+  addEventListener("message", e => { if (e.data && e.data.mmDelGrp && sel && sel.more && sel.more.length) delGrp(); });
   addEventListener("message", e => { const m = e.data && e.data.mmWall; if (!m || !sel || sel.k !== "wall") return;
     if (m.end) { const X = sel.w.axis === "x", S = X ? M.D : M.W, at = sel.at.slice(); at[X ? 1 : 0] = m.end === "hi" ? S : 0; sel = Object.assign({}, sel, { at }); drawSel(); post({ t: "sel", sel }); }
     else if (m.len) { if (sel.w.ext) wallLen(+m.len); else wallShift(+m.len); }
