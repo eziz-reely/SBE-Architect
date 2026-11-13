@@ -73,3 +73,11 @@ Jumtu krustošanās (5. fāze); vienota izvēle 2D SVG un 3D (0. fāze); `lapa.h
 | Pārbaudes `tests/t1..t5` (Playwright): `node tests/t1_lievenis_stabi_spainis.js` utt. | gatavs |
 | Krāsas spainis un pipete 3D skatā (fasāde pa pusēm, pārkare, stabi, terase, lievenis; Shift visa māja, Alt paņem) | gatavs (tikai krāsa, tekstūras 3D nav) |
 | Programma rāda, ka GitHub ir jaunāka versija, un atjauninās ar pogu (git pull) | gatavs (pārbaudīts tikai uz Linux) |
+| Piebūve visās četrās malās (ziemeļu un rietumu pusē māja pabīdās, modelis saglabājas) | gatavs (blakus telpas tiek pastieptas piebūvē) |
+| 3D skatā vairākas terases: ieslēdz "Pievienot terasi ar klikšķi uz fasādes" un klikšķini uz fasādes; saraksts ar dzēšanu | gatavs |
+| 3D spainis ar tekstūru (attēls fasādei, terasei, stabiem) un RAL izvēli | gatavs |
+| Izolētais skats: rāda tikai vienu rasējumu (plāns vai fasāde) pilnā logā, Esc atgriež lapu | gatavs |
+| Mēbeļu bibliotēka: 17 papildu simboli (`mmF`: kumode, plaukts, apavu skapis, TV galds, tehnika, vanna, boilers, kamīns u.c.) | gatavs |
+| Elektrības plāns ražošanas paketē: punkti, grupu saraksts (slodze, strāva, automāts, kabelis, garums, sprieguma kritums), kabeļu kopgarums un skapja izmērs | gatavs (automātisks priekšlikums, punktus ar roku pārvietot nevar; loģika no house-planner, sk. `docs/TRESO_PUSU_LICENCES.md`) |
+| L formas jumts ar ieleju (`jumts.L`, Māja → "Jumts L formas mājai") | daļēji: tikai 3D skatā un SketchUp, tikai divslīpju jumtam un 6 stūru L kontūrai; A3 lapas fasādēs un jumta plānā joprojām viens jumts pār visu gabarītu |
+| Pārbaudes `tests/t6..t11` (ieliekums, piebūve, izolētais skats, mēbeles, elektrība, L jumts) | gatavs |
