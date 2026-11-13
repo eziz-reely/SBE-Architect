@@ -2356,6 +2356,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const act = (lab, val, fn, cls) => field(lab, val, (n, v) => { fn(v); throw "async"; }, null, cls);
       h.textContent = ext ? "Ārsiena" : "Starpsiena"; sub.textContent = (ext ? sideN + " siena · " : "") + "garums " + Math.round(L) + " mm · biezums " + Math.round(w.hi - w.lo) + " mm";
       if (ext) {
+        g.append(act("Izbīdīt uz āru (+) / iekšu (−), mm", 0, v => { if (v) toFrame({ mmWall: { shift: far ? v : -v } }); }, "full"));
         g.append(act("Garums, mm", L, v => { if (Math.abs(v - L) >= 1) toFrame({ mmWall: { len: v - L } }); }),
           act("Pagarināt (+) / saīsināt (−) par, mm", 0, v => { if (v) toFrame({ mmWall: { len: v } }); }));
         const el = document.createElement("label"), es = document.createElement("select"); el.className = "full"; el.textContent = "Kustīgais gals (otrs paliek vietā)";
