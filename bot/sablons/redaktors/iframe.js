@@ -268,6 +268,20 @@
     return o;
   }
   const mk = (o, tag, at) => { const e = document.createElementNS(NS, tag); Object.entries(at).forEach(([a, v]) => e.setAttribute(a, v)); o.appendChild(e); return e; };
+  // taisnstūru apvienojuma ārējā kontūra (tikai malas, kam vienā pusē ir platība, otrā nav): zonas, kas sastāv no vairākiem taisnstūriem, rāda kā vienu kontūru
+  function unionPath(R) {
+    const xs = [...new Set(R.flatMap(q => [q[0], q[0] + q[2]]))].sort((a, b) => a - b), ys = [...new Set(R.flatMap(q => [q[1], q[1] + q[3]]))].sort((a, b) => a - b);
+    const cov = (xi, yi) => xi >= 0 && yi >= 0 && xi < xs.length - 1 && yi < ys.length - 1 && R.some(q => xs[xi] >= q[0] - 0.5 && xs[xi + 1] <= q[0] + q[2] + 0.5 && ys[yi] >= q[1] - 0.5 && ys[yi + 1] <= q[1] + q[3] + 0.5);
+    let d = "";
+    for (let xi = 0; xi < xs.length - 1; xi++) for (let yi = 0; yi < ys.length - 1; yi++) {
+      if (!cov(xi, yi)) continue;
+      if (!cov(xi, yi - 1)) d += `M${xs[xi]} ${ys[yi]}H${xs[xi + 1]}`;
+      if (!cov(xi, yi + 1)) d += `M${xs[xi]} ${ys[yi + 1]}H${xs[xi + 1]}`;
+      if (!cov(xi - 1, yi)) d += `M${xs[xi]} ${ys[yi]}V${ys[yi + 1]}`;
+      if (!cov(xi + 1, yi)) d += `M${xs[xi + 1]} ${ys[yi]}V${ys[yi + 1]}`;
+    }
+    return d;
+  }
   function rect(o, b, dash, k, pad = 1.2 / k) {   // ~1.2 mm uz papīra; mēbelēm 0, lai rāmis sakrīt ar mēbeli
     mk(o, "rect", { x: b[0] - pad, y: b[1] - pad, width: b[2] - b[0] + 2 * pad, height: b[3] - b[1] + 2 * pad, fill: dash ? "rgba(217,72,15,.10)" : "none", stroke: ACC, "stroke-width": 0.45 / k, "stroke-dasharray": dash ? `${1.4 / k} ${0.9 / k}` : "none" });
   }
@@ -439,7 +453,7 @@
       if (it.k === "ter") { const t = M.terraces[it.i]; mk(o, "polygon", { points: t.poly.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.10)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` }); t.poly.forEach(q => snapMark(o, q, true, k)); }
       if (it.k === "porch") mk(o, "polygon", { points: M.porch.poly.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.10)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
       if (it.k === "stamp" && it.lv === "main") zoneHandles().forEach(h => { const s0 = 2.2 / k; mk(o, "rect", { x: h.pt[0] - s0 / 2, y: h.pt[1] - s0 / 2, width: s0, height: s0, fill: "#fff", stroke: ACC, "stroke-width": 0.35 / k }); });
-      if (it.k === "stamp") (lv(it.lv, M).rooms[it.i] || { r: [] }).r.forEach(q => mk(o, "rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "rgba(34,102,216,.13)", stroke: ACC, "stroke-width": 0.8 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}`, "pointer-events": "none" }));   // [TRE] telpas aizņemtā platība
+      if (it.k === "stamp") { const RR = (lv(it.lv, M).rooms[it.i] || { r: [] }).r; RR.forEach(q => mk(o, "rect", { x: q[0], y: q[1], width: q[2], height: q[3], fill: "rgba(34,102,216,.13)", stroke: "none", "pointer-events": "none" })); if (RR.length) mk(o, "path", { d: unionPath(RR), fill: "none", stroke: ACC, "stroke-width": 0.8 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}`, "pointer-events": "none" }); }   // telpas apjoma kontūra: viena ārējā līnija (nevis katrs taisnstūris atsevišķi)
       if (it.k === "post" && bl.type === "elev") { const s0 = 2 / k; [[it.b[0], it.b[1] / 2], [it.b[2], it.b[1] / 2], [(it.b[0] + it.b[2]) / 2, it.b[1]]].forEach(q => mk(o, "rect", { x: q[0] - s0 / 2, y: q[1] - s0 / 2, width: s0, height: s0, fill: "#fff", stroke: ACC, "stroke-width": 0.35 / k })); }
       if (it.k === "post" && bl.type === "plan") gpts(it.b).forEach((q, j) => mk(o, "circle", { cx: q[0], cy: q[1], r: 1.3 / k, fill: j === 4 ? ACC : "#fff", stroke: ACC, "stroke-width": 0.4 / k }));
       if (it.k !== "stamp" && it.k !== "axo") delHandle(o, it.b, k);
