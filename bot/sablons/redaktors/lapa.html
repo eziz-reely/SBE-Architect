@@ -1669,6 +1669,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const I = model.ievade || {}, J = model.jumts || {}, gs = group("Mājas izmēri", host);
       gs.appendChild(field("Garums, mm", model.W, (n, v) => { toFrame({ mmSize: { W: Math.round(v), D: model.D } }); throw "async"; }));
       gs.appendChild(field("Platums, mm", model.D, (n, v) => { toFrame({ mmSize: { W: model.W, D: Math.round(v) } }); throw "async"; }));
+      {   // būvasu piesaiste: ārējās asis uz sienas centru (pēc noklusējuma), C24 karkasa ārmalu vai fasādes ārmalu; iekšējās asis netiek skartas
+        const ASM = { centrs: "Sienas centrs", c24: "C24 karkasa ārmala", fasade: "Fasādes ārmala" };
+        gs.appendChild(field("Būvasu piesaiste", (model.projekts || {}).asu_piesaiste || "centrs", (n, v) => {
+          n.projekts = n.projekts || {}; if (v === "centrs") delete n.projekts.asu_piesaiste; else n.projekts.asu_piesaiste = v;
+          const T0 = Math.min(...n.rooms.flatMap(r => r.r.map(q => q[0]))), S1 = ((n.projekts.piragi_layers || {}).S1 || LAYERS0.S1.layers) || [];
+          let c24 = 0; for (const l of S1) { if (/^C24/.test(l[0])) break; c24 += +l[1] || 0; }
+          const off = v === "fasade" ? 0 : v === "c24" ? c24 : T0 / 2;
+          [["x", n.W], ["y", n.D]].forEach(([k, S]) => { const A = (n.axes || {})[k]; if (!A || A.length < 2) return; A[0][0] = +off.toFixed(1); A[A.length - 1][0] = +(S - off).toFixed(1); });
+        }, ASM, "full"));
+      }
       gs.appendChild(field("Kores augstums, mm", I.augstums || 0, (n, v) => { n.ievade = n.ievade || {}; n.ievade.augstums = Math.max(3000, Math.min(9000, Math.round(v))); roofFix(n); }));
       if (model.ceiling) {   // griestu augstums: ar mansardu pārbīda arī 2. stāva paneli un logus
         const cf = field("Griestu augstums, mm", model.ceiling, (n, v) => {
