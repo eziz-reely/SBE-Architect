@@ -84,7 +84,7 @@ def _mm_extra(cad):
     for a, b in [
         # stabs fasādē: augstums q.h (mm virs ±0,000); virs jumta pārkares apakšas tiek nogriezts pa pārkari (gala fasādē pa slīpumu)
         ('    el("rect", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);',
-         '    const pzc = uu => gable ? eEdge + (Math.min(uu, span - uu) + (uu < span / 2 ? OVL : OVR)) * tan : eEdge, ph = pq && +pq.h > 0 ? +pq.h : 0, pzL = ph ? Math.min(ph, pzc(u)) : eEdge, pzR = ph ? Math.min(ph, pzc(u + s)) : eEdge, pzm = Math.min(pzL, pzR);\n'
+         '    const pzc = uu => (gable ? eEdge + (Math.min(uu, span - uu) + (uu < span / 2 ? OVL : OVR)) * tan - 260 : eEdge - 150), ph = pq && +pq.h > 0 ? +pq.h : 0, pzL = ph ? Math.min(ph, pzc(u)) : pzc(u), pzR = ph ? Math.min(ph, pzc(u + s)) : pzc(u + s), pzm = Math.min(pzL, pzR);\n'
          '    if (window.__FDF && window.__FDF[side]) window.__FDF[side].pz = [gable ? 1 : 0, OVL, OVR, tan];\n'
          '    el("polygon", { points: [P(u, -fT), P(u + s, -fT), P(u + s, pzR), P(u, pzL)].join(" "), fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);'),
         ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
