@@ -377,6 +377,13 @@ def build(model_path, langs=None):
         # [MM] zemes līnija fasādē: viss, kas iet zem zemes (terases, stabi, pamati), tiek aizsegts; māja stāv aiz zemes līnijas
         ('  const axU = ax.map(([a]) => map(a)), AG =',
          '  { el("rect", { x: -1600, y: ROOF.plinth, width: span + 3200, height: 300, fill: "#fff" }, g); let d = ""; for (let x = -1400; x < span + 1400 - 260; x += 200) d += `M ${x} ${ROOF.plinth + 260} L ${x + 260} ${ROOF.plinth} `; el("path", { d, stroke: "#666", "stroke-width": 8, fill: "none" }, g);\n    el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth, stroke: C.ink, "stroke-width": 45, "data-keep": 1 }, g); }   // [MM] zemes līnija virs visa, kas zem tās\n  const axU = ax.map(([a]) => map(a)), AG ='),
+        # [MM] eksplikācija: ārtelpās arī terases (pakāpieni, t.up, netiek skaitīti)
+        ("const n = v.rooms.length, pr = v.porch ? 2 : 0, rows = n + 4 + pr;",
+         "const OUT = [].concat(v.porch ? [v.porch] : [], (v.terraces || []).filter(t => !t.up)), n = v.rooms.length, pr = OUT.length ? OUT.length + 1 : 0, rows = n + 4 + pr;"),
+        ('cell(c1 / 2, yy + RH, String(n + 1), { a: "middle" }); cell(c1 + 2, yy + RH, v.porch.name || "Lievenis"); cell(WX - 2, yy + RH, f2(polyArea(v.porch.poly)), { a: "end" });',
+         'OUT.forEach((o, oi) => { const y2 = yy + (oi + 1) * RH; cell(c1 / 2, y2, String(n + 1 + oi), { a: "middle" }); cell(c1 + 2, y2, o.name || (o === v.porch ? "Lievenis" : "Terase")); cell(WX - 2, y2, f2(polyArea(o.poly)), { a: "end" }); });'),
+        ("(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
+         "(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + (v.terraces || []).slice(0, ti).filter(q => !q.up).length));"),
     ]:
         assert a in cad, 'SBE cad.js: nav atrasts ' + a[:50]
         cad = cad.replace(a, b, 1)

@@ -1848,6 +1848,12 @@
     if (place && place.t === "terrace") { terFinish(); return; }
     const h = hit(e.clientX, e.clientY);
     if (!h && !place) { const el = document.elementFromPoint(e.clientX, e.clientY), g = el && el.closest && el.closest("g[data-block]"); if (isoB) iso(null); else if (g) iso(g.getAttribute("data-block")); return; }
+    if (h && h.it.k === "tedge") {   // dubultklikšķis uz terases malas: jauns stūris (kontūru var lauzt un velkt)
+      const t0 = M.terraces[Math.floor(h.it.i / 100)], j = h.it.i % 100, n0 = t0.poly.length, a = t0.poly[j], b = t0.poly[(j + 1) % n0], q = h.p;
+      const dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1, u = Math.max(.05, Math.min(.95, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dy) / L2));
+      const N = clone(M), ti = Math.floor(h.it.i / 100); N.terraces[ti].poly.splice(j + 1, 0, [Math.round(a[0] + dx * u), Math.round(a[1] + dy * u)]);
+      sel = { k: "ter", i: ti, lv: "main" }; post({ t: "edit", model: N, sel }); post({ t: "hint", text: "Pievienots stūris. Terasei jābūt atlasītai: velc stūri, lai mainītu kontūru." }); return;
+    }
     if (h && h.it.k === "door" && !h.del) { sel = { k: "door", i: h.it.i, lv: h.it.lv }; post({ t: "edit", model: flipDoor(clone(M), sel, e.shiftKey ? "hinge" : "side"), sel }); }
   });
 
@@ -2301,6 +2307,7 @@
     if (pts.length < 3) { post({ t: "hint", text: "Terasei vajag vismaz 3 punktus." }); return; }
     const T = M.terraces || [];
     if (!T.length) { terCommit(pts, 0); return; }
+    if (place.step != null && T[place.step]) { terCommit(pts, (T[place.step].up || 0) + 150, "Pakāpiens"); return; }   // pakāpiens no terases paneļa: bez jautājuma
     const cx = pts.reduce((s, q) => s + q[0], 0) / pts.length, cy = pts.reduce((s, q) => s + q[1], 0) / pts.length;
     let par = T.length - 1;   // esošā terase, kurā ietilpst jaunā centrs (citādi pēdējā)
     T.forEach((t, i) => { const xs = t.poly.map(q => q[0]), ys = t.poly.map(q => q[1]); if (cx >= Math.min(...xs) && cx <= Math.max(...xs) && cy >= Math.min(...ys) && cy <= Math.max(...ys)) par = i; });

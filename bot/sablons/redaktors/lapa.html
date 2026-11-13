@@ -1987,9 +1987,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Pagriezt tekstūru 90°"; b2.onclick = () => { const n = clone(model); const q = n.terraces[sel.i]; q.texRot = ((q.texRot || 0) + 90) % 360; commit(n); };
     r1.append(up, b1, b2);
     if (t.tex) { const b3 = document.createElement("button"); b3.type = "button"; b3.textContent = "Noņemt tekstūru"; b3.onclick = () => { const n = clone(model); n.terraces[sel.i].tex = null; commit(n); }; r1.append(b3); }
-    p.appendChild(r1); matRows(p, "terraces", false);
+    p.appendChild(r1);
+    { const rs = document.createElement("div"); rs.className = "row"; const bs = document.createElement("button"); bs.type = "button"; bs.textContent = "Pievienot pakāpienu (zīmē kontūru)"; bs.title = "Pakāpiens ir jauna terase virs šīs, +150 mm; eksplikācijā netiek skaitīts, plānā un fasādē redzams";
+      bs.onclick = () => { toFrame({ mmPlace: { t: "terrace", step: sel.i } }); status("Pakāpiens: klikšķi stūros, dubultklikšķis vai Enter noslēdz."); }; rs.appendChild(bs); p.appendChild(rs); }
+    matRows(p, "terraces", false);
     const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst terasi"; b.onclick = del; r.appendChild(b); p.appendChild(r);
-    const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Velc terases malu, lai to pagarinātu vai saīsinātu; velc laukumu, lai pārbīdītu visu terasi. Fasādēs terase parādās automātiski."; p.appendChild(nt);
+    const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Velc terases malu, lai to pagarinātu vai saīsinātu; dubultklikšķis uz malas pievieno stūri, ko var vilkt; velc laukumu, lai pārbīdītu visu terasi. Fasādēs terase parādās automātiski."; p.appendChild(nt);
   }
   function axoPanel(p, h, sub, g) {
     h.textContent = "Būvasis"; sub.textContent = "attālums no mājas katrā pusē · velc asu joslu uz āru vai iekšā";
