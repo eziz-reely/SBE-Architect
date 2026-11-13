@@ -88,7 +88,7 @@ def _mm_extra(cad):
          '    if (window.__FDF && window.__FDF[side]) window.__FDF[side].pz = [gable ? 1 : 0, OVL, OVR, tan];\n'
          '    el("polygon", { points: [P(u, -fT), P(u + s, -fT), P(u + s, pzR), P(u, pzL)].join(" "), fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);'),
         ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
-         'el("line", { x1: u + k * 50, y1: -(pzL + (pzR - pzL) * k * 50 / s) + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);'),
+         'void 0;'),   # [MM] stabam fasādē nav vektora līniju: tikai tekstūra vai krāsa
         # fasādes tonis tikai vienai pusei (krāsas spainis): projekts.fasade_side[side]
         ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span,',
          '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span,'),
