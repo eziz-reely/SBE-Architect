@@ -136,11 +136,54 @@ def path_for(key):
     return KEYS.get(key)
 
 
+# ---- programmas atjaunināšana: vai GitHub (origin/main) ir jaunākas izmaiņas, un "git pull" ar vienu pogu ----
+REPO = os.path.dirname(HERE)
+
+
+def _git(*a, timeout=60):
+    try:
+        r = subprocess.run(['git', '-C', REPO] + list(a), capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout,
+                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        return r.returncode, (r.stdout or '').strip(), (r.stderr or '').strip()
+    except FileNotFoundError:
+        return 127, '', 'Git nav atrasts (jāuzinstalē Git for Windows).'
+    except subprocess.TimeoutExpired:
+        return 124, '', 'Git neatbild (nav interneta?).'
+
+
+def update_state(fetch=True):
+    if not os.path.isdir(os.path.join(REPO, '.git')):
+        return {'git': False, 'behind': 0, 'error': 'Programma nav git mapē.'}
+    err = ''
+    if fetch:
+        c, _, e = _git('fetch', '--quiet', 'origin', 'main')
+        if c:
+            err = e or 'git fetch neizdevās'
+    c, n, e = _git('rev-list', '--count', 'HEAD..origin/main')
+    behind = int(n) if c == 0 and n.isdigit() else 0
+    _, log, _ = _git('log', '--format=%s', '-8', 'HEAD..origin/main')
+    _, head, _ = _git('log', '-1', '--format=%h · %cd · %s', '--date=format:%d.%m.%Y %H:%M')
+    _, br, _ = _git('rev-parse', '--abbrev-ref', 'HEAD')
+    return {'git': True, 'behind': behind, 'log': [x for x in log.split('\n') if x], 'head': head, 'branch': br, 'error': err}
+
+
+def update_pull():
+    _, old, _ = _git('rev-parse', 'HEAD')
+    c, out, e = _git('pull', '--ff-only', 'origin', 'main', timeout=120)
+    if c:
+        return {'ok': False, 'error': (e or out or 'git pull neizdevās')[-600:]}
+    _, new, _ = _git('rev-parse', 'HEAD')
+    _, names, _ = _git('diff', '--name-only', old, new)
+    st = update_state(False)
+    st.update({'ok': True, 'changed': old != new, 'restart': any(x.endswith('.py') for x in names.split('\n'))})
+    return st
+
+
 def editor_html(pdir):
     mp = os.path.join(pdir, 'model.json')
     m = json.load(open(mp, encoding='utf-8'))
     out = os.path.join(pdir, 'rasejumi', f"{m['id']}_LV_redaktors.html")
-    src = [mp] + [os.path.join(HERE, 'sablons', 'redaktors', f) for f in ('lapa.html', 'iframe.js', 'viz3d.js')] + [os.path.join(HERE, 'sablons', 'sbe', 'plani', 'cad.js')]
+    src = [mp] + [os.path.join(HERE, 'sablons', 'redaktors', f) for f in ('lapa.html', 'iframe.js', 'viz3d.js', 'razosana.js')] + [os.path.join(HERE, 'sablons', 'sbe', 'plani', 'cad.js')]
     if not os.path.exists(out) or os.path.getmtime(out) < max(os.path.getmtime(f) for f in src if os.path.exists(f)):
         subprocess.run([sys.executable, os.path.join(HERE, 'redaktors.py'), mp, out], check=True, cwd=HERE,
                        stdout=subprocess.DEVNULL, env=dict(os.environ, PYTHONIOENCODING='utf-8'), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
@@ -419,6 +462,8 @@ class H(BaseHTTPRequestHandler):
                         'spec': bool(company_spec(d).get('specifikacija_apstiprinata')),
                         'komplekti': [{'id': k['id'], 'nosaukums': k['nosaukums']} for k in spec_sets(company_spec(d))[0]], 'aktivs': spec_sets(company_spec(d))[1]} for n, d in companies(c).items()]
                 return self.send(200, {'projects': pr, 'companies': cos, 'root': c['root']})
+            if p == '/api/update':
+                return self.send(200, update_state())
             if p.startswith('/api/files/'):
                 d = path_for(p[11:])
                 return self.send(200, files_of(d)) if d else self.send(404, 'Nav', 'text/plain; charset=utf-8')
@@ -469,6 +514,8 @@ class H(BaseHTTPRequestHandler):
         try:
             if self.headers.get('Origin') not in (None, f'http://127.0.0.1:{PORT}', f'http://localhost:{PORT}'):
                 return self.send(403, 'Aizliegts', 'text/plain; charset=utf-8')
+            if p == '/api/update':   # git pull --ff-only origin main
+                return self.send(200, update_pull())
             if p.startswith('/api/export/'):
                 d = path_for(p[12:])
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)

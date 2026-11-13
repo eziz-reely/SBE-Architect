@@ -54,6 +54,13 @@ nav .cap { font: 600 11.5px/1 var(--f-ui); color: var(--muted); letter-spacing: 
 .co .fo:hover { color: var(--accent); }
 nav .add { margin: 8px 0 0; justify-content: flex-start; color: var(--muted); border: 1px dashed var(--line2); height: 32px; }
 nav .add:hover { color: var(--accent); border-color: var(--accent); background: var(--acc-soft); }
+#upd { display: flex; align-items: center; gap: 12px; padding: 8px 16px; background: var(--acc-soft); border-bottom: 1px solid var(--acc-line); color: var(--ink); font-size: 13px; }
+#upd[hidden] { display: none; }
+#upd .sp { flex: 1; }
+#upd.bad { background: #fdecea; border-color: #f0b4ae; }
+#upd #updX { background: none; border: 0; font-size: 18px; line-height: 1; color: var(--muted); padding: 2px 6px; }
+nav .ver { margin: 6px 8px 4px; padding: 6px 8px; background: none; border: 1px solid var(--line, #d9dde2); border-radius: 4px; color: var(--muted); font-size: 11.5px; text-align: left; }
+nav .ver:hover { color: var(--ink); }
 nav .root { margin-top: auto; padding: 12px 8px 2px; font-size: 11.5px; color: var(--muted); word-break: break-all; }
 main { overflow: auto; padding: 18px 20px 28px; }
 .bar { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; }
@@ -181,12 +188,14 @@ label.chk input { width: auto; }
   <select id="sort" aria-label="Kārtot"><option value="mtime">Jaunākie augšā</option><option value="name">Pēc nosaukuma</option><option value="area">Platība: mazākās augšā</option><option value="area-">Platība: lielākās augšā</option></select>
   <button class="pri" id="bNew" type="button"><svg class="i"><use href="#i-plus"/></svg>Jauns projekts</button>
 </header>
+<div id="upd" hidden role="status"><span id="updT"></span><span class="sp"></span><button type="button" id="updGo" class="pri">Atjaunināt (git pull)</button><button type="button" id="updX" aria-label="Aizvērt">×</button></div>
 <div class="wrap">
   <nav aria-label="Uzņēmumi">
     <div class="cap">Uzņēmumi</div>
     <div id="cos"></div>
     <button class="add" id="bCo" type="button"><svg class="i"><use href="#i-plus"/></svg>Jauns uzņēmums</button>
     <div class="root" id="root"></div>
+    <button class="ver" id="bVer" type="button" title="Pārbaudīt, vai GitHub ir jaunāka programmas versija">Pārbaudīt atjauninājumus</button>
   </nav>
   <main>
     <div class="bar"><h2 id="title">Visi projekti</h2><span class="c" id="count"></span><span class="sp"></span></div>
@@ -583,6 +592,28 @@ $("fCo").addEventListener("submit", async e => {
   catch (er) { $("cErr").textContent = er.message; $("cErr").hidden = false; }
 });
 addEventListener("focus", load);
+// ---- programmas atjauninājumi: josla augšā, ja GitHub ir jaunākas izmaiņas; poga izpilda git pull ----
+async function updCheck(manual) {
+  const box = $("upd"), t = $("updT"), go = $("updGo"); box.className = "";
+  if (manual) { box.hidden = false; go.hidden = true; t.textContent = "Pārbauda atjauninājumus…"; }
+  let s; try { s = await api("/api/update"); } catch (e) { if (manual) { box.className = "bad"; t.textContent = "Neizdevās pārbaudīt: " + e.message; } return; }
+  $("bVer").title = "Versija: " + (s.head || "?") + (s.branch && s.branch !== "main" ? " · zars " + s.branch : "");
+  if (s.behind > 0) { box.hidden = false; go.hidden = false; t.textContent = "Pieejama jaunāka programmas versija: " + s.behind + (s.behind === 1 ? " izmaiņa" : " izmaiņas") + (s.log && s.log[0] ? ". Jaunākā: " + s.log[0] : ""); }
+  else if (manual) { go.hidden = true; box.className = s.error ? "bad" : ""; t.textContent = s.error ? "Neizdevās pārbaudīt: " + s.error : "Programma ir jaunākajā versijā (" + (s.head || "") + ")."; }
+  else box.hidden = true;
+}
+$("bVer").onclick = () => updCheck(true);
+$("updX").onclick = () => { $("upd").hidden = true; };
+$("updGo").onclick = async () => {
+  const box = $("upd"), t = $("updT"), go = $("updGo"); go.disabled = true; t.textContent = "Atjaunina (git pull)…";
+  try {
+    const r = await api("/api/update", {});
+    if (!r.ok) { box.className = "bad"; t.textContent = "git pull neizdevās: " + r.error; }
+    else { go.hidden = true; t.textContent = r.restart ? "Atjaunināts. Aizver programmu un atver to no jauna, lai jaunā versija sāktu darboties." : "Atjaunināts. Redaktors nākamajā atvēršanā būs jaunajā versijā."; }
+  } catch (e) { box.className = "bad"; t.textContent = "git pull neizdevās: " + e.message; }
+  go.disabled = false;
+};
+updCheck(false);
 load();
 </script>
 </body>
