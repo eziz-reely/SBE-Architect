@@ -29,12 +29,14 @@ if (ARC) {
   // roof geometry from the config: pitch of the long slopes, hip = pitch of the end slopes (hipped roof), eave = wall top, overhang
   const rf = ARC.roof || {};
   ["pitch", "hip", "eave", "ov"].forEach(k => { if (rf[k] != null) ROOF[k] = rf[k]; });
+  ROOF.mono = rf.mono && rf.mono.fall ? rf.mono : null; if (ROOF.mono) ROOF.hip = 0;   // vienslīpu jumts
   tan = Math.tan(ROOF.pitch * Math.PI / 180);
   if (LAYERS("J1")) ROOF.th = LAYERS("J1").layers.reduce((s, l) => s + l[1], 0);
 }
 const hipIns = v => ROOF.hip ? (v.D / 2 + ROOF.ov) * tan / Math.tan(ROOF.hip * Math.PI / 180) : 0;
 const pitchTxt = () => ROOF.hip ? `${Math.round(ROOF.pitch)}° (gali ${ROOF.hip}°)` : `${Math.round(ROOF.pitch)}°`;
 const roofGeo = v => {
+  const N = monoFacade(v, "north"); if (N) return { eEdge: N.lo - N.oL * N.tn, thV: N.th, ridgeTop: N.topH, ridgeU: N.hi };   // vienslīpu jumts
   const eEdge = ROOF.eave - ROOF.ov * tan, thV = ROOF.th / Math.cos(ROOF.pitch * Math.PI / 180);
   return { eEdge, thV, ridgeTop: eEdge + thV + (v.D / 2 + ROOF.ov) * tan, ridgeU: ROOF.eave + (v.D / 2) * tan };
 };
@@ -222,7 +224,64 @@ function symbolLegend(svg, x, y, v) {
 }
 
 // ---- roof plan ----
+// vienslīpu jumta plāns: viena plakne ar slīpuma bultām, tekne zemajā pusē, pārkares pa katru malu atsevišķi
+function roofPlanMono(parent, v) {
+  const g = el("g", { "data-block": "plan" }, parent), W = v.W, Dd = v.D, N = monoFacade(v, "x"), AP = (window.AR && AR.projekts) || {};
+  const od = q => (AP.ov_side && AP.ov_side[q] != null && !isNaN(+AP.ov_side[q])) ? +AP.ov_side[q] : ROOF.ov;
+  const oN = od("north"), oS = od("south"), oE = od("east"), oW = od("west"), fall = ROOF.mono.fall, ns = fall === "north" || fall === "south";
+  const x0 = -oW, y0 = -oN, x1 = W + oE, y1 = Dd + oS;
+  const dash = { stroke: C.axis, "stroke-width": 7, "stroke-dasharray": "300 60 40 60" };
+  const bub = (cx, cy, n) => { el("circle", { cx, cy, r: 300, fill: "#fff", stroke: C.ink, "stroke-width": 12 }, g); T_(g, cx, cy + 92, n, { a: "middle", fs: 260, fw: 500 }); };
+  v.axes.x.forEach(([x, n]) => { el("line", { x1: x, y1: -2700, x2: x, y2: Dd + 3150, ...dash }, g); bub(x, -3000, n); bub(x, Dd + 3450, n); });
+  v.axes.y.forEach(([y, n]) => { el("line", { x1: -2700, y1: y, x2: W + 2850, y2: y, ...dash }, g); bub(-3000, y, n); bub(W + 3150, y, n); });
+  el("rect", { x: x0, y: y0, width: x1 - x0, height: y1 - y0, fill: "#fff" }, g);
+  const cid = "roofclipM"; el("rect", { x: x0, y: y0, width: x1 - x0, height: y1 - y0 }, el("clipPath", { id: cid }, g));
+  const cg = el("g", { "clip-path": `url(#${cid})` }, g), along = ns !== roofSeams();
+  const [a0, a1, b0, b1] = along ? [y0, y1, x0, x1] : [x0, x1, y0, y1];
+  const L = (p, q0, q1, sw, col) => el("line", along ? { x1: q0, y1: p, x2: q1, y2: p, stroke: col, "stroke-width": sw } : { x1: p, y1: q0, x2: p, y2: q1, stroke: col, "stroke-width": sw }, cg);
+  if (roofSeams()) for (let p = a0 + 265; p < a1; p += 530) L(p, b0, b1, 6, "#666");
+  else for (let p = a0, r = 0; p < a1; p += 340, r++) { L(p, b0, b1, 5, "#888");
+    for (let q = b0 + (r % 2 ? 170 : 0); q < b1; q += 340) el("line", along ? { x1: q, y1: p, x2: q, y2: p + 120, stroke: "#999", "stroke-width": 4 } : { x1: p, y1: q, x2: p + 120, y2: q, stroke: "#999", "stroke-width": 4 }, cg); }
+  el("rect", { x: x0, y: y0, width: x1 - x0, height: y1 - y0, fill: "none", stroke: C.ink, "stroke-width": 22 }, g);
+  el("polygon", { points: v.poly.map(p => p.join(",")).join(" "), fill: "none", stroke: C.ink, "stroke-width": 12, "stroke-dasharray": "160 90" }, g);
+  // slīpuma bultas (uz kritumu) un leņķis
+  const dv = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] }[fall], deg = Math.atan(N.tn) * 180 / Math.PI, degT = (Math.abs(deg - Math.round(deg)) < .05 ? String(Math.round(deg)) : deg.toFixed(1).replace(".", ",")) + "°";
+  const cs = ns ? [W * .3, W * .7].map(x => [x, Dd / 2]) : [Dd * .3, Dd * .7].map(y => [W / 2, y]);
+  cs.forEach(([cx, cy]) => {
+    const ax = cx - dv[0] * 700, ay = cy - dv[1] * 700, bx = cx + dv[0] * 700, by = cy + dv[1] * 700, px = -dv[1], py = dv[0];
+    el("rect", { x: cx - 500, y: cy - 500, width: 1000, height: 1000, fill: "#fff" }, g);
+    el("line", { x1: ax, y1: ay, x2: bx, y2: by, stroke: C.ink, "stroke-width": 10 }, g);
+    el("path", { d: `M ${bx + dv[0] * 140} ${by + dv[1] * 140} L ${bx + px * 70} ${by + py * 70} L ${bx - px * 70} ${by - py * 70} Z`, fill: C.ink }, g);
+    T_(g, cx + (ns ? 120 : 0) + (ns ? 0 : 0), cy + (ns ? 60 : -170), degT, { a: "middle", fs: 210, fw: 600, ...(ns ? { tr: `rotate(-90 ${cx + 120} ${cy})` } : {}) });
+  });
+  // sienu augstumi pie zemās un augstās malas
+  const hl = (z, x, y, an) => T_(g, x, y, "H " + lv(Math.round(z)), { a: an, fs: 200, fw: 600 });
+  const mid = ns ? W / 2 : Dd / 2;
+  if (fall === "south") { hl(N.lo, mid, Dd + oS + 520, "middle"); hl(N.hi, mid, y0 - 330, "middle"); }
+  if (fall === "north") { hl(N.lo, mid, y0 - 330, "middle"); hl(N.hi, mid, Dd + oS + 520, "middle"); }
+  if (fall === "east") { hl(N.lo, x1 + 160, Dd / 2, "start"); hl(N.hi, x0 - 160, Dd / 2, "end"); }
+  if (fall === "west") { hl(N.lo, x0 - 160, Dd / 2, "end"); hl(N.hi, x1 + 160, Dd / 2, "start"); }
+  // tekne zemajā malā + notekas stūros
+  const gl = { south: [x0, y1, x1, y1, 0, 1], north: [x0, y0, x1, y0, 0, -1], east: [x1, y0, x1, y1, 1, 0], west: [x0, y0, x0, y1, -1, 0] }[fall], gof = 150;
+  el("path", { d: `M ${gl[0]} ${gl[1]} L ${gl[0] + gl[4] * gof} ${gl[1] + gl[5] * gof} L ${gl[2] + gl[4] * gof} ${gl[3] + gl[5] * gof} L ${gl[2]} ${gl[3]}`, fill: "none", stroke: C.ink, "stroke-width": 8 }, g);
+  const dp = ns ? [[x0 + 140, gl[1] + gl[5] * 75], [x1 - 140, gl[1] + gl[5] * 75]] : [[gl[0] + gl[4] * 75, y0 + 140], [gl[0] + gl[4] * 75, y1 - 140]];
+  dp.forEach(([cx, cy]) => el("circle", { cx, cy, r: 60, fill: "#fff", stroke: C.ink, "stroke-width": 10 }, g));
+  const leader = (x, y, tx, ty, n) => { el("line", { x1: x, y1: y, x2: tx, y2: ty, stroke: C.ink, "stroke-width": 6 }, g); el("line", { x1: tx, y1: ty, x2: tx + 260, y2: ty, stroke: C.ink, "stroke-width": 6 }, g); T_(g, tx + 130, ty - 50, n, { a: "middle", fs: 210, fw: 600 }); };
+  { const mx = ns ? W * .55 : gl[0] + gl[4] * gof, my = ns ? gl[1] + gl[5] * gof : Dd * .55; leader(mx, my, mx + gl[4] * 200 + (ns ? 350 : 350), my + gl[5] * 550 + (ns ? 0 : -500), "1");
+    leader(dp[0][0], dp[0][1], dp[0][0] + gl[4] * 400 + (ns ? 380 : 0), dp[0][1] + gl[5] * 550 + (ns ? 0 : -450), "2"); }
+  // mēri ar pārkarēm
+  const dg = el("g", {}, g), ax = v.axes.x.map(a => a[0]), ay = v.axes.y.map(a => a[0]);
+  chainCad(dg, [x0, ...ax, x1], "x", Dd + oS + 1100);
+  chainCad(dg, [Math.min(...ax), Math.max(...ax)], "x", Dd + oS + 1700);
+  chainCad(dg, [x0, x1], "x", Dd + oS + 2300);
+  chainCad(dg, [y0, ...ay, y1], "y", W + oE + 1100);
+  chainCad(dg, [Math.min(...ay), Math.max(...ay)], "y", W + oE + 1700);
+  chainCad(dg, [y0, y1], "y", -oW - 1100);
+  if (arNo("griez")) sectionLines(g, v);
+  return g;
+}
 function roofPlan(parent, v) {
+  if (ROOF.mono) return roofPlanMono(parent, v);
   const g = el("g", { "data-block": "plan" }, parent), ov = ROOF.ov, W = v.W, Dd = v.D;
   const box = [-ov, -ov, W + 2 * ov, Dd + 2 * ov];
   // axes
@@ -337,7 +396,26 @@ function section(parent, v, s) {
   };
   const insRect = (x, y, w, h) => insShape([P(x, -y), P(x + w, -y), P(x + w, -y - h), P(x, -y - h)].join(" "), [x, y, 0, 1, 1, 0, h, w]);
   const ca = Math.cos(ROOF.pitch * Math.PI / 180), sa = Math.sin(ROOF.pitch * Math.PI / 180), Ls = (v.D / 2 + ov) / ca + 400;
-  if (s.o === "v") {
+  const MS = monoFacade(v, "x");
+  const mzAt = u => {   // vienslīpu jumta apakšmalas augstums griezuma punktā u
+    const M = ROOF.mono, x = s.o === "v" ? s.at : u, y = s.o === "v" ? u : s.at, q = { south: v.D - y, north: y, east: v.W - x, west: x }[M.fall];
+    return MS.lo + Math.max(0, Math.min(q, M.fall === "north" || M.fall === "south" ? v.D : v.W)) * MS.tn; };
+  const mProf = MS && ((s.o === "v") === (ROOF.mono.fall === "north" || ROOF.mono.fall === "south"));   // griezums gar slīpumu
+  if (MS) {
+    if (mProf) {
+      const lowLeft = (s.o === "v") ? ROOF.mono.fall === "north" : ROOF.mono.fall === "west", uu = q => lowLeft ? q : span - q, sg = lowLeft ? 1 : -1;
+      const zL = MS.lo - MS.oL * MS.tn, zH = MS.hi + MS.oH * MS.tn, uL = uu(-MS.oL), uH = uu(span + MS.oH);
+      const cm = Math.cos(Math.atan(MS.tn)), sm = Math.sin(Math.atan(MS.tn)), Lm = (span + MS.oL + MS.oH) / cm + 400;
+      insShape([P(uL, zL), P(uH, zH), P(uH, zH + MS.th), P(uL, zL + MS.th)].join(" "),
+        sg > 0 ? [uL - 200 * cm, -zL + 200 * sm, cm, -sm, -sm, -cm, Lm, ROOF.th] : [uL + 200 * cm, -zL + 200 * sm, -cm, -sm, sm, -cm, Lm, ROOF.th]);
+      el("line", { x1: uL - 20 * sg, y1: -(zL + MS.th + 10), x2: uH + 20 * sg, y2: -(zH + MS.th + 10), stroke: "#40464b", "stroke-width": 30 }, g);
+    } else {
+      const zb = mzAt(0), ovv = ROOF.ov;
+      el("polygon", { points: [P(-ovv, zb), P(-ovv, zb + MS.th), P(span + ovv, zb + MS.th), P(span + ovv, zb)].join(" "), fill: "#f1f1ef", stroke: C.thin, "stroke-width": 8 }, g);
+      insShape([P(-ovv, zb), P(span + ovv, zb), P(span + ovv, zb + MS.th), P(-ovv, zb + MS.th)].join(" "), [-ovv, -(zb + MS.th), 1, 0, 0, 1, span + 2 * ovv, MS.th]);
+    }
+    if (s.o === "h") [[0, T], [span - T, span]].forEach(([u0, u1]) => { const zt = mzAt((u0 + u1) / 2); insRect(u0, -zt, u1 - u0, zt); });   // gala sienas līdz jumtam
+  } else if (s.o === "v") {
     const zb = u => ROOF.eave + Math.min(u, span - u) * tan;
     insShape([P(-ov, eEdge), P(span / 2, zb(span / 2)), P(span + ov, eEdge), P(span + ov, eEdge + thV), P(span / 2, ridgeTop), P(-ov, eEdge + thV)].join(" "),
       [-ov - 200 * ca, -eEdge + 200 * sa, ca, -sa, -sa, -ca, Ls, ROOF.th], [span + ov + 200 * ca, -eEdge + 200 * sa, -ca, -sa, sa, -ca, Ls, ROOF.th]);
@@ -360,11 +438,11 @@ function section(parent, v, s) {
     [[0, T], [span - T, span]].forEach(([u0, u1]) => insRect(u0, -zb, u1 - u0, zb));
   }
   // walls between the rooms crossed; outer walls up to the roof underside
-  const zRoof = u => s.o === "v" ? ROOF.eave + Math.min(u, span - u) * tan : ROOF.eave + Math.min(s.at, v.D - s.at) * tan;
+  const zRoof = u => MS ? mzAt(u) : s.o === "v" ? ROOF.eave + Math.min(u, span - u) * tan : ROOF.eave + Math.min(s.at, v.D - s.at) * tan;
   const gaps = []; let prev = 0; iv.forEach(c => { if (c.a - prev > 20) gaps.push([prev, c.a]); prev = c.b; }); if (span - prev > 20) gaps.push([prev, span]);
   gaps.flatMap(([a, b]) => bld.map(([p, q]) => [Math.max(a, p), Math.min(b, q)]).filter(([p, q]) => q - p > 20)).forEach(([a, b]) => {
     if (!inB((a + b) / 2)) return;
-    const bbox = a < 1 || b > span - 1, outer = bbox || !inB(a - 30) || !inB(b + 30), top = bbox ? zRoof(a < 1 ? 0 : span) : outer ? ROOF.eave : CEIL;
+    const bbox = a < 1 || b > span - 1, outer = bbox || !inB(a - 30) || !inB(b + 30), top = bbox ? zRoof(a < 1 ? 0 : span) : outer ? (MS ? zRoof((a + b) / 2) : ROOF.eave) : CEIL;
     if (s.o === "h" && bbox) return;
     insRect(a, -top, b - a, top);
     if (!outer) return;
@@ -391,7 +469,7 @@ function section(parent, v, s) {
     el("line", { x1: lx - 130 - label.length * 152, y1: ty, x2: lx - 130, y2: ty, stroke: C.ink, "stroke-width": 10 }, g);
     T_(g, lx - 140, up > 0 ? ty - 45 : ty + 225, label, { a: "end", fs: 250, fw: 600 });
   };
-  [ridgeTop, ROOF.eave, CEIL, 0, -pl].forEach(zz => lvl(zz, lv(Math.round(zz))));
+  (MS ? [ridgeTop, ...(mProf ? [MS.hi] : []), MS.lo, CEIL, 0, -pl] : [ridgeTop, ROOF.eave, CEIL, 0, -pl]).forEach(zz => lvl(zz, lv(Math.round(zz))));
   if (ROOF.floorT) lvl(-ROOF.floorT, lv(-ROOF.floorT), 1);
   // height chain on the right
   chainCad(el("g", { transform: `translate(${span + ov + 900} 0)` }, g), [pl, 0, -CEIL, -ROOF.eave, -Math.round(ridgeTop)], "y", 0);

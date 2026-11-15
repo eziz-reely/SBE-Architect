@@ -642,9 +642,35 @@ function fitLvlMarks(svg) {
     [["l", 1], ["r", -1]].forEach(([c, sg]) => { const sh = shift[b.side + c]; if (!sh) return; const d = Math.round(sg * sh); b.g.querySelectorAll(`[data-lvl=${c}]`).forEach(e => e.setAttribute("transform", `translate(${d} 0)`)); if (c === "l" && window.__FDL && window.__FDL[b.side]) window.__FDL[b.side].forEach(q => { q.b[0] += d; q.b[2] += d; }); });
   });
 }
+// vienslīpu jumts (ROOF.mono = {fall, lo, hi}): fall = puse, uz kuru jumts krīt; lo/hi = sienas augšas augstums zemajā/augstajā pusē (mm no ±0,000).
+// role: "low" = zemā siena (redz jumta virsmu), "high" = augstā siena (redz tikai malu), "prof" = gala fasāde ar slīpu jumtu profilā
+function monoFacade(v, side) {
+  const M = ROOF.mono; if (!M || !M.fall) return null;
+  const AP = (window.AR && AR.projekts) || {}, od = q => (AP.ov_side && AP.ov_side[q] != null && !isNaN(+AP.ov_side[q])) ? +AP.ov_side[q] : ROOF.ov;
+  const hi_ = { north: "south", south: "north", east: "west", west: "east" }, ns = M.fall === "north" || M.fall === "south";
+  const run = ns ? v.D : v.W, lo = +M.lo, hi = +M.hi, tn = (hi - lo) / run, th = ROOF.th / Math.cos(Math.atan(tn)), oL = od(M.fall), oH = od(hi_[M.fall]);
+  const role = side === M.fall ? "low" : side === hi_[M.fall] ? "high" : "prof";
+  const sd = role === "prof" ? ({ south: { east: 1, west: -1 }, north: { east: -1, west: 1 }, east: { south: -1, north: 1 }, west: { south: 1, north: -1 } }[M.fall] || {})[side] || 1 : 1;
+  const topL = lo - oL * tn + th, topH = hi + oH * tn + th;
+  return { role, sd, run, lo, hi, tn, th, oL, oH, topL, topH, eE: role === "high" ? hi + oH * tn : lo - oL * tn, top: role === "high" ? hi + oH * tn + th : topH,
+    zw: u => lo + (sd > 0 ? u : run - u) * tn };
+}
+// vienslīpu jumta mala gala fasādē (profilā): slīpa mala ar vējmalu, teknes gals zemajā pusē
+function monoProfileRoof(g, N, span, FAS, vt, GUT) {
+  const u = s => N.sd > 0 ? s : span - s, top = s => N.lo + s * N.tn + N.th, P = (x, z) => `${x},${-z}`;
+  const sL = -N.oL, sH = span + N.oH, PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null;
+  el("polygon", { points: [P(u(sL), top(sL)), P(u(sH), top(sH)), P(u(sH), top(sH) - vt), P(u(sL), top(sL) - vt)].join(" "), fill: PKH || (FAS ? "#F2F0EA" : "#4a5055"), stroke: C.ink, "stroke-width": 12 }, g);
+  if (FAS) el("polygon", { points: [P(u(sL) - 20 * N.sd, top(sL) + 5), P(u(sH) + 20 * N.sd, top(sH) + 5), P(u(sH) + 20 * N.sd, top(sH) - 60), P(u(sL) - 20 * N.sd, top(sL) - 60)].join(" "), fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
+  const ue = u(sL), sg = ue < span / 2 ? -1 : 1, uc = ue + sg * 70, uw = sg < 0 ? -90 : span + 90, zt = top(sL) - 70;   // pusapaļa tekne zemajā malā
+  const d = `M ${uc} ${-(zt - 40)} L ${uc} ${-(zt - 260)} L ${uw} ${-(zt - 700)} L ${uw} ${150}`;
+  el("path", { d, fill: "none", stroke: C.ink, "stroke-width": 98, "stroke-linejoin": "round" }, g);
+  el("path", { d, fill: "none", stroke: GUT, "stroke-width": 80, "stroke-linejoin": "round" }, g);
+  el("path", { d: `M ${ue} ${-zt} H ${ue + sg * 160} A 80 80 0 0 ${sg < 0 ? 0 : 1} ${ue} ${-zt} Z`, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);
+}
 function elevation(parent, v, side, opt = { levels: true }) {
   const g = el("g", {}, parent);
-  const endV = side === "east" || side === "west", gable = endV && !ROOF.hip, fT = ROOF.floorT;
+  const MN = monoFacade(v, side);
+  const endV = side === "east" || side === "west", gable = endV && !ROOF.hip && !MN, fT = ROOF.floorT;
   const span = endV ? v.D : v.W;
   const APJ = (window.AR && AR.projekts) || {};
   // fasādes bloka nobīde pa lapu (projekts.fasOff[side], lapas mm): bloks bīdās kopā ar augstuma atzīmēm, zemes līnija pagarinās un paliek viena
@@ -663,8 +689,8 @@ function elevation(parent, v, side, opt = { levels: true }) {
   let LG = null;   // kreisās kolonnas atzīmju grupa (fitLvlMarks to var pabīdīt tuvāk mājai)
   const map = side === "south" ? (a => a) : side === "north" ? (a => v.W - a) : side === "east" ? (a => v.D - a) : (a => a);
   const P = (u, z) => `${u},${-z}`;
-  const eEdge = ROOF.eave - ROOF.ov * tan, thV = ROOF.th / Math.cos(ROOF.pitch * Math.PI / 180);
-  const ridgeU = ROOF.eave + (v.D / 2) * tan, ridgeTop = eEdge + thV + (v.D / 2 + ROOF.ov) * tan;
+  const eEdge = MN ? MN.eE : ROOF.eave - ROOF.ov * tan, thV = ROOF.th / Math.cos(ROOF.pitch * Math.PI / 180);
+  const ridgeU = ROOF.eave + (v.D / 2) * tan, ridgeTop = MN ? MN.top : eEdge + thV + (v.D / 2 + ROOF.ov) * tan;
   const FAS = !!(window.AR && AR.projekts && AR.projekts.fascia);   // [MM] horizontāla fascija tikai sarkanajam tonim (balta); pārējiem dēļi iet līdz jumtam
   const vt = FAS ? 220 : 100;                                          // vējmalas biezums (mm) pie gala fasādēm
   const roofTopW = ridgeTop - (v.D / 2) * tan;                         // jumta virsmas augstums pie sienas gala fasādē
@@ -675,10 +701,10 @@ function elevation(parent, v, side, opt = { levels: true }) {
   el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth, stroke: C.ink, "stroke-width": 45, "data-keep": 1 }, g);
 
   // wall cladding
-  const wallPoly = gable ? [P(0, -fT), P(span, -fT), P(span, roofTopW), P(span / 2, ridgeTop), P(0, roofTopW)] : [P(0, -fT), P(span, -fT), P(span, FAS ? eEdge : eEdge + thV - 20), P(0, FAS ? eEdge : eEdge + thV - 20)];
+  const wallPoly = MN && MN.role === "prof" ? [P(0, -fT), P(span, -fT), P(span, MN.zw(span)), P(0, MN.zw(0))] : gable ? [P(0, -fT), P(span, -fT), P(span, roofTopW), P(span / 2, ridgeTop), P(0, roofTopW)] : [P(0, -fT), P(span, -fT), P(span, FAS ? eEdge : eEdge + thV - 20), P(0, FAS ? eEdge : eEdge + thV - 20)];
   const wid = "wall-" + side + "-" + Math.random().toString(36).slice(2, 7);
   el("polygon", { points: wallPoly.join(" ") }, el("clipPath", { id: wid }, g));
-  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);
+  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable || (MN && MN.role === "prof") ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);
   el("polygon", { points: wallPoly.join(" "), fill: "none", stroke: C.ink, "stroke-width": 14 }, g);
   if (opt.houseH !== false && fT) {   // [MM] viena mēra ķēde: mājas augstums no grīdas paneļa apakšas (−G1) līdz jumta virsmai (kore)
     const hy0 = -ridgeTop, hy1 = fT, hx = span + 900, Ht = (window.AR && AR.projekts && AR.projekts.ievade && AR.projekts.ievade.augstums) || Math.round(ridgeTop + fT);
@@ -854,12 +880,13 @@ function elevation(parent, v, side, opt = { levels: true }) {
   });
 
   // shadow under the eaves
-  if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);
+  if (MN && MN.role === "prof") { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);
   else el("polygon", { points: [P(0, ROOF.eave), P(span / 2, ridgeU), P(span, ROOF.eave), P(span, ROOF.eave - 380), P(span / 2, ridgeU - 380), P(0, ROOF.eave - 380)].join(" "), fill: "rgba(0,0,0,.22)" }, g);
 
   // roof
   const tanH = Math.tan((ROOF.hip || 90) * Math.PI / 180), ins = !ROOF.hip ? 0 : endV ? span / 2 + ROOF.ov : (ridgeTop - eEdge - thV) / tanH;
-  if (!gable) {
+  if (MN && MN.role === "prof") monoProfileRoof(g, MN, span, FAS, vt, "#2f3438");
+  else if (!gable) {
     const rp = [P(-ROOF.ov, eEdge + thV), P(span + ROOF.ov, eEdge + thV), P(span + ROOF.ov - ins, ridgeTop), P(-ROOF.ov + ins, ridgeTop)].join(" ");
     const rid = "roof-" + side + "-" + Math.random().toString(36).slice(2, 7);
     el("polygon", { points: rp }, el("clipPath", { id: rid }, g));
@@ -904,7 +931,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
 
   // gutters and downpipes, RAL 7016
   const GUT = "#2f3438";
-  if (!gable) {
+  if (MN && MN.role !== "low") { /* tekne zemajā pusē; augstajā pusē tās nav, profilā zīmēta kopā ar jumtu */ } else if (!gable) {
     const gz = eEdge + thV - 120;
     el("rect", { x: -ROOF.ov - 40, y: -gz, width: span + 2 * ROOF.ov + 80, height: 120, rx: 40, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);
     el("line", { x1: -ROOF.ov - 25, y1: -gz + 18, x2: span + ROOF.ov + 25, y2: -gz + 18, stroke: "rgba(255,255,255,.28)", "stroke-width": 7 }, g);
@@ -943,6 +970,13 @@ function elevation(parent, v, side, opt = { levels: true }) {
     if (!col && window.__FDL && window.__FDL[side]) window.__FDL[side].push({ key, b: [lx - 130 - tw, Math.min(-z, ty) - 40, lx + 130, Math.max(-z, ty) + 120] });
   };
   // roof pitch on the gable view
+  if (MN && MN.role === "prof" && opt.levels) {   // slīpuma leņķis vienslīpu jumtam
+    const deg = Math.atan(MN.tn) * 180 / Math.PI, a = deg * Math.PI / 180, r = 1300, uV = span / 2, zV = MN.lo + (MN.sd > 0 ? uV : span - uV) * MN.tn + MN.th + 200, sg = MN.sd;
+    const PG = fmGroup("pt", [uV - r - 250, -zV - 200, uV + r + 900, -zV + r + 200]);
+    if (PG) { el("line", { x1: uV - r * .2, y1: -zV, x2: uV + r + 250, y2: -zV, stroke: C.ink, "stroke-width": 7 }, PG);
+      el("path", { d: `M ${uV + r} ${-zV} A ${r} ${r} 0 0 ${sg > 0 ? 1 : 0} ${uV + r * Math.cos(a)} ${-zV + sg * -r * Math.sin(a) * -1}`, fill: "none", stroke: C.ink, "stroke-width": 7 }, PG);
+      T_(PG, uV + r + 380, -zV + 90, `${deg.toFixed(1).replace(".", ",")}°`, { a: "start", fs: 250, fw: 600 }); }
+  }
   if ((gable || ROOF.hip) && opt.levels) {
     const deg = endV ? ROOF.pitch : ROOF.hip, tn = Math.tan(deg * Math.PI / 180), run = endV ? span / 2 + ROOF.ov : ins;
     const uV = gable ? 2600 : -ROOF.ov + run * .55, zV = eEdge + thV + (uV + ROOF.ov) * tn, r = 1300, a = deg * Math.PI / 180;
@@ -954,7 +988,8 @@ function elevation(parent, v, side, opt = { levels: true }) {
   }
   if (opt.levels) {
     lvl(ridgeTop, lv(Math.round(ridgeTop)));
-    const eL = gable ? ROOF.eave : Math.round(eEdge); lvl(eL, lv(eL));   // hip roof: visible wall top = soffit
+    if (MN) { if (MN.role !== "low") lvl(Math.round(MN.hi), lv(Math.round(MN.hi))); if (MN.role !== "high") lvl(Math.round(MN.lo), lv(Math.round(MN.lo))); } else {
+    const eL = gable ? ROOF.eave : Math.round(eEdge); lvl(eL, lv(eL)); }   // hip roof: visible wall top = soffit
     lvl(0, lv(0));
     if (fT) lvl(-fT, lv(-fT), 1);
     lvl(-ROOF.plinth, lv(-ROOF.plinth));

@@ -821,8 +821,17 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const layerSum = k => { try { const j = TPL.match(new RegExp('"' + k + '":\\s*\\{[^[]*"layers":\\s*(\\[\\[[^\\]]*\\](?:,\\s*\\[[^\\]]*\\])*\\])')); return j ? JSON.parse(j[1]).reduce((a, l) => a + (l[2] === "n" ? 0 : +l[1] || 0), 0) : 0; } catch (e) { return 0; } };
   const ROOF_T = layerSum("J1") || 295, FLOOR_T = layerSum("G1") || 275.5;
   // ievade.augstums = kores augstums no grīdas paneļa apakšas (kā botā); dzega = kore - jumta biezums - pusplatums × slīpums
+  // vienslīpu jumts: jumts.forma = "vienslipa", jumts.krit = puse, uz kuru jumts krīt; h_zema / h_augsta = sienu augšas augstums (mm no ±0,000)
+  function monoNums(n) {
+    const J = n.jumts || {}; if (J.forma !== "vienslipa") return null;
+    const fall = ["north", "south", "east", "west"].includes(J.krit) ? J.krit : "south", ns = fall === "north" || fall === "south", run = ns ? n.D : n.W;
+    const lo = Math.round(+J.h_zema || +J.eave || 2600), hi = Math.round(+J.h_augsta || lo + 900), tn = (hi - lo) / run, deg = Math.atan(tn) * 180 / Math.PI;
+    const OS = (n.projekts || {}).ov_side || {}, ovH = OS[{ north: "south", south: "north", east: "west", west: "east" }[fall]], oH = ovH != null ? +ovH : (+J.ov || 0);
+    return { fall, lo, hi, run, tn, deg, top: hi + oH * tn + ROOF_T / Math.cos(Math.atan(tn)) };
+  }
   function roofFix(n) {
     n.jumts = n.jumts || {}; n.ievade = n.ievade || {};
+    { const mo = monoNums(n); if (mo) { n.jumts.eave = mo.lo; n.jumts.pitch = Math.round(mo.deg * 10) / 10; const plt = ((n.projekts || {}).pamati || "stabveida") === "platne"; n.ievade.augstums = Math.round(mo.top + (plt ? 0 : FLOOR_T)); n.ievade.augstums_0 = Math.round(mo.top); n.ievade.garums = n.W; n.ievade.platums = n.D; return; } }
     const pitch = +n.jumts.pitch || 30, t = Math.tan(pitch * Math.PI / 180), plat = ((n.projekts || {}).pamati || "stabveida") === "platne";
     if (!n.ievade.augstums) return;
     const H0 = Math.ceil(n.ievade.augstums - (plat ? 0 : FLOOR_T));
@@ -898,6 +907,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (m.jumts && m.jumts.eave) h = h.replace(/("roof":\s*\{[^}]*?"eave":\s*)[-\d.]+/, "$1" + m.jumts.eave);
     if (m.jumts && m.jumts.pitch) h = h.replace(/("roof":\s*\{[^}]*?"pitch":\s*)[-\d.]+/, "$1" + m.jumts.pitch);
     if (m.jumts && m.jumts.ov != null) h = h.replace(/("roof":\s*\{[^}]*?"ov":\s*)[-\d.]+/, "$1" + (+m.jumts.ov || 0));
+    { const mo = monoNums(m);   // vienslīpu jumts: ARC.roof.mono, slīpums no sienu augstumu starpības
+      if (mo) { h = h.replace(/("roof":\s*\{[^}]*?"pitch":\s*)[-\d.]+/, "$1" + mo.deg.toFixed(3)).replace(/("roof":\s*\{[^}]*?"eave":\s*)[-\d.]+/, "$1" + mo.lo).replace(/("roof":\s*\{)/, '$1"mono": ' + JSON.stringify({ fall: mo.fall, lo: mo.lo, hi: mo.hi }) + ", ").replace(/("roof":\s*\{[^}]*?"hip":\s*)[-\d.]+/, "$10"); } }
     void withRoof;
     { // aplodu tonis un notekas no modeļa (materiāli)
       const P = m.projekts || {}, tk = TONES[P.tonis] ? P.tonis : "peleks", tn = TONES[tk], lg = P.logu_tonis || tn.logi || "RAL 7016";
@@ -1716,6 +1727,23 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { // jumta pārkare no sienas un vēja kaste
       const J = model.jumts || {}, ov = +J.ov || 0, gj = group("Jumts", host);
       const f = field("Pārkare no sienas, mm", ov, (n, v) => { n.jumts = n.jumts || {}; n.jumts.ov = Math.max(0, Math.min(1200, Math.round(v / 10) * 10)); }, null);
+      { // jumta forma: divslīpju / vienslīpu; vienslīpu: kritums ar bultiņu pogām, zemās un augstās sienas augstums
+        const mo = monoNums(model), jf = field("Jumta forma", mo ? "vienslipa" : "divslipju", (n, v) => { n.jumts = n.jumts || {};
+          if (v === "vienslipa") { n.jumts.forma = "vienslipa"; n.jumts.krit = n.jumts.krit || "south"; if (!n.jumts.h_zema) n.jumts.h_zema = Math.round(+n.jumts.eave || 2600); if (!n.jumts.h_augsta) n.jumts.h_augsta = n.jumts.h_zema + 900; }
+          else { n.jumts.forma = "divslipju"; delete n.jumts.h_zema; delete n.jumts.h_augsta; }
+          roofFix(n); }, { divslipju: "Divslīpju", vienslipa: "Vienslīpu" });
+        gj.appendChild(jf);
+        if (mo) {
+          const kp = document.createElement("div"); kp.className = "full"; kp.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:150px;margin:2px 0 6px";
+          const cell = (k, t, rc) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = "Jumts krīt uz " + ({ north: "ziemeļiem", south: "dienvidiem", east: "austrumiem", west: "rietumiem" })[k]; b.style.cssText = "grid-area:" + rc + ";padding:6px 0;border:1px solid " + (mo.fall === k ? "#2266d8" : "#cfd3d8") + ";border-radius:6px;background:" + (mo.fall === k ? "#e6efff" : "#fff") + ";cursor:pointer;font-weight:600";
+            b.addEventListener("click", () => { const n = clone(model); n.jumts = n.jumts || {}; n.jumts.krit = k; roofFix(n); commit(n); }); kp.appendChild(b); };
+          cell("north", "↑", "1/2"); cell("west", "←", "2/1"); cell("east", "→", "2/3"); cell("south", "↓", "3/2");
+          const cap = document.createElement("p"); cap.className = "sub-cap full"; cap.textContent = "Jumts krīt uz (bulta = zemākā mala)"; gj.append(cap, kp);
+          gj.appendChild(field("Zemās sienas augstums, mm", mo.lo, (n, v) => { n.jumts.h_zema = Math.max(2000, Math.min(9000, Math.round(v))); roofFix(n); }, null));
+          gj.appendChild(field("Augstās sienas augstums, mm", mo.hi, (n, v) => { n.jumts.h_augsta = Math.max((+n.jumts.h_zema || 2600) + 100, Math.min(12000, Math.round(v))); roofFix(n); }, null));
+          const sn = document.createElement("p"); sn.className = "note full"; sn.textContent = "Slīpums " + mo.deg.toFixed(1).replace(".", ",") + "° (no sienu augstumu starpības); jumta kore " + Math.round(mo.top).toLocaleString("lv-LV") + " mm. Redzams plānā, visās fasādēs un griezumā."; gj.appendChild(sn);
+        }
+      }
       gj.appendChild(f);
       { const OSv = (model.projekts || {}).ov_side || {};   // pārkare pa malām: 0 = fasādes apšuvums iet līdz jumtam (parapets)
         const sc = document.createElement("p"); sc.className = "sub-cap full"; sc.textContent = "Pārkare pa malām (0 = bez pārkares)"; gj.appendChild(sc);
