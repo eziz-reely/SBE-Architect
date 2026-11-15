@@ -81,6 +81,10 @@ def _mm_extra(cad):
     a = 'function cadPlan(parent, v, opt = {}) {'
     assert a in cad, 'SBE cad.js: nav atrasts cadPlan'
     cad = cad.replace(a, TINT + a, 1)
+    # [MM] piezīmes plānā: projekts.notes_off sarakstā esošās netiek zīmētas; katra piezīme ir atsevišķa grupa ar data-note (dzēšanai redaktorā)
+    a = '  notes.forEach((t, i) => { const ls = wrap(t, 64); T_(ex, 0, yL, `${i + 1}.`, { fs: 2.4, fill: "#333" }); ls.forEach((l, j) => T_(ex, 5, yL + j * 3.6, l, { fs: 2.4, fill: "#333" })); yL += ls.length * 3.6 + 1; });'
+    assert a in cad, 'SBE cad.js: nav atrastas piezīmes'
+    cad = cad.replace(a, '  const _noff = (window.AR && AR.projekts && AR.projekts.notes_off) || [];\n  notes.filter(t => !_noff.includes(t)).forEach((t, i) => { const ls = wrap(t, 64), gn = el("g", { "data-note": t }, ex); T_(gn, 0, yL, `${i + 1}.`, { fs: 2.4, fill: "#333" }); ls.forEach((l, j) => T_(gn, 5, yL + j * 3.6, l, { fs: 2.4, fill: "#333" })); yL += ls.length * 3.6 + 1; });', 1)
     for a, b in [
         # stabs fasādē: augstums q.h (mm virs ±0,000); virs jumta pārkares apakšas tiek nogriezts pa pārkari (gala fasādē pa slīpumu)
         ('    el("rect", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);',
@@ -458,6 +462,10 @@ def build(model_path, langs=None):
     ]:
         assert a_ in ar, 'SBE ar.js: nav atrasts ' + a_[:50]
         ar = ar.replace(a_, b_, 1)
+    # [MM] piezīmju bloks: notes_off piezīmes netiek zīmētas, katra piezīme ir grupa ar data-note
+    a_ = '  notes.forEach((t, i) => {\n    const lines = wrap(t, Math.floor(w / 1.18));\n    T_(g, 0, yy, `${i + 1}.`, { fs: 2.4, fill: "#333" });\n    lines.forEach((l, j) => T_(g, 5, yy + j * 3.6, l, { fs: 2.4, fill: "#333" }));'
+    assert a_ in ar, 'SBE ar.js: nav atrasts notesBlock'
+    ar = ar.replace(a_, '  const _noff = (window.AR && AR.projekts && AR.projekts.notes_off) || [];\n  notes.filter(t => title !== "PIEZĪMES" || !_noff.includes(t)).forEach((t, i) => {\n    const lines = wrap(t, Math.floor(w / 1.18)), gn = el("g", title === "PIEZĪMES" ? { "data-note": t } : {}, g);\n    T_(gn, 0, yy, `${i + 1}.`, { fs: 2.4, fill: "#333" });\n    lines.forEach((l, j) => T_(gn, 5, yy + j * 3.6, l, { fs: 2.4, fill: "#333" }));', 1)
     # [MM] slānis ar veidu "n" (piem. pretgrauzēju barjera latojumā) neskaita kopējā biezumā: lapā biezums 0, mm nosaukumā
     a_ = 'const LAYERS = k => (ARC && ARC.layers && ARC.layers[k]) || null;'
     assert a_ in ar, 'SBE ar.js: nav atrasts LAYERS'

@@ -119,10 +119,10 @@ function mmTitleBlock(svg, v, lf, L) {
   lab(ky, tx.cont);
   // projekta piezīmes (pamati u.c.): model.json projekts.piezimes, EN: piezimes_en
   let ny = ky + 5.5;
-  ((L === "en" ? P.piezimes_en : P.piezimes) || P.piezimes || []).forEach(t => {
-    const ls = wrap(t, 25);
-    T_(g, X + 3, ny, "—", { fs: 2.1, fill: MM_ACC });
-    ls.forEach((l, j) => T_(g, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: MM_DARK }));
+  ((L === "en" ? P.piezimes_en : P.piezimes) || P.piezimes || []).filter(t => !(P.notes_off || []).includes(t)).forEach(t => {   // notes_off: lietotāja nodzēstās piezīmes (redaktora sadaļa "Piezīmes lapā")
+    const ls = wrap(t, 25), gn = el("g", { "data-note": t }, g);
+    T_(gn, X + 3, ny, "—", { fs: 2.1, fill: MM_ACC });
+    ls.forEach((l, j) => T_(gn, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: MM_DARK }));
     ny += ls.length * 3.2 + 1.2;
   });
 
