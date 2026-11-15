@@ -464,7 +464,8 @@ def build(model_path, langs=None):
         if os.path.exists(lp):
             logo = 'data:image/png;base64,' + base64.b64encode(open(lp, 'rb').read()).decode()
             break
-    css = '<style>@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}</style>'
+    _land = ((m.get('projekts') or {}).get('kompozicija') or {}).get('orient') == 'l'
+    css = '<style>@page{size:420mm 297mm;margin:0} svg.a3{width:420mm!important;height:297mm!important}</style>' if _land else '<style>@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}</style>'
     css += """<style>html{overflow:hidden;background:#e9e7e2;touch-action:none}body{touch-action:none;transform-origin:0 0;margin:0;cursor:grab}body.mmdrag{cursor:grabbing}
 @media print{html{overflow:visible!important;background:none}body{transform:none!important;cursor:auto}}</style>
 <script>(function(){var b=document.body,s=1,x=0,y=0,d=null,fit=1;
