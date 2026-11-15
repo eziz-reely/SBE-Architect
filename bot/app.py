@@ -183,7 +183,7 @@ def editor_html(pdir):
     mp = os.path.join(pdir, 'model.json')
     m = json.load(open(mp, encoding='utf-8'))
     out = os.path.join(pdir, 'rasejumi', f"{m['id']}_LV_redaktors.html")
-    src = [mp] + [os.path.join(HERE, 'sablons', 'redaktors', f) for f in ('lapa.html', 'iframe.js', 'viz3d.js', 'razosana.js')] + [os.path.join(HERE, 'sablons', 'sbe', 'plani', 'cad.js')]
+    src = [mp] + [os.path.join(HERE, 'sablons', 'redaktors', f) for f in ('lapa.html', 'iframe.js', 'viz3d.js', 'razosana.js')] + [os.path.join(HERE, 'sablons', 'sbe', 'plani', f) for f in ('cad.js', 'ar.js')] + [os.path.join(HERE, f) for f in ('build_model.py', 'redaktors.py')] + [os.path.join(HERE, 'sablons', f) for f in os.listdir(os.path.join(HERE, 'sablons')) if f.startswith('mm-')]
     if not os.path.exists(out) or os.path.getmtime(out) < max(os.path.getmtime(f) for f in src if os.path.exists(f)):
         subprocess.run([sys.executable, os.path.join(HERE, 'redaktors.py'), mp, out], check=True, cwd=HERE,
                        stdout=subprocess.DEVNULL, env=dict(os.environ, PYTHONIOENCODING='utf-8'), creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
