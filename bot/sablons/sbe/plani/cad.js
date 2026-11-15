@@ -160,6 +160,7 @@ function drawWalls(g, v, cid) {
     if (gx >= 100 && gx <= 200) { const y0 = Math.max(a[1], b[1]), y1 = Math.min(a[1] + a[3], b[1] + b[3]); if (y1 - y0 > 50) walls.push([a[0] + a[2], y0, gx, y1 - y0, "v"]); }
     if (gy >= 100 && gy <= 200) { const x0 = Math.max(a[0], b[0]), x1 = Math.min(a[0] + a[2], b[0] + b[2]); if (x1 - x0 > 50) walls.push([x0, a[1] + a[3], x1 - x0, gy, "h"]); }
   }));
+  (v.freeWalls || []).forEach(f => walls.push([f[0], f[1], f[2], f[3], f[4]]));   // brīvās sienas (redaktors): zīmē kā sienas, telpas nemainās
   // stretch each strip through the junction square at its ends, so T and L joints are filled
   const inner = rings[rings.length - 1];
   const inPoly = (px, py) => { let c = false; for (let i = 0, j = inner.length - 1; i < inner.length; j = i++) { const [xi, yi] = inner[i], [xj, yj] = inner[j]; if ((yi > py) !== (yj > py) && px < (xj - xi) * (py - yi) / (yj - yi) + xi) c = !c; } return c; };

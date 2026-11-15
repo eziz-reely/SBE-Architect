@@ -82,6 +82,9 @@
   }
   function wallAt(l, p) {
     const W = M.W, D = M.D, [x, y] = p;
+    if (l !== "loft") { const fw = M.freeWalls || []; for (let i = 0; i < fw.length; i++) { const f = fw[i];   // brīvās sienas (arī ārpus mājas kontūras)
+      if (x >= f[0] - 20 && x <= f[0] + f[2] + 20 && y >= f[1] - 20 && y <= f[1] + f[3] + 20)
+        return f[4] === "v" ? { axis: "x", lo: f[0], hi: f[0] + f[2], v0: f[1], v1: f[1] + f[3], free: i } : { axis: "y", lo: f[1], hi: f[1] + f[3], v0: f[0], v1: f[0] + f[2], free: i }; } }
     if (x < -50 || y < -50 || x > W + 50 || y > D + 50) return null;
     const ext = [["x", -1, T, x < T + 20 && y > T && y < D - T], ["x", W - T, W + 1, x > W - T - 20 && y > T && y < D - T],
       ["y", -1, T, y < T + 20 && x > T && x < W - T], ["y", D - T, D + 1, y > D - T - 20 && x > T && x < W - T]].find(e => e[3]);
@@ -427,7 +430,7 @@
       const k = ek(bl), o = overlay(bl.g), X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T);
       const bb = X ? [w.lo, a, w.hi, b] : [a, w.lo, b, w.hi];
       mk(o, "rect", { x: bb[0], y: bb[1], width: bb[2] - bb[0], height: bb[3] - bb[1], fill: "rgba(217,72,15,.18)", stroke: ACC, "stroke-width": 0.6 / k });
-      if (w.ext) { const far = (X ? sel.at[1] : sel.at[0]) >= S / 2, e = far ? S : 0, c = (w.lo + w.hi) / 2, q = X ? [c, e] : [e, c], r = 2.2 / k;   // kustīgais gals: tas, kuram tuvāk uzklikšķināts
+      { const far = (X ? sel.at[1] : sel.at[0]) >= (a + b) / 2, e = far ? b : a, c = (w.lo + w.hi) / 2, q = X ? [c, e] : [e, c], r = 2.2 / k;   // kustīgais gals: tas, kuram tuvāk uzklikšķināts
         mk(o, "rect", { x: q[0] - r, y: q[1] - r, width: 2 * r, height: 2 * r, fill: ACC, stroke: "#fff", "stroke-width": 0.4 / k }); }
       label(o, X ? w.hi + 2 / k : (a + b) / 2, X ? (a + b) / 2 : w.lo - 2 / k, `${Math.round(b - a)} mm` + (wBuf ? `   ⌨ ${wBuf}` : ""), k);
       return;
@@ -803,7 +806,9 @@
   }
   function sameBands(A, B) { const a = bandList(A).join(), b = bandList(B).join(); return a === b; }
   function moveWall(w, d) {
-    d = +(+d).toFixed(1); if (!d) return null;   // izsaucēji jau noapaļo; pielipinot citai sienai jāpaliek precīzi
+    d = +(+d).toFixed(1); if (!d) return null;
+    if (w.free != null) { const N = clone(M), f = N.freeWalls && N.freeWalls[w.free]; if (!f) return null; f[w.axis === "x" ? 0 : 1] = +(f[w.axis === "x" ? 0 : 1] + d).toFixed(1); return N; }   // brīva siena: pārbīda tikai pati
+    // izsaucēji jau noapaļo; pielipinot citai sienai jāpaliek precīzi
     const N = clone(M), X = w.axis === "x", inW = v => v >= w.lo - 1 && v <= w.hi + 1, origin = w.lo <= 0;
     const f = origin ? (v => (inW(v) ? v : v - d)) : (v => (inW(v) ? v + d : v));
     mapModel(N, w.axis, f);
@@ -1584,17 +1589,38 @@
     const at = sel.at.slice(); if (far) at[X ? 1 : 0] += d;
     wallDone(N, Object.assign({}, sel, { at }));
   }
+  // pagarināt (+) vai saīsināt (−) sienu izvēlētajā galā: telpas un citas sienas nekustas, pagarinājums ir brīva siena
+  function wallExtend(d) {
+    const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T);
+    const far = (X ? sel.at[1] : sel.at[0]) >= (a + b) / 2, end = far ? b : a, th = +(w.hi - w.lo).toFixed(1), o = X ? "v" : "h", s = X ? 1 : 0, q = X ? 3 : 2;   // s: sākuma, q: garuma vieta masīvā
+    d = +(+d).toFixed(1); if (!d) return;
+    const N = clone(M); N.freeWalls = N.freeWalls || []; let i = w.free;
+    if (i == null) {
+      if (d < 0) { post({ t: "hint", text: "Esošu sienu saīsināt nevar, nemainot telpas. Pagarinājumu (brīvo sienu) var saīsināt; starpsienu var vilkt aiz gala roktura." }); return; }
+      i = N.freeWalls.findIndex(f => f[4] === o && Math.abs(f[X ? 0 : 1] - w.lo) < 1 && Math.abs(f[X ? 2 : 3] - th) < 1 && Math.abs((far ? f[s] : f[s] + f[q]) - end) < 2);   // jau pagarināta: turpina to pašu
+      if (i < 0) { N.freeWalls.push(X ? [w.lo, end, th, 0, o] : [end, w.lo, 0, th, o]); i = N.freeWalls.length - 1; }
+    }
+    const f = N.freeWalls[i]; if (!f) return;
+    const nl = +(f[q] + d).toFixed(1);
+    if (nl < 100) { if (w.free == null) return; N.freeWalls.splice(i, 1); sel = null; post({ t: "edit", model: N, sel: null }); return; }
+    if (!far) f[s] = +(f[s] - d).toFixed(1);
+    f[q] = nl;
+    const c = X ? f[0] + f[2] / 2 : f[1] + f[3] / 2, e = far ? f[s] + f[q] : f[s];
+    const at = X ? [c, e] : [e, c], nw = X ? { axis: "x", lo: f[0], hi: f[0] + f[2], v0: f[1], v1: f[1] + f[3], free: i } : { axis: "y", lo: f[1], hi: f[1] + f[3], v0: f[0], v1: f[0] + f[2], free: i };
+    sel = { k: "wall", i: nw.axis + ":" + Math.round(nw.lo), lv: sel.lv, w: nw, at: at.map(Math.round) };
+    post({ t: "edit", model: N, sel, resized: 1 });
+  }
   function wallShift(d) {   // siena pa savu šķērsvirzienu (koordinātu virzienā); ārsienai mainās mājas izmērs
-    const w = sel.w, origin = w.lo <= 0, N = moveWall(w, d);
+    const w = sel.w, origin = w.free == null && w.lo <= 0, N = moveWall(w, d);
     const nw = origin ? w : Object.assign({}, w, { lo: +(w.lo + d).toFixed(1), hi: +(w.hi + d).toFixed(1) });
     wallDone(N, Object.assign({}, sel, { w: nw, i: nw.axis + ":" + Math.round(nw.lo) }));
   }
   function wallKey(e) {
     if (!sel || sel.k !== "wall" || e.ctrlKey || e.metaKey || e.altKey) return false;
-    const k = e.key, ext = sel.w.ext, show = () => { drawSel(); post({ t: "hint", text: (ext ? "Garuma izmaiņa, mm: " : "Pārbīde, mm: ") + (wBuf || "…") + "   (Enter apstiprina, Esc atceļ)" }); };
+    const k = e.key, ext = sel.w.ext, show = () => { drawSel(); post({ t: "hint", text: "Pagarināt (+) / saīsināt (−), mm: " + (wBuf || "…") + "   (Enter apstiprina, Esc atceļ)" }); };
     if (/^[0-9]$/.test(k) || ((k === "-" || k === "+") && !wBuf)) { wBuf += k; show(); return true; }
     if (k === "Backspace" && wBuf) { wBuf = wBuf.slice(0, -1); show(); return true; }
-    if (k === "Enter" && wBuf) { const v = parseFloat(wBuf); wBuf = ""; if (v) { if (ext) wallLen(v); else wallShift(v); } else drawSel(); return true; }
+    if (k === "Enter" && wBuf) { const v = parseFloat(wBuf); wBuf = ""; if (v) wallExtend(v); else drawSel(); return true; }
     if (k === "Escape" && wBuf) { wBuf = ""; drawSel(); post({ t: "hint", text: "" }); return true; }
     const st = e.shiftKey ? 100 : 10, X = sel.w.axis === "x", dv = X ? { ArrowLeft: -st, ArrowRight: st }[k] : { ArrowUp: -st, ArrowDown: st }[k];
     if (dv) { wallShift(dv); return true; }
@@ -1608,8 +1634,9 @@
     if (!N) { post({ t: "hint", text: "Piebūvi šajā pusē neizdevās pievienot." }); return; }
     sel = null; post({ t: "edit", model: N, resized: 1, wing: g }); });
   addEventListener("message", e => { const m = e.data && e.data.mmWall; if (!m || !sel || sel.k !== "wall") return;
-    if (m.end) { const X = sel.w.axis === "x", S = X ? M.D : M.W, at = sel.at.slice(); at[X ? 1 : 0] = m.end === "hi" ? S : 0; sel = Object.assign({}, sel, { at }); drawSel(); post({ t: "sel", sel }); }
-    else if (m.len) { if (sel.w.ext) wallLen(+m.len); else wallShift(+m.len); }
+    if (m.end) { const X = sel.w.axis === "x", w = sel.w, S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T), at = sel.at.slice(); at[X ? 1 : 0] = m.end === "hi" ? b : a; sel = Object.assign({}, sel, { at }); drawSel(); post({ t: "sel", sel }); }
+    else if (m.size) wallLen(+m.size);
+    else if (m.len) wallExtend(+m.len);
     else if (m.shift) wallShift(+m.shift); });
   let moveMode = false;
   const MVC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='%23e0201b' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'><path d='M16 2l5 6h-3.4v6.6H24V11l6 5-6 5v-3.6h-6.4V24H21l-5 6-5-6h3.4v-6.6H8V21l-6-5 6-5v3.6h6.4V8H11z'/></g></svg>\") 16 16, move";
@@ -1620,6 +1647,7 @@
     if (place && place.t === "erase") { document.body.style.cursor = ERC; const h = guideHit(e.clientX, e.clientY) >= 0 ? null : hit(e.clientX, e.clientY); hover(h); return; }
     if (place && place.t === "dim" && fdimMove(e)) return;
     if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
+    if (place && place.t === "fwall") { fwallPreview(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "terrace") { terPreview(e.clientX, e.clientY, e.shiftKey); return; }
@@ -1751,7 +1779,7 @@
     if (d.zone === "rot") { const deg = d.moved ? d.ang : 90; if (deg) post({ t: "edit", model: rotate(clone(M), d.h.it.lv, d.h.it.i, d.boxes, deg), sel }); else drawSel(); return; }
     if (!d.moved && d.h && d.h.wall) {   // klikšķis uz sienas (bez vilkšanas): siena kļūst izvēlēta; tad var ierakstīt mm (piem. -1000 un Enter)
       const w = d.h.it.w; wBuf = "";
-      sel = { k: "wall", i: w.axis + ":" + Math.round(w.lo), lv: d.h.it.lv, w: { axis: w.axis, lo: w.lo, hi: w.hi, ext: !!w.ext, v0: w.v0, v1: w.v1 }, at: [Math.round(d.h.p[0]), Math.round(d.h.p[1])] };
+      sel = { k: "wall", i: w.axis + ":" + Math.round(w.lo), lv: d.h.it.lv, w: { axis: w.axis, lo: w.lo, hi: w.hi, ext: !!w.ext, v0: w.v0, v1: w.v1, free: w.free }, at: [Math.round(d.h.p[0]), Math.round(d.h.p[1])] };
       drawSel(); post({ t: "sel", sel });
       post({ t: "hint", text: w.ext ? "Ārsiena izvēlēta. Ieraksti mm (piem. -1000) un Enter: siena pagarinās vai saīsinās. Bultiņas pārbīda sienu." : "Starpsiena izvēlēta. Ieraksti mm un Enter vai spied bultiņas: siena pārbīdās." });
       return;
@@ -2339,6 +2367,27 @@
     if (!pts.length || Math.hypot(p[0] - pts[pts.length - 1][0], p[1] - pts[pts.length - 1][1]) > 50) pts.push(p);
     terPreview(e.clientX, e.clientY, e.shiftKey); return true;
   }
+  let fwP = null;
+  function fwallRect(p) {   // brīvā siena no pirmā klikšķa (place.p0) līdz p; null, ja pirmais klikšķis vēl nav izdarīts
+    const P = place;
+    if (!P.p0) { P.p0 = [p[0], p[1]]; return null; }
+    const a = P.p0, vertical = Math.abs(p[1] - a[1]) >= Math.abs(p[0] - a[0]), h = T / 2;
+    const c = snapAx("main", vertical ? "x" : "y", vertical ? a[0] : a[1], 150), u0 = snapAx("main", vertical ? "y" : "x", vertical ? a[1] : a[0], 150), u1 = snapAx("main", vertical ? "y" : "x", vertical ? p[1] : p[0], 150);
+    const lo = Math.min(u0, u1), len = Math.abs(u1 - u0);
+    return { len, f: vertical ? [+(c - h).toFixed(1), lo, T, len, "v"] : [lo, +(c - h).toFixed(1), len, T, "h"] };
+  }
+  function fwallPreview(cx, cy) {
+    for (const bl of blocks()) {
+      if (bl.type !== "plan" || bl.lv !== "main") continue;
+      const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
+      const k = ek(bl), g = mk(o, "g", { class: "gh" });
+      if (!place.p0) { label(g, p[0], p[1] - 2.2 / k, "Siena: uzklikšķini sākumu", k); return; }
+      const a = place.p0, vertical = Math.abs(p[1] - a[1]) >= Math.abs(p[0] - a[0]), h = T / 2;
+      const c = snapAx("main", vertical ? "x" : "y", vertical ? a[0] : a[1], 150), u0 = snapAx("main", vertical ? "y" : "x", vertical ? a[1] : a[0], 150), u1 = snapAx("main", vertical ? "y" : "x", vertical ? p[1] : p[0], 150);
+      const bb = vertical ? [c - h, Math.min(u0, u1), c + h, Math.max(u0, u1)] : [Math.min(u0, u1), c - h, Math.max(u0, u1), c + h];
+      rect(g, bb, true, k, 0); label(g, bb[0], bb[1] - 2.2 / k, Math.round(Math.abs(u1 - u0)) + " mm", k); return;
+    }
+  }
   function wallPreview(cx, cy) {
     for (const bl of blocks()) {
       if (bl.type !== "plan" || bl.lv !== "main") continue;
@@ -2539,6 +2588,13 @@
           if (Math.abs(u1 - u0) < 100) return { miss: "Mērs par īsu. Uzklikšķini tālāk." };
           const L = lv(P.lv, N); L.userDims = L.userDims || []; L.userDims.push([ax, snapAt(P.lv, ax, X ? a[1] : a[0]).v, Math.min(u0, u1), Math.max(u0, u1)]);
           return { N, sel: { k: "dim", i: L.userDims.length - 1, lv: P.lv } };
+        }
+        if (P.t === "fwall") {   // brīva siena: divi klikšķi, jebkur (arī ārpus mājas); telpas nemainās
+          if (bl.lv !== "main") return { miss: "Sienas var likt 1. stāva plānā." };
+          const q = fwallRect(p); if (!q) return { pending: "Tagad uzklikšķini sienas otru galu." };
+          if (q.len < 100) return { miss: "Siena par īsu. Uzklikšķini tālāk." };
+          N.freeWalls = N.freeWalls || []; N.freeWalls.push(q.f);
+          return { N, sel: null };
         }
         if (P.t === "wall" || P.t === "cut") {
           if (bl.lv !== "main") return { miss: "Sienas var likt 1. stāva plānā." };

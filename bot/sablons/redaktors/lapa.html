@@ -826,7 +826,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   let pst = null, pamInfo = null, pamMode = null;   // pamMode: paliekošs pamatu plāna rīks (kontūra, stabs), ko jaunais rāmis turpina   // pamatu plāns: izvēlētais stabs, izkārtojuma dati no lapas
 
   // ---- the same model block build_model.py writes, plus a map from each furniture entry to its drawn shapes ----
-  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "noLeaf", "decor", "entryInChain", "porch", "terraces", "axOff", "posts"];
+  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "noLeaf", "decor", "entryInChain", "porch", "terraces", "axOff", "posts", "freeWalls"];
   const call = f => f[0] === "_rot"
     ? `{ const i0 = F.length; ${call(f[4])} for (let i = i0; i < F.length; i++) F[i].tr = "rotate(${f[1]} ${f[2]} ${f[3]})" + (F[i].tr ? " " + F[i].tr : ""); }`
     : `${f[0]}(${f.slice(1).map(a => JSON.stringify(a)).join(", ")});`;
@@ -1096,6 +1096,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Fasādes elements", s: "taisnstūris: divi klikšķi fasādē (dekors, metāls)", p: { t: "decor", rect: true }, ic: "ter" },
     { n: "Fasādes elements (polilīnija)", s: "klikšķi stūros fasādē; klikšķis pirmajā punktā noslēdz", p: { t: "decor" }, ic: "ter" },
     { n: "Stabs", s: "klikšķis novieto; Ctrl+vilkt kopē, tad /n dala", p: { t: "post" }, ic: "post" },
+    { n: "Ārsiena (brīva)", s: "divi klikšķi plānā: siena jebkur, arī ārpus mājas; telpas un citas sienas nekustas. Esošu sienu pagarina, to atlasot un ierakstot garumu", p: { t: "fwall" }, ic: "ter" },
     { n: "Zona (telpa)", s: "divi klikšķi plānā: jauna telpa, vieta tiek nogriezta no esošās; jāieraksta tikai nosaukums", p: { t: "zone" }, ic: "ter" },
     { n: "Zona pa kontūru (polilīnija)", s: "klikšķi telpas stūros (taisnleņķa kontūrs); klikšķis pirmajā punktā noslēdz; jāieraksta tikai nosaukums", p: { t: "zone", poly: true }, ic: "ter" },
     { n: "Krāsas spainis", s: "B; klikšķis uzliek materiālu, Alt+klikšķis paņem", p: { t: "bucket" }, ic: "bucket" },
@@ -1203,7 +1204,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (onBtn === b) { endPlace(); toFrame({ mmPlace: null }); return; }
       endPlace(); if (moveOn) setMove(false); placing = clone(spec); onBtn = b; b.classList.add("on"); if (placing.t === "bucket") { placing.mat = clone(BMAT); bktSync(); }
       if (placing.vy) placing.entry[0] = typeV(placing.entry[0], detail);
-      $("hint").textContent = spec.t === "bucket" ? "Krāsas spainis: klikšķis uz stabu, terasi vai fasādi uzliek materiālu. Alt+klikšķis paņem materiālu no elementa. Materiālu izvēlies labajā joslā, sadaļā „Rīka opcijas”." : spec.t === "post" ? "Uzklikšķini plānā, kur likt stabu. Pēc tam: Ctrl+vilkt kopē, ieraksti /5 un Enter, lai attālumu sadalītu ar 5 stabiem (vai *3, lai atkārtotu)." : spec.t === "terrace" && spec.rect ? "Uzklikšķini terases pirmo stūri, tad pretējo stūri. Shift: brīvi, Esc atceļ." : spec.t === "terrace" ? "Uzklikšķini terases stūrus (Shift: brīvs leņķis, Backspace: atpakaļ). Dubultklikšķis, Enter vai klikšķis uz pirmā punkta noslēdz." : spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Plānā: uzklikšķini mēra pirmo galu (pielīp sienām). Fasādē: uzklikšķini punktu un izvēlies augstuma atzīmi vai lineāru mēru." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "zone" ? (spec.poly ? "Uzklikšķini telpas stūrus plānā (taisnleņķa kontūrs). Klikšķis pirmajā punktā noslēdz." : "Divi klikšķi plānā pretējos stūros: jauna telpa tiek nogriezta no esošās.") : spec.t === "decor" ? (spec.rect ? "Divi klikšķi fasādē pretējos stūros." : "Uzklikšķini stūrus fasādē. Klikšķis pirmajā punktā noslēdz."): spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
+      $("hint").textContent = spec.t === "bucket" ? "Krāsas spainis: klikšķis uz stabu, terasi vai fasādi uzliek materiālu. Alt+klikšķis paņem materiālu no elementa. Materiālu izvēlies labajā joslā, sadaļā „Rīka opcijas”." : spec.t === "post" ? "Uzklikšķini plānā, kur likt stabu. Pēc tam: Ctrl+vilkt kopē, ieraksti /5 un Enter, lai attālumu sadalītu ar 5 stabiem (vai *3, lai atkārtotu)." : spec.t === "terrace" && spec.rect ? "Uzklikšķini terases pirmo stūri, tad pretējo stūri. Shift: brīvi, Esc atceļ." : spec.t === "terrace" ? "Uzklikšķini terases stūrus (Shift: brīvs leņķis, Backspace: atpakaļ). Dubultklikšķis, Enter vai klikšķis uz pirmā punkta noslēdz." : spec.t === "furn" ? "Uzklikšķini plānā, kur likt." : spec.t === "fwall" ? "Uzklikšķini sienas sākumu un beigas (pielīp sienu virsmām un stūriem). Telpas nemainās. Esc beidz." : spec.t === "wall" ? "Uzklikšķini starpsienas sākumu pie ārsienas vai citas sienas, tad beigas. Siena pielīp citu sienu virsmām." : spec.t === "cut" ? "Uzklikšķini iekšējās sienas posma sākumu, tad beigas. Divi klikšķi vienā vietā izgriež visu posmu." : spec.t === "dim" ? "Plānā: uzklikšķini mēra pirmo galu (pielīp sienām). Fasādē: uzklikšķini punktu un izvēlies augstuma atzīmi vai lineāru mēru." : spec.t === "erase" ? "Klikšķis uz elementa dzēš to visu (siena: visa līnija). Esc beidz." : spec.t === "guide" ? "Uzklikšķini lapā: palīglīnija pielīp sienām, logiem, durvīm, mēbelēm un stūriem. Esc beidz." : spec.t === "zone" ? (spec.poly ? "Uzklikšķini telpas stūrus plānā (taisnleņķa kontūrs). Klikšķis pirmajā punktā noslēdz." : "Divi klikšķi plānā pretējos stūros: jauna telpa tiek nogriezta no esošās.") : spec.t === "decor" ? (spec.rect ? "Divi klikšķi fasādē pretējos stūros." : "Uzklikšķini stūrus fasādē. Klikšķis pirmajā punktā noslēdz."): spec.t === "door" ? "Uzklikšķini uz sienas plānā." : spec.t === "gwin" ? "Uzklikšķini gala fasādē virs dzegas." : "Uzklikšķini uz ārsienas plānā vai fasādē.";
       toFrame({ mmPlace: spec }); railSync();
     };
     b.title = item.n + " · " + item.s;
@@ -2322,19 +2323,20 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     }
     if (sel.k === "wall") {   // izvēlēta siena: garums / pārbīde ar skaitli (to pašu var ierakstīt rasējumā: skaitlis un Enter)
       const w = sel.w, X = w.axis === "x", S = X ? model.D : model.W, ext = !!w.ext, sideN = X ? (w.lo <= 0 ? "rietumu" : "austrumu") : (w.lo <= 0 ? "ziemeļu" : "dienvidu");
-      const far = (X ? sel.at[1] : sel.at[0]) >= S / 2, L = ext ? S : Math.round((w.v1 != null ? w.v1 : S) - (w.v0 != null ? w.v0 : 0));
+      const a0 = ext ? 0 : (w.v0 != null ? w.v0 : 0), b0 = ext ? S : (w.v1 != null ? w.v1 : S), far = (X ? sel.at[1] : sel.at[0]) >= (a0 + b0) / 2, L = Math.round(b0 - a0);
       const act = (lab, val, fn, cls) => field(lab, val, (n, v) => { fn(v); throw "async"; }, null, cls);
-      h.textContent = ext ? "Ārsiena" : "Starpsiena"; sub.textContent = (ext ? sideN + " siena · " : "") + "garums " + Math.round(L) + " mm · biezums " + Math.round(w.hi - w.lo) + " mm";
-      if (ext) {
-        g.append(act("Garums, mm", L, v => { if (Math.abs(v - L) >= 1) toFrame({ mmWall: { len: v - L } }); }),
-          act("Pagarināt (+) / saīsināt (−) par, mm", 0, v => { if (v) toFrame({ mmWall: { len: v } }); }));
+      h.textContent = w.free != null ? "Brīva siena" : ext ? "Ārsiena" : "Starpsiena"; sub.textContent = (ext ? sideN + " siena · " : "") + "garums " + Math.round(L) + " mm · biezums " + Math.round(w.hi - w.lo) + " mm";
+      {
+        g.append(act("Pagarināt (+) / saīsināt (−) par, mm  (telpas nekustas)", 0, v => { if (v) toFrame({ mmWall: { len: v } }); }, "full"));
         const el = document.createElement("label"), es = document.createElement("select"); el.className = "full"; el.textContent = "Kustīgais gals (otrs paliek vietā)";
         [["lo", X ? "Ziemeļu gals" : "Rietumu gals"], ["hi", X ? "Dienvidu gals" : "Austrumu gals"]].forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if ((v === "hi") === far) o.selected = true; es.append(o); });
         es.onchange = () => toFrame({ mmWall: { end: es.value } }); el.append(es); g.append(el);
-        g.append(act("Pārbīdīt sienu " + (X ? "pa X" : "pa Y") + " par, mm (mainās mājas " + (X ? "garums" : "platums") + ")", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, "full"));
-      } else g.append(act("Pārbīdīt " + (X ? "pa X" : "pa Y") + " par, mm", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, "full"));
+        if (ext && w.free == null) g.append(act("Mainīt mājas " + (X ? "platumu" : "garumu") + " par, mm (telpas stiepjas līdzi)", 0, v => { if (v) toFrame({ mmWall: { size: v } }); }, "full"));
+        if (ext && w.free == null) g.append(act("Pārbīdīt sienu " + (X ? "pa X" : "pa Y") + " par, mm (mainās mājas " + (X ? "garums" : "platums") + ")", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, "full"));
+      }
+      if (!ext || w.free != null) g.append(act("Pārbīdīt " + (X ? "pa X" : "pa Y") + " par, mm", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, "full"));
       p.append(h, sub, g);
-      const nt = document.createElement("p"); nt.className = "note"; nt.textContent = ext ? "Rasējumā: uzklikšķini uz ārsienas, ieraksti, piem., -1000 un Enter: siena saīsinās par 1000 mm tajā galā, kuram tuvāk uzklikšķināts (oranžais kvadrāts). Telpas, mājas kontūra, lievenis un terases seko. Bultiņas pārbīda sienu pa 10 mm (ar Shift 100 mm)." : "Rasējumā: ieraksti mm un Enter vai spied bultiņas, lai pārbīdītu starpsienu. Garumu maina gala rokturis."; p.appendChild(nt);
+      const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Rasējumā: uzklikšķini uz sienas (gals, kuram tuvāk, ir oranžais kvadrāts), ieraksti garumu, piem., 1000 un Enter: siena pagarinās par 1000 mm tajā galā. Mīnuss saīsina pagarinājumu. Telpas un citas sienas nekustas. Bultiņas pārbīda brīvo sienu."; p.appendChild(nt);
       return;
     }
     if (sel.k === "axo") { axoPanel(p, h, sub, g); return; }
@@ -2609,6 +2611,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       sel = null; commit(n); return;
     }
     const it = itemOf(model, sel); if (!it) return;
+    if (sel.k === "wall" && sel.w.free != null) { const n = clone(model); (n.freeWalls || []).splice(sel.w.free, 1); sel = null; commit(n); return; }
     if (sel.k === "wall") { status(sel.w.ext ? "Ārsienu dzēst nevar." : "Starpsienu dzēš ar dzēšgumiju (X)."); return; }
     const n = clone(model);
     if (sel.k === "post") n.posts.splice(sel.i, 1);

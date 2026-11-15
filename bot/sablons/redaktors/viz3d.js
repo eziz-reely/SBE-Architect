@@ -169,6 +169,7 @@
         }
       });
       { const wg = geo.find(g => g.k === "s" && g.mat === "M_WALL"); try { details(m, geo, grp, mat, frameM, wg ? wg.d : 283.5); } catch (e) { console.error("3D detaļas:", e); } }
+      (m.freeWalls || []).forEach(f => { const hh = (m.jumts && m.jumts.eave) || 2600, b = new THREE.Mesh(new THREE.BoxGeometry(f[2], hh, f[3]), mat(wallHex)); b.position.set(f[0] + f[2] / 2, hh / 2, f[1] + f[3] / 2); grp.add(b); });   // brīvās sienas
       // terase
       const tr = terraceRect(m);
       if (tr) {
