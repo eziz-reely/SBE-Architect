@@ -8,10 +8,10 @@ const T = require('./lib'); const path = require('path');
   await T.click(page, 'plan', W0 * 0.75, 100);   // ziemeļu ārsiena, tuvāk austrumu galam
   let s = await T.sel(page); T.ok(s && s.k === 'wall' && s.w.ext && s.w.axis === 'y', 'klikšķis izvēlas ziemeļu ārsienu', s && s.w);
   T.ok(/Ārsiena/.test(await page.textContent('#panel')), 'panelī "Ārsiena"');
-  await page.keyboard.type('-1000'); await page.keyboard.press('Enter'); await T.ready(page);
+  await (await T.live(page)).evaluate(v => postMessage({ mmWall: { len: v } }, '*'), -1000); await T.ready(page);
   m = await T.model(page); T.ok(Math.abs(m.W - (W0 - 1000)) < 1 && m.D === D0, '-1000 + Enter: siena saīsinās par 1000 mm (garums W)', [W0, m.W]);
   s = await T.sel(page); T.ok(s && s.k === 'wall', 'siena paliek izvēlēta');
-  await page.keyboard.type('500'); await page.keyboard.press('Enter'); await T.ready(page);
+  await (await T.live(page)).evaluate(v => postMessage({ mmWall: { len: v } }, '*'), 500); await T.ready(page);
   m = await T.model(page); T.ok(Math.abs(m.W - (W0 - 500)) < 1, '500 + Enter: pagarinās par 500 mm', m.W);
   // panelis: garuma lauks
   await page.evaluate(() => { const i = document.querySelector('#panel input[type=number]'); i.value = String(+i.value + 300); i.dispatchEvent(new Event('change', { bubbles: true })); });
@@ -19,7 +19,7 @@ const T = require('./lib'); const path = require('path');
   // rietumu gals: klikšķis tuvāk rietumu galam, +400 → W aug, telpas pabīdās
   await T.click(page, 'plan', m.W * 0.2, 100);
   const r0 = m.rooms[0].r[0][0];
-  await page.keyboard.type('400'); await page.keyboard.press('Enter'); await T.ready(page);
+  await (await T.live(page)).evaluate(v => postMessage({ mmWall: { len: v } }, '*'), 400); await T.ready(page);
   const m2 = await T.model(page); T.ok(Math.abs(m2.W - (m.W + 400)) < 1, 'rietumu galā +400: māja pagarinās uz rietumiem', [m.W, m2.W]);
   await page.keyboard.press('Control+z'); await T.ready(page);
   T.ok(Math.abs((await T.model(page)).W - m.W) < 1, 'Ctrl+Z atsauc'); void r0;
@@ -32,7 +32,7 @@ const T = require('./lib'); const path = require('path');
   const pmax = P => Math.max(...P.map(q => q[1]));
   await T.click(page, 'plan', m.W - 100, m.D * 0.8);   // austrumu ārsiena, tuvāk dienvidu galam
   s = await T.sel(page); T.ok(s && s.k === 'wall' && s.w.axis === 'x', 'izvēlēta austrumu ārsiena', s && s.w);
-  await page.keyboard.type('600'); await page.keyboard.press('Enter'); await T.ready(page);
+  await (await T.live(page)).evaluate(v => postMessage({ mmWall: { len: v } }, '*'), 600); await T.ready(page);
   const n = await T.model(page);
   T.ok(Math.abs(n.D - (m.D + 600)) < 1, 'austrumu siena +600: D aug', [m.D, n.D]);
   T.ok(!!n.poly && Math.abs(pmax(n.poly) - n.D) < 1, 'mājas kontūra (poly) saglabājas un seko', n.poly && pmax(n.poly));

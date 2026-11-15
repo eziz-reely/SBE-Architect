@@ -22,7 +22,7 @@ const mmRooms = v => v ? v.rooms.filter(rm => !rm.void) : [];
 const mmNum = (x, d = 2) => x.toFixed(d).replace(".", ",");
 
 // room table: dark header, numbered rows, total
-function mmTable(svg, x, y, w, title, sub, rooms, L, foot) {
+function mmTable(svg, x, y, w, title, sub, rooms, L, foot, outs) {
   const g = el("g", { "data-block": "schedule", transform: `translate(${x} ${y})` }, svg), RH = 5;
   el("rect", { width: w, height: 6.5, fill: MM_DARK }, g);
   T_(g, 2, 4.4, title, { fs: 2.4, fw: 700, ls: .45, fill: "#fff" });
@@ -41,6 +41,14 @@ function mmTable(svg, x, y, w, title, sub, rooms, L, foot) {
   T_(g, 2, yy + 3.8, MM_TXT[L].total, { fs: 2.3, fw: 700 });
   T_(g, w - 2, yy + 3.8, mmNum(rooms.reduce((a, rm) => a + area(rm), 0)) + " m²", { fs: 2.3, a: "end", fw: 700 });
   yy += RH + .5;
+  (outs || []).forEach((o, i) => {   // ārtelpas (lievenis, terases): netiek skaitītas kopējā platībā; terases pakāpiens (up) šeit nav
+    const nm = o.name || (L === "en" ? "Terrace" : "Terase");
+    el("circle", { cx: 3.6, cy: yy + RH / 2, r: 1.75, fill: "none", stroke: MM_GREY, "stroke-width": .25 }, g);
+    T_(g, 3.6, yy + RH / 2 + .75, String(rooms.length + 1 + i), { fs: 1.9, a: "middle", fw: 600, fill: MM_GREY });
+    T_(g, 7, yy + RH / 2 + .8, nm + (L === "en" ? " (outdoor)" : " (ārtelpa)"), { fs: 2.2, fill: MM_GREY });
+    T_(g, w - 2, yy + RH / 2 + .8, mmNum(polyArea(o.poly)) + " m²", { fs: 2.2, a: "end", fill: MM_GREY });
+    yy += RH;
+  });
   if (foot) { T_(g, 2, yy + 3.3, MM_TXT[L].foot, { fs: 2, fill: MM_GREY }); T_(g, w - 2, yy + 3.3, mmNum(foot) + " m²", { fs: 2, a: "end", fill: MM_GREY }); yy += RH; }
   el("rect", { width: w, height: yy, fill: "none", stroke: MM_DARK, "stroke-width": .3 }, g);
   return yy;
@@ -72,11 +80,20 @@ function mmTitleBlock(svg, v, lf, L) {
   el("rect", { x: X + 3, y: 73, width: W - 6, height: 7, rx: 3.5, fill: "none", stroke: MM_ACC, "stroke-width": .45 }, g);
   T_(g, cx, 77.8, tx.phase, { fs: 2.3, fw: 700, a: "middle", ls: .5, fill: MM_DARK });
   // model
-  const NONAME = P.modela_nosaukums === "", SH = NONAME ? -20 : 0;   // nosaukums izdzēsts: nav ne "MODELIS", ne vārda
+  const NONAME = P.modela_nosaukums === "";
+  let SH = NONAME ? -20 : 0;   // nosaukums izdzēsts: nav ne "MODELIS", ne vārda
   if (!NONAME) lab(88, tx.model);
   if (!NONAME && P.modela_nosaukums) {   // modeļa vārds (piem. Freya) un zem tā MM + m²
-    T_(g, X + 3, 97, P.modela_nosaukums, { fs: P.modela_nosaukums.length > 9 ? 4.6 : 6.2, fw: 700, fill: MM_DARK });
-    T_(g, X + 3, 102.5, P.modelis || "", { fs: 2.6, fw: 600, fill: MM_ACC, ls: .4 });
+    // nosaukums nedrīkst iziet ārpus rakstlaukuma (34 mm): garu vārdu burtu izmēru samazina, ļoti garu pārlauž divās rindās
+    const nmT = String(P.modela_nosaukums), AVAIL = W - 6, cw = .56, one = Math.min(6.2, AVAIL / (nmT.length * cw));
+    let lines = [nmT], nfs = one;
+    if (one < 4.2 && nmT.includes(" ")) {
+      const sp = [...nmT].map((c, i) => c === " " ? i : -1).filter(i => i >= 0).sort((p, q) => Math.abs(p - nmT.length / 2) - Math.abs(q - nmT.length / 2))[0];
+      lines = [nmT.slice(0, sp), nmT.slice(sp + 1)]; nfs = Math.min(5.2, AVAIL / (Math.max(lines[0].length, lines[1].length) * cw));
+    }
+    lines.forEach((ln, i) => T_(g, X + 3, 97 + i * (nfs * 1.2), ln, { fs: nfs, fw: 700, fill: MM_DARK }));
+    SH += (lines.length - 1) * (nfs * 1.2);   // otra rinda pabīda zemāk esošos laukus
+    T_(g, X + 3, 102.5 + (lines.length - 1) * (nfs * 1.2), P.modelis || "", { fs: 2.6, fw: 600, fill: MM_ACC, ls: .4 });
   } else if (!NONAME) T_(g, X + 3, 98, P.modelis || v.short || "", { fs: 6.2, fw: 700, fill: MM_DARK });
   // key figures
   const I = P.ievade || {}, foot = polyArea(v.poly), net = [...mmRooms(v), ...mmRooms(lf)].reduce((a, rm) => a + area(rm), 0);
@@ -94,16 +111,18 @@ function mmTitleBlock(svg, v, lf, L) {
   ky += 1;
   if ((P.adrese || []).length) {   // bez adreses (--bez-adreses): sadaļu nerāda
     lab(ky, tx.obj);
-    P.adrese.forEach((l, i) => T_(g, X + 3, ky + 5.5 + i * 3.6, l, { fs: 2.3, fill: MM_DARK }));
-    ky += 7 + P.adrese.length * 3.6 + 6;
+    const AD = [];   // adrese nedrīkst iziet ārpus rakstlaukuma: pārlauž pa vārdiem (≈ 29 rakstzīmes rindā)
+    P.adrese.forEach(l => { let cur = ""; String(l).split(/\s+/).forEach(w => { if (cur && (cur + " " + w).length > 29) { AD.push(cur); cur = w; } else cur = cur ? cur + " " + w : w; }); if (cur) AD.push(cur); });
+    AD.forEach((l, i) => T_(g, X + 3, ky + 5.5 + i * 3.6, l, { fs: 2.3, fill: MM_DARK }));
+    ky += 7 + AD.length * 3.6 + 6;
   }
   lab(ky, tx.cont);
   // projekta piezīmes (pamati u.c.): model.json projekts.piezimes, EN: piezimes_en
   let ny = ky + 5.5;
-  ((L === "en" ? P.piezimes_en : P.piezimes) || P.piezimes || []).forEach(t => {
-    const ls = wrap(t, 25);
-    T_(g, X + 3, ny, "—", { fs: 2.1, fill: MM_ACC });
-    ls.forEach((l, j) => T_(g, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: MM_DARK }));
+  ((L === "en" ? P.piezimes_en : P.piezimes) || P.piezimes || []).filter(t => !(P.notes_off || []).includes(t)).forEach(t => {   // notes_off: lietotāja nodzēstās piezīmes (redaktora sadaļa "Piezīmes lapā")
+    const ls = wrap(t, 25), gn = el("g", { "data-note": t }, g);
+    T_(gn, X + 3, ny, "—", { fs: 2.1, fill: MM_ACC });
+    ls.forEach((l, j) => T_(gn, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: MM_DARK }));
     ny += ls.length * 3.2 + 1.2;
   });
 
@@ -153,7 +172,7 @@ function modelSheet(v) {
   cadPlan(el("g", { "data-block": "plan", transform: `translate(${PX} ${PY}) scale(${k})` }, svg), v, { furniture: true, axes: true, levels: true, tag: "-a3", tags: false, axOff: 1650 });
   let y = PY + d + 29;
   sheetHeading(svg, 26, y, 215, tx.plan);
-  mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly));
+  mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly), [].concat(v.porch ? [{ name: v.porch.name || (L === "en" ? "Porch" : "Lievenis"), poly: v.porch.poly }] : [], (v.terraces || []).filter(t => !t.up)));
 
   // 2) loft: tie paši ārējie izmēri kā 1. stāvam (mājas gabarīti, bez dublēšanas); sava telpu tabula blakus
   if (lf) {
