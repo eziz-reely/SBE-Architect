@@ -81,7 +81,7 @@ def _mm_extra(cad):
             '  const P = v.poly || [], n = P.length, ar = P.reduce((s, q, i) => s + q[0] * P[(i + 1) % n][1] - P[(i + 1) % n][0] * q[1], 0) > 0 ? 1 : -1, nm = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] }[side], out = [];\n'
             '  P.forEach((a, i) => { const b = P[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], o = ar > 0 ? [dy, -dx] : [-dy, dx]; if (!(o[0] * nm[0] + o[1] * nm[1] > 0)) return;\n'
             '    const hz = side === "north" || side === "south", f = q => hz ? (side === "north" ? v.W - q[0] : q[0]) : (side === "east" ? v.D - q[1] : q[1]), u0 = f(a), u1 = f(b); if (Math.abs(u1 - u0) > 1) out.push({ u0: Math.min(u0, u1), u1: Math.max(u0, u1) }); });\n'
-            '  return out.sort((p, q) => p.u0 - q.u0);\n}\n'
+            '  return out.sort((p, q) => p.u0 - q.u0);\n}\nwindow.mmFacSegs = mmFacSegs;\n'
             'function mmParkHex(side) { const P = (window.AR && AR.projekts) || {}, q = (P.parkare_side || {})[side]; return q || P.parkare_hex || null; }   // [MM] jumta pārkares tonis pa fasādes pusēm (projekts.parkare_side), citādi viens visai mājai\n'
             'function mmSideHex(side) { const q = ((window.AR && AR.projekts && AR.projekts.fasade_side) || {})[side]; return q ? (q.hex || q) : null; }\n')
     a = 'function cadPlan(parent, v, opt = {}) {'

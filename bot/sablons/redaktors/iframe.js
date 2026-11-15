@@ -429,6 +429,12 @@
     drawGuides();
     document.querySelectorAll("g.mm-ov").forEach(o => o.remove());
     if (!sel) return;
+    if (sel.k === "fsien") {   // izvēlēta fasādes siena (plakne): zils laukums
+      const bl = blocks().find(b => b.type === "elev" && b.side === sel.side); if (!bl) return;
+      const k = ek(bl), F = (window.__FDF || {})[sel.side] || {}, eE = F.eEdge || 2400, o = overlay(bl.g);
+      mk(o, "rect", { x: sel.u0, y: -eE, width: sel.u1 - sel.u0, height: eE, fill: "rgba(34,102,216,.16)", stroke: "#2266d8", "stroke-width": 0.8 / k });
+      return;
+    }
     if (sel.k === "wall") {   // izvēlēta siena: josla, garums un kustīgais gals (ārsienai)
       const bl = blocks().find(b => b.type === "plan" && b.lv === sel.lv), w = sel.w; if (!bl || !w) return;
       const k = ek(bl), o = overlay(bl.g), X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T);
@@ -1222,7 +1228,7 @@
     }
   }
 
-  const cur = z => (z === "l" || z === "r" || z === "wx" ? "ew-resize" : z === "t" || z === "b" || z === "wy" ? "ns-resize" : z === "rot" ? "grab" : z === "del" ? "pointer" : z === "tc" ? "crosshair" : "move");
+  const cur = z => (z === "l" || z === "r" || z === "wx" ? "ew-resize" : z === "t" || z === "b" || z === "wy" ? "ns-resize" : z === "rot" ? "grab" : z === "del" ? "pointer" : z === "tc" ? "crosshair" : SELC);
 
   // lineāli kā ArchiCAD: izvelc palīglīniju no kreisās vai augšējās malas, atpakaļ uz lineālu to dzēš
   const RUL = 16;
@@ -1518,7 +1524,14 @@
       if (sx && bg && !place) { drag = { secd: true, i: +sx.getAttribute("data-sec"), o: sx.getAttribute("data-so"), g: bg, x0: e.clientX, y0: e.clientY, at: null, moved: false };
         document.body.style.cursor = drag.o === "v" ? "ew-resize" : "ns-resize"; post({ t: "hint", text: "Bīdi griezuma līniju; griezums pārzīmējas visās lapās." }); return true; } }
     const h = hit(e.clientX, e.clientY); hover(null);
-    if (!h) { if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false; }
+    if (!h) {
+      const wt = !place && bucketTarget(e.clientX, e.clientY);
+      if (wt && wt.k === "fas") {   // klikšķis uz fasādes sienas: atlasa tieši to sienu (plakni), tonis panelī
+        const sg = typeof mmFacSegs === "function" ? mmFacSegs(M, wt.side) : [], q = sg.find(z => wt.u >= z.u0 && wt.u <= z.u1) || { u0: 0, u1: span(wt.side) };
+        sel = { k: "fsien", side: wt.side, u0: q.u0, u1: q.u1, lv: "main" }; drawSel(); post({ t: "sel", sel }); return true;
+      }
+      if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false;
+    }
     if (h.del) { post({ t: "delete" }); return true; }
     if (h.it.k === "alvl") {   // atzīme: klikšķis atlasa (Delete dzēš), vilkšana bīda visu automātisko atzīmju kolonnu tuvāk/tālāk no fasādes
       sel = { k: "alvl", i: h.it.i, lv: "main" }; drawSel(); post({ t: "sel", sel });
@@ -1556,7 +1569,7 @@
     drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door", "post", "decor"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
     if (h.it.k === "post" && drag.zone === "move") { const pq = M.posts[h.it.i]; drag.gp0 = nearestGrab([pq.x, pq.y, pq.x + pq.w, pq.y + pq.d], h.p); drag.refs = []; }
     if (h.it.k === "fdim") { drag = null; return true; }   // fasādes mēru tikai atlasa (Delete dzēš)
-    document.body.style.cursor = h.wall ? MVC : cur(drag.zone);
+    document.body.style.cursor = h.wall || drag.zone === "move" ? MVC : cur(drag.zone);
     return true;
   };
   // iestatījumu pārnese: pozīcija, izmērs un virziens paliek, pārējie iestatījumi tiek pārņemti
@@ -1690,6 +1703,7 @@
     else if (m.len) wallExtend(+m.len);
     else if (m.shift) wallShift(+m.shift); });
   let moveMode = false;
+  const SELC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'><path d='M4 2l16 12.5-7 .9 4.2 8.1-3.6 1.8-4.2-8.2L4 22z' fill='%23d9480f' stroke='%23fff' stroke-width='1.4' stroke-linejoin='round'/></svg>\") 4 2, default";
   const MVC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g fill='%23e0201b' stroke='%23fff' stroke-width='1.2' stroke-linejoin='round'><path d='M16 2l5 6h-3.4v6.6H24V11l6 5-6 5v-3.6h-6.4V24H21l-5 6-5-6h3.4v-6.6H8V21l-6-5 6-5v3.6h6.4V8H11z'/></g></svg>\") 16 16, move";
   const ERC = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 40 40'><path d='M26 6l10 10-14 14H12l-6-6z' fill='%23fff' stroke='%23d9480f' stroke-width='3'/><path d='M14 14l10 10' stroke='%23d9480f' stroke-width='3'/></svg>\") 6 24, crosshair";
   addEventListener("pointermove", e => {
@@ -1762,7 +1776,7 @@
     if (place) { hover(null); return; }
     if (!drag) {
       const h = hit(e.clientX, e.clientY);
-      document.body.style.cursor = h ? (h.wall ? MVC : cur(zone(h))) : (moveMode ? MVC : ""); hover(h);
+      document.body.style.cursor = h ? (h.wall ? MVC : cur(zone(h))) : (moveMode ? MVC : SELC); hover(h);
       document.querySelectorAll("g.mm-ov .gph").forEach(x => x.remove());
       if (h && h.it.k === "post" && sel && sel.k === "post") { const pq = M.posts[h.it.i], q = nearestGrab([pq.x, pq.y, pq.x + pq.w, pq.y + pq.d], h.p); mk(overlay(h.bl.g), "circle", { class: "gph", cx: q[0], cy: q[1], r: 1.9 / ek(h.bl), fill: ACC, "fill-opacity": 0.35, stroke: ACC, "stroke-width": 0.5 / ek(h.bl) }); }
       return;

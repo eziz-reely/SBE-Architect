@@ -1396,6 +1396,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (s.k === "ter") return (m.terraces || [])[s.i];
     if (s.k === "post") return (m.posts || [])[s.i];
     if (s.k === "porch") return m.porch || null;
+    if (s.k === "fsien") return { fsien: 1 };
     if (s.k === "wall") return s.w ? { wall: 1 } : null;
     if (s.k === "decor") return (m.decor || [])[s.i];
     if (s.k === "fdim") return ((m.projekts || {}).fdims || [])[s.i];
@@ -2366,6 +2367,18 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       { const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Ja augstums pārsniedz jumta pārkares apakšu, stabs tiek nogriezts pie pārkares (gala fasādē pa jumta slīpumu)."; g.append(nt); }
       p.append(h, sub, g); matRows(p, "posts", true);
       const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst stabu"; b.onclick = del; r.appendChild(b); p.appendChild(r);
+      return;
+    }
+    if (sel.k === "fsien") {   // fasādes siena (plakne): tonis tikai šai sienai
+      const P = model.projekts || {}, sd = sel.side, ls = (P.fasade_wall || {})[sd] || [], cur = ls.find(q => Math.abs(q.u0 - sel.u0) < 2 && Math.abs(q.u1 - sel.u1) < 2);
+      const base = ((P.fasade_side || {})[sd] || {}).hex || P.fasade_hex || null;
+      h.textContent = "Fasādes siena"; sub.textContent = SIDE[sd] + " fasāde · garums " + Math.round(sel.u1 - sel.u0) + " mm · " + (cur ? "savs tonis" : "kopējais tonis");
+      const setW = fn => { const n = clone(model); n.projekts = n.projekts || {}; const fw = n.projekts.fasade_wall = Object.assign({}, n.projekts.fasade_wall); let l = (fw[sd] || []).filter(q => !(Math.abs(q.u0 - sel.u0) < 2 && Math.abs(q.u1 - sel.u1) < 2)); const q = { u0: sel.u0, u1: sel.u1 }; fn(q, l); if (q.hex) l.push(q); if (l.length) fw[sd] = l; else delete fw[sd]; commit(n); };
+      g.append(field("Krāsa (RAL)", cur && cur.ral || "", (n, v) => { throw "async"; }, Object.assign({ "": cur && !cur.ral ? "Cita krāsa" : "Kopējais tonis" }, RAL_OPTS()), "full"));
+      const sl = g.lastChild.querySelector("select"); if (sl) sl.onchange = () => setW(q => { if (sl.value) { q.ral = sl.value; q.hex = RAL[sl.value][1]; } });
+      const cl = document.createElement("label"); cl.className = "full"; cl.textContent = "Brīva krāsa"; const ci = document.createElement("input"); ci.type = "color"; ci.value = /^#[0-9a-f]{6}$/i.test((cur && cur.hex) || base || "") ? (cur && cur.hex) || base : "#c68a58"; ci.onchange = () => setW(q => { q.hex = ci.value; }); cl.appendChild(ci); g.appendChild(cl);
+      p.append(h, sub, g);
+      const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.textContent = "Atcelt šīs sienas toni"; b.disabled = !cur; b.onclick = () => setW(() => {}); r.appendChild(b); p.appendChild(r);
       return;
     }
     if (sel.k === "porch") {   // lievenis (zem jumta, mājas kontūras daļa): nosaukums un dzēšana
