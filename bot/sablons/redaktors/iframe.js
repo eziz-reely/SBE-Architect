@@ -1673,7 +1673,7 @@
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "terrace") { terPreview(e.clientX, e.clientY, e.shiftKey); return; }
-    if (place && place.t === "zone" && place.poly) { zonePreview(e.clientX, e.clientY); return; }
+    if (place && ((place.t === "zone" && place.poly) || place.t === "hpoly")) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
     if (drag && drag.fmk) {
@@ -2229,6 +2229,55 @@
       L.rooms[best].r.push(e.map(v => +v.toFixed(1)));
     });
   }
+  // ---- mājas kontūra no ārsienām (kā ArchiCAD): taisnleņķa slēgta polilīnija nosaka ārsienu loku; telpas tiek apgrieztas pa iekšējo malu ----
+  function inPolyPt(P, x, y) { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; }
+  function distPoly(P, x, y) { let d = 1e9; for (let i = 0; i < P.length; i++) { const a = P[i], b = P[(i + 1) % P.length], dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((x - a[0]) * dx + (y - a[1]) * dy) / L2)); d = Math.min(d, Math.hypot(x - a[0] - t * dx, y - a[1] - t * dy)); } return d; }
+  function clipRectsTo(R, P) {   // taisnstūri [x,y,w,h] ∩ taisnleņķa daudzstūris → taisnstūri
+    const out = [];
+    R.forEach(([x, y, w, h]) => {
+      const xs = [...new Set([x, x + w, ...P.map(q => q[0]).filter(v => v > x && v < x + w)])].sort((a, b) => a - b), ys = [...new Set([y, y + h, ...P.map(q => q[1]).filter(v => v > y && v < y + h)])].sort((a, b) => a - b), rows = [];
+      for (let j = 0; j + 1 < ys.length; j++) {
+        const runs = []; for (let i = 0; i + 1 < xs.length; i++) if (inPolyPt(P, (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2)) { const l = runs[runs.length - 1]; if (l && Math.abs(l[1] - xs[i]) < .5) l[1] = xs[i + 1]; else runs.push([xs[i], xs[i + 1]]); }
+        runs.forEach(([a, b]) => { const m = rows.find(r => Math.abs(r[0] - a) < .5 && Math.abs(r[2] - (b - a)) < .5 && Math.abs(r[1] + r[3] - ys[j]) < .5); if (m) m[3] = +(m[3] + ys[j + 1] - ys[j]).toFixed(1); else rows.push([a, ys[j], +(b - a).toFixed(1), +(ys[j + 1] - ys[j]).toFixed(1)]); });
+      }
+      rows.forEach(r => { if (r[2] >= 200 && r[3] >= 200) out.push(r); });
+    });
+    return out;
+  }
+  function insetPoly(poly, d) {   // taisnleņķa daudzstūris uz iekšu par d (tas pats, ko cad.js inset)
+    const n = poly.length, s = Math.sign(poly.reduce((a, [x, y], i) => { const [x2, y2] = poly[(i + 1) % n]; return a + x * y2 - x2 * y; }, 0)) || 1;
+    const nrm = i => { const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % n], L = Math.hypot(x2 - x1, y2 - y1); return [-(y2 - y1) / L * s, (x2 - x1) / L * s]; };
+    return poly.map((p, i) => { const a = nrm((i - 1 + n) % n), b = nrm(i); return [p[0] + d * (a[0] + b[0]), p[1] + d * (a[1] + b[1])]; });
+  }
+  function houseContour(N, pts) {   // N: modelis (klons), pts: kontūra stūri; atgriež N vai { err }
+    let c = pts.map(q => [q[0], q[1]]);
+    const l = c[c.length - 1]; if (Math.abs(l[0] - c[0][0]) > 1 && Math.abs(l[1] - c[0][1]) > 1) c.push([c[0][0], l[1]]);
+    c = c.filter((q, i) => { const a = c[(i + c.length - 1) % c.length], b = c[(i + 1) % c.length]; return !((Math.abs(a[0] - q[0]) < 1 && Math.abs(q[0] - b[0]) < 1) || (Math.abs(a[1] - q[1]) < 1 && Math.abs(q[1] - b[1]) < 1)); });   // taisnā leņķī neesošos punktus izmet
+    if (c.length < 4 || c.some((q, i) => { const b = c[(i + 1) % c.length]; return Math.abs(q[0] - b[0]) > 1 && Math.abs(q[1] - b[1]) > 1; })) return { err: "Kontūram jābūt slēgtam ar taisniem leņķiem." };
+    const x0 = Math.min(...c.map(q => q[0])), y0 = Math.min(...c.map(q => q[1])), x1 = Math.max(...c.map(q => q[0])), y1 = Math.max(...c.map(q => q[1]));
+    if (x1 - x0 < 3000 || y1 - y0 < 2500) return { err: "Māja par mazu (vismaz 3 × 2,5 m)." };
+    const dx = -x0, dy = -y0, sh = q => [+(q[0] + dx).toFixed(1), +(q[1] + dy).toFixed(1)];
+    if (dx) mapModel(N, "x", v => v + dx); if (dy) mapModel(N, "y", v => v + dy);
+    const shPts = a => (a || []).map(q => q.length > 2 ? [+(q[0] + dx).toFixed(1), +(q[1] + dy).toFixed(1), ...q.slice(2)] : sh(q));
+    if (N.porch) { const pc = N.porch; if (pc.poly) pc.poly = shPts(pc.poly); if (pc.stepPoly) pc.stepPoly = shPts(pc.stepPoly); if (pc.posts) pc.posts = shPts(pc.posts); if (pc.step) { pc.step[0] += dx; pc.step[2] += dx; pc.step[1] += dy; pc.step[3] += dy; } }
+    (N.terraces || []).forEach(t => { t.poly = shPts(t.poly); if (t.posts) t.posts = shPts(t.posts); });
+    (N.posts || []).forEach(q => { q.x = +(q.x + dx).toFixed(1); q.y = +(q.y + dy).toFixed(1); });
+    [N, N.loft].forEach(L => { if (L && L.stampAt) Object.keys(L.stampAt).forEach(k => { L.stampAt[k] = sh(L.stampAt[k]); }); });
+    (N.freeWalls || []).forEach(f => { f[0] = +(f[0] + dx).toFixed(1); f[1] = +(f[1] + dy).toFixed(1); });
+    (N.wallCuts || []).forEach(w => { const v = w[0] === "v"; w[1] = +(w[1] + (v ? dx : dy)).toFixed(1); w[2] = +(w[2] + (v ? dy : dx)).toFixed(1); w[3] = +(w[3] + (v ? dy : dx)).toFixed(1); });
+    c = c.map(sh);
+    const area = c.reduce((s, q, i) => s + q[0] * c[(i + 1) % c.length][1] - c[(i + 1) % c.length][0] * q[1], 0); if (area < 0) c.reverse();   // pulksteņrādītāja virzienā (kā pārējie modeļi)
+    N.W = +(x1 - x0).toFixed(1); N.D = +(y1 - y0).toFixed(1); N.poly = c;
+    const inner = insetPoly(c, T);   // telpas sākas no ārsienas iekšējās malas
+    [N, N.loft].forEach(L => { if (!L || !L.rooms) return; L.rooms.forEach(rm => { rm.r = clipRectsTo(rm.r, inner); });
+      const keepIdx = L.rooms.map((rm, i) => rm.r.length || rm.void ? i : -1).filter(i => i >= 0);
+      if (keepIdx.length !== L.rooms.length) { const map = {}; keepIdx.forEach((o, ni) => { map[o] = ni; }); ["stampAt", "stampScale"].forEach(k => { const o = L[k] || {}, r = {}; Object.keys(o).forEach(j => { if (map[j] != null) r[map[j]] = o[j]; }); L[k] = r; }); L.rooms = keepIdx.map(i => L.rooms[i]); }
+      const near = (x, y) => distPoly(c, x, y) <= T + 60 || inPolyPt(inner, x, y);
+      L.windows = (L.windows || []).filter(w => near(w.o === "h" ? w.x + w.len / 2 : w.x + T / 2, w.o === "h" ? w.y + T / 2 : w.y + w.len / 2));
+      L.doors = (L.doors || []).filter(d => near(d.o === "h" ? d.x + d.w / 2 : d.x + d.th / 2, d.o === "h" ? d.y + d.th / 2 : d.y + d.w / 2)); });
+    if (N.axes && N.axes.x && N.axes.x.length <= 2 && N.axes.y && N.axes.y.length <= 2) N.axes = { x: [[0, N.axes.x[0] ? N.axes.x[0][1] : "1"], [N.W, N.axes.x[1] ? N.axes.x[1][1] : "2"]], y: [[0, N.axes.y[0] ? N.axes.y[0][1] : "A"], [N.D, N.axes.y[1] ? N.axes.y[1][1] : "B"]] };
+    return N;
+  }
   function zoneAdd(N, R, redo) {
     const hasR = redo != null && N.rooms[redo], old = hasR ? N.rooms[redo].r : null;
     if (hasR) N.rooms[redo].r = [];
@@ -2266,7 +2315,7 @@
     const k = ek(bl), g = mk(o, "g", { class: "gh" }), pts = place.pts || [], q = zonePt(p, pts), all = pts.concat([q]);
     if (all.length > 1) mk(g, "polyline", { points: all.map(a => a.join(",")).join(" "), fill: pts.length > 1 ? "rgba(34,102,216,.12)" : "none", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
     pts.forEach(a => snapMark(g, a, true, k)); snapMark(g, q, false, k);
-    const l = pts[pts.length - 1]; label(g, q[0] + 3 / k, q[1] - 3 / k, l ? `${Math.round(Math.hypot(q[0] - l[0], q[1] - l[1]))} mm` + (pts.length > 2 ? "  · klikšķis pirmajā punktā noslēdz" : "") : "Zona: uzklikšķini pirmo stūri", k);
+    const l = pts[pts.length - 1]; label(g, q[0] + 3 / k, q[1] - 3 / k, l ? `${Math.round(Math.hypot(q[0] - l[0], q[1] - l[1]))} mm` + (pts.length > 2 ? "  · klikšķis pirmajā punktā noslēdz" : "") : (place.t === "hpoly" ? "Māja: uzklikšķini pirmo ārsienas stūri" : "Zona: uzklikšķini pirmo stūri"), k);
   }
   // [TRE] zonas (telpas) malu vilkšana: rokturi tikai malām pret atvērtu blakus zonu; blakus zona atdod vai paņem platību, sienas netiek kustinātas
   function zoneHandles() {
@@ -2640,6 +2689,12 @@
           const r = addPartitionAcross(N, vertical, c, v0, v1);
           if (r.err) { P.p0 = null; return { miss: r.err }; }
           return { N, sel: null };
+        }
+        if (P.t === "hpoly") {   // mājas kontūra no ārsienām: klikšķi stūros, klikšķis pirmajā punktā noslēdz
+          P.pts = P.pts || []; const pts = P.pts, q = zonePt(p, pts);
+          if (pts.length > 2 && Math.hypot(q[0] - pts[0][0], q[1] - pts[0][1]) < 300) { const c = pts.slice(); P.pts = []; const r = houseContour(N, c); if (r.err) return { miss: r.err }; return { N: r, sel: null }; }
+          if (pts.length && Math.hypot(q[0] - pts[pts.length - 1][0], q[1] - pts[pts.length - 1][1]) < 50) return { pending: "Uzklikšķini nākamo stūri." };
+          pts.push(q); return { pending: pts.length < 3 ? "Turpini likt ārsienu stūrus." : "Turpini vai uzklikšķini pirmajā punktā, lai noslēgtu māju." };
         }
         if (P.t === "zone") {   // [TRE] jauna zona: divi klikšķi; vieta tiek nogriezta no esošajām telpām, nosaukumu raksta lietotājs
           if (bl.lv !== "main") return { miss: "Zonas var likt 1. stāva plānā." };
