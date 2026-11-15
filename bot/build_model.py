@@ -47,7 +47,7 @@ def _ov_per_edge(cad):
     i = cad.index('function elevation(parent, v, side')
     j = cad.index('\nfunction ', i + 10)
     body = cad[i:j]
-    k = body.index('const eEdge = MN ? MN.eE : ROOF.eave - ROOF.ov * tan')
+    k = body.index('const eEdge = MN ? MN.eE : LP ? LP.eE : ROOF.eave - ROOF.ov * tan')
     head, rest = body[:k], body[k:]
     ins = ('const _OV = (window.AR && AR.projekts && AR.projekts.ov_side) || {}, _od = q => (_OV[q] != null && !isNaN(+_OV[q])) ? +_OV[q] : ROOF.ov;\n'
            '  const _LR = { south: ["west", "east"], north: ["east", "west"], east: ["south", "north"], west: ["north", "south"] }[side] || ["west", "east"];\n'
@@ -96,9 +96,9 @@ def _mm_extra(cad):
         ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
          'el("line", { x1: u + k * 50, y1: -(pzL + (pzR - pzL) * k * 50 / s) + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);'),
         # fasādes tonis tikai vienai pusei (krāsas spainis): projekts.fasade_side[side]
-        ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);',
-         '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span, -(gable || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);\n'
-         '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, el("clipPath", { id: rid }, g)); boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
+        ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);',
+         '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);\n'
+         '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, el("clipPath", { id: rid }, g)); boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
         # jumta pārkares tonis (projekts.parkare_hex): gala fasādes pārkare, vēja kaste, garās fasādes spāres gals
         ('      const BC = FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";\n',
          '      const PKH = mmParkHex(side), BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
@@ -242,8 +242,8 @@ def build(model_path, langs=None):
                  # klienta lapā grīdas apakšas atzīmi nerāda (uzbrauc ±0,000)
                  ('    if (fT) lvl(-fT, lv(-fT), 1);\n', ''),
                  # bez jumta pārkares nav ēnas zem dzegas
-                 ('  if (MN && (MN.role === "prof" || MN.par)) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else el(',
-                  '  if (MN && (MN.role === "prof" || MN.par)) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (ROOF.ov > 0 && !gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else if (ROOF.ov > 0) el('),
+                 ('  if (LP || (MN && (MN.role === "prof" || MN.par))) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else el(',
+                  '  if (LP || (MN && (MN.role === "prof" || MN.par))) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (ROOF.ov > 0 && !gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else if (ROOF.ov > 0) el('),
                  # notekcaurule garajā fasādē: taisns gals 300 mm virs zemes (izplūde pret skatītāju), bez līkuma
                  ('      el("rect", { x: u - 40, y: -(eEdge + thV - 240), width: 80, height: eEdge + thV - 240 + 150, fill: GUT, stroke: C.ink, "stroke-width": 9 }, g);\n      el("path", { d: `M ${u - 50} ${150} q 0 110 110 110 h 60 v -100 h -70 z`, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);',
                   '      el("rect", { x: u - 50, y: -(eEdge + thV - 240), width: 100, height: eEdge + thV - 240 + ROOF.plinth - 50, fill: GUT, stroke: C.ink, "stroke-width": 9 }, g);\n      el("line", { x1: u - 22, y1: -(eEdge + thV - 260), x2: u - 22, y2: ROOF.plinth - 70, stroke: "rgba(255,255,255,.22)", "stroke-width": 8 }, g);'),
@@ -282,7 +282,7 @@ def build(model_path, langs=None):
         ('width: 40, height: 1100, fill: "#b9bcbe" }, g);', 'width: 40, height: 1100, fill: "#b9bcbe", stroke: "#111", "stroke-width": 4 }, g);'),
         ('width: 160, height: 1800, fill: "url(#glass)" }, g);', 'width: 160, height: 1800, fill: "url(#glass)", stroke: "#111", "stroke-width": 5 }, g);'),
         # [MM] notekas katrā garajā pusē var noņemt (projekts.notekas = {north: false})
-        ('  const GUT = "#2f3438";\n  if (MN && MN.role !== "low") { /* tekne zemajā pusē; augstajā pusē tās nav, profilā zīmēta kopā ar jumtu */ } else if (!gable) {', '  const GUT = "#2f3438", NOT = s => !(window.AR && AR.projekts && AR.projekts.notekas && AR.projekts.notekas[s] === false);\n  const PIPE = u => side[0] + (side === "north" ? (u < span / 2 ? "e" : "w") : (u < span / 2 ? "w" : "e"));\n  if (MN && MN.role !== "low") { /* tekne zemajā pusē; augstajā pusē tās nav, profilā zīmēta kopā ar jumtu */ } else if (!gable && NOT(side)) {'),
+        ('  const GUT = "#2f3438";\n  if (LP || (MN && MN.role !== "low")) { /* tekne zemajā pusē; augstajā pusē tās nav, profilā zīmēta kopā ar jumtu */ } else if (!gable) {', '  const GUT = "#2f3438", NOT = s => !(window.AR && AR.projekts && AR.projekts.notekas && AR.projekts.notekas[s] === false);\n  const PIPE = u => side[0] + (side === "north" ? (u < span / 2 ? "e" : "w") : (u < span / 2 ? "w" : "e"));\n  if (LP || (MN && MN.role !== "low")) { /* tekne zemajā pusē; augstajā pusē tās nav, profilā zīmēta kopā ar jumtu */ } else if (!gable && NOT(side)) {'),
         ('  } else {\n    [-1, 1].forEach(sd => {\n      // half-round gutter', '  } else if (gable) {\n    [-1, 1].forEach(sd => {\n      if (!NOT(side === "west" ? (sd < 0 ? "north" : "south") : (sd < 0 ? "south" : "north"))) return;\n      // half-round gutter'),
         # [MM] katru noteku un katru notekcauruli var noņemt atsevišķi (projekts.notekas: north/south = noteka, nw/ne/sw/se = caurule stūrī)
         ('else if (!gable && NOT(side)) {\n    const gz = eEdge + thV - 120;\n    el("rect", { x: -ROOF.ov - 40, y: -gz, width: span + 2 * ROOF.ov + 80, height: 120, rx: 40, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);\n    el("line", { x1: -ROOF.ov - 25, y1: -gz + 18, x2: span + ROOF.ov + 25, y2: -gz + 18, stroke: "rgba(255,255,255,.28)", "stroke-width": 7 }, g);\n    [180, span - 180].forEach(u => {',
