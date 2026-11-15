@@ -142,9 +142,13 @@ def _mm_extra(cad):
          '        const tg = el("g", { transform: "rotate(-90)" }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));'),
         # [MM] fascijas dēļa tonis atsevišķi (projekts.fascia_side / fascia_hex), pēc noklusējuma tāds pats kā jumta pārkare
         ('P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? "#F2F0EA" : "#4a5055"',
-         'P(span / 2, ridgeTop - vt)].join(" "), fill: mmFasHex(side, FAS ? "#F2F0EA" : "#4a5055")'),
+         'P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? mmFasHex(side, "#F2F0EA") : "#4a5055"'),   # metāla vējmala vienmēr jumta tonī; tonis maināms tikai baltajam fascijas dēlim (sarkanais)
+        # [MM] gala pārkares dēlis (spāres gals ar tekstūru) = fascijas dēlis: atsevišķs tonis, noklusēti kā pārkare; augstumu izdod redaktoram
+        ('const fill = (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";\n',
+         'const FSH = mmFasHex(side, null), fill = FSH || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54"; ((window.__FDF = window.__FDF || {})[side] = (window.__FDF || {})[side] || {}).govT = tPV;\n'),
+        ('const tg = el("g", { transform: `rotate(${ang})` }, el("g", { "clip-path": `url(#${cid})` }, g));',
+         'const tg = el("g", { transform: `rotate(${ang})` }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, FSH ? { filter: `url(#${mmTint(g, FSH)})` } : {}), g));'),
         ('height: thV - 70, fill: "#F2F0EA"', 'height: thV - 70, fill: mmFasHex(side, "#F2F0EA")'),
-        ('height: vt, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);', 'height: vt, fill: mmFasHex(side, "#4a5055"), stroke: C.ink, "stroke-width": 12 }, g);'),
         # [MM] loga rāmja un aplodu tonis atsevišķam logam (model.windows[i].col / .cascol), citādi viens visiem logiem
         ('const WINC = () => { const w = (window.AR && window.AR.win) || {}, out = w.colorOut || w.color || "RAL 7016", inn = w.colorIn || out; return { out, inn, cas: w.casingColor || out }; };',
          'const WINC = () => { const w = (window.AR && window.AR.win) || {}, o = window.__WO || {}, g = w.colorOut || w.color || "RAL 7016", out = o.out || g, inn = w.colorIn || out; return { out, inn, cas: o.cas || w.casingColor || g }; };'),

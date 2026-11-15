@@ -467,7 +467,8 @@
     if (sel.k === "fboard") {   // izvēlēts fascijas dēlis: kontūra pa jumta malu
       const bl = blocks().find(b => b.type === "elev" && b.side === sel.side); if (!bl) return;
       const k = ek(bl), F = (window.__FDF || {})[sel.side] || {}, o = overlay(bl.g), pz = F.pz || [0, 0, 0, 0], sp = span(sel.side), eT = F.eT != null ? F.eT : (F.eEdge || 2400) + 300, vt = (M.projekts || {}).fascia ? 220 : 100;
-      const pts = pz[0] ? [[-pz[1], -(eT - vt)], [-pz[1], -eT], [sp / 2, -(F.ridge != null ? F.ridge : eT + (sp / 2 + pz[1]) * pz[3])], [sp + pz[2], -eT], [sp + pz[2], -(eT - vt)], [sp / 2, -((F.ridge != null ? F.ridge : eT + (sp / 2 + pz[1]) * pz[3]) - vt)]] : [[-pz[1], -eT], [sp + pz[2], -eT], [sp + pz[2], -(eT - vt)], [-pz[1], -(eT - vt)]];
+      const gT = F.govT, rg = F.ridge != null ? F.ridge : eT + (sp / 2 + pz[1]) * pz[3];
+      const pts = pz[0] && gT && !(M.projekts || {}).fascia ? [[-pz[1], -(eT - 100)], [-pz[1], -(eT - 100 - gT)], [sp / 2, -(rg - 100 - gT)], [sp + pz[2], -(eT - 100 - gT)], [sp + pz[2], -(eT - 100)], [sp / 2, -(rg - 100)]] : pz[0] ? [[-pz[1], -(eT - vt)], [-pz[1], -eT], [sp / 2, -(F.ridge != null ? F.ridge : eT + (sp / 2 + pz[1]) * pz[3])], [sp + pz[2], -eT], [sp + pz[2], -(eT - vt)], [sp / 2, -((F.ridge != null ? F.ridge : eT + (sp / 2 + pz[1]) * pz[3]) - vt)]] : [[-pz[1], -eT], [sp + pz[2], -eT], [sp + pz[2], -(eT - vt)], [-pz[1], -(eT - vt)]];
       mk(o, "polygon", { points: pts.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.22)", stroke: "#2266d8", "stroke-width": 1.4 / k });
       return;
     }
@@ -1592,6 +1593,15 @@
       if (sx && bg && !place) { drag = { secd: true, i: +sx.getAttribute("data-sec"), o: sx.getAttribute("data-so"), g: bg, x0: e.clientX, y0: e.clientY, at: null, moved: false };
         document.body.style.cursor = drag.o === "v" ? "ew-resize" : "ns-resize"; post({ t: "hint", text: "Bīdi griezuma līniju; griezums pārzīmējas visās lapās." }); return true; } }
     const h = hit(e.clientX, e.clientY); hover(null);
+    if (!h && !place) {   // telpu eksplikācijas tabulu var pabīdīt pa lapu (projekts.tblOff); Alt+klikšķis atiestata
+      const tb = [...document.querySelectorAll("svg.a3 g[data-tbl]")].find(g => { const r = g.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });   // pēc ģeometrijas (svg elementiem hit-test nav)
+      if (tb) {
+        const key = MP() + tb.getAttribute("data-tbl"), sv = tb.ownerSVGElement || sheet();
+        if (e.altKey) { const N = clone(M); if (N.projekts && N.projekts.tblOff) { delete N.projekts.tblOff[key]; post({ t: "edit", model: N, sel }); } return true; }
+        const tm = /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/.exec(tb.getAttribute("transform") || ""), t0 = tm && { tx: +tm[1], ty: +tm[2], k: 1 }; if (t0) { drag = { tbl: true, g: tb, key, t0, mm: (sv.viewBox.baseVal.width || 297) / sv.getBoundingClientRect().width, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, off0: (((M.projekts || {}).tblOff || {})[key]) || [0, 0], moved: false };
+          document.body.style.cursor = "move"; post({ t: "hint", text: "Bīdi tabulu pa lapu. Alt+klikšķis atiestata sākotnējo vietu." }); return true; }
+      }
+    }
     if (!h) {
       const wt = !place && bucketTarget(e.clientX, e.clientY);
       if (wt && wt.k === "fas") {   // klikšķis uz fasādes sienas: atlasa tieši to sienu (plakni), tonis panelī
@@ -1830,6 +1840,12 @@
       }
       return;
     }
+    if (drag && drag.tbl) {
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) > 3) drag.moved = true;
+      drag.dx = Math.round((e.clientX - drag.x0) * drag.mm * 2) / 2; drag.dy = Math.round((e.clientY - drag.y0) * drag.mm * 2) / 2;
+      if (drag.moved) drag.g.setAttribute("transform", `translate(${drag.t0.tx + drag.dx} ${drag.t0.ty + drag.dy})` + (drag.t0.k !== 1 ? ` scale(${drag.t0.k})` : ""));
+      return;
+    }
     if (drag && drag.fblk) {
       const r = (drag.h.bl.g.ownerSVGElement || sheet()).getBoundingClientRect(); drag.ds = Math.round((e.clientX - drag.x0) / r.width * ((drag.h.bl.g.ownerSVGElement || sheet()).viewBox.baseVal.width || 297) * 2) / 2;
       if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true;
@@ -1901,6 +1917,13 @@
       if (!d.moved) return;
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.lvlOff = Object.assign({}, N.projekts.lvlOff);
       const off = d.off0 - d.dx; if (off) N.projekts.lvlOff[MP() + d.h.bl.side] = off; else delete N.projekts.lvlOff[MP() + d.h.bl.side];
+      post({ t: "edit", model: N, sel }); return;
+    }
+    if (drag.tbl) {
+      const d = drag; drag = null; document.body.style.cursor = "";
+      if (!d.moved) return;
+      const N = clone(M); N.projekts = N.projekts || {}; N.projekts.tblOff = Object.assign({}, N.projekts.tblOff);
+      N.projekts.tblOff[d.key] = [d.off0[0] + d.dx, d.off0[1] + d.dy];
       post({ t: "edit", model: N, sel }); return;
     }
     if (drag.fblk) {
@@ -2771,12 +2794,13 @@
       if (pzv[0]) {   // gala fasāde: jumta līnija pa slīpumu
         const top = (F.ridge != null ? F.ridge : eT + (sp / 2 + ovL) * pzv[3]) - Math.abs(u - sp / 2) * pzv[3];
         if (z > top + 60) return null;
-        if (z > top - ((M.projekts || {}).fascia ? 245 : 125) && u >= 0 && u <= sp) return { k: "fb", side: s };   // fascijas dēlis (vējmala) pa jumta malu
+        if (F.govT) { if (u >= -ovL && u <= sp + ovR && z <= top - 100 && z >= top - 100 - F.govT) return { k: "fb", side: s }; }   // fascijas dēlis = tekstūrētais dēlis gar spārēm zem metāla vējmalas
+        else if ((M.projekts || {}).fascia && z > top - 245 && u >= 0 && u <= sp) return { k: "fb", side: s };   // sarkanā mājas baltā fascija
         if (z > top - 420 || u < 0 || u > sp) return z >= eE - 60 ? { k: "ov", side: s } : null;
         return { k: "fas", side: s, u, z };
       }
       if (z > eT + 20) return { k: "roof", side: s };
-      if (z >= eT - ((M.projekts || {}).fascia ? 245 : 125) && u >= 0 && u <= sp) return { k: "fb", side: s };   // fascijas dēlis pie jumta malas garajā fasādē
+      if ((M.projekts || {}).fascia && z >= eT - 245 && u >= 0 && u <= sp) return { k: "fb", side: s };   // sarkanā mājas baltā fascija garajā fasādē (citiem metāla mala = jumta tonī)
       if (z >= eE - 20 || ((u < 0 || u > sp) && z >= eE - 320)) return { k: "ov", side: s };
       if (u < 0 || u > sp) return null;
       return { k: "fas", side: s, u, z };

@@ -22,8 +22,10 @@ const mmRooms = v => v ? v.rooms.filter(rm => !rm.void) : [];
 const mmNum = (x, d = 2) => x.toFixed(d).replace(".", ",");
 
 // room table: dark header, numbered rows, total
+let MM_TBLN = 0;
 function mmTable(svg, x, y, w, title, sub, rooms, L, foot, outs) {
-  const g = el("g", { "data-block": "schedule", transform: `translate(${x} ${y})` }, svg), RH = 5;
+  const ti = MM_TBLN++, TO = ((((window.AR && AR.projekts) || {}).tblOff) || {})[(window.MODEL_SHEET ? "" : "ar:") + ti] || [0, 0];   // eksplikācijas tabulu var pabīdīt (projekts.tblOff, lapas mm); atslēga = tabulas kārtas nr.
+  const g = el("g", { "data-block": "schedule", "data-tbl": ti, transform: `translate(${x + TO[0]} ${y + TO[1]})` }, svg), RH = 5;
   el("rect", { width: w, height: 6.5, fill: MM_DARK }, g);
   T_(g, 2, 4.4, title, { fs: 2.4, fw: 700, ls: .45, fill: "#fff" });
   T_(g, w - 2, 4.4, sub, { fs: 2.1, a: "end", fill: "#d9d4ca" });
@@ -161,16 +163,26 @@ function mmTitleBlock(svg, v, lf, L) {
 //                 merogs: "auto" | 50 | 100 | 150 ..., viz: { src: dataURL, w, h } }
 // projekts.titul = rakstlaukuma slēdži: { brand, phase, model, key, adrese, piezimes, watermark, info, rev, cells, footer } (false = izslēgts)
 const MM_MER = [50, 75, 100, 150, 200, 250, 300, 400, 500];
+// [MM] automātiskais RAL kalkulators: brīvai krāsai (hex) atrod tuvāko RAL Classic toni (CIE Lab attālums); rezultāts ir tuvinājums, galīgo kodu pārbauda pēc RAL vēdekļa
+const MM_RALT = "1000 BEBD7F,1001 C2B078,1002 C6A664,1003 E5BE01,1004 CDA434,1005 A98307,1006 E4A010,1007 DC9D00,1011 8A6642,1012 C7B446,1013 EAE6CA,1014 E1CC4F,1015 E6D690,1016 EDFF21,1017 F5D033,1018 F8F32B,1019 9E9764,1020 999950,1021 F3DA0B,1023 FAD201,1024 AEA04B,1026 FFFF00,1027 9D9101,1028 F4A900,1032 D6AE01,1033 F3A505,1034 EFA94A,1035 6A5D4D,1036 705335,1037 F39F18,2000 ED760E,2001 C93C20,2002 CB2821,2003 FF7514,2004 F44611,2008 F75E25,2009 F54021,2010 D84B20,2011 EC7C26,2012 E55137,3000 AF2B1E,3002 A2231D,3003 9B111E,3005 5E2129,3007 412227,3009 642424,3011 781F19,3012 C1876B,3013 A12312,3014 D36E70,3015 EA899A,3016 B32821,3017 E63244,3018 D53032,3020 CC0605,3022 D95030,3027 C51D34,3031 B32428,4001 6D3F5B,4002 922B3E,4003 DE4C8A,4004 641C34,4005 6C4675,4006 A03472,4007 4A192C,4008 924E7D,4009 A18594,4010 CF3476,5000 354D73,5001 1F3438,5002 20214F,5003 1D1E33,5004 18171C,5005 1E2460,5007 3E5F8A,5008 26252D,5009 025669,5010 0E294B,5011 231A24,5012 3B83BD,5013 1E213D,5014 606E8C,5015 2271B3,5017 063971,5018 3F888F,5019 1B5583,5020 1D334A,5021 256D7B,5022 252850,5023 49678D,5024 5D9B9B,6000 316650,6001 287233,6002 2D572C,6003 424632,6004 1F3A3D,6005 2F4538,6006 3E3B32,6007 343B29,6008 39352A,6009 31372B,6010 35682D,6011 587246,6012 343E40,6013 6C7156,6014 47402E,6015 3B3C36,6016 1E5945,6017 4C9141,6018 57A639,6019 BDECB6,6020 2E3A23,6021 89AC76,6022 25221B,6024 308446,6025 3D642D,6026 015D52,6027 84C3BE,6028 2C5545,6029 20603D,6032 317F43,6033 497E76,6034 7FB5B5,7000 78858B,7001 8A9597,7002 7E7B52,7003 6C7059,7004 969992,7005 646B63,7006 6D6552,7008 6A5F31,7009 4D5645,7010 4C514A,7011 434B4D,7012 4E5754,7013 464531,7015 434750,7016 293133,7021 23282B,7022 332F2C,7023 686C5E,7024 474A51,7026 2F353B,7030 8B8C7A,7031 474B4E,7032 B8B799,7033 7D8471,7034 8F8B66,7035 D7D7D7,7036 7F7679,7037 7D7F7D,7038 B5B8B1,7039 6C6960,7040 9DA1AA,7042 8D948D,7043 4E5452,7044 CAC4B0,7045 909090,7046 82898F,7047 D0D0D0,7048 898176,8000 826C34,8001 955F20,8002 6C3B2A,8003 734222,8004 8E402A,8007 59351F,8008 6F4F28,8011 5B3A29,8012 592321,8014 382C1E,8015 633A34,8016 4C2F27,8017 45322E,8019 403A3A,8022 212121,8023 A65E2E,8024 79553D,8025 755C48,8028 4E3B31,9001 FDF4E3,9002 E7EBDA,9003 F4F4F4,9004 282828,9005 0A0A0A,9006 A5A5A5,9007 8F8F8F,9010 FFFFFF,9011 1C1C1C,9016 F6F6F6,9017 1E1E1E,9018 D7D7D7,9022 9C9C9C,9023 828282".split(",").map(t => { const q = t.split(" "); return ["RAL " + q[0], q[1]]; });
+const mmLab = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => (v > .04045 ? Math.pow((v + .055) / 1.055, 2.4) : v / 12.92)), x = (c[0] * .4124 + c[1] * .3576 + c[2] * .1805) / .95047, y = c[0] * .2126 + c[1] * .7152 + c[2] * .0722, z = (c[0] * .0193 + c[1] * .1192 + c[2] * .9505) / 1.08883, f = t => (t > .008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116); return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))]; };
+function mmNearRal(hex) {
+  if (!/^#[0-9a-f]{6}$/i.test(hex || "")) return null;
+  const a = mmLab(hex); let best = null, bd = 1e9;
+  MM_RALT.forEach(q => { const b = q[2] || (q[2] = mmLab("#" + q[1])), d = (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2; if (d < bd) { bd = d; best = q[0]; } });
+  return best;
+}
+window.mmNearRal = mmNearRal;
+const mmRalTxt = (hex, ral) => ral || (hex.toUpperCase() + (mmNearRal(hex) ? "  ≈ " + mmNearRal(hex) : ""));   // RAL kods, vai hex ar tuvāko RAL
 function mmMatTones(L, PR) {   // [MM] redaktora spaiņa toņi: katrai atsevišķi nokrāsotai daļai sava leģendas rinda ar RAL kodu
   const out = [];
   const SN = L === "en" ? { south: "south", north: "north", east: "east", west: "west" } : { south: "dienvidu", north: "ziemeļu", east: "austrumu", west: "rietumu" }, FS = PR.fasade_side || {};
-  ["south", "north", "east", "west"].forEach(sd => { const q = FS[sd]; if (q && q.hex) out.push([q.hex, L === "en" ? `Facade, ${SN[sd]} wall` : `Fasāde, ${SN[sd]} siena`, q.ral || q.hex.toUpperCase()]); });
-  const en = L === "en", M2 = u => (Math.round(u / 10) / 100).toFixed(2).replace(".", en ? "." : ",") + " m";   // atsevišķi nokrāsotas fasādes sienas ar RAL kodu
-  ["south", "north", "east", "west"].forEach(sd => (((PR.fasade_wall || {})[sd]) || []).slice().sort((p, q) => p.u0 - q.u0).forEach(q => { if (q.hex) out.push([q.hex, en ? `Facade, ${SN[sd]} wall (${M2(q.u1 - q.u0)})` : `Fasāde, ${SN[sd]} fasādes siena (${M2(q.u1 - q.u0)})`, q.ral || q.hex.toUpperCase()]); }));
-  if (PR.parkare_hex) out.push([PR.parkare_hex, en ? "Roof overhang" : "Jumta pārkare", PR.parkare_ral || PR.parkare_hex.toUpperCase()]);
-  ["south", "north", "east", "west"].forEach(sd => { const q = (PR.parkare_side || {})[sd]; if (q) out.push([q, en ? `Roof overhang, ${SN[sd]} side` : `Jumta pārkare, ${SN[sd]} puse`, ((PR.parkare_side_ral || {})[sd]) || q.toUpperCase()]); });
-  if (PR.fascia_hex) out.push([PR.fascia_hex, en ? "Fascia board" : "Fascijas dēlis", PR.fascia_ral || PR.fascia_hex.toUpperCase()]);
-  ["south", "north", "east", "west"].forEach(sd => { const q = (PR.fascia_side || {})[sd]; if (q) out.push([q, en ? `Fascia board, ${SN[sd]} side` : `Fascijas dēlis, ${SN[sd]} puse`, ((PR.fascia_side_ral || {})[sd]) || q.toUpperCase()]); });
+  const en = L === "en", seen = new Set(), addF = q => { if (!q || !q.hex) return; const key = q.hex.toLowerCase() + "|" + (q.ral || ""); if (seen.has(key)) return; seen.add(key); out.push([q.hex, en ? "Facade, additional tone" : "Fasāde, papildu tonis", mmRalTxt(q.hex, q.ral)]); };   // atsevišķi nokrāsotās fasādes daļas: viena rinda katram tonim (bez sienu nosaukumiem un garumiem)
+  ["south", "north", "east", "west"].forEach(sd => { addF(FS[sd]); (((PR.fasade_wall || {})[sd]) || []).forEach(addF); });
+  if (PR.parkare_hex) out.push([PR.parkare_hex, en ? "Roof overhang" : "Jumta pārkare", mmRalTxt(PR.parkare_hex, PR.parkare_ral)]);
+  ["south", "north", "east", "west"].forEach(sd => { const q = (PR.parkare_side || {})[sd]; if (q) out.push([q, en ? `Roof overhang, ${SN[sd]} side` : `Jumta pārkare, ${SN[sd]} puse`, ((PR.parkare_side_ral || {})[sd]) || mmRalTxt(q)]); });
+  if (PR.fascia_hex) out.push([PR.fascia_hex, en ? "Fascia board" : "Fascijas dēlis", mmRalTxt(PR.fascia_hex, PR.fascia_ral)]);
+  ["south", "north", "east", "west"].forEach(sd => { const q = (PR.fascia_side || {})[sd]; if (q) out.push([q, en ? `Fascia board, ${SN[sd]} side` : `Fascijas dēlis, ${SN[sd]} puse`, ((PR.fascia_side_ral || {})[sd]) || mmRalTxt(q)]); });
   return out;
 }
 function mmMatList(L) {   // materiālu leģenda (tā pati kā klasiskajā lapā)
@@ -345,6 +357,7 @@ function mmCompose(v, lf, L, K) {
 }
 
 function modelSheet(v) {
+  MM_TBLN = 0;
   const L = window.MM_LANG || "lv", tx = MM_TXT[L];
   const lf = V.find(x => x.id === "A" && x.rev === v.rev + 1);
   { const K = (window.AR && AR.projekts && AR.projekts.kompozicija); if (K && K.on !== false) return mmCompose(v, lf, L, K); }   // automātiskā kompozīcija; bez tās klasiskais izkārtojums
@@ -360,7 +373,8 @@ function modelSheet(v) {
   // 1) ground floor: furniture, inner and outer dimensions, axes close to the outer chain; client mode = no element marks
   const PY = 41;
   cadPlan(el("g", { "data-block": "plan", transform: `translate(${PX} ${PY}) scale(${k})` }, svg), v, { furniture: true, axes: true, levels: true, tag: "-a3", tags: false, axOff: 1650 });
-  let y = PY + d + 29;
+  const planBot = (g, y0) => { try { const hid = svg.isConnected; if (!hid) { svg.style.cssText = "position:absolute;visibility:hidden"; document.body.appendChild(svg); } const b = g.getBBox(); if (!hid) svg.remove(); return b && b.height ? y0 + (b.y + b.height) * k : 0; } catch (e) { return 0; } };   // plāna zīmējuma faktiskā apakšmala lapā (mm): virsraksts nedrīkst iet pāri asu burbuļiem un mēru ķēdēm
+  let y = Math.max(PY + d + 29, planBot(svg.querySelector('g[data-block="plan"]'), PY) + 8);
   sheetHeading(svg, 26, y, 215, tx.plan);
   mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly), [].concat(v.porch ? [{ name: v.porch.name || (L === "en" ? "Porch" : "Lievenis"), poly: v.porch.poly }] : [], (v.terraces || []).filter(t => !t.up)));
 
@@ -369,7 +383,7 @@ function modelSheet(v) {
     const LY = y + 27;
     cadPlan(el("g", { "data-block": "loft", transform: `translate(${PX} ${LY}) scale(${k})` }, svg), lf, { furniture: true, axes: true, levels: true, tag: "-loft", tags: false, axOff: 1650 });
     mmTable(svg, TX, LY - 8, TW, tx.expl, tx.f2, mmRooms(lf), L);
-    y = LY + d + 27;
+    y = Math.max(LY + d + 27, planBot(svg.querySelector('g[data-block="loft"]'), LY) + 8);
     sheetHeading(svg, 26, y, 215, tx.loft);
   }
 

@@ -9,7 +9,7 @@ const T = require('./lib'); const path = require('path');
   await page.waitForTimeout(150);
   const fr = await T.live(page);
   const F = await fr.evaluate(() => window.__FDF.west), sp = await fr.evaluate(M => M.D, await T.model(page)), u = sp / 2 - 1000;
-  await T.click(page, 'elev-west', u, -(F.ridge - 1000 * Math.tan(30 * Math.PI / 180) - 50)); await T.ready(page);   // gala fasādes jumta malas josla (fascijas dēlis)
+  await T.click(page, 'elev-west', u, -(F.ridge - 1000 * Math.tan(30 * Math.PI / 180) - 100 - (F.govT || 0) / 2)); await T.ready(page);   // gala fasādes jumta malas josla (fascijas dēlis)
   let m = await T.model(page), P = m.projekts;
   T.ok(P.fascia_side && P.fascia_side.west && !P.fascia_side.east && !P.parkare_side, 'spainis krāso tikai rietumu fascijas dēli, nevis pārkari', { f: P.fascia_side, p: P.parkare_side });
   T.ok((P.fascia_side_ral || {}).west === 'RAL 9016', 'fascijas RAL kods saglabāts', P.fascia_side_ral);
@@ -17,7 +17,7 @@ const T = require('./lib'); const path = require('path');
   T.ok(/Fascijas dēlis, rietumu puse/.test(txt) && /RAL 9016/.test(txt), 'lapas materiālu sarakstā ir fascijas dēlis ar RAL kodu', (txt.match(/MATERI.{0,300}/) || [txt.slice(0, 200)])[0]);
   // parasts klikšķis (bez spaiņa) uz fascijas dēļa atlasa tā kontūru un panelī ļauj mainīt toni tikai šajā fasādē
   await page.keyboard.press('Escape'); await page.keyboard.press('a');
-  await T.click(page, 'elev-west', u, -(F.ridge - 1000 * Math.tan(30 * Math.PI / 180) - 50)); await T.ready(page);
+  await T.click(page, 'elev-west', u, -(F.ridge - 1000 * Math.tan(30 * Math.PI / 180) - 100 - (F.govT || 0) / 2)); await T.ready(page);
   const sl = await T.sel(page); T.ok(sl && sl.k === 'fboard' && sl.side === 'west', 'klikšķis uz fascijas dēļa to atlasa', sl);
   T.ok(/Fascijas dēlis/.test(await page.textContent('#panel')), 'panelī "Fascijas dēlis"');
   await page.evaluate(() => { const s = document.querySelector('#panel select'); s.value = 'RAL 7016'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await T.ready(page);
