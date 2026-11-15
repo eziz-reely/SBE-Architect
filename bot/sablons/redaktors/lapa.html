@@ -661,6 +661,7 @@ details.tr[data-pane="sel"] > .trb { background: var(--field); }
             <p class="pcap">Mērogs</p><select id="kmSc"></select>
             <p class="pcap">Vizualizācija (PNG, JPG)</p>
             <div class="seg" id="kmVz"><button type="button" id="kmVzAdd">Pievienot…</button><button type="button" id="kmVzDel">Noņemt</button></div><input id="kmFile" type="file" accept="image/png,image/jpeg" hidden>
+            <p class="pcap">Rakstlaukuma stils</p><div class="seg seg2" id="kmSt" role="radiogroup" aria-label="Rakstlaukuma stils"><button type="button" data-s="mm" role="radio">MM Homes</button><button type="button" data-s="neitrals" role="radio">Neitrāls (bez logo)</button></div>
             <p class="pcap">Rakstlaukumā rāda</p><div id="kmTit" class="chk"></div>
             <p class="pnote">Elementus izkārto automātiski pēc izvēlētā mēroga ("Auto" ņem lielāko, kas ietilpst). Vizualizācija ieņem lielāko brīvo vietu.</p>
           </div>
@@ -2808,6 +2809,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     sc.onchange = () => kmSet(n => { n.projekts.kompozicija.merogs = sc.value === "auto" ? "auto" : +sc.value; });
     $("kmVzDel").disabled = !(K.viz && K.viz.src);
     const T = P.titul || {}, tt = $("kmTit"); tt.innerHTML = "";
+    document.querySelectorAll("#kmSt button").forEach(b => b.setAttribute("aria-checked", String(b.dataset.s === (T.stils === "neitrals" ? "neitrals" : "mm"))));
     KM_TIT.forEach(([k, t]) => { const lb = document.createElement("label"), cb = document.createElement("input"), sp = document.createElement("span"); cb.type = "checkbox"; cb.checked = T[k] !== false; sp.textContent = t; if (!cb.checked) lb.className = "off";
       cb.onchange = () => kmSet(n => { n.projekts.titul = n.projekts.titul || {}; if (cb.checked) delete n.projekts.titul[k]; else n.projekts.titul[k] = false; if (!Object.keys(n.projekts.titul).length) delete n.projekts.titul; });
       lb.append(cb, sp); tt.append(lb); });
@@ -2815,6 +2817,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function kmSet(fn) { const n = clone(model); n.projekts = n.projekts || {}; if (!n.projekts.kompozicija) n.projekts.kompozicija = { orient: "p", elementi: ["plan", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "expl", "mat"], merogs: "auto" }; fn(n); view = null; commit(n); syncKm(); }
   $("kmOn").onchange = () => { if ($("kmOn").checked) kmSet(n => { n.projekts.kompozicija.on = true; }); else { const n = clone(model); n.projekts = n.projekts || {}; if (n.projekts.kompozicija) n.projekts.kompozicija.on = false; view = null; commit(n); syncKm(); } };
   document.querySelectorAll("#kmOr button").forEach(b => b.onclick = () => kmSet(n => { n.projekts.kompozicija.orient = b.dataset.o; }));
+  document.querySelectorAll("#kmSt button").forEach(b => b.onclick = () => kmSet(n => { n.projekts.titul = n.projekts.titul || {}; if (b.dataset.s === "neitrals") n.projekts.titul.stils = "neitrals"; else delete n.projekts.titul.stils; if (!Object.keys(n.projekts.titul).length) delete n.projekts.titul; }));
   $("kmVzAdd").onclick = () => $("kmFile").click();
   $("kmVzDel").onclick = () => kmSet(n => { delete n.projekts.kompozicija.viz; n.projekts.kompozicija.elementi = (n.projekts.kompozicija.elementi || []).filter(x => x !== "viz"); });
   $("kmFile").onchange = () => { const f = $("kmFile").files[0]; if (!f) return; const rd = new FileReader(); rd.onload = () => { const im = new Image(); im.onload = () => { kmSet(n => { const K = n.projekts.kompozicija; K.on = true; K.viz = { src: rd.result, w: im.naturalWidth, h: im.naturalHeight }; if (!(K.elementi || []).includes("viz")) K.elementi = (K.elementi || []).concat("viz"); }); }; im.src = rd.result; }; rd.readAsDataURL(f); $("kmFile").value = ""; };

@@ -211,18 +211,18 @@ function mmLayout(v, lf, L, K, area, gap) {
 // rakstlaukuma pārplūstošā izkārtojuma versija: slēdži (projekts.titul), nekad ārpus lauka
 function mmTitleFlow(svg, v, lf, L, R) {
   const tx = MM_TXT[L], P = (window.AR && window.AR.projekts) || {}, TT = P.titul || {}, on = k => TT[k] !== false;
-  const [X, Y, W, H] = R, cx = X + W / 2, wide = W >= 55;
+  const [X, Y, W, H] = R, cx = X + W / 2, wide = W >= 55, NEU = TT.stils === "neitrals", DK = NEU ? "#2f3338" : MM_DARK, AC = NEU ? "#8b929b" : MM_ACC, BG = NEU ? "#d5d8dc" : MM_BEIGE, CO = (P.uznemums || "").toString();   // neitrāls stils: bez logo un MM zīmola
   const g = el("g", { "data-block": "title" }, svg), cid = "ttl-" + Math.random().toString(36).slice(2, 7);
   el("rect", { x: X, y: Y, width: W, height: H }, el("clipPath", { id: cid }, g));
   const gg = el("g", { "clip-path": `url(#${cid})` }, g);
-  const lab = (y, t) => { T_(gg, X + 3, y, t, { fs: 1.8, fw: 700, ls: .35, fill: MM_ACC }); el("line", { x1: X + 3, y1: y + 1.2, x2: X + W - 3, y2: y + 1.2, stroke: "#d6d0c4", "stroke-width": .2 }, gg); };
+  const lab = (y, t) => { T_(gg, X + 3, y, t, { fs: 1.8, fw: 700, ls: .35, fill: AC }); el("line", { x1: X + 3, y1: y + 1.2, x2: X + W - 3, y2: y + 1.2, stroke: "#d6d0c4", "stroke-width": .2 }, gg); };
   const OWN = P.logo && P.logo !== "none" ? P.logo : null, NOLOGO = P.logo === "none", NONAME = P.modela_nosaukums === "";
   const nChar = (fs, w) => Math.max(6, Math.floor(w / (fs * .5)));
   // apakšējā daļa (no apakšas uz augšu): kājene, šūnas, revīzijas, informācija
   let by = Y + H;
-  if (on("footer")) { by -= 20; el("rect", { x: X, y: by, width: W, height: 20, fill: MM_DARK }, gg);
-    if (OWN) el("image", { href: OWN, x: X + W - 15, y: by + 3, width: 12, height: 12, preserveAspectRatio: "xMidYMid meet" }, gg); else if (window.MM_LOGO && !NOLOGO) el("image", { href: window.MM_LOGO, x: X + W - 13, y: by + 4, width: 10, height: 10 * 433 / 486 }, gg);
-    T_(gg, X + 3, by + 7, "REV. " + (P.revizija || "00"), { fs: 2.4, fw: 700, fill: MM_ACC, ls: .4 }); T_(gg, X + 3, by + 12, P.datums || "", { fs: 2, fill: "#fff" }); T_(gg, X + 3, by + 17, "MM Homes", { fs: 2, fw: 600, fill: MM_BEIGE, ls: .3 }); }
+  if (on("footer")) { by -= 20; el("rect", { x: X, y: by, width: W, height: 20, fill: DK }, gg);
+    if (OWN) el("image", { href: OWN, x: X + W - 15, y: by + 3, width: 12, height: 12, preserveAspectRatio: "xMidYMid meet" }, gg); else if (window.MM_LOGO && !NOLOGO && !NEU) el("image", { href: window.MM_LOGO, x: X + W - 13, y: by + 4, width: 10, height: 10 * 433 / 486 }, gg);
+    T_(gg, X + 3, by + 7, "REV. " + (P.revizija || "00"), { fs: 2.4, fw: 700, fill: AC, ls: .4 }); T_(gg, X + 3, by + 12, P.datums || "", { fs: 2, fill: "#fff" }); T_(gg, X + 3, by + 17, NEU ? CO.slice(0, nChar(2, W - 6)) : "MM Homes", { fs: 2, fw: 600, fill: BG, ls: .3 }); }
   if (on("cells")) { by -= 13; el("line", { x1: X, y1: by, x2: X + W, y2: by, stroke: C.ink, "stroke-width": .35 }, gg);
     [[tx.scale, window.MM_SCALE_TXT || ("1:" + (window.MM_SCALE || 100))], [tx.fmt, "A3"], [tx.sheet, P.lapa || "1/1"]].forEach(([k, val], i) => { const x = X + i * W / 3;
       if (i) el("line", { x1: x, y1: by, x2: x, y2: by + 13, stroke: C.ink, "stroke-width": .2 }, gg);
@@ -238,30 +238,37 @@ function mmTitleFlow(svg, v, lf, L, R) {
   let y = Y;
   if (on("brand")) {
     const bh = Math.max(26, Math.min(58, (bottom - Y) * .2));
-    el("rect", { x: X, y, width: W, height: bh, fill: MM_DARK }, gg);
-    if (OWN) el("image", { href: OWN, x: X + 4, y: y + 3, width: W - 8, height: bh - 6, preserveAspectRatio: "xMidYMid meet" }, gg);
-    else if (window.MM_LOGO && !NOLOGO) { const iw = Math.min(W - 6, (bh - 14) * 486 / 433); el("image", { href: window.MM_LOGO, x: cx - iw / 2, y: y + 1, width: iw, height: iw * 433 / 486, preserveAspectRatio: "xMidYMid slice" }, gg);
-      T_(gg, cx, y + bh - 9, "HOMES", { fs: 3.6, fw: 600, a: "middle", fill: MM_BEIGE, ls: 1.8 }); T_(gg, cx, y + bh - 3.5, tx.tag, { fs: 1.6, a: "middle", fill: "#b9ad93", ls: .5 }); }
+    el("rect", { x: X, y, width: W, height: bh, fill: DK }, gg);
+    if (NEU) {   // bez logo: projekta nosaukums un uzņēmuma nosaukums tekstā
+      const nm = P.modela_nosaukums || v.short || "", ls = wrap(nm, nChar(5.2, W - 8)).slice(0, 3);
+      ls.forEach((l, i) => T_(gg, X + 4, y + bh / 2 - (ls.length - 1) * 3.2 + i * 6.4 + (CO ? -2 : 0), l, { fs: 5.2, fw: 700, fill: "#fff" }));
+      if (CO) T_(gg, X + 4, y + bh - 5, CO.slice(0, nChar(2.4, W - 8)).toUpperCase(), { fs: 2.2, fw: 600, fill: BG, ls: .6 });
+      el("line", { x1: X + 4, y1: y + bh - 9.5, x2: X + 14, y2: y + bh - 9.5, stroke: AC, "stroke-width": .5 }, gg);
+    } else {
+      if (OWN) el("image", { href: OWN, x: X + 4, y: y + 3, width: W - 8, height: bh - 6, preserveAspectRatio: "xMidYMid meet" }, gg);
+      else if (window.MM_LOGO && !NOLOGO) { const iw = Math.min(W - 6, (bh - 14) * 486 / 433); el("image", { href: window.MM_LOGO, x: cx - iw / 2, y: y + 1, width: iw, height: iw * 433 / 486, preserveAspectRatio: "xMidYMid slice" }, gg);
+        T_(gg, cx, y + bh - 9, "HOMES", { fs: 3.6, fw: 600, a: "middle", fill: BG, ls: 1.8 }); T_(gg, cx, y + bh - 3.5, tx.tag, { fs: 1.6, a: "middle", fill: "#b9ad93", ls: .5 }); }
+    }
     y += bh + 4;
   }
-  if (on("phase")) { el("rect", { x: X + 3, y, width: W - 6, height: 7, rx: 3.5, fill: "none", stroke: MM_ACC, "stroke-width": .45 }, gg); T_(gg, cx, y + 4.8, tx.phase, { fs: 2.2, fw: 700, a: "middle", ls: .45, fill: MM_DARK }); y += 12; }
-  if (on("model") && !NONAME) { lab(y + 2, tx.model); const nm = P.modela_nosaukums || (P.modelis ? "" : v.short || "");
-    if (P.modela_nosaukums) { T_(gg, X + 3, y + 10, P.modela_nosaukums, { fs: Math.min(6.2, (W - 6) / (P.modela_nosaukums.length * .62)), fw: 700, fill: MM_DARK }); T_(gg, X + 3, y + 15.5, P.modelis || "", { fs: 2.5, fw: 600, fill: MM_ACC, ls: .4 }); y += 19; }
-    else { T_(gg, X + 3, y + 10, nm || P.modelis || v.short || "", { fs: 5.5, fw: 700, fill: MM_DARK }); y += 14; } y += 3; }
+  if (on("phase")) { el("rect", { x: X + 3, y, width: W - 6, height: 7, rx: 3.5, fill: "none", stroke: AC, "stroke-width": .45 }, gg); T_(gg, cx, y + 4.8, tx.phase, { fs: 2.2, fw: 700, a: "middle", ls: .45, fill: DK }); y += 12; }
+  if (on("model") && !NONAME && !(NEU && on("brand"))) { lab(y + 2, tx.model); const nm = P.modela_nosaukums || (P.modelis ? "" : v.short || "");
+    if (P.modela_nosaukums) { T_(gg, X + 3, y + 10, P.modela_nosaukums, { fs: Math.min(6.2, (W - 6) / (P.modela_nosaukums.length * .62)), fw: 700, fill: DK }); T_(gg, X + 3, y + 15.5, P.modelis || "", { fs: 2.5, fw: 600, fill: AC, ls: .4 }); y += 19; }
+    else { T_(gg, X + 3, y + 10, nm || P.modelis || v.short || "", { fs: 5.5, fw: 700, fill: DK }); y += 14; } y += 3; }
   if (on("key")) {
     const I = P.ievade || {}, foot = polyArea(v.poly), net = [...mmRooms(v), ...(lf ? mmRooms(lf) : [])].reduce((a, rm) => a + area(rm), 0);
     const kv = [[tx.kFoot, mmNum(foot) + " m²"], [tx.kNet, mmNum(net) + " m²"], [tx.kSize, `${Math.round(v.W)} × ${Math.round(v.D)}`], [tx.kRidge, I.augstums ? mmNum(I.augstums / 1000) + " m" : "–"], [tx.kCeil, mmNum((v.ceiling || 2200) / 1000) + " m"], [tx.kPitch, (P.pitch || 25) + "°"],
       ...(P.raditaji || []).map(r => L === "en" && r.length > 2 ? [r[2], r[3] || r[1]] : r)];
     lab(y + 2, tx.key); y += 7; const cw = wide ? (W - 6) / 2 : W - 6, rows = wide ? Math.ceil(kv.length / 2) : kv.length, need = rows * 8.2;
     if (y + need < bottom - 6) { kv.forEach(([k, val], i) => { const c = wide ? i % 2 : 0, r = wide ? Math.floor(i / 2) : i, xx = X + 3 + c * cw;
-      T_(gg, xx, y + 2 + r * 8.2, k.slice(0, nChar(1.9, cw)), { fs: 1.9, fill: MM_GREY }); T_(gg, xx, y + 6 + r * 8.2, String(val).slice(0, nChar(3, cw)), { fs: 3, fw: 600, fill: MM_DARK }); }); y += need + 2; }
+      T_(gg, xx, y + 2 + r * 8.2, k.slice(0, nChar(1.9, cw)), { fs: 1.9, fill: MM_GREY }); T_(gg, xx, y + 6 + r * 8.2, String(val).slice(0, nChar(3, cw)), { fs: 3, fw: 600, fill: DK }); }); y += need + 2; }
   }
   if (on("adrese") && (P.adrese || []).length) { const lines = P.adrese.flatMap(l => wrap(l, nChar(2.3, W - 6))), need = 7 + lines.length * 3.6 + 3;
-    if (y + need < bottom - 4) { lab(y + 2, tx.obj); lines.forEach((l, i) => T_(gg, X + 3, y + 7.5 + i * 3.6, l, { fs: 2.3, fill: MM_DARK })); y += need; } }
+    if (y + need < bottom - 4) { lab(y + 2, tx.obj); lines.forEach((l, i) => T_(gg, X + 3, y + 7.5 + i * 3.6, l, { fs: 2.3, fill: DK })); y += need; } }
   if (on("piezimes")) { const notes = ((L === "en" ? P.piezimes_en : P.piezimes) || P.piezimes || []);
     if (notes.length && y + 12 < bottom) { lab(y + 2, tx.cont); let ny = y + 8;
       for (const t of notes) { const ls = wrap(t, nChar(2.1, W - 9)); if (ny + ls.length * 3.2 > bottom - 3) { T_(gg, X + 3, ny, "…", { fs: 2.1, fill: MM_GREY }); break; }
-        T_(gg, X + 3, ny, "—", { fs: 2.1, fill: MM_ACC }); ls.forEach((l, j) => T_(gg, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: MM_DARK })); ny += ls.length * 3.2 + 1.2; }
+        T_(gg, X + 3, ny, "—", { fs: 2.1, fill: AC }); ls.forEach((l, j) => T_(gg, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: DK })); ny += ls.length * 3.2 + 1.2; }
       y = ny; } }
   if (on("watermark") && !NONAME) { const wm = (P.modela_nosaukums || P.modelis || v.short || "") + "  ·  " + tx.phase, top = y + 4, bot = bottom - 4, fs = Math.min(5.5, (bot - top) / (wm.length * .95));
     if (fs >= 3) T_(gg, 0, 0, wm, { fs, fw: 700, ls: fs * .22, fill: "#e9e5dc", tr: `translate(${cx + fs * .35} ${(top + bot) / 2}) rotate(-90)`, a: "middle" }); }
