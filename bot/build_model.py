@@ -95,9 +95,9 @@ def _mm_extra(cad):
         ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
          'el("line", { x1: u + k * 50, y1: -(pzL + (pzR - pzL) * k * 50 / s) + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);'),
         # fasādes tonis tikai vienai pusei (krāsas spainis): projekts.fasade_side[side]
-        ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable || (MN && MN.role === "prof") ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);',
-         '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span, -(gable || (MN && MN.role === "prof") ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);\n'
-         '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, el("clipPath", { id: rid }, g)); boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || (MN && MN.role === "prof") ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
+        ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);',
+         '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span, -(gable || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);\n'
+         '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, el("clipPath", { id: rid }, g)); boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
         # jumta pārkares tonis (projekts.parkare_hex): gala fasādes pārkare, vēja kaste, garās fasādes spāres gals
         ('      const BC = FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";\n',
          '      const PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null, BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
@@ -125,12 +125,18 @@ def build(model_path, langs=None):
     cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
     j = m.get('jumts', {})
     cfg['roof'].update({k: j[k] for k in ('pitch', 'ov', 'eave') if k in j})
-    if j.get('forma') == 'vienslipa':   # vienslīpu jumts: slīpums no sienu augstumu starpības
+    if j.get('forma') in ('vienslipa', 'parapets'):   # vienslīpu jumts / plakans ar parapetu
         import math
+        par = j.get('forma') == 'parapets'
         fall = j.get('krit') if j.get('krit') in ('north', 'south', 'east', 'west') else 'south'
         run = m['D'] if fall in ('north', 'south') else m['W']
-        lo = round(j.get('h_zema') or j.get('eave') or 2600); hi = round(j.get('h_augsta') or lo + 900)
-        cfg['roof'].update(mono={'fall': fall, 'lo': lo, 'hi': hi}, eave=lo, hip=0, pitch=round(math.degrees(math.atan((hi - lo) / run)), 3))
+        lo = round(j.get('h_zema') or j.get('eave') or 2600); hi = round(j.get('h_augsta') or lo + (500 if par else 900))
+        dz = float(j.get('dz') if j.get('dz') is not None else 300)
+        sl = round(math.degrees(math.atan(max(0, hi - dz - lo) / run)), 3)
+        mono = {'fall': fall, 'lo': lo, 'hi': hi}
+        if par: mono.update(par=True, dz=dz)
+        cfg['roof'].update(mono=mono, eave=lo, hip=0, pitch=sl if par else round(math.degrees(math.atan((hi - lo) / run)), 3))
+        if par: cfg['roof']['ov'] = 0
     cfg['tb']['object'] = [m['nosaukums']]
     import datetime
     pr = {**cfg.get('projekts', {}), **m.get('projekts', {})}
@@ -235,8 +241,8 @@ def build(model_path, langs=None):
                  # klienta lapā grīdas apakšas atzīmi nerāda (uzbrauc ±0,000)
                  ('    if (fT) lvl(-fT, lv(-fT), 1);\n', ''),
                  # bez jumta pārkares nav ēnas zem dzegas
-                 ('  if (MN && MN.role === "prof") { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else el(',
-                  '  if (MN && MN.role === "prof") { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (ROOF.ov > 0 && !gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else if (ROOF.ov > 0) el('),
+                 ('  if (MN && (MN.role === "prof" || MN.par)) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else el(',
+                  '  if (MN && (MN.role === "prof" || MN.par)) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (ROOF.ov > 0 && !gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else if (ROOF.ov > 0) el('),
                  # notekcaurule garajā fasādē: taisns gals 300 mm virs zemes (izplūde pret skatītāju), bez līkuma
                  ('      el("rect", { x: u - 40, y: -(eEdge + thV - 240), width: 80, height: eEdge + thV - 240 + 150, fill: GUT, stroke: C.ink, "stroke-width": 9 }, g);\n      el("path", { d: `M ${u - 50} ${150} q 0 110 110 110 h 60 v -100 h -70 z`, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);',
                   '      el("rect", { x: u - 50, y: -(eEdge + thV - 240), width: 100, height: eEdge + thV - 240 + ROOF.plinth - 50, fill: GUT, stroke: C.ink, "stroke-width": 9 }, g);\n      el("line", { x1: u - 22, y1: -(eEdge + thV - 260), x2: u - 22, y2: ROOF.plinth - 70, stroke: "rgba(255,255,255,.22)", "stroke-width": 8 }, g);'),

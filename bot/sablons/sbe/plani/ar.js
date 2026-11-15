@@ -228,7 +228,7 @@ function symbolLegend(svg, x, y, v) {
 function roofPlanMono(parent, v) {
   const g = el("g", { "data-block": "plan" }, parent), W = v.W, Dd = v.D, N = monoFacade(v, "x"), AP = (window.AR && AR.projekts) || {};
   const od = q => (AP.ov_side && AP.ov_side[q] != null && !isNaN(+AP.ov_side[q])) ? +AP.ov_side[q] : ROOF.ov;
-  const oN = od("north"), oS = od("south"), oE = od("east"), oW = od("west"), fall = ROOF.mono.fall, ns = fall === "north" || fall === "south";
+  const od0 = N.par ? () => 0 : od, oN = od0("north"), oS = od0("south"), oE = od0("east"), oW = od0("west"), fall = ROOF.mono.fall, ns = fall === "north" || fall === "south";
   const x0 = -oW, y0 = -oN, x1 = W + oE, y1 = Dd + oS;
   const dash = { stroke: C.axis, "stroke-width": 7, "stroke-dasharray": "300 60 40 60" };
   const bub = (cx, cy, n) => { el("circle", { cx, cy, r: 300, fill: "#fff", stroke: C.ink, "stroke-width": 12 }, g); T_(g, cx, cy + 92, n, { a: "middle", fs: 260, fw: 500 }); };
@@ -255,7 +255,7 @@ function roofPlanMono(parent, v) {
     T_(g, cx + (ns ? 120 : 0) + (ns ? 0 : 0), cy + (ns ? 60 : -170), degT, { a: "middle", fs: 210, fw: 600, ...(ns ? { tr: `rotate(-90 ${cx + 120} ${cy})` } : {}) });
   });
   // sienu augstumi pie zemās un augstās malas
-  const hl = (z, x, y, an) => T_(g, x, y, "H " + lv(Math.round(z)), { a: an, fs: 200, fw: 600 });
+  const hl = (z, x, y, an) => T_(g, x, y, (N.par && z === N.hi ? "PARAPETS " : "H ") + lv(Math.round(z)), { a: an, fs: 200, fw: 600 });
   const mid = ns ? W / 2 : Dd / 2;
   if (fall === "south") { hl(N.lo, mid, Dd + oS + 520, "middle"); hl(N.hi, mid, y0 - 330, "middle"); }
   if (fall === "north") { hl(N.lo, mid, y0 - 330, "middle"); hl(N.hi, mid, Dd + oS + 520, "middle"); }
@@ -397,24 +397,25 @@ function section(parent, v, s) {
   const insRect = (x, y, w, h) => insShape([P(x, -y), P(x + w, -y), P(x + w, -y - h), P(x, -y - h)].join(" "), [x, y, 0, 1, 1, 0, h, w]);
   const ca = Math.cos(ROOF.pitch * Math.PI / 180), sa = Math.sin(ROOF.pitch * Math.PI / 180), Ls = (v.D / 2 + ov) / ca + 400;
   const MS = monoFacade(v, "x");
-  const mzAt = u => {   // vienslīpu jumta apakšmalas augstums griezuma punktā u
-    const M = ROOF.mono, x = s.o === "v" ? s.at : u, y = s.o === "v" ? u : s.at, q = { south: v.D - y, north: y, east: v.W - x, west: x }[M.fall];
-    return MS.lo + Math.max(0, Math.min(q, M.fall === "north" || M.fall === "south" ? v.D : v.W)) * MS.tn; };
+  const qOf = u => { const M = ROOF.mono, x = s.o === "v" ? s.at : u, y = s.o === "v" ? u : s.at, q = { south: v.D - y, north: y, east: v.W - x, west: x }[M.fall];
+    return Math.max(0, Math.min(q, M.fall === "north" || M.fall === "south" ? v.D : v.W)); };   // attālums no zemās sienas pa kritumu
+  const mzAt = u => MS.par ? (qOf(u) < 400 ? MS.lo : MS.hi) : MS.lo + qOf(u) * MS.tn;   // sienas augšas / jumta apakšmalas augstums
+  const underAt = u => MS.slab(qOf(u)) - MS.th;   // jumta konstrukcijas apakšmala
   const mProf = MS && ((s.o === "v") === (ROOF.mono.fall === "north" || ROOF.mono.fall === "south"));   // griezums gar slīpumu
   if (MS) {
     if (mProf) {
       const lowLeft = (s.o === "v") ? ROOF.mono.fall === "north" : ROOF.mono.fall === "west", uu = q => lowLeft ? q : span - q, sg = lowLeft ? 1 : -1;
-      const zL = MS.lo - MS.oL * MS.tn, zH = MS.hi + MS.oH * MS.tn, uL = uu(-MS.oL), uH = uu(span + MS.oH);
+      const zL = MS.slab(-MS.oL) - MS.th, zH = MS.slab(span + MS.oH) - MS.th, uL = uu(-MS.oL), uH = uu(span + MS.oH);
       const cm = Math.cos(Math.atan(MS.tn)), sm = Math.sin(Math.atan(MS.tn)), Lm = (span + MS.oL + MS.oH) / cm + 400;
       insShape([P(uL, zL), P(uH, zH), P(uH, zH + MS.th), P(uL, zL + MS.th)].join(" "),
         sg > 0 ? [uL - 200 * cm, -zL + 200 * sm, cm, -sm, -sm, -cm, Lm, ROOF.th] : [uL + 200 * cm, -zL + 200 * sm, -cm, -sm, sm, -cm, Lm, ROOF.th]);
       el("line", { x1: uL - 20 * sg, y1: -(zL + MS.th + 10), x2: uH + 20 * sg, y2: -(zH + MS.th + 10), stroke: "#40464b", "stroke-width": 30 }, g);
     } else {
-      const zb = mzAt(0), ovv = ROOF.ov;
+      const zb = underAt(0), ovv = MS.par ? 0 : ROOF.ov;
       el("polygon", { points: [P(-ovv, zb), P(-ovv, zb + MS.th), P(span + ovv, zb + MS.th), P(span + ovv, zb)].join(" "), fill: "#f1f1ef", stroke: C.thin, "stroke-width": 8 }, g);
       insShape([P(-ovv, zb), P(span + ovv, zb), P(span + ovv, zb + MS.th), P(-ovv, zb + MS.th)].join(" "), [-ovv, -(zb + MS.th), 1, 0, 0, 1, span + 2 * ovv, MS.th]);
     }
-    if (s.o === "h") [[0, T], [span - T, span]].forEach(([u0, u1]) => { const zt = mzAt((u0 + u1) / 2); insRect(u0, -zt, u1 - u0, zt); });   // gala sienas līdz jumtam
+    if (s.o === "h") [[0, T], [span - T, span]].forEach(([u0, u1]) => { const zt = mzAt((u0 + u1) / 2); insRect(u0, -zt, u1 - u0, zt); });
   } else if (s.o === "v") {
     const zb = u => ROOF.eave + Math.min(u, span - u) * tan;
     insShape([P(-ov, eEdge), P(span / 2, zb(span / 2)), P(span + ov, eEdge), P(span + ov, eEdge + thV), P(span / 2, ridgeTop), P(-ov, eEdge + thV)].join(" "),
@@ -469,7 +470,7 @@ function section(parent, v, s) {
     el("line", { x1: lx - 130 - label.length * 152, y1: ty, x2: lx - 130, y2: ty, stroke: C.ink, "stroke-width": 10 }, g);
     T_(g, lx - 140, up > 0 ? ty - 45 : ty + 225, label, { a: "end", fs: 250, fw: 600 });
   };
-  (MS ? [ridgeTop, ...(mProf ? [MS.hi] : []), MS.lo, CEIL, 0, -pl] : [ridgeTop, ROOF.eave, CEIL, 0, -pl]).forEach(zz => lvl(zz, lv(Math.round(zz))));
+  (MS ? [ridgeTop, ...(mProf && !MS.par ? [MS.hi] : []), MS.lo, CEIL, 0, -pl] : [ridgeTop, ROOF.eave, CEIL, 0, -pl]).forEach(zz => lvl(zz, lv(Math.round(zz))));
   if (ROOF.floorT) lvl(-ROOF.floorT, lv(-ROOF.floorT), 1);
   // height chain on the right
   chainCad(el("g", { transform: `translate(${span + ov + 900} 0)` }, g), [pl, 0, -CEIL, -ROOF.eave, -Math.round(ridgeTop)], "y", 0);
