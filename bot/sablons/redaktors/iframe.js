@@ -2541,12 +2541,12 @@
         const top = (F.ridge != null ? F.ridge : eT + (sp / 2 + ovL) * pzv[3]) - Math.abs(u - sp / 2) * pzv[3];
         if (z > top + 60) return null;
         if (z > top - 420 || u < 0 || u > sp) return z >= eE - 60 ? { k: "ov", side: s } : null;
-        return { k: "fas", side: s };
+        return { k: "fas", side: s, u };
       }
       if (z > eT + 20) return { k: "roof", side: s };
       if (z >= eE - 20 || ((u < 0 || u > sp) && z >= eE - 320)) return { k: "ov", side: s };
       if (u < 0 || u > sp) return null;
-      return { k: "fas", side: s };
+      return { k: "fas", side: s, u };
     }
     return null;
   }
@@ -2565,7 +2565,9 @@
     const t = bucketTarget(e.clientX, e.clientY), P = M.projekts || {};
     if (!t) { post({ t: "hint", text: "Spainis darbojas uz stabu, terasi, lieveni, logiem, vienas fasādes sienu un jumta pārkari (fasādes rasējumā)." }); return true; }
     if (t.k === "roof") { post({ t: "hint", text: "Jumta segumu spainis nekrāso. Jumta pārkari krāso, uzklikšķinot uz pārkares malas (spāres gala) vai gala fasādes pārkares." }); return true; }
-    const FS = (P.fasade_side || {})[t.side], SN = { north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" };
+    const wSeg = t.k === "fas" && t.u != null && typeof mmFacSegs === "function" ? (() => { const sg = mmFacSegs(M, t.side); return sg.length > 1 ? sg.find(q => t.u >= q.u0 && t.u <= q.u1) || null : null; })() : null;   // fasādē ar vairākām sienu plaknēm krāso tikai klikšķināto sienu
+    const WS = wSeg && ((P.fasade_wall || {})[t.side] || []).find(q => Math.abs(q.u0 - wSeg.u0) < 2 && Math.abs(q.u1 - wSeg.u1) < 2);
+    const FS = WS || (P.fasade_side || {})[t.side], SN = { north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" };
     if (e.altKey) {   // paņem materiālu
       const o = t.k === "post" ? M.posts[t.i] : t.k === "ter" ? M.terraces[t.i] : t.k === "porch" ? M.porch : t.k === "frame" ? { col: P.logu_hex, ral: /^RAL/.test(P.logu_tonis || "") ? P.logu_tonis : null }
         : t.k === "ov" ? { col: P.parkare_hex, ral: P.parkare_ral } : FS ? { col: FS.hex, ral: FS.ral } : { col: P.fasade_hex, ral: P.fasade_ral };
@@ -2579,8 +2581,13 @@
       N.projekts = N.projekts || {}; N.projekts.logu_hex = m.col; N.projekts.logu_tonis = m.ral || "Cita krāsa";
     } else if (t.k === "fas" && e.shiftKey) {   // Shift+klikšķis: visa māja vienā tonī (atsevišķo sienu toņi tiek noņemti)
       if (!m.col) { post({ t: "hint", text: "Fasādei der tikai krāsa (RAL vai brīva), ne tekstūra." }); return true; }
-      N.projekts = N.projekts || {}; N.projekts.fasade_hex = m.col; if (m.ral) N.projekts.fasade_ral = m.ral; else delete N.projekts.fasade_ral; delete N.projekts.fasade_side;
+      N.projekts = N.projekts || {}; N.projekts.fasade_hex = m.col; if (m.ral) N.projekts.fasade_ral = m.ral; else delete N.projekts.fasade_ral; delete N.projekts.fasade_side; delete N.projekts.fasade_wall;
       post({ t: "hint", text: "Visa māja nokrāsota vienā tonī." });
+    } else if (t.k === "fas" && wSeg) {   // tikai šī vienas sienas plakne (fasādē ir vairākas sienas)
+      if (!m.col) { post({ t: "hint", text: "Fasādei der tikai krāsa (RAL vai brīva), ne tekstūra." }); return true; }
+      N.projekts = N.projekts || {}; const fw = N.projekts.fasade_wall = Object.assign({}, N.projekts.fasade_wall), ls = (fw[t.side] || []).filter(q => !(Math.abs(q.u0 - wSeg.u0) < 2 && Math.abs(q.u1 - wSeg.u1) < 2));
+      ls.push(Object.assign({ u0: wSeg.u0, u1: wSeg.u1, hex: m.col }, m.ral ? { ral: m.ral } : {})); fw[t.side] = ls;
+      post({ t: "hint", text: `Nokrāsota tikai šī ${SN[t.side]} fasādes siena (${Math.round(wSeg.u1 - wSeg.u0)} mm). Shift+klikšķis krāso visu māju.` });
     } else if (t.k === "fas") {   // tikai šīs puses siena
       if (!m.col) { post({ t: "hint", text: "Fasādei der tikai krāsa (RAL vai brīva), ne tekstūra." }); return true; }
       N.projekts = N.projekts || {}; const fs = N.projekts.fasade_side = Object.assign({}, N.projekts.fasade_side); fs[t.side] = m.ral ? { hex: m.col, ral: m.ral } : { hex: m.col };
