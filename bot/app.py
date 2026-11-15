@@ -324,7 +324,10 @@ def new_project(b):
     pitch = float(b.get('slipums') or 0) or None
     if pitch is not None and not 5 <= pitch <= 60:
         raise ValueError('Jumta slīpums 5–60°.')
-    if b.get('augstums') not in (None, '', 0):
+    mono = b.get('jumta_forma') in ('vienslipa', 'parapets')   # vienslīpu / plakans ar parapetu: augstumi no projekta lapas
+    if mono:
+        b['mansards'] = 'ne'; H = max(2500.0, float(b.get('h_augsta') or 3500) + 300)
+    elif b.get('augstums') not in (None, '', 0):
         H = float(b['augstums'])
     else:   # kore no slīpuma: dzega 2600 virs ±0,000 + jumta pīrāgs + grīdas panelis (stabveida pamatiem), lai mansardam pietiek augstuma
         cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
@@ -364,7 +367,23 @@ def new_project(b):
         except OSError: pass
     mp0 = os.path.join(dest, 'model.json'); mj0 = json.load(open(mp0, encoding='utf-8'))   # uzņēmuma nosaukums AR rakstlaukumam
     mj0.setdefault('projekts', {})['uznemums'] = co
+    if mono:   # jumta forma no projekta lapas (jumts.forma, krit, h_zema, h_augsta, dz); kores augstums = jumta augšas atzīme
+        par = b['jumta_forma'] == 'parapets'; fall = b.get('krit') if b.get('krit') in ('north', 'south', 'east', 'west') else 'south'
+        lo = round(float(b.get('h_zema') or 2600)); hi = round(float(b.get('h_augsta') or lo + (700 if par else 900))); run = B if fall in ('north', 'south') else L
+        dz = float(b['dz']) if par and b.get('dz') not in (None, '') else 300.0
+        tn = (max(0.0, hi - dz - lo) if par else hi - lo) / run
+        j = mj0.setdefault('jumts', {}); j.update(forma=b['jumta_forma'], krit=fall, h_zema=lo, h_augsta=hi, eave=lo, ov=0 if par else j.get('ov', 0), pitch=round(math.degrees(math.atan(tn)), 1))
+        if par: j['dz'] = dz
+        cfg1 = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
+        top = hi if par else hi + sum(l[1] for l in cfg1['layers']['J1']['layers']) / math.cos(math.atan(tn))
+        flT = sum(l[1] for l in cfg1['layers']['G1']['layers']) if b.get('pamati') != 'platne' else 0
+        iv = mj0.setdefault('ievade', {}); iv.update(augstums=round(top + flT), augstums_0=round(top), garums=L, platums=B)
     json.dump(mj0, open(mp0, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    if mono:   # lapas pārbūve ar jauno jumta formu
+        try:
+            import build_model; build_model.build(mp0)
+        except Exception as ex:
+            print('Lapas pārbūve neizdevās:', ex, file=sys.stderr)
     cs0 = pick_set(company_spec(cos[co]), b.get('komplekts')); sp = cs0.get('piragi_layers')
     if cs0.get('piragi_names'):
         mp = os.path.join(dest, 'model.json'); mj = json.load(open(mp, encoding='utf-8'))
