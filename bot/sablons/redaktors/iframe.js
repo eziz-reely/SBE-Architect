@@ -17,14 +17,24 @@
   const idims = (l, X = M) => lv(l, X).innerDims || (l === "loft" ? X.innerDims : null);
   const idimsOwn = (l, N) => { const L = lv(l, N); if (!L.innerDims) L.innerDims = JSON.parse(JSON.stringify(N.innerDims || [])); return L.innerDims; };
   // mēra līnija pielīp citu tās pašas ass mēru līnijai (viena ķēde vienā taisnē)
-  function snapAt(l, axis, v, self, rad = 320) {
+  // pielipšanas rādiuss ekrāna pikseļos (tuvinot rādiuss mazinās, lai var uzlikt mēru precīzi uz sienas iekšpusi)
+  function pxmm(l, px, cap) {
+    try {
+      const b = blocks().find(q => q.type === "plan" && q.lv === (l === "loft" ? "loft" : "main")), t = b && tr(b.g), sv = b && (b.g.ownerSVGElement || sheet());
+      if (!t || !sv) return cap;
+      const pxPerMm = t.k * sv.getBoundingClientRect().width / (sv.viewBox.baseVal.width || 297);
+      return Math.min(cap, Math.max(6, px / pxPerMm));
+    } catch (_) { return cap; }
+  }
+  function snapAt(l, axis, v, self, rad) {
+    if (rad == null) rad = pxmm(l, 14, 320);
     const c = []; (idims(l) || []).forEach((d, i) => { if (d[0] === axis && !(self && self.k === "idim" && self.i === i)) c.push(d[1]); });
     (lv(l).userDims || []).forEach((d, i) => { if (d[0] === axis && !(self && self.k === "dim" && self.i === i)) c.push(d[1]); });
     // arī automātisko ārējo ķēžu līnijas (tās pašas ass): jauns mērs pielīp augšējai/apakšējai/sānu mērķēdei
     const cc = [], bk = document.querySelector("svg.a3 g[data-block=" + (l === "loft" ? "loft" : "plan") + "]");
     if (bk) bk.querySelectorAll("[data-chain]").forEach(e => { const q = e.getAttribute("data-chain").split(":"); if (q[0] === axis && !isNaN(+q[1])) cc.push(+q[1]); });
     let best = null; c.forEach(t => { if (Math.abs(t - v) < rad && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
-    cc.forEach(t => { if (Math.abs(t - v) < 700 && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });   // ārējās ķēdes: lielāks rādiuss, jo mēru nevar uzlikt tālu no plāna
+    cc.forEach(t => { if (Math.abs(t - v) < pxmm(l, 26, 700) && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });   // ārējās ķēdes: lielāks rādiuss, jo mēru nevar uzlikt tālu no plāna
     return best != null ? { v: best, hit: true } : { v: r10(v), hit: false };
   }
   const tr = g => { const m = /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/.exec(g.getAttribute("transform") || ""); return m ? { tx: +m[1], ty: +m[2], k: +m[3] } : null; };
@@ -741,11 +751,13 @@
     let bx; try { bx = furnBoxes(bl); } catch (_) { return []; }
     return Object.values(bx).flatMap(q => axis === "x" ? [q[0], q[2]] : [q[1], q[3]]);
   }
-  function snapI(l, axis, v, rad = 150) {
+  function snapI(l, axis, v, rad) {
+    if (rad == null) rad = pxmm(l, 8, 150);
     let best = null; snapPts(l, axis).concat(furnEdges(l, axis)).forEach(t => { if (Math.abs(t - v) < rad && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
     return best != null ? { v: best, hit: true } : { v: r10(v), hit: false };
   }
-  function snapAx(l, axis, v, rad = 150) {
+  function snapAx(l, axis, v, rad) {
+    if (rad == null) rad = pxmm(l, 8, 150);
     let best = null; snapPts(l, axis).concat(furnEdges(l, axis)).forEach(t => { if (Math.abs(t - v) < rad && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
     return best != null ? best : r10(v);
   }
