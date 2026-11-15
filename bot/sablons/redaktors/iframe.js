@@ -1594,10 +1594,35 @@
     wallDone(N, Object.assign({}, sel, { at }));
   }
   // pagarināt (+) vai saīsināt (−) sienu izvēlētajā galā: telpas un citas sienas nekustas, pagarinājums ir brīva siena
-  function wallExtend(d) {
+  // siena pagarinās terasē: atrod terasi (taisnstūra), ar kuru pagarinājums pārklājas
+  let pendExt = null;
+  function terraceHit(w, far, end, d, X) {
+    const R = X ? { x0: w.lo, x1: w.hi, y0: far ? end : end - d, y1: far ? end + d : end } : { y0: w.lo, y1: w.hi, x0: far ? end : end - d, x1: far ? end + d : end };
+    for (let ti = 0; ti < (M.terraces || []).length; ti++) {
+      const p = M.terraces[ti].poly; if (!p || p.length !== 4) continue;
+      const xs = p.map(q => q[0]), ys = p.map(q => q[1]), T = { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+      if (Math.min(R.x1, T.x1) - Math.max(R.x0, T.x0) > 20 && Math.min(R.y1, T.y1) - Math.max(R.y0, T.y0) > 20)
+        return { ti, R, T, X, far, dEnter: Math.max(0, X ? (far ? T.y0 - end : end - T.y1) : (far ? T.x0 - end : end - T.x1)) };
+    }
+    return null;
+  }
+  function trimTerrace(N, h) {   // terasi apgriež pret sienas pagarinājumu: mala atkāpjas vai rodas ierobe
+    const t = N.terraces[h.ti], { R, T, X, far } = h, A0 = X ? "y0" : "x0", A1 = X ? "y1" : "x1", B0 = X ? "x0" : "y0", B1 = X ? "x1" : "y1";
+    const a0 = T[A0], a1 = T[A1], b0 = T[B0], b1 = T[B1], rb0 = Math.max(R[B0], b0), rb1 = Math.min(R[B1], b1), mk = (A, B) => X ? [B, A] : [A, B];
+    const enterMin = far, e = enterMin ? Math.min(R[A1], a1) - a0 : a1 - Math.max(R[A0], a0), sg = enterMin ? 1 : -1, ae = enterMin ? a0 : a1, ao = enterMin ? a1 : a0;
+    if (rb0 <= b0 + 1 && rb1 >= b1 - 1) { const na = enterMin ? Math.min(R[A1], a1) : Math.max(R[A0], a0); t.poly = [mk(na, b0), mk(na, b1), mk(ao, b1), mk(ao, b0)]; }   // pagarinājums šķērso visu terases platumu: mala atkāpjas
+    else if (e < Math.abs(a1 - a0) - 1) t.poly = [mk(ae, b0), mk(ae, rb0), mk(ae + sg * e, rb0), mk(ae + sg * e, rb1), mk(ae, rb1), mk(ae, b1), mk(ao, b1), mk(ao, b0)].map(q => q.map(v => +v.toFixed(1)));
+    else post({ t: "hint", text: "Terase pārāk šaura, lai to apgrieztu; apgriez to ar punktiem." });
+    if (t.posts) delete t.posts;
+  }
+  addEventListener("message", e => { const a = e.data && e.data.mmAnswer; if (!a || a.id !== "wext" || !pendExt || !sel || sel.k !== "wall") return;
+    const h = pendExt; if (a.i === 0) { if (h.dEnter < 50) post({ t: "hint", text: "Siena jau pieskaras terasei." }); else wallExtend(h.dEnter, "wall"); }
+    else if (a.i === 1) wallExtend(h.d, "ter"); });
+  function wallExtend(d, mode) {
     const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T);
     const far = (X ? sel.at[1] : sel.at[0]) >= (a + b) / 2, end = far ? b : a, th = +(w.hi - w.lo).toFixed(1), o = X ? "v" : "h", s = X ? 1 : 0, q = X ? 3 : 2;   // s: sākuma, q: garuma vieta masīvā
     d = +(+d).toFixed(1); if (!d) return;
+    if (d > 0 && !mode) { const h = terraceHit(w, far, end, d, X); if (h) { h.d = d; pendExt = h; post({ t: "ask", id: "wext", text: "Siena sasniedz terasi. Ko apgriezt?", opts: ["Apgriezt sienu pret terasi (siena beidzas pie terases)", "Apgriezt terasi pret sienu (terasei ierobe)", "Atcelt"] }); return; } }
     const N = clone(M); N.freeWalls = N.freeWalls || []; let i = w.free;
     if (i == null) {
       const cuts = N.wallCuts = N.wallCuts || [], cc = (w.lo + w.hi) / 2, oc = X ? "v" : "h";
@@ -1630,6 +1655,7 @@
     const c = X ? f[0] + f[2] / 2 : f[1] + f[3] / 2, e = far ? f[s] + f[q] : f[s];
     const at = X ? [c, e] : [e, c], nw = X ? { axis: "x", lo: f[0], hi: f[0] + f[2], v0: f[1], v1: f[1] + f[3], free: i } : { axis: "y", lo: f[1], hi: f[1] + f[3], v0: f[0], v1: f[0] + f[2], free: i };
     sel = { k: "wall", i: nw.axis + ":" + Math.round(nw.lo), lv: sel.lv, w: nw, at: at.map(Math.round) };
+    if (mode === "ter" && pendExt) { trimTerrace(N, pendExt); pendExt = null; }
     post({ t: "edit", model: N, sel, resized: 1 });
   }
   function wallShift(d) {   // siena pa savu šķērsvirzienu (koordinātu virzienā); ārsienai mainās mājas izmērs
