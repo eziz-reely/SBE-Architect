@@ -726,7 +726,6 @@ details.tr[data-pane="sel"] > .trb { background: var(--field); }
     <details class="tr" data-pane="house"><summary><span>Māja</span></summary><div class="trb">
       <div id="mats"></div>
     </div></details>
-    <details class="tr" data-pane="mats"><summary><span>Materiāli</span></summary><div class="trb"><div id="matsPane"></div></div></details>
     <details class="tr" data-pane="notes"><summary><span>Piezīmes lapā</span></summary><div class="trb"><div id="notesPane"></div></div></details>
     <details class="tr" data-pane="sheet"><summary><span>Lapa un eksports</span></summary><div class="trb">
       <p class="cap">Lapas</p>
@@ -1486,6 +1485,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (s.k === "post") return (m.posts || [])[s.i];
     if (s.k === "porch") return m.porch || null;
     if (s.k === "fsien") return { fsien: 1 };
+    if (s.k === "fboard") return { fboard: 1 };
     if (s.k === "wall") return s.w ? { wall: 1 } : null;
     if (s.k === "decor") return (m.decor || [])[s.i];
     if (s.k === "fdim") return ((m.projekts || {}).fdims || [])[s.i];
@@ -2094,11 +2094,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     ["izskats", "Izskats", ["Krāsas", "Visi logi", "Zonu zīmogi", "Fasādes lapā", "Vizualizāciju lapas"]],
     ["konstr", "Konstrukcijas", ["Pamati", "Konstrukcijas (pīrāgi)", "Specifikācijas noformējums"]],
     ["pamplans", "Pamatu plāns", ["Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi"]],
+    ["materiali", "Materiāli", ["Materiāli"]],   // globāli mājas iestatījumi: visi toņi un tekstūras vienuviet
   ];
   let majaSec = "izmeri";
   try { majaSec = localStorage.getItem("mmMajaSec") || majaSec; } catch (_) {}
   function majaOrder() {
     const host = $("mats"), capOf = e => (e.querySelector(":scope > .cap") || {}).textContent || "";
+    { const gm = group("Materiāli", host), mp = document.createElement("div"); mp.id = "matsPane"; mp.style.gridColumn = "1 / -1"; gm.appendChild(mp); try { matsPane(); } catch (e) { console.error("matsPane", e.message); } }
     const gs = [...host.children].filter(e => e.classList.contains("group")), ix = e => { const i = MAJA_ORDER.indexOf(capOf(e)); return i < 0 ? 50 : i; };
     gs.sort((a, b) => ix(a) - ix(b)).forEach(e => host.appendChild(e));
     const G = t => gs.find(e => capOf(e) === t);
@@ -2472,6 +2474,18 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst stabu"; b.onclick = del; r.appendChild(b); p.appendChild(r);
       return;
     }
+    if (sel.k === "fboard") {   // fascijas dēlis: tonis tikai šajā fasādē (pēc noklusējuma kā jumta pārkare)
+      const P = model.projekts || {}, sd = sel.side, cur = (P.fascia_side || {})[sd], curRal = (P.fascia_side_ral || {})[sd], def = P.fascia_hex || ((P.parkare_side || {})[sd]) || P.parkare_hex || null;
+      h.textContent = "Fascijas dēlis"; sub.textContent = SIDE[sd] + " fasāde · " + (cur ? "savs tonis" : P.fascia_hex ? "visas mājas tonis" : "kā jumta pārkare");
+      const setF = fn => { const n = clone(model); n.projekts = n.projekts || {}; const fs = n.projekts.fascia_side = Object.assign({}, n.projekts.fascia_side), fr = n.projekts.fascia_side_ral = Object.assign({}, n.projekts.fascia_side_ral); fn(fs, fr); if (!Object.keys(fs).length) delete n.projekts.fascia_side; if (!Object.keys(fr).length) delete n.projekts.fascia_side_ral; commit(n); };
+      g.append(field("Krāsa (RAL)", curRal || "", (n, v) => { throw "async"; }, Object.assign({ "": cur && !curRal ? "Cita krāsa" : "Kā jumta pārkare" }, RAL_OPTS()), "full"));
+      const sl = g.lastChild.querySelector("select"); if (sl) sl.onchange = () => setF((fs, fr) => { if (sl.value) { fs[sd] = RAL[sl.value][1]; fr[sd] = sl.value; } else { delete fs[sd]; delete fr[sd]; } });
+      const cl = document.createElement("label"); cl.className = "full"; cl.textContent = "Brīva krāsa"; const ci = document.createElement("input"); ci.type = "color"; ci.value = /^#[0-9a-f]{6}$/i.test(cur || def || "") ? (cur || def) : "#4a5055"; ci.onchange = () => setF((fs, fr) => { fs[sd] = ci.value; delete fr[sd]; }); cl.appendChild(ci); g.appendChild(cl);
+      p.append(h, sub, g);
+      const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.textContent = "Atcelt šīs fasādes fascijas toni"; b.disabled = !cur; b.onclick = () => setF((fs, fr) => { delete fs[sd]; delete fr[sd]; }); r.appendChild(b); p.appendChild(r);
+      const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Visai mājai: sānjoslā Māja → Materiāli → Fascijas dēlis, vai krāsas spainis ar Shift."; p.appendChild(nt);
+      return;
+    }
     if (sel.k === "fsien") {   // fasādes siena (plakne): tonis tikai šai sienai
       p.scrollIntoView({ block: "start" }); for (let a = p.parentElement; a; a = a.parentElement) if (a.scrollTop) a.scrollTop = 0;
       const P = model.projekts || {}, sd = sel.side, ls = (P.fasade_wall || {})[sd] || [], cur = ls.find(q => Math.abs(q.u0 - sel.u0) < 2 && Math.abs(q.u1 - sel.u1) < 2);
@@ -2667,6 +2681,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       }
       g.append(field("Aplodas", it.casing === 0 ? "0" : it.casingAll ? "all" : "1", (n, v) => { const w = S(n); delete w.casing; delete w.casingAll; if (v === "0") w.casing = 0; if (v === "all") w.casingAll = true; },
         { 1: "Augšā un sānos", all: "Visapkārt (arī apakšā)", 0: "Bez aplodām" }, "full"));
+      if (sel.k === "win") { const CF = (lab, kc, kr, def) => { const cur = it[kc] ? (it[kr] || "__c") : ""; g.append(colorField(lab, cur, it[kc] || def, (n, v) => { const w = S(n); if (!v) { delete w[kc]; delete w[kr]; } else if (v !== "__c") { w[kr] = v; w[kc] = (RAL[v] || [0, "#888"])[1]; } },
+          Object.assign({ "": "Kā visiem logiem" }, it[kc] && !it[kr] ? { __c: "Cita krāsa (" + it[kc] + ")" } : {}, RAL_OPTS()))); };
+        CF("Rāmja krāsa (šim logam)", "col", "colral", "#383E42"); CF("Aplodu krāsa (šim logam)", "cascol", "casral", "#383E42"); }
     } else if (sel.k === "gw") {
       h.textContent = it.win ? "Mansarda logs" : "Slīpais logs"; sub.textContent = `${SIDE[it.side]} gala fasāde` + (it.win ? "" : " · augšmala seko jumtam");
       const oldG = it;

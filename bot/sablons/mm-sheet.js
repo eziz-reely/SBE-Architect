@@ -240,7 +240,7 @@ function mmLayout(v, lf, L, K, area, gap) {
 // rakstlaukuma pārplūstošā izkārtojuma versija: slēdži (projekts.titul), nekad ārpus lauka
 function mmTitleFlow(svg, v, lf, L, R) {
   const tx = MM_TXT[L], P = (window.AR && window.AR.projekts) || {}, TT = P.titul || {}, on = k => TT[k] !== false;
-  const [X, Y, W, H] = R, cx = X + W / 2, wide = W >= 55, NEU = TT.stils === "neitrals", DK = NEU ? "#2f3338" : MM_DARK, AC = NEU ? "#8b929b" : MM_ACC, BG = NEU ? "#d5d8dc" : MM_BEIGE, CO = (P.uznemums || "").toString();   // neitrāls stils: bez logo un MM zīmola
+  const [X, Y, W, H] = R, cx = X + W / 2, wide = W >= 55, NEU = TT.stils === "neitrals", DK = NEU ? "#2f3338" : MM_DARK, AC = NEU ? "#8b929b" : MM_ACC, BG = NEU ? "#d5d8dc" : MM_BEIGE, CO = /^individu/i.test((P.uznemums || "").toString().trim()) ? "" : (P.uznemums || "").toString();   // neitrāls stils: bez logo un MM zīmola
   const g = el("g", { "data-block": "title" }, svg), cid = "ttl-" + Math.random().toString(36).slice(2, 7);
   el("rect", { x: X, y: Y, width: W, height: H }, el("clipPath", { id: cid }, g));
   const gg = el("g", { "clip-path": `url(#${cid})` }, g);

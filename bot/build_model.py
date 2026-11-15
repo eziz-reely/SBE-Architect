@@ -145,6 +145,11 @@ def _mm_extra(cad):
          'P(span / 2, ridgeTop - vt)].join(" "), fill: mmFasHex(side, FAS ? "#F2F0EA" : "#4a5055")'),
         ('height: thV - 70, fill: "#F2F0EA"', 'height: thV - 70, fill: mmFasHex(side, "#F2F0EA")'),
         ('height: vt, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);', 'height: vt, fill: mmFasHex(side, "#4a5055"), stroke: C.ink, "stroke-width": 12 }, g);'),
+        # [MM] loga rāmja un aplodu tonis atsevišķam logam (model.windows[i].col / .cascol), citādi viens visiem logiem
+        ('const WINC = () => { const w = (window.AR && window.AR.win) || {}, out = w.colorOut || w.color || "RAL 7016", inn = w.colorIn || out; return { out, inn, cas: w.casingColor || out }; };',
+         'const WINC = () => { const w = (window.AR && window.AR.win) || {}, o = window.__WO || {}, g = w.colorOut || w.color || "RAL 7016", out = o.out || g, inn = w.colorIn || out; return { out, inn, cas: o.cas || w.casingColor || g }; };'),
+        ('    win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), cs0, nz ? Math.max(0, Math.min(cs0, u0 - nz[0])) : cs0, nz ? Math.max(0, Math.min(cs0, nz[1] - u1)) : cs0);',
+         '    window.__WO = { out: w.col || null, cas: w.cascol || null }; try { win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), cs0, nz ? Math.max(0, Math.min(cs0, u0 - nz[0])) : cs0, nz ? Math.max(0, Math.min(cs0, nz[1] - u1)) : cs0); } finally { window.__WO = null; }'),
     ]:
         assert a in cad, 'SBE cad.js (mm_extra): nav atrasts ' + a[:60]
         cad = cad.replace(a, b, 1)

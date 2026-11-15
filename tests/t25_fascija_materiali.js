@@ -15,6 +15,13 @@ const T = require('./lib'); const path = require('path');
   T.ok((P.fascia_side_ral || {}).west === 'RAL 9016', 'fascijas RAL kods saglabāts', P.fascia_side_ral);
   const txt = await (await T.live(page)).evaluate(() => [...document.querySelectorAll('svg text')].map(t => t.textContent).join(' ').replace(/\s+/g, ' '));
   T.ok(/Fascijas dēlis, rietumu puse/.test(txt) && /RAL 9016/.test(txt), 'lapas materiālu sarakstā ir fascijas dēlis ar RAL kodu', (txt.match(/MATERI.{0,300}/) || [txt.slice(0, 200)])[0]);
+  // parasts klikšķis (bez spaiņa) uz fascijas dēļa atlasa tā kontūru un panelī ļauj mainīt toni tikai šajā fasādē
+  await page.keyboard.press('Escape'); await page.keyboard.press('a');
+  await T.click(page, 'elev-west', u, -(F.ridge - 1000 * Math.tan(30 * Math.PI / 180) - 50)); await T.ready(page);
+  const sl = await T.sel(page); T.ok(sl && sl.k === 'fboard' && sl.side === 'west', 'klikšķis uz fascijas dēļa to atlasa', sl);
+  T.ok(/Fascijas dēlis/.test(await page.textContent('#panel')), 'panelī "Fascijas dēlis"');
+  await page.evaluate(() => { const s = document.querySelector('#panel select'); s.value = 'RAL 7016'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await T.ready(page);
+  m = await T.model(page); T.ok((m.projekts.fascia_side_ral || {}).west === 'RAL 7016' && m.projekts.fascia_side.west === '#383E42', 'panelī nomainīts tikai rietumu fascijas tonis', m.projekts.fascia_side_ral);
   await page.screenshot({ path: path.join(require('os').tmpdir(), 't25.png') });
   await browser.close(); T.done(errs);
 })().catch(e => { console.error(e); process.exit(1); });

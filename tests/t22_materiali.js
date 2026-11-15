@@ -3,7 +3,8 @@ const L = require('./lib.js'); const path = require('path');
 (async () => {
   const html = L.build(path.join(__dirname, 'modeli', 'lievenis-stabi.json'));
   const { browser, page, errs } = await L.open(html);
-  await page.evaluate(() => { document.querySelector('details[data-pane=mats]').open = true; });
+  await page.evaluate(() => { document.querySelector('details[data-pane=house]').open = true; document.querySelector('#mats [data-sec=materiali]').click(); });
+  L.ok(await page.evaluate(() => !!document.querySelector('details[data-pane=house] #matsPane') && !document.querySelector('details[data-pane=mats]')), 'Materiāli ir sadaļā Māja (globāls iestatījums), nevis atsevišķā panelī');
   const n = await page.locator('#matsPane .mrow').count();
   L.ok(n >= 7, 'materiālu saraksts ir (fasādes, pārkare, rāmji, stabi, terases)', n);
   const row = page.locator('#matsPane .mrow', { hasText: 'Austrumu fasāde' });
