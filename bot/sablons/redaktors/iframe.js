@@ -90,10 +90,14 @@
       ["y", -1, T, y < T + 20 && x > T && x < W - T], ["y", D - T, D + 1, y > D - T - 20 && x > T && x < W - T]].find(e => e[3]);
     if (ext) return { axis: ext[0], lo: Math.max(0, ext[1]), hi: Math.min(ext[0] === "x" ? W : D, ext[2]), ext: true };
     if (l === "loft") return null;
-    const R = rects("main");
+    const R = rects("main"), cl = w => { if (!w) return null; const X = w.axis === "x", u = X ? y : x;   // saīsinātās starpsienas: izgrieztais posms nav sienas daļa
+      for (const [o, c, a, b] of (M.wallCuts || [])) { if (o !== (X ? "v" : "h") || Math.abs(c - (w.lo + w.hi) / 2) > 3) continue;
+        if (u > a - 20 && u < b + 20 && !(a <= w.v0 + 1 && b >= w.v1 - 1)) { if (u >= a && u <= b) return null; }
+        if (a <= w.v0 + 1 && b > w.v0) w = Object.assign({}, w, { v0: b }); if (b >= w.v1 - 1 && a < w.v1) w = Object.assign({}, w, { v1: a }); }
+      return w.v1 - w.v0 < 1 || (u < w.v0 - 20 || u > w.v1 + 20) ? null : w; };
     for (const a of R) for (const b of R) {
-      if (b[0] - a[2] > 0 && b[0] - a[2] <= 300 && x >= a[2] - 20 && x <= b[0] + 20 && y >= Math.max(a[1], b[1]) && y <= Math.min(a[3], b[3])) return { axis: "x", lo: a[2], hi: b[0], v0: Math.max(a[1], b[1]), v1: Math.min(a[3], b[3]) };
-      if (b[1] - a[3] > 0 && b[1] - a[3] <= 300 && y >= a[3] - 20 && y <= b[1] + 20 && x >= Math.max(a[0], b[0]) && x <= Math.min(a[2], b[2])) return { axis: "y", lo: a[3], hi: b[1], v0: Math.max(a[0], b[0]), v1: Math.min(a[2], b[2]) };
+      if (b[0] - a[2] > 0 && b[0] - a[2] <= 300 && x >= a[2] - 20 && x <= b[0] + 20 && y >= Math.max(a[1], b[1]) && y <= Math.min(a[3], b[3])) { const r = cl({ axis: "x", lo: a[2], hi: b[0], v0: Math.max(a[1], b[1]), v1: Math.min(a[3], b[3]) }); if (r) return r; }
+      if (b[1] - a[3] > 0 && b[1] - a[3] <= 300 && y >= a[3] - 20 && y <= b[1] + 20 && x >= Math.max(a[0], b[0]) && x <= Math.min(a[2], b[2])) { const r = cl({ axis: "y", lo: a[3], hi: b[1], v0: Math.max(a[0], b[0]), v1: Math.min(a[2], b[2]) }); if (r) return r; }
     }
     return null;
   }
@@ -1596,7 +1600,25 @@
     d = +(+d).toFixed(1); if (!d) return;
     const N = clone(M); N.freeWalls = N.freeWalls || []; let i = w.free;
     if (i == null) {
-      if (d < 0) { post({ t: "hint", text: "Esošu sienu saīsināt nevar, nemainot telpas. Pagarinājumu (brīvo sienu) var saīsināt; starpsienu var vilkt aiz gala roktura." }); return; }
+      const cuts = N.wallCuts = N.wallCuts || [], cc = (w.lo + w.hi) / 2, oc = X ? "v" : "h";
+      if (d < 0) {   // saīsināt: izgriež sienas galu (telpas nemainās)
+        if (w.ext) { post({ t: "hint", text: "Ārsienu saīsināt nevar. Pagarinājumu (brīvo sienu) var saīsināt." }); return; }
+        const n = -d; if (b - a - n < 100) { post({ t: "hint", text: "Siena kļūtu par īsu." }); return; }
+        const ci = cuts.findIndex(c => c[0] === oc && Math.abs(c[1] - cc) < 3 && (far ? Math.abs(c[2] - b) < 2 : Math.abs(c[3] - a) < 2));   // jau saīsināta šajā galā: turpina
+        if (far) cuts.push([oc, cc, +(b - n).toFixed(1), +(b).toFixed(1)]); else cuts.push([oc, cc, +a.toFixed(1), +(a + n).toFixed(1)]);
+        const na = far ? a : a + n, nb = far ? b - n : b, mid = (w.lo + w.hi) / 2;
+        const nw = Object.assign({}, w, { v0: na, v1: nb }); sel = { k: "wall", i: nw.axis + ":" + Math.round(nw.lo), lv: sel.lv, w: nw, at: (X ? [mid, far ? nb : na] : [far ? nb : na, mid]).map(Math.round) };
+        post({ t: "edit", model: N, sel, resized: 1 }); return;
+      }
+      const ci = cuts.findIndex(c => c[0] === oc && Math.abs(c[1] - cc) < 3 && (far ? Math.abs(c[2] - b) < 2 : Math.abs(c[3] - a) < 2));   // iepriekš saīsināta siena: vispirms atjauno izgriezto posmu
+      if (ci >= 0) {
+        const c = cuts[ci], room = c[3] - c[2], k2 = Math.min(d, room); if (far) c[2] = +(c[2] + k2).toFixed(1); else c[3] = +(c[3] - k2).toFixed(1);
+        if (c[3] - c[2] < 1) cuts.splice(ci, 1); if (!cuts.length) delete N.wallCuts;
+        const nb = far ? b + k2 : b, na = far ? a : a - k2, mid = (w.lo + w.hi) / 2, nw = Object.assign({}, w, { v0: na, v1: nb });
+        sel = { k: "wall", i: nw.axis + ":" + Math.round(nw.lo), lv: sel.lv, w: nw, at: (X ? [mid, far ? nb : na] : [far ? nb : na, mid]).map(Math.round) };
+        post({ t: "edit", model: N, sel, resized: 1 }); if (d > room + 1) post({ t: "hint", text: "Daļa atjaunota; vairāk pagarināt var no jaunās sienas gala." }); return;
+      }
+      if (!N.wallCuts.length) delete N.wallCuts;
       i = N.freeWalls.findIndex(f => f[4] === o && Math.abs(f[X ? 0 : 1] - w.lo) < 1 && Math.abs(f[X ? 2 : 3] - th) < 1 && Math.abs((far ? f[s] : f[s] + f[q]) - end) < 2);   // jau pagarināta: turpina to pašu
       if (i < 0) { N.freeWalls.push(X ? [w.lo, end, th, 0, o] : [end, w.lo, 0, th, o]); i = N.freeWalls.length - 1; }
     }

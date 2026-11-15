@@ -178,6 +178,17 @@ function drawWalls(g, v, cid) {
     if (A[l] !== B[l] || A[m] !== B[m] || B[p] > A[p] + A[q] + 260 || A[p] > B[p] + B[q] + 260) continue;
     const s0 = Math.min(A[p], B[p]), s1 = Math.max(A[p] + A[q], B[p] + B[q]); A[p] = s0; A[q] = s1 - s0; walls.splice(j, 1); j = walls.length;
   }
+  // redaktora saīsinātās starpsienas: [o, ass, no, līdz] izgriež sienas posmu, telpas nemainās
+  (v.wallCuts || []).forEach(([o, c, a, b]) => {
+    for (let i = walls.length - 1; i >= 0; i--) {
+      const wl = walls[i]; if (wl[4] !== o) continue;
+      const vv = o === "v", [p, q, l, m] = vv ? [1, 3, 0, 2] : [0, 2, 1, 3];
+      if (Math.abs(wl[l] + wl[m] / 2 - c) > 3) continue;
+      const s0 = wl[p], s1 = wl[p] + wl[q]; if (b <= s0 || a >= s1) continue;
+      const parts = []; if (a > s0 + 1) parts.push([s0, a]); if (b < s1 - 1) parts.push([b, s1]);
+      walls.splice(i, 1, ...parts.map(([u0, u1]) => { const n = wl.slice(); n[p] = u0; n[q] = u1 - u0; return n; }));
+    }
+  });
   // ArchiCAD-style clean-up: cores merge at junctions, skins wrap around them.
   // 1) white wall bodies, 2) core outlines stroked double then filled white, so only the
   // outline of the union survives, 3) loops — shorter walls first, the through wall on top.
