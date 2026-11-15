@@ -1514,6 +1514,9 @@
       const hw = hovWall, X = hw.w.axis === "x", ix = nearHandle(e);
       if (ix >= 0) { drag = { wend: true, hw, ix, e0: hw.seg[ix], fixed: hw.seg[1 - ix], u: hw.seg[ix], x0: e.clientX, y0: e.clientY, moved: false }; document.body.style.cursor = X ? "ns-resize" : "ew-resize"; return true; }
     }
+    { const sx = (document.elementsFromPoint ? document.elementsFromPoint(e.clientX, e.clientY) : []).map(n => n.closest && n.closest("[data-sec]")).find(Boolean), bg = sx && sx.closest("[data-block]");
+      if (sx && bg && !place) { drag = { secd: true, i: +sx.getAttribute("data-sec"), o: sx.getAttribute("data-so"), g: bg, x0: e.clientX, y0: e.clientY, at: null, moved: false };
+        document.body.style.cursor = drag.o === "v" ? "ew-resize" : "ns-resize"; post({ t: "hint", text: "Bīdi griezuma līniju; griezums pārzīmējas visās lapās." }); return true; } }
     const h = hit(e.clientX, e.clientY); hover(null);
     if (!h) { if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false; }
     if (h.del) { post({ t: "delete" }); return true; }
@@ -1702,6 +1705,13 @@
     if (place && ((place.t === "zone" && place.poly) || place.t === "hpoly")) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
+    if (drag && drag.secd) {
+      const m0 = drag.g.getScreenCTM(), sv = drag.g.ownerSVGElement, q0 = sv.createSVGPoint(); q0.x = e.clientX; q0.y = e.clientY; const a = (() => { const r = q0.matrixTransform(m0.inverse()); return [r.x, r.y]; })(), V = drag.o === "v", at = Math.round(a[V ? 0 : 1] / 10) * 10; drag.at = at;
+      if (Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) > 3) drag.moved = true;
+      if (drag.moved) { document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); const o = overlay(drag.g), k = Math.abs(m0.a) || 1, g = mk(o, "g", { class: "gh" }), n = V ? M.D : M.W;
+        mk(g, "line", V ? { x1: at, y1: -2300, x2: at, y2: n + 2300, stroke: ACC, "stroke-width": 2 / k, "stroke-dasharray": `${6 / k} ${3 / k}` } : { x1: -2300, y1: at, x2: n + 2300, y2: at, stroke: ACC, "stroke-width": 2 / k, "stroke-dasharray": `${6 / k} ${3 / k}` }); }
+      return;
+    }
     if (drag && drag.fmk) {
       const bl = drag.h.bl, a = toLocal(bl.g, e.clientX, e.clientY), b0 = toLocal(bl.g, drag.x0, drag.y0);
       drag.dx = Math.round((a[0] - b0[0]) / 10) * 10; drag.dy = Math.round((a[1] - b0[1]) / 10) * 10;
@@ -1782,6 +1792,7 @@
   addEventListener("pointerup", () => {
     if (zdrag) { zoneUp(); return; }
     if (!drag) return;
+    if (drag.secd) { const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); if (d.moved && d.at != null) post({ t: "secMove", i: d.i, at: d.at }); return; }
     if (drag.fmk) {
       const d = drag; drag = null; document.body.style.cursor = "";
       document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());

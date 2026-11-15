@@ -153,9 +153,10 @@ function wallTags(g, v) {
 }
 function sectionLines(g, v, ext = 2300) {
   const sg = el("g", {}, g);
-  (v.sections || []).forEach(s => {
+  (v.sections || []).forEach((s, si) => {
     const span = s.o === "v" ? v.D : v.W, a0 = -ext, a1 = span + ext;
     const P = (a, b = s.at) => s.o === "v" ? [b, a] : [a, b];
+    { const hp = P(a0), hq = P(a1); el("line", { x1: hp[0], y1: hp[1], x2: hq[0], y2: hq[1], stroke: "transparent", "stroke-width": 420, "data-sec": si, "data-so": s.o, style: "cursor:move" }, sg); }   // redaktors: griezuma līniju var pavilkt plānā
     const line = (p, q, sw, dash) => el("line", { x1: p[0], y1: p[1], x2: q[0], y2: q[1], stroke: C.ink, "stroke-width": sw, ...(dash ? { "stroke-dasharray": dash } : {}) }, sg);
     const SV = +(((window.AR && window.AR.projekts && window.AR.projekts.wall_style) || {}).section) || 1;   // griezuma līnijas veids 1-3
     if (SV === 1) {
@@ -280,8 +281,47 @@ function roofPlanMono(parent, v) {
   if (arNo("griez")) sectionLines(g, v);
   return g;
 }
+// L formas mājas jumta plāns pa plaknēm (AR.projekts.roofL = {slopes:[{name, pts:[[x,y,z]]}]} no redaktora): katrai plaknei sava bulta un leņķis, kore un ieleja kā plakņu malas
+function roofPlanL(parent, v) {
+  const g = el("g", { "data-block": "plan" }, parent), RL = AR.projekts.roofL, W = v.W, Dd = v.D;
+  const all = RL.slopes.flatMap(s => s.pts), x0 = Math.min(...all.map(p => p[0])), x1 = Math.max(...all.map(p => p[0])), y0 = Math.min(...all.map(p => p[1])), y1 = Math.max(...all.map(p => p[1]));
+  const dash = { stroke: C.axis, "stroke-width": 7, "stroke-dasharray": "300 60 40 60" };
+  const bub = (cx, cy, n) => { el("circle", { cx, cy, r: 300, fill: "#fff", stroke: C.ink, "stroke-width": 12 }, g); T_(g, cx, cy + 92, n, { a: "middle", fs: 260, fw: 500 }); };
+  v.axes.x.forEach(([x, n]) => { el("line", { x1: x, y1: y0 - 2200, x2: x, y2: y1 + 2650, ...dash }, g); bub(x, y0 - 2500, n); bub(x, y1 + 2950, n); });
+  v.axes.y.forEach(([y, n]) => { el("line", { x1: x0 - 2200, y1: y, x2: x1 + 2350, y2: y, ...dash }, g); bub(x0 - 2500, y, n); bub(x1 + 2650, y, n); });
+  el("polygon", { points: v.poly.map(p => p.join(",")).join(" "), fill: "none", stroke: C.ink, "stroke-width": 12, "stroke-dasharray": "160 90" }, g);
+  RL.slopes.forEach((s, si) => {
+    const pts = s.pts.map(p => [p[0], p[1]]), fid = "rl-" + si + Math.random().toString(36).slice(2, 6);
+    el("polygon", { points: pts.map(p => p.join(",")).join(" "), fill: "#fff" }, g);
+    el("polygon", { points: pts.map(p => p.join(",")).join(" ") }, el("clipPath", { id: fid }, g));
+    // kritiena virziens no plaknes (z = z0 + gx·x + gy·y) pēc trim punktiem
+    let gx = 0, gy = 0, best = 0;   // krituma gradients no trim nekolineāriem punktiem (stūri var atkārtoties)
+    for (let a = 0; a < s.pts.length; a++) for (let b = a + 1; b < s.pts.length; b++) for (let c = b + 1; c < s.pts.length; c++) {
+      const p0 = s.pts[a], p1 = s.pts[b], p2 = s.pts[c], ax = p1[0] - p0[0], ay = p1[1] - p0[1], az = p1[2] - p0[2], bx = p2[0] - p0[0], by = p2[1] - p0[1], bz = p2[2] - p0[2], det = ax * by - ay * bx;
+      if (Math.abs(det) > best) { best = Math.abs(det); gx = (az * by - bz * ay) / det; gy = (ax * bz - bx * az) / det; } }
+    const gm = Math.hypot(gx, gy) || 1, dx = -gx / gm, dy = -gy / gm, along = Math.abs(dx) > Math.abs(dy);   // dx,dy = uz leju
+    const cg = el("g", { "clip-path": `url(#${fid})` }, g), cx0 = Math.min(...pts.map(p => p[0])), cx1 = Math.max(...pts.map(p => p[0])), cy0 = Math.min(...pts.map(p => p[1])), cy1 = Math.max(...pts.map(p => p[1]));
+    const seams = roofSeams();
+    if (seams) { if (along) for (let x = cx0 + 265; x < cx1; x += 530) el("line", { x1: x, y1: cy0, x2: x, y2: cy1, stroke: "#666", "stroke-width": 6 }, cg); else for (let y = cy0 + 265; y < cy1; y += 530) el("line", { x1: cx0, y1: y, x2: cx1, y2: y, stroke: "#666", "stroke-width": 6 }, cg); }
+    else if (along) for (let x = cx0; x < cx1; x += 340) el("line", { x1: x, y1: cy0, x2: x, y2: cy1, stroke: "#888", "stroke-width": 5 }, cg); else for (let y = cy0; y < cy1; y += 340) el("line", { x1: cx0, y1: y, x2: cx1, y2: y, stroke: "#888", "stroke-width": 5 }, cg);
+    el("polygon", { points: pts.map(p => p.join(",")).join(" "), fill: "none", stroke: C.ink, "stroke-width": 22 }, g);
+    // bulta plaknes smaguma centrā un leņķis
+    const cx = pts.reduce((t, p) => t + p[0], 0) / pts.length, cy = pts.reduce((t, p) => t + p[1], 0) / pts.length, L0 = 650, bx = cx + dx * L0, by = cy + dy * L0, ax = cx - dx * L0, ay = cy - dy * L0;
+    const deg = Math.atan(gm) * 180 / Math.PI;
+    el("rect", { x: cx - 520, y: cy - 520, width: 1040, height: 1040, fill: "#fff" }, g);
+    el("line", { x1: ax, y1: ay, x2: bx, y2: by, stroke: C.ink, "stroke-width": 10 }, g);
+    el("path", { d: `M ${bx + dx * 140} ${by + dy * 140} L ${bx - dy * 70} ${by + dx * 70} L ${bx + dy * 70} ${by - dx * 70} Z`, fill: C.ink }, g);
+    T_(g, cx + (along ? 0 : 150), cy + (along ? 280 : 60), (Math.abs(deg - Math.round(deg)) < .05 ? String(Math.round(deg)) : deg.toFixed(1).replace(".", ",")) + "°", { a: "middle", fs: 200, fw: 600, ...(along ? {} : { tr: `rotate(-90 ${cx + 150} ${cy})` }) });
+  });
+  const dg = el("g", {}, g), ax = v.axes.x.map(p => p[0]), ay = v.axes.y.map(p => p[0]);
+  chainCad(dg, [x0, ...ax, x1], "x", y1 + 1100); chainCad(dg, [Math.min(...ax), Math.max(...ax)], "x", y1 + 1700); chainCad(dg, [x0, x1], "x", y1 + 2300);
+  chainCad(dg, [y0, ...ay, y1], "y", x1 + 1100); chainCad(dg, [Math.min(...ay), Math.max(...ay)], "y", x1 + 1700); chainCad(dg, [y0, y1], "y", x0 - 1100);
+  if (arNo("griez")) sectionLines(g, v);
+  return g;
+}
 function roofPlan(parent, v) {
   if (ROOF.mono) return roofPlanMono(parent, v);
+  if (window.AR && AR.projekts && AR.projekts.roofL && !ROOF.hip) return roofPlanL(parent, v);
   const g = el("g", { "data-block": "plan" }, parent), ov = ROOF.ov, W = v.W, Dd = v.D;
   const box = [-ov, -ov, W + 2 * ov, Dd + 2 * ov];
   // axes
