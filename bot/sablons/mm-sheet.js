@@ -161,15 +161,25 @@ function mmTitleBlock(svg, v, lf, L) {
 //                 merogs: "auto" | 50 | 100 | 150 ..., viz: { src: dataURL, w, h } }
 // projekts.titul = rakstlaukuma slēdži: { brand, phase, model, key, adrese, piezimes, watermark, info, rev, cells, footer } (false = izslēgts)
 const MM_MER = [50, 75, 100, 150, 200, 250, 300, 400, 500];
+function mmMatTones(L, PR) {   // [MM] redaktora spaiņa toņi: katrai atsevišķi nokrāsotai daļai sava leģendas rinda ar RAL kodu
+  const out = [];
+  const SN = L === "en" ? { south: "south", north: "north", east: "east", west: "west" } : { south: "dienvidu", north: "ziemeļu", east: "austrumu", west: "rietumu" }, FS = PR.fasade_side || {};
+  ["south", "north", "east", "west"].forEach(sd => { const q = FS[sd]; if (q && q.hex) out.push([q.hex, L === "en" ? `Facade, ${SN[sd]} wall` : `Fasāde, ${SN[sd]} siena`, q.ral || q.hex.toUpperCase()]); });
+  const en = L === "en", M2 = u => (Math.round(u / 10) / 100).toFixed(2).replace(".", en ? "." : ",") + " m";   // atsevišķi nokrāsotas fasādes sienas ar RAL kodu
+  ["south", "north", "east", "west"].forEach(sd => (((PR.fasade_wall || {})[sd]) || []).slice().sort((p, q) => p.u0 - q.u0).forEach(q => { if (q.hex) out.push([q.hex, en ? `Facade, ${SN[sd]} wall (${M2(q.u1 - q.u0)})` : `Fasāde, ${SN[sd]} fasādes siena (${M2(q.u1 - q.u0)})`, q.ral || q.hex.toUpperCase()]); }));
+  if (PR.parkare_hex) out.push([PR.parkare_hex, en ? "Roof overhang" : "Jumta pārkare", PR.parkare_ral || PR.parkare_hex.toUpperCase()]);
+  ["south", "north", "east", "west"].forEach(sd => { const q = (PR.parkare_side || {})[sd]; if (q) out.push([q, en ? `Roof overhang, ${SN[sd]} side` : `Jumta pārkare, ${SN[sd]} puse`, ((PR.parkare_side_ral || {})[sd]) || q.toUpperCase()]); });
+  if (PR.fascia_hex) out.push([PR.fascia_hex, en ? "Fascia board" : "Fascijas dēlis", PR.fascia_ral || PR.fascia_hex.toUpperCase()]);
+  ["south", "north", "east", "west"].forEach(sd => { const q = (PR.fascia_side || {})[sd]; if (q) out.push([q, en ? `Fascia board, ${SN[sd]} side` : `Fascijas dēlis, ${SN[sd]} puse`, ((PR.fascia_side_ral || {})[sd]) || q.toUpperCase()]); });
+  return out;
+}
 function mmMatList(L) {   // materiālu leģenda (tā pati kā klasiskajā lapā)
   const tx = MM_TXT[L], PR = (window.ARC && ARC.projekts) || (window.AR && AR.projekts) || {}, plate = PR.pamati === "platne";
   const out = tx.mats.map(m => m[0] === "wood" && PR.tonis_lv ? ["wood", ...(L === "en" ? PR.tonis_en : PR.tonis_lv)]
     : m[0] === "#1d1d1d" && plate ? [PR.cokols_plate_hex || "#9b9c98", ...(L === "en" ? ["Plinth: foundation slab,", PR.cokols_plate ? "tinted concrete, " + PR.cokols_plate : "concrete"] : ["Cokols: pamatu plātne,", PR.cokols_plate ? "tonēts betons, " + PR.cokols_plate : "betons"])]
     : m[0] === "#383E42" && PR.logi ? [PR.logi_hex || m[0], m[1], PR.logi]
     : m[0] === "#1d1d1d" && PR.cokols ? [PR.cokols_hex || m[0], m[1], PR.cokols] : m);
-  const SN = L === "en" ? { south: "south", north: "north", east: "east", west: "west" } : { south: "dienvidu", north: "ziemeļu", east: "austrumu", west: "rietumu" }, FS = PR.fasade_side || {};
-  ["south", "north", "east", "west"].forEach(sd => { const q = FS[sd]; if (q && q.hex) out.push([q.hex, L === "en" ? `Facade, ${SN[sd]} wall` : `Fasāde, ${SN[sd]} siena`, q.ral || q.hex.toUpperCase()]); });
-  if (PR.parkare_hex) out.push([PR.parkare_hex, L === "en" ? "Roof overhang" : "Jumta pārkare", PR.parkare_ral || PR.parkare_hex.toUpperCase()]);
+  out.push(...mmMatTones(L, PR));
   return out;
 }
 // bloku izmēri (lapas mm) pie mēroga SC; fiksētie (tabulas, materiāli) no mēroga nav atkarīgi
@@ -386,11 +396,7 @@ function modelSheet(v) {
   }
   if (PR.sturi) { const o = PR.sturi_opc || "balts", t = { balts: ["white", "balti"], melns: ["black", "melni"], tonis: ["facade colour", "fasādes tonī"] }[o] || ["white", "balti"];
     ARC.materials.push([PR.sturi_hex || "#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, t[0]] : [`Stūru dēļi ${PR.sturi} mm,`, t[1]])]); }
-  { // fasādes tonis pa pusēm un jumta pārkares tonis (redaktora spainis): katram sava leģendas rinda
-    const SN = L === "en" ? { south: "south", north: "north", east: "east", west: "west" } : { south: "dienvidu", north: "ziemeļu", east: "austrumu", west: "rietumu" }, FS = PR.fasade_side || {};
-    ["south", "north", "east", "west"].forEach(sd => { const q = FS[sd]; if (q && q.hex) ARC.materials.push([q.hex, L === "en" ? `Facade, ${SN[sd]} wall` : `Fasāde, ${SN[sd]} siena`, q.ral || q.hex.toUpperCase()]); });
-    if (PR.parkare_hex) ARC.materials.push([PR.parkare_hex, L === "en" ? "Roof overhang" : "Jumta pārkare", PR.parkare_ral || PR.parkare_hex.toUpperCase()]);
-  }
+  ARC.materials.push(...mmMatTones(L, PR));   // fasādes sienu, pārkares un fascijas toņi (redaktora spainis)
   const matN = ARC.materials.length;
   const mg = materials(svg, 26, row2 + 31, true);
   ARC.materials = keep;

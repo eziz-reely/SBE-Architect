@@ -81,8 +81,29 @@ def _mm_extra(cad):
             '  const P = v.poly || [], n = P.length, ar = P.reduce((s, q, i) => s + q[0] * P[(i + 1) % n][1] - P[(i + 1) % n][0] * q[1], 0) > 0 ? 1 : -1, nm = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] }[side], out = [];\n'
             '  P.forEach((a, i) => { const b = P[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], o = ar > 0 ? [dy, -dx] : [-dy, dx]; if (!(o[0] * nm[0] + o[1] * nm[1] > 0)) return;\n'
             '    const hz = side === "north" || side === "south", f = q => hz ? (side === "north" ? v.W - q[0] : q[0]) : (side === "east" ? v.D - q[1] : q[1]), u0 = f(a), u1 = f(b); if (Math.abs(u1 - u0) > 1) out.push({ u0: Math.min(u0, u1), u1: Math.max(u0, u1) }); });\n'
-            '  return out.sort((p, q) => p.u0 - q.u0);\n}\nwindow.mmFacSegs = mmFacSegs;\n'
+            '  out.sort((p, q) => p.u0 - q.u0);\n'
+            '  const ex = { north: Math.min(...P.map(q => q[1])), south: Math.max(...P.map(q => q[1])), west: Math.min(...P.map(q => q[0])), east: Math.max(...P.map(q => q[0])) }[side], SP = side === "north" || side === "south" ? v.W : v.D;   // [MM] ieliekuma siena (atkāpta no ārējās plaknes) beidzas pie karnīzes; virs tās tā pati ārējās plaknes siena\n'
+            '  P.forEach((a, i) => { const b = P[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], o = ar > 0 ? [dy, -dx] : [-dy, dx]; if (!(o[0] * nm[0] + o[1] * nm[1] > 0)) return;\n'
+            '    const hz = side === "north" || side === "south", f = q => hz ? (side === "north" ? v.W - q[0] : q[0]) : (side === "east" ? v.D - q[1] : q[1]), u0 = Math.min(f(a), f(b)), u1 = Math.max(f(a), f(b)), c = hz ? a[1] : a[0], sg = out.find(q => Math.abs(q.u0 - u0) < 2 && Math.abs(q.u1 - u1) < 2); if (sg) sg.rec = Math.abs(c - ex) > 1; });\n'
+            '  const outer = out.filter(q => !q.rec); let cur = 0; const gaps = [];\n'
+            '  outer.forEach(q => { if (q.u0 > cur + 1) gaps.push([cur, q.u0]); cur = Math.max(cur, q.u1); }); if (cur < SP - 1) gaps.push([cur, SP]);\n'
+            '  gaps.forEach(g => { const ow = outer.find(q => Math.abs(q.u1 - g[0]) < 2) || outer.find(q => Math.abs(q.u0 - g[1]) < 2); if (ow) (ow.ext = ow.ext || []).push(g); });\n'
+            '  return out;\n}\nwindow.mmFacSegs = mmFacSegs;\n'
+            'function mmFacPick(v, side, u, z, eE) {   // [MM] siena fasādē punktā (u, z): ieliekuma siena tikai zem karnīzes, virs tās pieder ārējās plaknes sienai\n'
+            '  const sg = mmFacSegs(v, side), s = sg.find(q => u >= q.u0 && u <= q.u1); if (!s || !s.rec || z == null || z <= eE) return s || null;\n'
+            '  return sg.find(q => (q.ext || []).some(g => u >= g[0] - 1 && u <= g[1] + 1)) || s;\n}\nwindow.mmFacPick = mmFacPick;\n'
+            'function mmFacEdges(v) {   // [MM] mājas kontūras malas ar fasādes pusi un u-diapazonu: [{side, u0, u1, a, b}]\n'
+            '  const P = v.poly || [], n = P.length, ar = P.reduce((s, q, i) => s + q[0] * P[(i + 1) % n][1] - P[(i + 1) % n][0] * q[1], 0) > 0 ? 1 : -1, out = [];\n'
+            '  P.forEach((a, i) => { const b = P[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], o = ar > 0 ? [dy, -dx] : [-dy, dx]; if (!dx && !dy) return;\n'
+            '    const side = Math.abs(o[0]) > Math.abs(o[1]) ? (o[0] > 0 ? "east" : "west") : (o[1] > 0 ? "south" : "north"), hz = side === "north" || side === "south", f = q => hz ? (side === "north" ? v.W - q[0] : q[0]) : (side === "east" ? v.D - q[1] : q[1]), u0 = f(a), u1 = f(b);\n'
+            '    out.push({ side, u0: Math.min(u0, u1), u1: Math.max(u0, u1), a, b }); });\n'
+            '  return out;\n}\nwindow.mmFacEdges = mmFacEdges;\n'
+            'function mmFacEdge(v, p, tol) {   // [MM] tuvākā kontūras mala punktam plānā (p = [x, y]) ne tālāk par tol\n'
+            '  let best = null;\n'
+            '  mmFacEdges(v).forEach(e => { const dx = e.b[0] - e.a[0], dy = e.b[1] - e.a[1], L2 = dx * dx + dy * dy, t = Math.max(0, Math.min(1, ((p[0] - e.a[0]) * dx + (p[1] - e.a[1]) * dy) / L2)), d = Math.hypot(p[0] - e.a[0] - t * dx, p[1] - e.a[1] - t * dy); if (d <= tol && (!best || d < best.d)) best = Object.assign({ d }, e); });\n'
+            '  return best;\n}\nwindow.mmFacEdge = mmFacEdge;\n'
             'function mmParkHex(side) { const P = (window.AR && AR.projekts) || {}, q = (P.parkare_side || {})[side]; return q || P.parkare_hex || null; }   // [MM] jumta pārkares tonis pa fasādes pusēm (projekts.parkare_side), citādi viens visai mājai\n'
+            'function mmFasHex(side, d) { const P = (window.AR && AR.projekts) || {}, q = (P.fascia_side || {})[side]; return q || P.fascia_hex || mmParkHex(side) || d; }   // [MM] fascijas dēļa (vējmalas) tonis: pa pusēm (projekts.fascia_side), visai mājai (fascia_hex), citādi kā jumta pārkare\n'
             'function mmSideHex(side) { const q = ((window.AR && AR.projekts && AR.projekts.fasade_side) || {})[side]; return q ? (q.hex || q) : null; }\n')
     a = 'function cadPlan(parent, v, opt = {}) {'
     assert a in cad, 'SBE cad.js: nav atrasts cadPlan'
@@ -102,7 +123,7 @@ def _mm_extra(cad):
         # fasādes tonis tikai vienai pusei (krāsas spainis): projekts.fasade_side[side]
         ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);',
          '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);\n'
-         '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, el("clipPath", { id: rid }, g)); boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
+         '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); { const cp = el("clipPath", { id: rid }, g), sgq = mmFacSegs(v, side).find(z => Math.abs(z.u0 - q.u0) < 2 && Math.abs(z.u1 - q.u1) < 2) || {}; if (sgq.rec) el("rect", { x: q.u0, y: -eEdge, width: q.u1 - q.u0, height: 20000 + eEdge }, cp); else { el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, cp); (sgq.ext || []).forEach(gp => el("rect", { x: gp[0], y: -20000, width: gp[1] - gp[0], height: 20000 - eEdge }, cp)); } } boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
         # jumta pārkares tonis (projekts.parkare_hex): gala fasādes pārkare, vēja kaste, garās fasādes spāres gals
         ('      const BC = FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";\n',
          '      const PKH = mmParkHex(side), BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
@@ -119,6 +140,11 @@ def _mm_extra(cad):
          '      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: PKH || (FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54")) }, g);\n'
          '      if (!FAS || PKH) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
          '        const tg = el("g", { transform: "rotate(-90)" }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));'),
+        # [MM] fascijas dēļa tonis atsevišķi (projekts.fascia_side / fascia_hex), pēc noklusējuma tāds pats kā jumta pārkare
+        ('P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? "#F2F0EA" : "#4a5055"',
+         'P(span / 2, ridgeTop - vt)].join(" "), fill: mmFasHex(side, FAS ? "#F2F0EA" : "#4a5055")'),
+        ('height: thV - 70, fill: "#F2F0EA"', 'height: thV - 70, fill: mmFasHex(side, "#F2F0EA")'),
+        ('height: vt, fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);', 'height: vt, fill: mmFasHex(side, "#4a5055"), stroke: C.ink, "stroke-width": 12 }, g);'),
     ]:
         assert a in cad, 'SBE cad.js (mm_extra): nav atrasts ' + a[:60]
         cad = cad.replace(a, b, 1)
