@@ -234,6 +234,13 @@ label.chk input { width: auto; }
       <label>Pamati<select id="nFnd"><option value="stabveida">Stabveida</option><option value="platne">Betona plātne</option></select></label>
       <label>Fasādes tonis<select id="nTone"><option value="peleks">Pelēks</option><option value="koks">Koks</option><option value="sarkans">Sarkans</option><option value="zals">Zaļš</option><option value="balts">Balts</option></select></label>
     </div>
+    <div class="g2 h-only">
+      <label>Jumta forma<select id="nRoof"><option value="divslipju">Divslīpju</option><option value="vienslipa">Vienslīpu</option><option value="parapets">Plakans ar parapetu</option></select></label>
+      <label class="rm" hidden>Krīt / tekne uz<select id="nFall"><option value="south">Dienvidiem</option><option value="north">Ziemeļiem</option><option value="east">Austrumiem</option><option value="west">Rietumiem</option></select></label>
+      <label class="rm" hidden>Zemākā siena, mm<input id="nRLo" type="number" inputmode="numeric" min="2000" max="9000" step="10" value="2600"></label>
+      <label class="rm" hidden>Augstākā siena / parapets, mm<input id="nRHi" type="number" inputmode="numeric" min="2100" max="12000" step="10" placeholder="3500"></label>
+      <label class="rm rp" hidden>Jumta dziļums zem parapeta, mm<input id="nRDz" type="number" inputmode="numeric" min="50" max="2000" step="10" value="300"></label>
+    </div>
     <p class="note p-only" hidden>Izmērus var neievadīt: redaktors atvērsies zīmēšanas režīmā, un kontūras (paneļus) savelc ar peli lapā. Ja ievadi garumu un platumu, sākumā būs viens taisnstūris (C24 karkasa ārmala). Stabi sakārtojas paši ar soli līdz 1200 mm, izmēri un specifikācija arī.</p>
     <p class="note h-only">Bots uzģenerē plānojumu un A3 lapu. Tas var aizņemt līdz minūtei. Pēc tam projekts atveras redaktorā.</p>
     <label>Ko vēl zini par projektu (nav obligāti)<textarea id="nNote" rows="3" placeholder="piem. 2 guļamistabas, vannasistaba pie ieejas, terase dienvidos, klients vēlas koka fasādi"></textarea></label>
@@ -558,6 +565,10 @@ const kindSync = () => { const p = $("nKind").value === "pamati"; document.query
   const cl = $("nKind").value === "claude"; $("nL").required = $("nB").required = !p && !cl; $("nOk").textContent = cl ? "Veidot ar Claude" : "Izveidot"; $("nClaude").hidden = cl; $("nL").placeholder = p ? "nav jāievada" : "8570"; $("nB").placeholder = p ? "nav jāievada" : "3500";
   $("nName").placeholder = p ? "piem. Lejasbirzes" : "piem. Freya"; $("nId").placeholder = p ? "automātiski STABI-nn" : "automātiski MM-xx-nn"; };
 $("nKind").addEventListener("change", kindSync);
+const roofSync = () => { const v = $("nRoof").value, mono = v !== "divslipju"; document.querySelectorAll("#dNew .rm").forEach(e => e.hidden = !mono || ($("nKind").value === "pamati") || (e.classList.contains("rp") && v !== "parapets"));
+  if (mono) { if (!$("nRHi").value || $("nRHi").dataset.auto) { $("nRHi").value = (+$("nRLo").value || 2600) + (v === "parapets" ? 700 : 900); $("nRHi").dataset.auto = 1; } $("nLoft").value = "ne"; } };
+$("nRoof").addEventListener("change", () => { $("nRHi").value = ""; roofSync(); }); $("nRHi").addEventListener("input", () => { delete $("nRHi").dataset.auto; });
+$("nKind").addEventListener("change", roofSync);
 $("nCancel").onclick = () => $("dNew").close();
 const ridgeHint = () => { const P = +$("nP").value, Bw = +$("nB").value; $("nE").disabled = !!$("nH").value; if (!$("nH").value && P && Bw) $("nH").placeholder = "≈ " + Math.round((+$("nE").value || 2600) + 295 / Math.cos(P * Math.PI / 180) + Bw / 2 * Math.tan(P * Math.PI / 180) + ($("nFnd").value === "platne" ? 0 : 275)) + " no slīpuma"; };
 ["nP", "nB", "nH", "nE", "nFnd"].forEach(id => $(id).addEventListener("input", ridgeHint));
@@ -580,6 +591,7 @@ $("fNew").addEventListener("submit", async e => {
   try {
     const r = await api("/api/new", { company: $("nCo").value, komplekts: $("nSet").value, garums: +$("nL").value, platums: +$("nB").value, augstums: $("nH").value ? +$("nH").value : "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
       nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value,
+      jumta_forma: $("nRoof").value, krit: $("nFall").value, h_zema: +$("nRLo").value || "", h_augsta: +$("nRHi").value || "", dz: $("nRDz").value === "" ? "" : +$("nRDz").value,
       veids: $("nKind").value, diametrs: +$("nPd").value || 120, uzlaide: +$("nPu").value || 0, vainags_b: +$("nPv").value || 145 });
     location.href = "/edit/" + r.key;
   } catch (er) { $("nErr").textContent = er.message; $("nErr").hidden = false; b.disabled = false; b.textContent = "Izveidot"; }

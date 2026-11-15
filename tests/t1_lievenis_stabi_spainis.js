@@ -45,7 +45,7 @@ const T = require('./lib'); const path = require('path');
   await page.waitForTimeout(150);
   await T.click(page, 'elev-north', 6000, -1900); await T.ready(page);
   m = await T.model(page);
-  T.ok(m.projekts.fasade_side && m.projekts.fasade_side.north && !m.projekts.fasade_side.south, 'spainis krāso tikai ziemeļu fasādi', m.projekts.fasade_side);
+  T.ok(((m.projekts.fasade_wall || {}).north || []).length > 0 && !((m.projekts.fasade_wall || {}).south || []).length, 'spainis krāso tikai klikšķināto ziemeļu sienas plakni', m.projekts.fasade_wall);
   T.ok(!m.projekts.fasade_hex, 'visas mājas tonis nemainās', m.projekts.fasade_hex);
   const fr3 = await T.live(page);
   const filt = await fr3.evaluate(() => ['north', 'south'].map(s => !!document.querySelector(`g[data-block=elev-${s}] g[filter]`)));
@@ -53,7 +53,7 @@ const T = require('./lib'); const path = require('path');
   // pārkare: klikšķis uz spāres gala joslas garajā fasādē
   const F = await fr3.evaluate(() => window.__FDF.north);
   await T.click(page, 'elev-north', 6000, -(F.eEdge + (F.eT - F.eEdge) / 2)); await T.ready(page);
-  m = await T.model(page); T.ok(!!m.projekts.parkare_hex, 'spainis krāso jumta pārkari', m.projekts.parkare_hex);
+  m = await T.model(page); T.ok(!!(m.projekts.parkare_side || {}).north && !(m.projekts.parkare_side || {}).south, 'spainis krāso tikai ziemeļu puses pārkari', m.projekts.parkare_side);
   await page.screenshot({ path: path.join(require('os').tmpdir(), 't1.png') });
   await browser.close(); T.done(errs);
 })().catch(e => { console.error(e); process.exit(1); });

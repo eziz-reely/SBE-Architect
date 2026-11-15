@@ -24,7 +24,7 @@ RAL = {'RAL 7016': '#383E42', 'RAL 7024': '#474A50', 'RAL 7021': '#2F3234', 'RAL
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'userDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts', 'freeWalls', 'wallCuts']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
@@ -47,12 +47,12 @@ def _ov_per_edge(cad):
     i = cad.index('function elevation(parent, v, side')
     j = cad.index('\nfunction ', i + 10)
     body = cad[i:j]
-    k = body.index('const eEdge = ROOF.eave - ROOF.ov * tan')
+    k = body.index('const eEdge = MN ? MN.eE : LP ? LP.eE : ROOF.eave - ROOF.ov * tan')
     head, rest = body[:k], body[k:]
     ins = ('const _OV = (window.AR && AR.projekts && AR.projekts.ov_side) || {}, _od = q => (_OV[q] != null && !isNaN(+_OV[q])) ? +_OV[q] : ROOF.ov;\n'
            '  const _LR = { south: ["west", "east"], north: ["east", "west"], east: ["south", "north"], west: ["north", "south"] }[side] || ["west", "east"];\n'
            '  const OVL = _od(_LR[0]), OVR = _od(_LR[1]), OVV = endV ? ROOF.ov : _od(side);\n  ')
-    rest = rest.replace('const eEdge = ROOF.eave - ROOF.ov * tan', 'const eEdge = ROOF.eave - OVV * tan', 1)
+    rest = rest.replace('ROOF.eave - ROOF.ov * tan', 'ROOF.eave - OVV * tan', 1)
     rest = rest.replace('(v.D / 2 + ROOF.ov) * tan', '(v.D / 2 + OVV) * tan', 1)
     for a, b in [('span + 2 * ROOF.ov', 'span + OVL + OVR'), ('span / 2 + ROOF.ov', 'span / 2 + OVR'), ('span + ROOF.ov', 'span + OVR'),
                  ('(uV + ROOF.ov)', '(uV + OVL)'), ('ROOF.ov + LCX', 'OVL + LCX'), ('ROOF.ov + 1300', 'OVR + 1300'), ('-ROOF.ov', '-OVL')]:
@@ -77,6 +77,12 @@ def _mm_extra(cad):
             '  const f = el("filter", { id, "color-interpolation-filters": "sRGB", x: 0, y: 0, width: 1, height: 1 }, g);\n'
             '  el("feColorMatrix", { type: "matrix", values: c.map(v => [v * k * .299, v * k * .587, v * k * .114, 0, v * .55].map(n => n.toFixed(4)).join(" ")).join(" ") + " 0 0 0 1 0" }, f);\n'
             '  return id;\n}\n'
+            'function mmFacSegs(v, side) {   // [MM] fasādes atsevišķas sienas (plaknes): mājas kontūras malas, kas skatās uz šo pusi; [{u0, u1}] fasādes koordinātēs\n'
+            '  const P = v.poly || [], n = P.length, ar = P.reduce((s, q, i) => s + q[0] * P[(i + 1) % n][1] - P[(i + 1) % n][0] * q[1], 0) > 0 ? 1 : -1, nm = { north: [0, -1], south: [0, 1], west: [-1, 0], east: [1, 0] }[side], out = [];\n'
+            '  P.forEach((a, i) => { const b = P[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], o = ar > 0 ? [dy, -dx] : [-dy, dx]; if (!(o[0] * nm[0] + o[1] * nm[1] > 0)) return;\n'
+            '    const hz = side === "north" || side === "south", f = q => hz ? (side === "north" ? v.W - q[0] : q[0]) : (side === "east" ? v.D - q[1] : q[1]), u0 = f(a), u1 = f(b); if (Math.abs(u1 - u0) > 1) out.push({ u0: Math.min(u0, u1), u1: Math.max(u0, u1) }); });\n'
+            '  return out.sort((p, q) => p.u0 - q.u0);\n}\nwindow.mmFacSegs = mmFacSegs;\n'
+            'function mmParkHex(side) { const P = (window.AR && AR.projekts) || {}, q = (P.parkare_side || {})[side]; return q || P.parkare_hex || null; }   // [MM] jumta pārkares tonis pa fasādes pusēm (projekts.parkare_side), citādi viens visai mājai\n'
             'function mmSideHex(side) { const q = ((window.AR && AR.projekts && AR.projekts.fasade_side) || {})[side]; return q ? (q.hex || q) : null; }\n')
     a = 'function cadPlan(parent, v, opt = {}) {'
     assert a in cad, 'SBE cad.js: nav atrasts cadPlan'
@@ -94,21 +100,22 @@ def _mm_extra(cad):
         ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
          'void 0;'),   # [MM] stabam fasādē nav vektora līniju: tikai tekstūra vai krāsa
         # fasādes tonis tikai vienai pusei (krāsas spainis): projekts.fasade_side[side]
-        ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span,',
-         '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span,'),
+        ('  boards(el("g", { "clip-path": `url(#${wid})` }, g), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);',
+         '  boards(el("g", Object.assign({ "clip-path": `url(#${wid})` }, mmSideHex(side) ? { filter: `url(#${mmTint(g, mmSideHex(side))})` } : {}), g), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length);\n'
+         '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, el("clipPath", { id: rid }, g)); boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || LP || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
         # jumta pārkares tonis (projekts.parkare_hex): gala fasādes pārkare, vēja kaste, garās fasādes spāres gals
         ('      const BC = FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";\n',
-         '      const PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null, BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
+         '      const PKH = mmParkHex(side), BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
         ('        if (!FAS) {   // fasādes dēļu tekstūra, pagriezta pa jumta slīpumu (dēļi gar spāri)\n',
          '        if (!FAS || PKH) {   // fasādes dēļu tekstūra, pagriezta pa jumta slīpumu (dēļi gar spāri)\n'),
         ('          const tg = el("g", { transform: `rotate(${th} ${cx} ${cy})` }, el("g", { "clip-path": `url(#${cid})` }, g));\n',
          '          const tg = el("g", { transform: `rotate(${th} ${cx} ${cy})` }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));\n'),
         ('fill: FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555"), stroke: C.ink, "stroke-width": 12 }, g);',
-         'fill: AR.projekts.parkare_hex || (FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555")), stroke: C.ink, "stroke-width": 12 }, g);'),
+         'fill: mmParkHex(side) || (FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555")), stroke: C.ink, "stroke-width": 12 }, g);'),
         ('      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54") }, g);\n'
          '      if (!FAS) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
          '        const tg = el("g", { transform: "rotate(-90)" }, el("g", { "clip-path": `url(#${cid})` }, g));',
-         '      const PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null;\n'
+         '      const PKH = mmParkHex(side);\n'
          '      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: PKH || (FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54")) }, g);\n'
          '      if (!FAS || PKH) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
          '        const tg = el("g", { transform: "rotate(-90)" }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));'),
@@ -123,6 +130,18 @@ def build(model_path, langs=None):
     cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
     j = m.get('jumts', {})
     cfg['roof'].update({k: j[k] for k in ('pitch', 'ov', 'eave') if k in j})
+    if j.get('forma') in ('vienslipa', 'parapets'):   # vienslīpu jumts / plakans ar parapetu
+        import math
+        par = j.get('forma') == 'parapets'
+        fall = j.get('krit') if j.get('krit') in ('north', 'south', 'east', 'west') else 'south'
+        run = m['D'] if fall in ('north', 'south') else m['W']
+        lo = round(j.get('h_zema') or j.get('eave') or 2600); hi = round(j.get('h_augsta') or lo + (500 if par else 900))
+        dz = float(j.get('dz') if j.get('dz') is not None else 300)
+        sl = round(math.degrees(math.atan(max(0, hi - dz - lo) / run)), 3)
+        mono = {'fall': fall, 'lo': lo, 'hi': hi}
+        if par: mono.update(par=True, dz=dz)
+        cfg['roof'].update(mono=mono, eave=lo, hip=0, pitch=sl if par else round(math.degrees(math.atan((hi - lo) / run)), 3))
+        if par: cfg['roof']['ov'] = 0
     cfg['tb']['object'] = [m['nosaukums']]
     import datetime
     pr = {**cfg.get('projekts', {}), **m.get('projekts', {})}
@@ -220,15 +239,15 @@ def build(model_path, langs=None):
                   '    el("rect", { x: -20, y: fT, width: span + 40, height: ROOF.plinth - 40 - fT, fill: (AR.projekts.cokols_hex || "#1d1d1d"), stroke: C.ink, "stroke-width": 10 }, g);'),
                  # logu (palodzes, augšas) augstuma atzīmes visās fasādēs; gala fasādēm arī ±0,000
                  ('    lvl(-ROOF.plinth, lv(-ROOF.plinth));\n  }',
-                  '    lvl(-ROOF.plinth, lv(-ROOF.plinth));\n  }\n  { const top = gable ? ROOF.eave : eEdge, zs = [];\n    (v.windows || []).filter(w => w.side === side).forEach(w => { if (w.sill > 0) zs.push(w.sill); zs.push(w.head); });\n    (v.doors || []).filter(d => d.entry && side === "south").forEach(() => zs.push(2100));\n    if (!opt.levels) lvl(0, lv(0));\n    let last = 0; [...new Set(zs)].sort((a, b) => a - b).forEach(z => { if (z - last >= 300 && top - z >= 300) { lvl(z, lv(z)); last = z; } }); }'),
+                  '    lvl(-ROOF.plinth, lv(-ROOF.plinth));\n  }\n  { const top = MN && MN.role === "prof" ? MN.lo : gable ? ROOF.eave : eEdge, zs = [];\n    (v.windows || []).filter(w => w.side === side).forEach(w => { if (w.sill > 0) zs.push(w.sill); zs.push(w.head); });\n    (v.doors || []).filter(d => d.entry && side === "south").forEach(() => zs.push(2100));\n    if (!opt.levels) lvl(0, lv(0));\n    if (MN && MN.role === "prof" && !opt.levels) { lvl(Math.round(MN.hi), lv(Math.round(MN.hi))); lvl(Math.round(MN.lo), lv(Math.round(MN.lo))); }\n    let last = 0; [...new Set(zs)].sort((a, b) => a - b).forEach(z => { if (z - last >= 300 && top - z >= 300) { lvl(z, lv(z)); last = z; } }); }'),
                  # zemes līnija: īsāka garām mājām (opt.ground), lai garā fasāde neuzbrauc gala fasādes atzīmēm
                  ('for (let x = -1400; x < span + 1400 - 260; x += 200)', 'const GX = opt.ground || 1600; for (let x = -(GX - 200) - (opt.gl || 0); x < span + GX - 200 - 260 + (opt.gr || 0); x += 200)'),
                  ('el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth,', 'el("line", { x1: -(opt.ground || 1600) - (opt.gl || 0), y1: ROOF.plinth, x2: span + (opt.ground || 1600) + (opt.gr || 0), y2: ROOF.plinth,'),
                  # klienta lapā grīdas apakšas atzīmi nerāda (uzbrauc ±0,000)
                  ('    if (fT) lvl(-fT, lv(-fT), 1);\n', ''),
                  # bez jumta pārkares nav ēnas zem dzegas
-                 ('  if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else el(',
-                  '  if (ROOF.ov > 0 && !gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else if (ROOF.ov > 0) el('),
+                 ('  if (LP || (MN && (MN.role === "prof" || MN.par))) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (!gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else el(',
+                  '  if (LP || (MN && (MN.role === "prof" || MN.par))) { /* slīpa jumta mala, ēna nav vajadzīga */ } else if (ROOF.ov > 0 && !gable) el("rect", { x: 0, y: -eEdge, width: span, height: 420, fill: "url(#eaveShadow)" }, g);\n  else if (ROOF.ov > 0) el('),
                  # notekcaurule garajā fasādē: taisns gals 300 mm virs zemes (izplūde pret skatītāju), bez līkuma
                  ('      el("rect", { x: u - 40, y: -(eEdge + thV - 240), width: 80, height: eEdge + thV - 240 + 150, fill: GUT, stroke: C.ink, "stroke-width": 9 }, g);\n      el("path", { d: `M ${u - 50} ${150} q 0 110 110 110 h 60 v -100 h -70 z`, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);',
                   '      el("rect", { x: u - 50, y: -(eEdge + thV - 240), width: 100, height: eEdge + thV - 240 + ROOF.plinth - 50, fill: GUT, stroke: C.ink, "stroke-width": 9 }, g);\n      el("line", { x1: u - 22, y1: -(eEdge + thV - 260), x2: u - 22, y2: ROOF.plinth - 70, stroke: "rgba(255,255,255,.22)", "stroke-width": 8 }, g);'),
@@ -267,11 +286,11 @@ def build(model_path, langs=None):
         ('width: 40, height: 1100, fill: "#b9bcbe" }, g);', 'width: 40, height: 1100, fill: "#b9bcbe", stroke: "#111", "stroke-width": 4 }, g);'),
         ('width: 160, height: 1800, fill: "url(#glass)" }, g);', 'width: 160, height: 1800, fill: "url(#glass)", stroke: "#111", "stroke-width": 5 }, g);'),
         # [MM] notekas katrā garajā pusē var noņemt (projekts.notekas = {north: false})
-        ('  const GUT = "#2f3438";\n  if (!gable) {', '  const GUT = "#2f3438", NOT = s => !(window.AR && AR.projekts && AR.projekts.notekas && AR.projekts.notekas[s] === false);\n  if (!gable && NOT(side)) {'),
+        ('  const GUT = "#2f3438";\n  if (LP || (MN && MN.role !== "low")) { /* tekne zemajā pusē; augstajā pusē tās nav, profilā zīmēta kopā ar jumtu */ } else if (!gable) {', '  const GUT = "#2f3438", NOT = s => !(window.AR && AR.projekts && AR.projekts.notekas && AR.projekts.notekas[s] === false);\n  const PIPE = u => side[0] + (side === "north" ? (u < span / 2 ? "e" : "w") : (u < span / 2 ? "w" : "e"));\n  if (LP || (MN && MN.role !== "low")) { /* tekne zemajā pusē; augstajā pusē tās nav, profilā zīmēta kopā ar jumtu */ } else if (!gable && NOT(side)) {'),
         ('  } else {\n    [-1, 1].forEach(sd => {\n      // half-round gutter', '  } else if (gable) {\n    [-1, 1].forEach(sd => {\n      if (!NOT(side === "west" ? (sd < 0 ? "north" : "south") : (sd < 0 ? "south" : "north"))) return;\n      // half-round gutter'),
         # [MM] katru noteku un katru notekcauruli var noņemt atsevišķi (projekts.notekas: north/south = noteka, nw/ne/sw/se = caurule stūrī)
-        ('  if (!gable && NOT(side)) {\n    const gz = eEdge + thV - 120;\n    el("rect", { x: -ROOF.ov - 40, y: -gz, width: span + 2 * ROOF.ov + 80, height: 120, rx: 40, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);\n    el("line", { x1: -ROOF.ov - 25, y1: -gz + 18, x2: span + ROOF.ov + 25, y2: -gz + 18, stroke: "rgba(255,255,255,.28)", "stroke-width": 7 }, g);\n    [180, span - 180].forEach(u => {',
-         '  const PIPE = u => side[0] + (side === "north" ? (u < span / 2 ? "e" : "w") : (u < span / 2 ? "w" : "e"));\n  if (!gable) {\n    const gz = eEdge + thV - 120;\n    if (NOT(side)) {\n    el("rect", { x: -ROOF.ov - 40, y: -gz, width: span + 2 * ROOF.ov + 80, height: 120, rx: 40, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);\n    el("line", { x1: -ROOF.ov - 25, y1: -gz + 18, x2: span + ROOF.ov + 25, y2: -gz + 18, stroke: "rgba(255,255,255,.28)", "stroke-width": 7 }, g);\n      { const ga = -ROOF.ov - 40, gb = span + ROOF.ov + 40, gl = gb - ga, nb = Math.max(1, Math.round(gl / 600));   // [MM] notekas metāla detaļas: ārējā mala, kronšteini, savienojumu šuves, noslēgi\n        el("line", { x1: ga + 30, y1: -gz + 100, x2: gb - 30, y2: -gz + 100, stroke: "rgba(0,0,0,.35)", "stroke-width": 6 }, g);\n        for (let i = 0; i <= nb; i++) { const bx = ga + 60 + (gl - 120) * i / nb; el("rect", { x: bx - 14, y: -gz - 18, width: 28, height: 150, rx: 8, fill: "#1d2124", stroke: C.ink, "stroke-width": 5 }, g); }\n        for (let x = ga + 3000; x < gb - 600; x += 3000) { el("rect", { x: x - 20, y: -gz - 4, width: 40, height: 128, fill: "#3b4247", stroke: C.ink, "stroke-width": 6 }, g); el("line", { x1: x, y1: -gz + 4, x2: x, y2: -gz + 116, stroke: "rgba(255,255,255,.3)", "stroke-width": 4 }, g); }\n        [ga, gb].forEach((x, i) => el("rect", { x: i ? x - 36 : x, y: -gz - 6, width: 36, height: 132, rx: 18, fill: "#3b4247", stroke: C.ink, "stroke-width": 8 }, g)); }\n    }\n    [180, span - 180].forEach(u => {\n      if (!NOT(PIPE(u))) return;'),
+        ('else if (!gable && NOT(side)) {\n    const gz = eEdge + thV - 120;\n    el("rect", { x: -ROOF.ov - 40, y: -gz, width: span + 2 * ROOF.ov + 80, height: 120, rx: 40, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);\n    el("line", { x1: -ROOF.ov - 25, y1: -gz + 18, x2: span + ROOF.ov + 25, y2: -gz + 18, stroke: "rgba(255,255,255,.28)", "stroke-width": 7 }, g);\n    [180, span - 180].forEach(u => {',
+         'else if (!gable) {\n    const gz = eEdge + thV - 120;\n    if (NOT(side)) {\n    el("rect", { x: -ROOF.ov - 40, y: -gz, width: span + 2 * ROOF.ov + 80, height: 120, rx: 40, fill: GUT, stroke: C.ink, "stroke-width": 10 }, g);\n    el("line", { x1: -ROOF.ov - 25, y1: -gz + 18, x2: span + ROOF.ov + 25, y2: -gz + 18, stroke: "rgba(255,255,255,.28)", "stroke-width": 7 }, g);\n      { const ga = -ROOF.ov - 40, gb = span + ROOF.ov + 40, gl = gb - ga, nb = Math.max(1, Math.round(gl / 600));   // [MM] notekas metāla detaļas: ārējā mala, kronšteini, savienojumu šuves, noslēgi\n        el("line", { x1: ga + 30, y1: -gz + 100, x2: gb - 30, y2: -gz + 100, stroke: "rgba(0,0,0,.35)", "stroke-width": 6 }, g);\n        for (let i = 0; i <= nb; i++) { const bx = ga + 60 + (gl - 120) * i / nb; el("rect", { x: bx - 14, y: -gz - 18, width: 28, height: 150, rx: 8, fill: "#1d2124", stroke: C.ink, "stroke-width": 5 }, g); }\n        for (let x = ga + 3000; x < gb - 600; x += 3000) { el("rect", { x: x - 20, y: -gz - 4, width: 40, height: 128, fill: "#3b4247", stroke: C.ink, "stroke-width": 6 }, g); el("line", { x1: x, y1: -gz + 4, x2: x, y2: -gz + 116, stroke: "rgba(255,255,255,.3)", "stroke-width": 4 }, g); }\n        [ga, gb].forEach((x, i) => el("rect", { x: i ? x - 36 : x, y: -gz - 6, width: 36, height: 132, rx: 18, fill: "#3b4247", stroke: C.ink, "stroke-width": 8 }, g)); }\n    }\n    [180, span - 180].forEach(u => {\n      if (!NOT(PIPE(u))) return;'),
         ('      if (!NOT(side === "west" ? (sd < 0 ? "north" : "south") : (sd < 0 ? "south" : "north"))) return;',
          '      const LS = side === "west" ? (sd < 0 ? "north" : "south") : (sd < 0 ? "south" : "north"), gOn = NOT(LS), pOn = NOT(LS[0] + side[0]);\n      if (!gOn && !pOn) return;'),
         ('      el("path", { d, fill: "none", stroke: C.ink, "stroke-width": 118, "data-keep": 1 }, g);\n      el("path", { d, fill: "none", stroke: GUT, "stroke-width": 100, "data-keep": 1 }, g);\n      el("line", { x1: uc - sd * 22, y1: -(zt - 80), x2: uc - sd * 22, y2: -zEnd - 20, stroke: "rgba(255,255,255,.22)", "stroke-width": 8 }, g);\n      for (let z = 600; z < zt - 600; z += 1100) el("rect", { x: uc - 65, y: -z - 25, width: 130, height: 50, fill: "#24282b", stroke: "#000", "stroke-width": 5 }, g);\n      el("path", { d: `M ${ue} ${-zt}',
@@ -507,7 +526,8 @@ def build(model_path, langs=None):
         if os.path.exists(lp):
             logo = 'data:image/png;base64,' + base64.b64encode(open(lp, 'rb').read()).decode()
             break
-    css = '<style>@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}</style>'
+    _land = ((m.get('projekts') or {}).get('kompozicija') or {}).get('orient') == 'l'
+    css = '<style>@page{size:420mm 297mm;margin:0} svg.a3{width:420mm!important;height:297mm!important}</style>' if _land else '<style>@page{size:297mm 420mm;margin:0} svg.a3{width:297mm!important;height:420mm!important}</style>'
     css += """<style>html{overflow:hidden;background:#e9e7e2;touch-action:none}body{touch-action:none;transform-origin:0 0;margin:0;cursor:grab}body.mmdrag{cursor:grabbing}
 @media print{html{overflow:visible!important;background:none}body{transform:none!important;cursor:auto}}</style>
 <script>(function(){var b=document.body,s=1,x=0,y=0,d=null,fit=1;
