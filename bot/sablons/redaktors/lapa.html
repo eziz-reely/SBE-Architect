@@ -2370,6 +2370,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       return;
     }
     if (sel.k === "fsien") {   // fasādes siena (plakne): tonis tikai šai sienai
+      p.scrollIntoView({ block: "start" }); for (let a = p.parentElement; a; a = a.parentElement) if (a.scrollTop) a.scrollTop = 0;
       const P = model.projekts || {}, sd = sel.side, ls = (P.fasade_wall || {})[sd] || [], cur = ls.find(q => Math.abs(q.u0 - sel.u0) < 2 && Math.abs(q.u1 - sel.u1) < 2);
       const base = ((P.fasade_side || {})[sd] || {}).hex || P.fasade_hex || null;
       h.textContent = "Fasādes siena"; sub.textContent = SIDE[sd] + " fasāde · garums " + Math.round(sel.u1 - sel.u0) + " mm · " + (cur ? "savs tonis" : "kopējais tonis");
