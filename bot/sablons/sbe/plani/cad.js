@@ -672,9 +672,9 @@ function parapetCap(g, N, span) {
   else if (N.sd > 0) { seg(0, T0, N.lo); seg(T0, span, N.hi); } else { seg(span - T0, span, N.lo); seg(0, span - T0, N.hi); }
 }
 // vienslīpu jumta mala gala fasādē (profilā): slīpa mala ar vējmalu, teknes gals zemajā pusē
-function monoProfileRoof(g, N, span, FAS, vt, GUT) {
+function monoProfileRoof(g, N, span, FAS, vt, GUT, side) {
   const u = s => N.sd > 0 ? s : span - s, top = s => N.lo + s * N.tn + N.th, P = (x, z) => `${x},${-z}`;
-  const sL = -N.oL, sH = span + N.oH, PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null;
+  const sL = -N.oL, sH = span + N.oH, PKH = typeof mmParkHex === "function" ? mmParkHex(side) : null;
   el("polygon", { points: [P(u(sL), top(sL)), P(u(sH), top(sH)), P(u(sH), top(sH) - vt), P(u(sL), top(sL) - vt)].join(" "), fill: PKH || (FAS ? "#F2F0EA" : "#4a5055"), stroke: C.ink, "stroke-width": 12 }, g);
   if (FAS) el("polygon", { points: [P(u(sL) - 20 * N.sd, top(sL) + 5), P(u(sH) + 20 * N.sd, top(sH) + 5), P(u(sH) + 20 * N.sd, top(sH) - 60), P(u(sL) - 20 * N.sd, top(sL) - 60)].join(" "), fill: "#4a5055", stroke: C.ink, "stroke-width": 12 }, g);
   const ue = u(sL), sg = ue < span / 2 ? -1 : 1, uc = ue + sg * 70, uw = sg < 0 ? -90 : span + 90, zt = top(sL) - 70;   // pusapaļa tekne zemajā malā
@@ -902,7 +902,7 @@ function elevation(parent, v, side, opt = { levels: true }) {
   // roof
   const tanH = Math.tan((ROOF.hip || 90) * Math.PI / 180), ins = !ROOF.hip ? 0 : endV ? span / 2 + ROOF.ov : (ridgeTop - eEdge - thV) / tanH;
   if (MN && MN.par) parapetCap(g, MN, span);
-  else if (MN && MN.role === "prof") monoProfileRoof(g, MN, span, FAS, vt, "#2f3438");
+  else if (MN && MN.role === "prof") monoProfileRoof(g, MN, span, FAS, vt, "#2f3438", side);
   else if (!gable) {
     const rp = [P(-ROOF.ov, eEdge + thV), P(span + ROOF.ov, eEdge + thV), P(span + ROOF.ov - ins, ridgeTop), P(-ROOF.ov + ins, ridgeTop)].join(" ");
     const rid = "roof-" + side + "-" + Math.random().toString(36).slice(2, 7);

@@ -82,6 +82,7 @@ def _mm_extra(cad):
             '  P.forEach((a, i) => { const b = P[(i + 1) % n], dx = b[0] - a[0], dy = b[1] - a[1], o = ar > 0 ? [dy, -dx] : [-dy, dx]; if (!(o[0] * nm[0] + o[1] * nm[1] > 0)) return;\n'
             '    const hz = side === "north" || side === "south", f = q => hz ? (side === "north" ? v.W - q[0] : q[0]) : (side === "east" ? v.D - q[1] : q[1]), u0 = f(a), u1 = f(b); if (Math.abs(u1 - u0) > 1) out.push({ u0: Math.min(u0, u1), u1: Math.max(u0, u1) }); });\n'
             '  return out.sort((p, q) => p.u0 - q.u0);\n}\n'
+            'function mmParkHex(side) { const P = (window.AR && AR.projekts) || {}, q = (P.parkare_side || {})[side]; return q || P.parkare_hex || null; }   // [MM] jumta pārkares tonis pa fasādes pusēm (projekts.parkare_side), citādi viens visai mājai\n'
             'function mmSideHex(side) { const q = ((window.AR && AR.projekts && AR.projekts.fasade_side) || {})[side]; return q ? (q.hex || q) : null; }\n')
     a = 'function cadPlan(parent, v, opt = {}) {'
     assert a in cad, 'SBE cad.js: nav atrasts cadPlan'
@@ -100,17 +101,17 @@ def _mm_extra(cad):
          '  { const WW = (((window.AR && AR.projekts && AR.projekts.fasade_wall) || {})[side]) || []; WW.forEach(q => { const rid = "wr-" + side + Math.random().toString(36).slice(2, 7); el("rect", { x: q.u0, y: -20000, width: q.u1 - q.u0, height: 40000 }, el("clipPath", { id: rid }, g)); boards(el("g", { "clip-path": `url(#${rid})`, filter: `url(#${mmTint(g, q.hex)})` }, el("g", { "clip-path": `url(#${wid})` }, g)), 0, span, -(gable || (MN && (MN.role === "prof" || MN.par)) ? ridgeTop : (FAS ? eEdge : eEdge + thV - 20)), fT, side.length); }); }   // [MM] atsevišķu sienu toņi (projekts.fasade_wall[side] = [{u0, u1, hex}])\n'),
         # jumta pārkares tonis (projekts.parkare_hex): gala fasādes pārkare, vēja kaste, garās fasādes spāres gals
         ('      const BC = FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54";\n',
-         '      const PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null, BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
+         '      const PKH = mmParkHex(side), BC = PKH || (FAS ? "#F2F0EA" : (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54");\n'),
         ('        if (!FAS) {   // fasādes dēļu tekstūra, pagriezta pa jumta slīpumu (dēļi gar spāri)\n',
          '        if (!FAS || PKH) {   // fasādes dēļu tekstūra, pagriezta pa jumta slīpumu (dēļi gar spāri)\n'),
         ('          const tg = el("g", { transform: `rotate(${th} ${cx} ${cy})` }, el("g", { "clip-path": `url(#${cid})` }, g));\n',
          '          const tg = el("g", { transform: `rotate(${th} ${cx} ${cy})` }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));\n'),
         ('fill: FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555"), stroke: C.ink, "stroke-width": 12 }, g);',
-         'fill: AR.projekts.parkare_hex || (FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555")), stroke: C.ink, "stroke-width": 12 }, g);'),
+         'fill: mmParkHex(side) || (FAS ? "#F2F0EA" : (AR.projekts.tonis_sw || "#555")), stroke: C.ink, "stroke-width": 12 }, g);'),
         ('      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54") }, g);\n'
          '      if (!FAS) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
          '        const tg = el("g", { transform: "rotate(-90)" }, el("g", { "clip-path": `url(#${cid})` }, g));',
-         '      const PKH = (window.AR && AR.projekts && AR.projekts.parkare_hex) || null;\n'
+         '      const PKH = mmParkHex(side);\n'
          '      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: PKH || (FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54")) }, g);\n'
          '      if (!FAS || PKH) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
          '        const tg = el("g", { transform: "rotate(-90)" }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));'),

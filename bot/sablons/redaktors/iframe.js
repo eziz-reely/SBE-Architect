@@ -2619,7 +2619,7 @@
     const FS = WS || (P.fasade_side || {})[t.side], SN = { north: "ziemeļu", south: "dienvidu", east: "austrumu", west: "rietumu" };
     if (e.altKey) {   // paņem materiālu
       const o = t.k === "post" ? M.posts[t.i] : t.k === "ter" ? M.terraces[t.i] : t.k === "porch" ? M.porch : t.k === "frame" ? { col: P.logu_hex, ral: /^RAL/.test(P.logu_tonis || "") ? P.logu_tonis : null }
-        : t.k === "ov" ? { col: P.parkare_hex, ral: P.parkare_ral } : FS ? { col: FS.hex, ral: FS.ral } : { col: P.fasade_hex, ral: P.fasade_ral };
+        : t.k === "ov" ? (((P.parkare_side || {})[t.side]) ? { col: P.parkare_side[t.side] } : { col: P.parkare_hex, ral: P.parkare_ral }) : FS ? { col: FS.hex, ral: FS.ral } : { col: P.fasade_hex, ral: P.fasade_ral };
       if ((t.k === "fas" || t.k === "ov") && !o.col) { post({ t: "hint", text: (t.k === "ov" ? "Pārkarei" : "Fasādei") + " nav izvēlēta krāsa, nav ko paņemt." }); return true; }
       place.mat = { col: o.col || null, ral: o.ral || null, tex: o.tex || null, texW: o.texW || 1000, texRot: o.texRot || 0 };
       post({ t: "bmat", mat: place.mat }); post({ t: "hint", text: "Materiāls paņemts." }); return true;
@@ -2641,10 +2641,11 @@
       if (!m.col) { post({ t: "hint", text: "Fasādei der tikai krāsa (RAL vai brīva), ne tekstūra." }); return true; }
       N.projekts = N.projekts || {}; const fs = N.projekts.fasade_side = Object.assign({}, N.projekts.fasade_side); fs[t.side] = m.ral ? { hex: m.col, ral: m.ral } : { hex: m.col };
       post({ t: "hint", text: `Nokrāsota tikai ${SN[t.side]} fasāde. Shift+klikšķis krāso visu māju.` });
-    } else if (t.k === "ov") {   // jumta pārkare (visām pusēm viens tonis)
+    } else if (t.k === "ov") {   // jumta pārkare: parasti klikšķis = tikai šīs fasādes puse, Shift = visa jumta pārkare
       if (!m.col) { post({ t: "hint", text: "Pārkarei der tikai krāsa (RAL vai brīva), ne tekstūra." }); return true; }
-      N.projekts = N.projekts || {}; N.projekts.parkare_hex = m.col; if (m.ral) N.projekts.parkare_ral = m.ral; else delete N.projekts.parkare_ral;
-      post({ t: "hint", text: "Nokrāsota jumta pārkare." });
+      N.projekts = N.projekts || {};
+      if (e.shiftKey) { N.projekts.parkare_hex = m.col; if (m.ral) N.projekts.parkare_ral = m.ral; else delete N.projekts.parkare_ral; delete N.projekts.parkare_side; post({ t: "hint", text: "Nokrāsota visa jumta pārkare." }); }
+      else { const ps = N.projekts.parkare_side = Object.assign({}, N.projekts.parkare_side); ps[t.side] = m.col; post({ t: "hint", text: `Nokrāsota tikai ${SN[t.side]} puses pārkare. Shift+klikšķis krāso visu pārkari.` }); }
     } else {
       const o = t.k === "post" ? N.posts[t.i] : t.k === "porch" ? N.porch : N.terraces[t.i];
       ["col", "ral", "tex"].forEach(k => { if (m[k]) o[k] = m[k]; else delete o[k]; });
