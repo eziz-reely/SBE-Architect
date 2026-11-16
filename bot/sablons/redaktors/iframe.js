@@ -1639,7 +1639,9 @@
     }
     if (!h && !place) {   // klikšķis uz izbīdītās sienas fasādē: atlasa to kā sienas plakni (tonis panelī)
       const fwg = [...document.querySelectorAll("svg.a3 g[data-fw][data-side]")].find(g => { const r = g.getBoundingClientRect(); return r.width > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
-      if (fwg) { sel = { k: "fsien", side: fwg.getAttribute("data-side"), u0: +fwg.getAttribute("data-u0"), u1: +fwg.getAttribute("data-u1"), lv: "main" }; drawSel(); post({ t: "sel", sel }); return true; }
+      if (fwg) { const sd_ = fwg.getAttribute("data-side"), a0_ = +fwg.getAttribute("data-u0"), a1_ = +fwg.getAttribute("data-u1"), rg = (f, s_) => (s_ === "north" || s_ === "south" ? [f[0], f[0] + f[2]] : [f[1], f[1] + f[3]]).map(v => mapU(s_, v)).sort((x, y) => x - y),
+          wf = (M.freeWalls || []).find(f => { const r_ = rg(f, sd_); return r_[0] <= a0_ + 2 && r_[1] >= a1_ - 2; });   // visas sienas plaknes: katrai fasādes pusei savs tonis
+        sel = { k: "fsien", side: sd_, u0: a0_, u1: a1_, lv: "main" }; if (wf) sel.faces = ["south", "north", "west", "east"].map(s_ => { const r_ = rg(wf, s_); return { side: s_, u0: r_[0], u1: r_[1] }; }); drawSel(); post({ t: "sel", sel }); return true; }
     }
     if (!h) {
       const wt = !place && bucketTarget(e.clientX, e.clientY);

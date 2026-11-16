@@ -2556,17 +2556,22 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Visai mājai: sānjoslā Māja → Materiāli → Fascijas dēlis, vai krāsas spainis ar Shift."; p.appendChild(nt);
       return;
     }
-    if (sel.k === "fsien") {   // fasādes siena (plakne): tonis tikai šai sienai
+    if (sel.k === "fsien") {   // fasādes siena (plakne): tonis tikai šai sienai; izbīdītajai sienai katrai plaknei savs tonis
       p.scrollIntoView({ block: "start" }); for (let a = p.parentElement; a; a = a.parentElement) if (a.scrollTop) a.scrollTop = 0;
-      const P = model.projekts || {}, sd = sel.side, ls = (P.fasade_wall || {})[sd] || [], cur = ls.find(q => Math.abs(q.u0 - sel.u0) < 2 && Math.abs(q.u1 - sel.u1) < 2);
-      const base = ((P.fasade_side || {})[sd] || {}).hex || P.fasade_hex || null;
-      h.textContent = "Fasādes siena"; sub.textContent = SIDE[sd] + " fasāde · garums " + Math.round(sel.u1 - sel.u0) + " mm · " + (cur ? "savs tonis" : "kopējais tonis");
-      const setW = fn => { const n = clone(model); n.projekts = n.projekts || {}; const fw = n.projekts.fasade_wall = Object.assign({}, n.projekts.fasade_wall); let l = (fw[sd] || []).filter(q => !(Math.abs(q.u0 - sel.u0) < 2 && Math.abs(q.u1 - sel.u1) < 2)); const q = { u0: sel.u0, u1: sel.u1 }; fn(q, l); if (q.hex) l.push(q); if (l.length) fw[sd] = l; else delete fw[sd]; commit(n); };
-      g.append(field("Krāsa (RAL)", cur && cur.ral || "", (n, v) => { throw "async"; }, Object.assign({ "": cur && !cur.ral ? cKr(cur.hex) : "Kopējais tonis" }, RAL_OPTS()), "full"));
-      const sl = g.lastChild.querySelector("select"); if (sl) sl.onchange = () => setW(q => { if (sl.value) { q.ral = sl.value; q.hex = RAL[sl.value][1]; } });
-      const cl = document.createElement("label"); cl.className = "full"; cl.textContent = "Brīva krāsa"; const ci = document.createElement("input"); ci.type = "color"; ci.value = /^#[0-9a-f]{6}$/i.test((cur && cur.hex) || base || "") ? (cur && cur.hex) || base : "#c68a58"; ci.onchange = () => setW(q => { q.hex = ci.value; }); cl.appendChild(ci); g.appendChild(cl);
-      p.append(h, sub, g);
-      const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.textContent = "Atcelt šīs sienas toni"; b.disabled = !cur; b.onclick = () => setW(() => {}); r.appendChild(b); p.appendChild(r);
+      const P = model.projekts || {}, sd0 = sel.side, faces = sel.faces && sel.faces.length ? sel.faces : [{ side: sd0, u0: sel.u0, u1: sel.u1 }];
+      const same = (q, F) => Math.abs(q.u0 - F.u0) < 2 && Math.abs(q.u1 - F.u1) < 2;
+      h.textContent = sel.faces ? "Siena" : "Fasādes siena"; sub.textContent = sel.faces ? "Katrai plaknei savs tonis" : SIDE[sd0] + " fasāde · garums " + Math.round(sel.u1 - sel.u0) + " mm";
+      p.append(h, sub);
+      const g = document.createElement("div"); g.className = "grid"; p.appendChild(g);
+      faces.forEach(F => {
+        const sd = F.side, cur = ((P.fasade_wall || {})[sd] || []).find(q => same(q, F)), base = ((P.fasade_side || {})[sd] || {}).hex || P.fasade_hex || null;
+        const setW = fn => { const n = clone(model); n.projekts = n.projekts || {}; const fw = n.projekts.fasade_wall = Object.assign({}, n.projekts.fasade_wall); const l = (fw[sd] || []).filter(q => !same(q, F)); const q = { u0: F.u0, u1: F.u1 }; fn(q, l); if (q.hex) l.push(q); if (l.length) fw[sd] = l; else delete fw[sd]; commit(n); };
+        const lab = sel.faces ? "Plakne · " + SIDE[sd] + " puse" : "Krāsa (RAL)";
+        g.append(field(lab, cur && cur.ral || "", (n, v) => { throw "async"; }, Object.assign({ "": cur && !cur.ral ? cKr(cur.hex) : "Kopējais tonis" }, RAL_OPTS()), "full"));
+        const sl = g.lastChild.querySelector("select"); if (sl) sl.onchange = () => setW(q => { if (sl.value) { q.ral = sl.value; q.hex = RAL[sl.value][1]; } });
+        const cl = document.createElement("label"); cl.className = "full"; cl.textContent = sel.faces ? "Brīva krāsa · " + SIDE[sd] : "Brīva krāsa"; const ci = document.createElement("input"); ci.type = "color"; ci.value = /^#[0-9a-f]{6}$/i.test((cur && cur.hex) || base || "") ? (cur && cur.hex) || base : "#c68a58"; ci.onchange = () => setW(q => { q.hex = ci.value; }); cl.appendChild(ci); g.appendChild(cl);
+        const b = document.createElement("button"); b.type = "button"; b.textContent = sel.faces ? "Atcelt: " + SIDE[sd] : "Atcelt šīs sienas toni"; b.disabled = !cur; b.onclick = () => setW(() => {}); g.appendChild(b);
+      });
       return;
     }
     if (sel.k === "porch") {   // lievenis (zem jumta, mājas kontūras daļa): nosaukums un dzēšana
