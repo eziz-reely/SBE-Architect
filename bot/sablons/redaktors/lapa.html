@@ -1041,6 +1041,31 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       else if (d.o === "h") { const t = (d.p || []).map(z => tag(d.s, z)); if (t.some(Boolean)) d.pt = t.map(x => x || null); }
       else { const ta = tag(d.s, d.a), tb = tag(d.s, d.b); if (ta) d.ta = ta; if (tb) d.tb = tb; } });
   }
+  // [S04] mēbeļu automātiska ievietošana telpā pēc tās nosaukuma (guļamistaba, duša, viesistaba); logi un durvis netiek aizsegti
+  function autoFurn(n, rm, L) {
+    const R = (rm.r || []).slice().sort((a, b) => b[2] * b[3] - a[2] * a[3])[0]; if (!R) return 0;
+    const [rx, ry, rw, rd] = R, nm = (rm.n || "").toLowerCase(), F = L.furniture = L.furniture || [], T = 300;
+    const hit = (x0, y0, x1, y1) => { const bx = (q, w, h) => q.x < x1 && q.x + w > x0 && q.y < y1 && q.y + h > y0;   // vai taisnstūris skar logu vai durvis (ar rezervi pie sienas)
+      return (L.windows || []).some(q => q.o === "h" ? bx({ x: q.x, y: q.y - T }, q.len, 2 * T) : bx({ x: q.x - T, y: q.y }, 2 * T, q.len)) || (L.doors || []).some(q => q.o === "h" ? bx({ x: q.x - 100, y: q.y - T }, q.w + 200, q.th + 2 * T) : bx({ x: q.x - T, y: q.y - 100 }, q.th + 2 * T, q.w + 200)); };
+    let add = 0;
+    if (/guļam/.test(nm) && rw >= 3200 && rd >= 2000) {   // gulta ar galvgali pie rietumu vai austrumu sienas, naktsgaldiņi abās pusēs
+      const bw = 2000, bh = rd >= 2900 ? 1600 : 1400, cy = ry + rd / 2 - bh / 2;
+      for (const side of ["w", "e"]) { const x = side === "w" ? rx : rx + rw - bw;
+        if (hit(x, cy, x + bw, cy + bh)) continue;
+        F.push(["bed", x, cy, bw, bh, side]); add++;
+        const nx = side === "w" ? rx : rx + rw - 450;
+        if (cy - 420 >= ry && !hit(nx, cy - 420, nx + 450, cy)) { F.push(["nightstand", nx, cy - 420]); add++; }
+        if (cy + bh + 420 <= ry + rd && !hit(nx, cy + bh, nx + 450, cy + bh + 420)) { F.push(["nightstand", nx, cy + bh]); add++; }
+        break; }
+    } else if (/duša|dusa/.test(nm) && rw >= 900 && rd >= 900) {   // dušas kabīne telpas stūrī, kur nav durvju
+      for (const [x, y, gl] of [[rx, ry, ["n", "w"]], [rx + rw - 900, ry, ["n", "e"]], [rx, ry + rd - 900, ["s", "w"]], [rx + rw - 900, ry + rd - 900, ["s", "e"]]]) {
+        if (hit(x, y, x + 900, y + 900)) continue; F.push(["shower", x, y, 900, gl]); add++; break; }
+    } else if (/viesist|dzīvoj|dzivoj/.test(nm) && rw >= 3000 && rd >= 2500) {   // dīvāns pie tās garās sienas, kur nav logu un durvju
+      for (const [x, y, bk] of [[rx + (rw - 2000) / 2, ry, "n"], [rx + (rw - 2000) / 2, ry + rd - 900, "s"]]) {
+        if (hit(x, y, x + 2000, y + 900)) continue; F.push(["sofa", Math.round(x), y, 2000, 900, bk]); add++; break; }
+    }
+    return add;
+  }
   function commit(m) {
     pamNorm(m); fdTag(m);
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
@@ -2605,6 +2630,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       { const r = document.createElement("div"); r.className = "row", cb = document.createElement("button"); cb.type = "button"; cb.textContent = "Mainīt kontūru"; cb.title = "Uzzīmē telpas jauno kontūru (taisnleņķa polilīnija); atbrīvotā vieta pievienojas blakus telpai";
         cb.onclick = () => { endPlace(); if (moveOn) setMove(false); placing = { t: "zone", poly: true, redo: sel.i }; $("hint").textContent = "Telpas kontūrs: klikšķi jaunajos stūros, klikšķis pirmajā punktā noslēdz. Esc atceļ."; toFrame({ mmPlace: placing }); railSync(); };
         r.appendChild(cb); p.append(r); }
+      { const r = document.createElement("div"); r.className = "row", fb = document.createElement("button"); fb.type = "button"; fb.textContent = "Ievietot mēbeles"; fb.title = "Pats ievieto mēbeles pēc telpas nosaukuma (guļamistaba, duša, viesistaba) un neaizsedz logus un durvis";
+        fb.onclick = () => { const n = clone(model), L = lvOf(n, sel), c = autoFurn(n, L.rooms[sel.i], L); if (!c) { $("hint").textContent = "Šai telpai mēbeles netika ievietotas (nosaukums nav atpazīts vai nav vietas)."; return; } commit(n); $("hint").textContent = "Ievietotas " + c + " mēbeles. Pielabo ar peli."; };
+        r.appendChild(fb); p.append(r); }
       { const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst telpu"; b.onclick = del; r.appendChild(b); p.append(r); }
       return;
     }
