@@ -2651,8 +2651,9 @@
     { const wd = wallEndDist(q); if (wd) { mk(g, "line", { x1: wd.from[0], y1: wd.from[1], x2: wd.to[0], y2: wd.to[1], stroke: ACC, "stroke-width": 0.5 / k, "pointer-events": "none" }); label(g, (wd.from[0] + wd.to[0]) / 2, (wd.from[1] + wd.to[1]) / 2 - 3 / k, `${Math.round(wd.d)} mm no sienas gala`); } }   // attālums līdz tuvākās krustojošās sienas galam
     { const P = M.poly || [[0, 0], [M.W, 0], [M.W, M.D], [0, M.D]]; let bx = null, by = null;   // attālums no kursora līdz tuvākajai mājas ārsienas malai pa x un pa y (S03)
       P.forEach((a, i) => { const b = P[(i + 1) % P.length];
-        if (a[0] === b[0] && q[1] >= Math.min(a[1], b[1]) && q[1] <= Math.max(a[1], b[1])) { const d = Math.abs(q[0] - a[0]); if (!bx || d < bx.d) bx = { d, from: [q[0], q[1]], to: [a[0], q[1]] }; }
-        if (a[1] === b[1] && q[0] >= Math.min(a[0], b[0]) && q[0] <= Math.max(a[0], b[0])) { const d = Math.abs(q[1] - a[1]); if (!by || d < by.d) by = { d, from: [q[0], q[1]], to: [q[0], a[1]] }; } });
+        if (a[0] === b[0] && a[1] !== b[1]) {   // arī sienas pagarinājums: mēra no tuvākās ārsienas līnijas, kuru kursors šķērso
+           const d = Math.abs(q[0] - a[0]); if (!bx || d < bx.d) bx = { d, from: [q[0], q[1]], to: [a[0], q[1]] }; }
+        if (a[1] === b[1] && a[0] !== b[0]) { const d = Math.abs(q[1] - a[1]); if (!by || d < by.d) by = { d, from: [q[0], q[1]], to: [q[0], a[1]] }; } });
       [bx, by].forEach(w => { if (w && w.d > 20) { mk(g, "line", { x1: w.from[0], y1: w.from[1], x2: w.to[0], y2: w.to[1], stroke: ACC, "stroke-width": 0.5 / k, "pointer-events": "none" }); label(g, (w.from[0] + w.to[0]) / 2, (w.from[1] + w.to[1]) / 2 - 3 / k, `${Math.round(w.d)} mm no ārsienas`, k); } }); }
     const last = pts[pts.length - 1]; place.cur = q;
     label(g, q[0] + 3 / k, q[1] - 3 / k, place.buf && last ? `⌨ ${place.buf} mm (Enter)` : !last ? "Terase: uzklikšķini pirmo stūri" : `${Math.round(Math.hypot(q[0] - last[0], q[1] - last[1]))} mm` + (pts.length > 2 ? "  · dubultklikšķis vai Enter noslēdz" : ""), k);
