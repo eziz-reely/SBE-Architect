@@ -1335,6 +1335,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       fc.onchange = () => { const n = clone(model); wsSet(n, "fdim", fc.value); commit(n); };
       const fr = btn("Melna", "Atgriezt standarta krāsu", !WS.fdim, () => { const n = clone(model); wsSet(n, "fdim", null); commit(n); });
       grp("Fasāžu lineārie mēri", fr, fc); }
+    { const cur = P.asu_piesaiste || "c24", setA = v => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.asu_piesaiste = v; snapAxes(n, v); commit(n); };   // būvasu piesaiste: visas ārējās asis un spārnu asis uz izvēlēto malu
+      grp("Būvasu izvietojums", ...[["c24", "C24 ārmala", "Asis uz C24 karkasa ārmalas"], ["fasade", "Fasāde", "Asis uz fasādes ārmalas"], ["centrs", "Sienas centrs", "Asis uz sienas centra"]].map(([v, t, tt]) => btn(t, tt, cur === v, () => setA(v)))); }
     { const sv = +(WS.section) || 1, sk = n => `<svg viewBox="0 0 30 14"><path d="M1 7h28" stroke="currentColor" stroke-width="1.2"${n === 2 ? "" : ' stroke-dasharray="5 1.5 1 1.5"'}/>${n === 3 ? '<path d="M15 3 L11 -0 H19Z" fill="#aaa" stroke="currentColor" stroke-width=".8" transform="translate(0 4)"/>' : '<path d="M1 3v8M29 3v8" stroke="currentColor" stroke-width="2.4"/>'}</svg>`;
       const setS = v => { const n = clone(model); wsSet(n, "section", v === 1 ? null : v); commit(n); };
       grp("Griezuma līnija", ...[1, 2, 3].map(v => btn(["Bultiņas", "Melna zīme", "Pelēka zīme"][v - 1], ["Raustīta ar bultiņām", "Melns trijstūris ar apli", "Pelēks trijstūris ar apli un lapas numuru"][v - 1], sv === v, () => setS(v)))); }
@@ -2143,12 +2145,6 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const I = model.ievade || {}, J = model.jumts || {}, gs = group("Mājas izmēri", host);
       gs.appendChild(field("Garums, mm", model.W, (n, v) => { toFrame({ mmSize: { W: Math.round(v), D: model.D } }); throw "async"; }));
       gs.appendChild(field("Platums, mm", model.D, (n, v) => { toFrame({ mmSize: { W: model.W, D: Math.round(v) } }); throw "async"; }));
-      {   // būvasu piesaiste: ārējās asis uz sienas centru (pēc noklusējuma), C24 karkasa ārmalu vai fasādes ārmalu; iekšējās asis netiek skartas
-        const ASM = { centrs: "Sienas centrs", c24: "C24 karkasa ārmala", fasade: "Fasādes ārmala" };
-        gs.appendChild(field("Būvasu piesaiste", (model.projekts || {}).asu_piesaiste || "c24", (n, v) => {
-          n.projekts = n.projekts || {}; n.projekts.asu_piesaiste = v; snapAxes(n, v);
-        }, ASM, "full"));
-      }
       gs.appendChild(field("Kores augstums, mm", I.augstums || 0, (n, v) => { n.ievade = n.ievade || {}; n.ievade.augstums = Math.max(3000, Math.min(9000, Math.round(v))); roofFix(n); }));
       if (model.ceiling) {   // griestu augstums: ar mansardu pārbīda arī 2. stāva paneli un logus
         const cf = field("Griestu augstums, mm", model.ceiling, (n, v) => {
