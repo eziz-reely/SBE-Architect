@@ -718,7 +718,7 @@ body { font-family: var(--f-ui); -webkit-font-smoothing: antialiased; color: var
 button, input, select, textarea { font-family: var(--f-ui); transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s; }
 
 /* virsraksta josla: gaiša, caurspīdīga, kā macOS loga rīkjosla */
-header { background: var(--brand); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--line2); color: var(--chrome-ink); min-height: 48px; }
+header { background: var(--brand); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--line2); color: var(--chrome-ink); min-height: 48px; position: relative; z-index: 10; }   /* izkrītošie logi (Rakstlaukums) virs labās joslas sticky virsrakstiem */
 header .mark { color: var(--chrome-mut); border-right-color: var(--line2); line-height: 48px; font-weight: 700; letter-spacing: .2em; }
 header h1 { color: var(--chrome-ink); font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 header .tag { color: var(--chrome-mut); border-left-color: var(--line2); }
@@ -796,7 +796,7 @@ p.grp { font: 600 12px/1.3 var(--f-ui); color: var(--muted); text-transform: non
 #propBar #panel .grid > label { color: var(--muted); }
 
 /* uznirstošie logi */
-.pop, .cpop, #dCon { border: .5px solid var(--line2); border-radius: 14px; box-shadow: var(--sh2); background: color-mix(in srgb, var(--paper) 92%, transparent); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); }
+.pop, .cpop, #dCon { border: .5px solid var(--line2); border-radius: 14px; box-shadow: var(--sh2); background: var(--paper); }   /* necaurspīdīgs: iekš header backdrop-filter neizplūdina, un labās joslas teksts spīdētu cauri */
 .cpop .cpc button { border-radius: 50%; border: 0; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.25); }
 .cpop .cpc button.on, .cpop .cpc button:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
 
