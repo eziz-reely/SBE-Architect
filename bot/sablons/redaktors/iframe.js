@@ -104,6 +104,16 @@
     const ext = [["x", -1, T, x < T + 20 && y > T && y < D - T], ["x", W - T, W + 1, x > W - T - 20 && y > T && y < D - T],
       ["y", -1, T, y < T + 20 && x > T && x < W - T], ["y", D - T, D + 1, y > D - T - 20 && x > T && x < W - T]].find(e => e[3]);
     if (ext) return { axis: ext[0], lo: Math.max(0, ext[1]), hi: Math.min(ext[0] === "x" ? W : D, ext[2]), ext: true };
+    if (!ext && M.poly && M.poly.length > 4) {   // L/T formas mājas kontūras ārsienas (ne uz ierobežojošā taisnstūra): arī atlasāmas kā ārsienas
+      const P = M.poly, n = P.length;
+      for (let i = 0; i < n; i++) { const a = P[i], b = P[(i + 1) % n], V = a[0] === b[0], H = a[1] === b[1];
+        if (!V && !H) continue;
+        if (V && (a[0] <= 0 || a[0] >= W)) continue; if (H && (a[1] <= 0 || a[1] >= D)) continue;   // ierobežojošā taisnstūra malas jau ir augstāk
+        const u0 = Math.min(V ? a[1] : a[0], V ? b[1] : b[0]), u1 = Math.max(V ? a[1] : a[0], V ? b[1] : b[0]), c = V ? a[0] : a[1], mid = (u0 + u1) / 2;
+        const inside = V ? inPoly([c + 5, mid], P) : inPoly([mid, c + 5], P), lo = inside ? c : c - T, hi = inside ? c + T : c;
+        const t = V ? x : y, al = V ? y : x;
+        if (t >= lo - 20 && t <= hi + 20 && al > u0 + T && al < u1 - T) return { axis: V ? "x" : "y", lo, hi, v0: u0, v1: u1, ext: true, poly: true };
+      } }
     if (l === "loft") return null;
     const R = rects("main"), cl = w => { if (!w) return null; const X = w.axis === "x", u = X ? y : x;   // saīsinātās starpsienas: izgrieztais posms nav sienas daļa
       for (const [o, c, a, b] of (M.wallCuts || [])) { if (o !== (X ? "v" : "h") || Math.abs(c - (w.lo + w.hi) / 2) > 3) continue;
@@ -496,7 +506,7 @@
     }
     if (sel.k === "wall") {   // izvēlēta siena: josla, garums un kustīgais gals (ārsienai)
       const bl = blocks().find(b => b.type === "plan" && b.lv === sel.lv), w = sel.w; if (!bl || !w) return;
-      const k = ek(bl), o = overlay(bl.g), X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T);
+      const k = ek(bl), o = overlay(bl.g), X = w.axis === "x", S = X ? M.D : M.W, a = w.ext && !w.poly ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext && !w.poly ? S : (w.v1 != null ? w.v1 : S - T);
       const bb = X ? [w.lo, a, w.hi, b] : [a, w.lo, b, w.hi];
       mk(o, "rect", { x: bb[0], y: bb[1], width: bb[2] - bb[0], height: bb[3] - bb[1], fill: "rgba(217,72,15,.18)", stroke: ACC, "stroke-width": 0.6 / k });
       { const far = (X ? sel.at[1] : sel.at[0]) >= (a + b) / 2, e = far ? b : a, c = (w.lo + w.hi) / 2, q = X ? [c, e] : [e, c], r = 2.2 / k;   // kustīgais gals: tas, kuram tuvāk uzklikšķināts
@@ -1742,9 +1752,9 @@
     const q = new DOMPoint(X ? c : en, X ? en : c).matrixTransform(m);
     return Math.hypot(q.x - e.clientX, q.y - e.clientY) < 6 ? { bl, w, X, far, e: en } : null;
   }
-  function selFar() { const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T); return (X ? sel.at[1] : sel.at[0]) >= (a + b) / 2; }
+  function selFar() { const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, a = w.ext && !w.poly ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext && !w.poly ? S : (w.v1 != null ? w.v1 : S - T); return (X ? sel.at[1] : sel.at[0]) >= (a + b) / 2; }
   function wallExtend(d, mode) {
-    const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T);
+    const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, a = w.ext && !w.poly ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext && !w.poly ? S : (w.v1 != null ? w.v1 : S - T);
     const far = (X ? sel.at[1] : sel.at[0]) >= (a + b) / 2, end = far ? b : a, th = +(w.hi - w.lo).toFixed(1), o = X ? "v" : "h", s = X ? 1 : 0, q = X ? 3 : 2;   // s: sākuma, q: garuma vieta masīvā
     d = +(+d).toFixed(1); if (!d) return;
     if (d > 0 && !mode) { const h = terraceHit(w, far, end, d, X); if (h) { h.d = d; pendExt = h; post({ t: "ask", id: "wext", text: "Siena sasniedz terasi. Ko apgriezt?", opts: ["Apgriezt sienu pret terasi (siena beidzas pie terases)", "Apgriezt terasi pret sienu (terasei ierobe)", "Atcelt"] }); return; } }
@@ -1994,7 +2004,7 @@
     if (d.zone === "rot") { const deg = d.moved ? d.ang : 90; if (deg) post({ t: "edit", model: rotate(clone(M), d.h.it.lv, d.h.it.i, d.boxes, deg), sel }); else drawSel(); return; }
     if (!d.moved && d.h && d.h.wall) {   // klikšķis uz sienas (bez vilkšanas): siena kļūst izvēlēta; tad var ierakstīt mm (piem. -1000 un Enter)
       const w = d.h.it.w; wBuf = "";
-      sel = { k: "wall", i: w.axis + ":" + Math.round(w.lo), lv: d.h.it.lv, w: { axis: w.axis, lo: w.lo, hi: w.hi, ext: !!w.ext, v0: w.v0, v1: w.v1, free: w.free }, at: [Math.round(d.h.p[0]), Math.round(d.h.p[1])] };
+      sel = { k: "wall", i: w.axis + ":" + Math.round(w.lo), lv: d.h.it.lv, w: { axis: w.axis, lo: w.lo, hi: w.hi, ext: !!w.ext, poly: !!w.poly, v0: w.v0, v1: w.v1, free: w.free }, at: [Math.round(d.h.p[0]), Math.round(d.h.p[1])] };
       drawSel(); post({ t: "sel", sel });
       post({ t: "hint", text: w.ext ? "Ārsiena izvēlēta. Velc to vai ieraksti mm (piem. -1000) un Enter: siena tiek izvilkta, terases un pārējā māja paliek vietā." : "Starpsiena izvēlēta. Ieraksti mm un Enter vai spied bultiņas: siena pārbīdās." });
       return;
