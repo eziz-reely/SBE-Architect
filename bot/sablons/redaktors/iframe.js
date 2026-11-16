@@ -246,15 +246,22 @@
         if (!best || a < best.a) best = { a, it, bl, p };
       });
     });
-    if (best) return best;
-    for (const bl of bls) {
-      if (bl.type !== "plan") continue;
-      const p = toLocal(bl.g, cx, cy), m0 = bl.g.getScreenCTM(), pad = m0 && m0.a ? 9 / Math.abs(m0.a) : 0;   // plānas sienas: 9 px uztveršanas josla
-      const w = [[0, 0], [pad, 0], [-pad, 0], [0, pad], [0, -pad]].map(([dx, dy]) => wallAt(bl.lv, [p[0] + dx, p[1] + dy])).find(Boolean);
-      if (w) { const e0 = w.v0 != null ? w.v0 : T, e1 = w.v1 != null ? w.v1 : (w.axis === "x" ? M.D : M.W) - T;   // tikai pati sienas posma garums, nevis visa lapa
-      return { it: { k: "wall", lv: bl.lv, b: w.axis === "x" ? [w.lo, e0, w.hi, e1] : [e0, w.lo, e1, w.hi], w }, bl, p, wall: true }; }
+    const wallHit = () => {
+      for (const bl of bls) {
+        if (bl.type !== "plan") continue;
+        const p = toLocal(bl.g, cx, cy), m0 = bl.g.getScreenCTM(), pad = m0 && m0.a ? 9 / Math.abs(m0.a) : 0;   // plānas sienas: 9 px uztveršanas josla
+        const w = [[0, 0], [pad, 0], [-pad, 0], [0, pad], [0, -pad]].map(([dx, dy]) => wallAt(bl.lv, [p[0] + dx, p[1] + dy])).find(Boolean);
+        if (w) { const e0 = w.v0 != null ? w.v0 : T, e1 = w.v1 != null ? w.v1 : (w.axis === "x" ? M.D : M.W) - T;   // tikai pati sienas posma garums, nevis visa lapa
+        return { it: { k: "wall", lv: bl.lv, b: w.axis === "x" ? [w.lo, e0, w.hi, e1] : [e0, w.lo, e1, w.hi], w }, bl, p, wall: true }; }
+      }
+      return null;
+    };
+    if (best) {   // terase (platība, mala) un lievenis neaizsedz sienu: siena ir augstāk, izņemot atlasītās terases malas/stūrus (tās var vilkt)
+      const bk = best.it.k;
+      if ((bk === "ter" || bk === "porch" || ((bk === "tedge" || bk === "tvert") && !(sel && sel.k === "ter" && sel.i === Math.floor(best.it.i / 100)))) ) { const wh = wallHit(); if (wh) return wh; }
+      return best;
     }
-    return null;
+    return wallHit();
   }
   function zone(h) {   // facade: which edge is grabbed
     if (h.wall) return h.it.w.axis === "x" ? "wx" : "wy";
