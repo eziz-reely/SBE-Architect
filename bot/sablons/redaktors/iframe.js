@@ -500,7 +500,7 @@
     blocks().forEach(bl => items(bl).forEach(it => {
       if (!same(it, sel) && !linked(it, sel)) return;
       const k = ek(bl), o = overlay(bl.g);
-      rect(o, it.b, false, k, it.k === "furn" ? 0 : undefined);
+      if (it.k !== "ter" && it.k !== "porch") rect(o, it.b, false, k, it.k === "furn" ? 0 : undefined);   // terase un lievenis: tikai paša kontūra (nevis ierobežojošais taisnstūris)
       if (it.k === "ter") { const t = M.terraces[it.i]; mk(o, "polygon", { points: t.poly.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.10)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` }); t.poly.forEach(q => snapMark(o, q, true, k)); }
       if (it.k === "porch") mk(o, "polygon", { points: M.porch.poly.map(q => q.join(",")).join(" "), fill: "rgba(34,102,216,.10)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` });
       if (it.k === "stamp" && it.lv === "main") zoneHandles().forEach(h => { const s0 = 2.2 / k; mk(o, "rect", { x: h.pt[0] - s0 / 2, y: h.pt[1] - s0 / 2, width: s0, height: s0, fill: "#fff", stroke: ACC, "stroke-width": 0.35 / k }); });
@@ -1548,7 +1548,7 @@
     }
   }, true);
   addEventListener("message", e => { const m = e.data; if (m && "mmPst" in m) { pst = m.mmPst; pstMark(); }
-    if (m && "mmPamPlace" in m) { pClear(); pHov(null); pPlace = m.mmPamPlace; document.body.style.cursor = pPlace ? "crosshair" : ""; }
+    if (m && "mmPamPlace" in m) { pClear(); pHov(null); pPlace = m.mmPamPlace; document.body.style.cursor = pPlace === "dim" ? DIMC : pPlace ? "crosshair" : ""; }
     if (m && "mmPlace" in m && !m.mmPlace) { pClear(); pEnd(); } });
   addEventListener("load", () => { pstMark(); if (pPlace) document.body.style.cursor = "crosshair"; if (window.MM_PAM) post({ t: "pam", info: window.MM_PAM }); });
   window.MMZ_HOOK = e => {
@@ -1622,11 +1622,6 @@
         sel = { k: "fsien", side: wt.side, u0: q.u0, u1: q.u1, lv: "main" }; drawSel(); post({ t: "sel", sel }); return true;
       }
       if (wt && wt.k === "fb") { sel = { k: "fboard", side: wt.side, lv: "main" }; drawSel(); post({ t: "sel", sel }); return true; }   // klikšķis uz fascijas dēļa: atlasa tā kontūru, tonis panelī
-      if (!place && typeof mmFacEdge === "function" && M.poly && M.poly.length > 4) {   // klikšķis uz mājas kontūras sienas plānā: atlasa to pašu sienu fasādē (tonis, atlase)
-        const pb = blocks().find(b => { if (b.type !== "plan" || b.lv !== "main") return false; const r = b.g.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
-        const ed = pb && mmFacEdge(M, toLocal(pb.g, e.clientX, e.clientY), T + 60);
-        if (ed) { sel = { k: "fsien", side: ed.side, u0: ed.u0, u1: ed.u1, lv: "main" }; drawSel(); post({ t: "sel", sel }); return true; }
-      }
       if (sel) { sel = null; drawSel(); post({ t: "sel", sel: null }); } return false;
     }
     if (h.del) { post({ t: "delete" }); return true; }
@@ -1668,7 +1663,7 @@
     drag = { h, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, zone: inGrp ? "move" : zone(h), boxes: h.bl.type === "plan" ? furnBoxes(h.bl) : null, moved: false, copy: (e.ctrlKey || e.metaKey) && ["furn", "win", "door", "post", "decor"].includes(h.it.k), grp: inGrp ? [sel, ...sel.more] : null };
     if (h.it.k === "post" && drag.zone === "move") { const pq = M.posts[h.it.i]; drag.gp0 = nearestGrab([pq.x, pq.y, pq.x + pq.w, pq.y + pq.d], h.p); drag.refs = []; }
     if (h.it.k === "fdim") { drag = null; return true; }   // fasādes mēru tikai atlasa (Delete dzēš)
-    document.body.style.cursor = h.wall || drag.zone === "move" ? MVC : cur(drag.zone);
+    document.body.style.cursor = drag.copy ? CPC : h.wall || drag.zone === "move" ? MVC : cur(drag.zone);
     return true;
   };
   // iestatījumu pārnese: pozīcija, izmērs un virziens paliek, pārējie iestatījumi tiek pārņemti
@@ -1822,14 +1817,14 @@
     if (zdrag) { zoneMove(e); return; }
     if (place && place.t === "erase") { document.body.style.cursor = ERC; const h = guideHit(e.clientX, e.clientY) >= 0 ? null : hit(e.clientX, e.clientY); hover(h); return; }
     if (place && place.t === "dim" && fdimMove(e)) return;
-    if (place && place.t === "dim") { if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
+    if (place && place.t === "dim") { document.body.style.cursor = DIMC; if (place.p0) dimPreview(e.clientX, e.clientY); else dimHover(e.clientX, e.clientY); return; }
     if (place && place.t === "fwall") { fwallPreview(e.clientX, e.clientY); return; }
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "terrace") { place.alt = e.altKey; place.lx = e.clientX; place.ly = e.clientY; terPreview(e.clientX, e.clientY, e.shiftKey); return; }
     if (place && ((place.t === "zone" && place.poly) || place.t === "hpoly")) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
-    if (place && place.t === "guide") { drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
+    if (place && place.t === "guide") { document.body.style.cursor = GDC; drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
     if (drag && drag.secd) {
       const m0 = drag.g.getScreenCTM(), sv = drag.g.ownerSVGElement, q0 = sv.createSVGPoint(); q0.x = e.clientX; q0.y = e.clientY; const a = (() => { const r = q0.matrixTransform(m0.inverse()); return [r.x, r.y]; })(), V = drag.o === "v", at = Math.round(a[V ? 0 : 1] / 10) * 10; drag.at = at;
       if (Math.abs(e.clientX - drag.x0) + Math.abs(e.clientY - drag.y0) > 3) drag.moved = true;
@@ -1902,7 +1897,7 @@
     if (place) { hover(null); return; }
     if (!drag) {
       const h = hit(e.clientX, e.clientY);
-      document.body.style.cursor = h ? (h.wall ? MVC : cur(zone(h))) : (moveMode ? MVC : SELC); hover(h);
+      document.body.style.cursor = h ? (moveMode ? MVC : h.wall ? SELC : cur(zone(h))) : (moveMode ? MVC : SELC); hover(h);   // pēc noklusējuma atlases bulta (kā SketchUp); move kursors tikai ar M režīmu
       document.querySelectorAll("g.mm-ov .gph").forEach(x => x.remove());
       if (h && h.it.k === "post" && sel && sel.k === "post") { const pq = M.posts[h.it.i], q = nearestGrab([pq.x, pq.y, pq.x + pq.w, pq.y + pq.d], h.p); mk(overlay(h.bl.g), "circle", { class: "gph", cx: q[0], cy: q[1], r: 1.9 / ek(h.bl), fill: ACC, "fill-opacity": 0.35, stroke: ACC, "stroke-width": 0.5 / ek(h.bl) }); }
       return;
@@ -2811,8 +2806,16 @@
 
   // krāsas spainis (SketchUp "Paint Bucket"): klikšķis uzliek materiālu, Alt+klikšķis paņem to no elementa
   const svgCur = (svg, x, y, fb) => `url("data:image/svg+xml;utf8,${encodeURIComponent(svg)}") ${x} ${y}, ${fb}`;
-  const BKC = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g stroke='#fff' stroke-width='3' stroke-linejoin='round' fill='#fff'><path d='M5 14 14 5l10 10-9 9z'/></g><g stroke='#1d2733' stroke-width='1.6' stroke-linejoin='round' fill='#e9f1fb'><path d='M5 14 14 5l10 10-9 9z'/><path d='M7 14h16' fill='none'/></g><path d='M25 20c1.6 2.2 2.4 3.6 2.4 4.6a2.4 2.4 0 0 1-4.8 0c0-1 .8-2.4 2.4-4.6z' fill='#2266d8' stroke='#fff' stroke-width='1'/></svg>", 5, 27, "cell");
+  const BKC = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g stroke='#fff' stroke-width='3.4' stroke-linejoin='round' fill='#fff'><path d='M10 8l12-3 5 14-11 6-6-10z'/></g><g stroke='#1d2733' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round'><path d='M10 8l12-3 5 14-11 6-6-10z' fill='#e9f1fb'/><path d='M13 8c1-5 8-6 9-3' fill='none'/><path d='M10 8l5 3 11-4' fill='none'/></g><path d='M6 18c1.6 2.2 2.4 3.6 2.4 4.6a2.4 2.4 0 0 1-4.8 0c0-1 .8-2.4 2.4-4.6z' fill='#2266d8' stroke='#fff' stroke-width='1'/></svg>", 6, 26, "cell");
   const PIC = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g stroke='#fff' stroke-width='3.4' stroke-linecap='round' fill='none'><path d='M6 26l3-1 12-12-3-3L6 22z'/><path d='M19 8l5-5 5 5-5 5'/></g><g stroke='#1d2733' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round' fill='none'><path d='M6 26l3-1 12-12-3-3L6 22z' fill='#e9f1fb'/><path d='M19 8l5-5 5 5-5 5z' fill='#2266d8'/></g></svg>", 5, 27, "copy");
+  // spainis ↔ pipete: kursors mainās uzreiz, kad nospied/atlaiž Alt (nevis tikai pie nākamās peles kustības)
+  const bktCur = alt => { if (place && place.t === "bucket") document.body.style.cursor = alt ? PIC : BKC; };
+  addEventListener("keydown", e => { if (e.key === "Alt") { if (place && place.t === "bucket") e.preventDefault(); bktCur(true); } }, true);
+  addEventListener("keyup", e => { if (e.key === "Alt") { if (place && place.t === "bucket") e.preventDefault(); bktCur(false); } }, true);
+  addEventListener("blur", () => bktCur(false));
+  const DIMC = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g stroke='#fff' stroke-width='3.4' stroke-linecap='round' fill='none'><path d='M5 27l2-6 13-13 4 4-13 13z'/></g><g stroke='#1d2733' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'><path d='M5 27l2-6 13-13 4 4-13 13z' fill='#e0342a'/><path d='M5 27l2-6 4 4z' fill='#1d2733'/><path d='M4 5h9M5 3v4M12 3v4' fill='none'/></g></svg>", 5, 27, "crosshair");
+  const CPC = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g stroke='#fff' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round' fill='none'><path d='M14 3v22M3 14h22M14 3l-3 3m3-3 3 3M14 25l-3-3m3 3 3-3M3 14l3-3m-3 3 3 3M25 14l-3-3m3 3-3 3'/><path d='M24 20v8M20 24h8'/></g><g stroke='#1d2733' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'><path d='M14 3v22M3 14h22M14 3l-3 3m3-3 3 3M14 25l-3-3m3 3 3-3M3 14l3-3m-3 3 3 3M25 14l-3-3m3 3-3 3'/><path d='M24 20v8M20 24h8' stroke='#e0342a'/></g></svg>", 14, 14, "copy");
+  const GDC = svgCur("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><g stroke='#fff' stroke-width='3.4' stroke-linejoin='round' fill='#fff'><rect x='8' y='5' width='17' height='14' rx='4'/></g><g stroke='#1d2733' stroke-width='1.4' stroke-linejoin='round'><rect x='8' y='5' width='17' height='14' rx='4' fill='#e9f1fb'/><circle cx='16' cy='11' r='3.2' fill='#e0342a' stroke='none'/><path d='M9 19l-3 7h6' fill='none'/></g><path d='M6 26l-.5.5' stroke='#1d2733' stroke-width='2' stroke-linecap='round'/></svg>", 5, 27, "crosshair");
   function bucketTarget(cx, cy) {
     const h = hit(cx, cy);
     if (h && !h.wall && h.bl.type === "elev" && (h.it.k === "win" || h.it.k === "gw" || h.it.k === "door")) {   // loga rāmis vai aplodas (josla ap ailu)
