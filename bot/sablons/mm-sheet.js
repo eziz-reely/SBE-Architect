@@ -222,13 +222,18 @@ function mmBlockSizes(v, lf, L, K, SC, aw) {
   });
   return out;
 }
-// plauktu iepakošana: bloki pa rindām pēc dotās kārtības (next-fit); atgriež rindas un lietoto augstumu vai null
+// plauktu iepakošana: bloki pa rindām pēc dotās kārtības; rindā bloki stāv kolonnās, un šaurāku bloku var nolikt zem cita, ja rindas augstumā vieta paliek
+// (piem. tabula un gala fasāde viena zem otras blakus plānam); atgriež rindas (bloki ar dx, dy) un lietoto augstumu vai null
 function mmShelf(ord, aw, ah, gap) {
   const shelves = []; let cur = null;
   for (const b of ord) {
     if (b.w > aw + .01 || b.h > ah + .01) return null;
-    if (!cur || cur.w + gap + b.w > aw + .01) { cur = { items: [], w: 0, h: 0 }; shelves.push(cur); }
-    cur.w += (cur.items.length ? gap : 0) + b.w; cur.h = Math.max(cur.h, b.h); cur.items.push(b);
+    const col = cur && cur.cols.find(c => c.w >= b.w - .01 && c.h + gap + b.h <= cur.h + .01);   // zem esoša bloka tajā pašā kolonnā
+    if (col) { cur.items.push(Object.assign({}, b, { dx: col.x, dy: col.h + gap, ci: cur.cols.indexOf(col) })); col.h += gap + b.h; continue; }
+    if (!cur || cur.w + gap + b.w > aw + .01) { cur = { items: [], cols: [], w: 0, h: 0 }; shelves.push(cur); }
+    const x = cur.cols.length ? cur.w + gap : 0;
+    cur.cols.push({ x, w: b.w, h: b.h }); cur.items.push(Object.assign({}, b, { dx: x, dy: 0, ci: cur.cols.length - 1 }));
+    cur.w = x + b.w; cur.h = Math.max(cur.h, b.h);
   }
   const used = shelves.reduce((a, s) => a + s.h, 0) + gap * Math.max(0, shelves.length - 1);
   return used > ah + .01 ? null : { shelves, used };
@@ -239,10 +244,12 @@ function mmLayout(v, lf, L, K, area, gap) {
   let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const MINW = 50, MINH = 32;
   for (const SC of cands) {
-    const all = mmBlockSizes(v, lf, L, K, SC, aw), matB = all.find(b => b.id === "mat"), gz = all.filter(b => b.id === "griez");
+    const all = mmBlockSizes(v, lf, L, K, SC, aw);
+    for (const matIn of all.some(b => b.id === "mat") ? [false, true] : [false]) {   // materiāli apakšējā rindā; ja šajā mērogā tā neietilpst, materiāli tiek iepakoti kopā ar citiem blokiem (lielāks mērogs, mazāk tukšas vietas)
+    const matB = matIn ? null : all.find(b => b.id === "mat"), gz = all.filter(b => b.id === "griez");
     // griezumi stāv blakus materiālu (krāsu pases) blokam apakšējā rindā, ja tur ietilpst; citādi kopā ar pārējiem blokiem
-    const beside = !!(matB && gz.length && matB.w + gz.reduce((a, b) => a + gap + b.w, 0) <= aw + .01), bl = all.filter(b => b.id !== "mat" && !(beside && b.id === "griez")), rowH = matB ? Math.max(matB.h, ...(beside ? gz.map(b => b.h) : [0])) : 0;
-    const PRI = ["plan", "expl", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "griez"], pr = b => { const q = PRI.indexOf(b.id); return q < 0 ? 99 : q; };
+    const beside = !!(matB && gz.length && matB.w + gz.reduce((a, b) => a + gap + b.w, 0) <= aw + .01), bl = all.filter(b => (matIn || b.id !== "mat") && !(beside && b.id === "griez")), rowH = matB ? Math.max(matB.h, ...(beside ? gz.map(b => b.h) : [0])) : 0;
+    const PRI = ["plan", "expl", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "griez", "mat"], pr = b => { const q = PRI.indexOf(b.id); return q < 0 ? 99 : q; };
     const canon = [...bl].sort((a, b) => pr(a) - pr(b));   // pastāvīga kārtība: plāns, tabula, mansards, fasādes; materiāli vienmēr atsevišķā rindā zem visa (tāpēc neleciena pēc katras krāsu maiņas)
     const orders = [canon, [...bl].sort((a, b) => b.h - a.h), [...bl].sort((a, b) => b.w - a.w)];
     for (let i = 0; i < 500; i++) { const o = [...bl]; for (let j = o.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [o[j], o[r]] = [o[r], o[j]]; } orders.push(o); }
@@ -254,7 +261,9 @@ function mmLayout(v, lf, L, K, area, gap) {
       const place = [], free = [], n = pk.shelves.length, gy = gap + (n > 1 ? Math.min(14, Math.max(0, (ah - rsv - pk.used) / (n - 1) * (vizOn ? 0 : 1))) : 0);
       let y = ay;
       pk.shelves.forEach(sh => {
-        let x = ax; sh.items.forEach(b => { place.push({ id: b.id, si: b.si, x, y, w: b.w, h: b.h, R: b.R, el: b.el, et: b.et }); x += b.w + gap; });
+        const nc = sh.cols.length, jx = !vizOn && nc > 1 && !sh.items.some(b => b.id === "expl") ? Math.min(25, (aw - sh.w) / (nc - 1)) : 0;   // rindas bloki izkliedēti pa platumu (ne visi pie kreisās malas); rindā ar tabulu nē, jo tabulas pabīdījums (tblOff) ir no tās vietas
+        sh.items.forEach(b => place.push({ id: b.id, si: b.si, x: ax + b.dx + b.ci * jx, y: y + b.dy, w: b.w, h: b.h, R: b.R, el: b.el, et: b.et }));
+        sh.w += jx * (nc - 1);
         if (aw - sh.w - gap > 20) free.push({ x: ax + sh.w + gap, y, w: aw - sh.w - gap, h: sh.h });
         y += sh.h + gy;
       });
@@ -264,10 +273,12 @@ function mmLayout(v, lf, L, K, area, gap) {
       let viz = null;
       if (vizOn) free.forEach(f => { let w = f.w, h = w / ratio; if (h > f.h) { h = f.h; w = h * ratio; } if (w >= MINW && h >= MINH && (!viz || w * h > viz.w * viz.h)) viz = { x: f.x + (f.w - w) / 2, y: f.y + (f.h - h) / 2, w, h }; });
       if (vizOn && !viz) continue;
-      const score = vizOn ? viz.w * viz.h : -pk.used;
+      let inv = 0; ord.forEach((a, i) => ord.slice(i + 1).forEach(b => { if (pr(a) > pr(b)) inv++; }));   // cik tālu no kanoniskās kārtības (plāns, tabula, fasādes, materiāli)
+      const score = vizOn ? viz.w * viz.h : -(inv * 1000 + pk.used);
       if (!best || score > best.score) best = { SC, place, viz, score, canon: ord === canon };
     }
     if (best) return best;
+    }
   }
   return null;
 }
@@ -328,10 +339,10 @@ function mmTitleFlow(svg, v, lf, L, R) {
   }
   if (on("adrese") && (P.adrese || []).length) { const lines = P.adrese.flatMap(l => wrap(l, nChar(2.3, W - 6))), need = 7 + lines.length * 3.6 + 3;
     if (y + need < bottom - 4) { lab(y + 2, tx.obj); lines.forEach((l, i) => T_(gg, X + 3, y + 7.5 + i * 3.6, l, { fs: 2.3, fill: DK })); y += need; } }
-  if (on("piezimes")) { const notes = ((L === "en" ? P.piezimes_en : P.piezimes) || P.piezimes || []);
+  if (on("piezimes")) { const notes = ((L === "en" ? P.piezimes_en : P.piezimes) || P.piezimes || []).filter(t => !(P.notes_off || []).includes(t));   // notes_off: redaktorā nodzēstās piezīmes
     if (notes.length && y + 12 < bottom) { lab(y + 2, tx.cont); let ny = y + 8;
       for (const t of notes) { const ls = wrap(t, nChar(2.1, W - 9)); if (ny + ls.length * 3.2 > bottom - 3) { T_(gg, X + 3, ny, "…", { fs: 2.1, fill: MM_GREY }); break; }
-        T_(gg, X + 3, ny, "—", { fs: 2.1, fill: AC }); ls.forEach((l, j) => T_(gg, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: DK })); ny += ls.length * 3.2 + 1.2; }
+        const gn = el("g", { "data-note": t }, gg); T_(gn, X + 3, ny, "—", { fs: 2.1, fill: AC }); ls.forEach((l, j) => T_(gn, X + 6.5, ny + j * 3.2, l, { fs: 2.1, fill: DK })); ny += ls.length * 3.2 + 1.2; }
       y = ny; } }
   if (on("watermark") && !NONAME) { const wm = (P.modela_nosaukums || P.modelis || v.short || "") + "  ·  " + tx.phase, top = y + 4, bot = bottom - 4, fs = Math.min(5.5, (bot - top) / (wm.length * .95));
     if (fs >= 3) T_(gg, 0, 0, wm, { fs, fw: 700, ls: fs * .22, fill: "#e9e5dc", tr: `translate(${cx + fs * .35} ${(top + bot) / 2}) rotate(-90)`, a: "middle" }); }
