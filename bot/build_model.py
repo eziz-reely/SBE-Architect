@@ -380,7 +380,8 @@ def build(model_path, langs=None):
         ("  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT));",
          "  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT + (pc.up || 0)));"),
         ("pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);",
-         "(pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - Math.max(pc.th, pc.up ? Math.max(0, ...(v.terraces || []).filter(q => !q.up).map(q => q.th || 0)) : 0)) : fT) - (pc.up || 0), ROOF.plinth - 40);"),   # [MM] pakāpiens: virs zemākās terases augšas (ne zem tās, ja pakāpiena th mazāks)),
+         "(pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - Math.max(pc.th, pc.up ? Math.max(0, ...(v.terraces || []).filter(q => !q.up).map(q => q.th || 0)) : 0)) : fT) - (pc.up || 0), pc.up ? ROOF.plinth - 40 - Math.max(0, ...(v.terraces || []).filter(q => !q.up).map(q => q.th || 0)) : ROOF.plinth - 40);"),   # [MM] pakāpiens stāv uz terases: apakša = terases augša, nevis zeme
+        #",   # [MM] pakāpiens: virs zemākās terases augšas (ne zem tās, ja pakāpiena th mazāks)),
         ("  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
          "  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));\n  (v.posts || []).forEach(q => { el(\"rect\", { x: q.x, y: q.y, width: q.w, height: q.d, fill: \"#fff\", stroke: C.ink, \"stroke-width\": 12 }, g); el(\"path\", { d: `M ${q.x} ${q.y} L ${q.x + q.w} ${q.y + q.d} M ${q.x + q.w} ${q.y} L ${q.x} ${q.y + q.d}`, stroke: C.ink, \"stroke-width\": 6 }, g); });   // [MM] brīvie stabi"),
         ("  // openings\n  const reveal =",
