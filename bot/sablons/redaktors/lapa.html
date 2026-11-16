@@ -903,7 +903,7 @@ p.grp { font: 600 12px/1.3 var(--f-ui); color: var(--muted); text-transform: non
       <button type="button" class="it" id="bSvg"><b>SVG vektors</b><small>Bez rastra, atveras Illustrator, Inkscape</small></button>
       <button type="button" class="it" id="bDxf"><b>DXF (AutoCAD, ArchiCAD)</b><small>Vektoru lapa mm, slāņi; DWG ar Save As</small></button>
       <button type="button" class="it" id="bSkp"><b>SketchUp 3D modelis</b><small>Imports ar MM Homes paplašinājumu</small></button>
-      <button type="button" class="it" id="bAc"><b>ArchiCAD skripts (Tapir)</b><small>.py failam: ArchiCAD, Tapir, Run script; bez Claude</small></button>
+      <button type="button" class="it" id="bAc"><b>ArchiCAD skripts (Tapir)</b><small>Atver SBE_skice.tpl, Tapir, Run script. Izmanto tavu SBE dzinēju, bez Claude</small></button>
       <button type="button" class="it" id="bAcClaude"><b>Nodot Claude: ArchiCAD skripts</b><small>Ja skripts neder: nokopē uzdevumu un atver Claude</small></button>
       <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
       <button type="button" class="it" id="bJson"><b>model.json</b><small>Modeļa dati botam</small></button>
@@ -3708,7 +3708,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   $("bAc").onclick = async () => {
     try { status("Gatavo ArchiCAD skriptu…"); const j = await acPost("archicad");
-      status("ArchiCAD skripts: eksports/" + j.name + ". ArchiCAD: File, New, Tapir, Run script." + (j.notes && j.notes.length ? " Piezīmes: " + j.notes.join("; ") : "")); }
+      status("ArchiCAD skripts: eksports/" + j.name + ". Atver SBE_skice.tpl un Tapir, Run script." + (j.notes && j.notes.length ? " Piezīmes: " + j.notes.join("; ") : "")); }
     catch (e) { status("ArchiCAD skripts neizdevās: " + ((e && e.message) || e) + ". Vari spiest „Nodot Claude”."); }
   };
   $("bAcClaude").onclick = async () => {

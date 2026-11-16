@@ -2,8 +2,8 @@
 
     python archicad.py <model.json> [izvades mape]
 
-Izvade: <id>_archicad.py, viens pašpietiekams Python skripts (tikai standarta bibliotēka). Dati ir ierakstīti tajā.
-ArchiCAD: File > New, Tapir > Run script > izvēlas <id>_archicad.py. Bez ArchiCAD pārbauda `--dry`.
+Izvade: <id>_archicad.py: viens Python skripts ar project.json iekšā, kas palaiž SBE dzinēju (SBE-ARHITEKTS: python -m sbe archicad).
+ArchiCAD: atver SBE_skice.tpl, Tapir > Run script > <id>_archicad.py. Favorīti un layouti nāk no veidnes un dzinēja, netiek veidoti otrreiz.
 Uzbūvē: stāvu, ārsienas (pa ēkas kontūru), starpsienas (no telpu spraugām), logus, durvis, zonas, divslīpju jumtu.
 Koordinātas: plāna mm (y uz dienvidiem) → ArchiCAD m, y apgriezts (y_ac = D - y), lai plāns nebūtu spoguļots.
 Ko skripts vēl NEdara (atskaitē parādās kā piezīmes): grīdas plātnes, cokols, četrslīpju jumts, mansarda logi, mēbeles, layouti.
@@ -140,7 +140,7 @@ def data_of(m):
             continue
         cx, cy = (u + d["w"] / 2, wmap[wid]["a"][1]) if o == "h" else (wmap[wid]["a"][0], u + d["w"] / 2)
         opens.append({"tips": "durvis", "siena": wid, "poz": offset_on(wid, cx, cy), "platums": d["w"], "augstums": 2100, "palodze": 0,
-                      "ieeja": bool(d.get("entry"))})
+                      "ieeja": bool(d.get("entry")), "o": o, "hinge": d.get("hinge"), "side": d.get("side")})
     # ---- telpas (zonas) ----
     zones = []
     for i, room in enumerate(m.get("rooms") or []):
@@ -160,194 +160,142 @@ def data_of(m):
     ridge = c.eave + (min(x1 - x0, y1 - y0) / 2) * c.tan + G.ROOF_TH
     return {"id": m.get("id", "projekts"), "nosaukums": m.get("nosaukums", m.get("id", "")), "D": c.D, "W": c.W,
             "augstums_mm": c.eave if not roof else ridge, "eave": c.eave, "walls": walls, "opens": opens, "zones": zones,
-            "roof": roof, "piezimes": notes, "razotajs": "MM"}
+            "roof": roof, "piezimes": notes, "razotajs": "MM", "projekts": m.get("projekts") or {}}
 
 
-TEMPLATE = r'''# -*- coding: utf-8 -*-
-"""ArchiCAD (Tapir) skripts: __ID__. Ģenerēts no model.json ar SBE Architect (bot/archicad.py).
-
-Palaišana: ArchiCAD > File > New (tukšs projekts) > Tapir > Run script > šis fails.
-Bez ArchiCAD pārbaude:  python __FILE__ --dry
-Papildu: --port 19723   --fav "ceļš uz mapi ar logu favorītiem (.xml)"
-Vajag: ArchiCAD ar Tapir pievienojumu. Tikai standarta bibliotēka.
-"""
-import json, sys, urllib.request
-
-DATA = json.loads(r"""__DATA__""")
-M = 0.001
-DRY = "--dry" in sys.argv
-PORT = None
-FAV_DIR = sys.argv[sys.argv.index("--fav") + 1] if "--fav" in sys.argv else None
+def _veras(o, wall):
+    """Durvju vēršanās (hinge 's' = eņģe ailas sākumā pa plāna asi, side = vēršanās uz +y/+x) -> sbe dzinēja "L+/L-/R+/R-"
+    (L = eņģe sienas sākumā, + = sienas normāle (-uy, ux), y uz augšu)."""
+    if o.get("hinge") not in ("s", "e", "w", "n") or o.get("side") not in (1, -1):
+        return "L+"
+    (ax, ay), (bx, by) = wall["a"], wall["b"]
+    dx, dy = bx - ax, by - ay                       # plāna koordinātēs (y uz dienvidiem)
+    along = dx if o["o"] == "h" else dy             # kustība pa plāna asi (x horizontālām, y vertikālām sienām)
+    start_hinge = (o["hinge"] == "s") == (along > 0)
+    sv = (0, o["side"]) if o["o"] == "h" else (o["side"], 0)
+    n_plan = (dy, -dx)                              # dzinēja normāle (y uz augšu) pārvērsta atpakaļ plāna koordinātēs
+    plus = sv[0] * n_plan[0] + sv[1] * n_plan[1] > 0
+    return ("L" if start_hinge else "R") + ("+" if plus else "-")
 
 
-def _post(body):
-    req = urllib.request.Request("http://127.0.0.1:%d" % PORT, json.dumps(body).encode(), {"Content-Type": "application/json"})
-    return json.loads(urllib.request.urlopen(req, timeout=120).read())
-
-
-def connect():
-    global PORT
-    if DRY:
-        return
-    ports = [int(sys.argv[sys.argv.index("--port") + 1])] if "--port" in sys.argv else range(19723, 19744)
-    for p in ports:
-        PORT = p
-        try:
-            if _post({"command": "API.IsAlive"}).get("result", {}).get("isAlive"):
-                return
-        except Exception:
-            pass
-    sys.exit("Nav atrasts ArchiCAD ar Tapir (porti 19723-19743). Atver ArchiCAD un pārbaudi, ka Tapir ir uzstādīts.")
-
-
-def cmd(name, params=None, soft=False):
-    params = params or {}
-    if DRY:
-        print("---", name, json.dumps(params, ensure_ascii=False)[:300])
-        return _dry(name, params)
-    try:
-        r = _post({"command": "API.ExecuteAddOnCommand", "parameters": {
-            "addOnCommandId": {"commandNamespace": "TapirCommand", "commandName": name}, "addOnCommandParameters": params}})
-    except Exception as ex:
-        if soft:
-            return None
-        sys.exit("%s neizdevās: %s" % (name, ex))
-    if not r.get("succeeded"):
-        if soft:
-            return None
-        sys.exit("%s neizdevās: %s" % (name, r.get("error")))
-    return r["result"]["addOnCommandResponse"]
-
-
-def _dry(name, p):
-    for k in p:
-        if isinstance(p[k], list) and name.startswith("Create"):
-            return {"elements": [{"elementId": {"guid": "dry-%s-%d" % (name, i)}} for i in range(len(p[k]))]}
-    return {}
-
-
-def ids(res, what):
-    out = []
-    for i, e in enumerate((res or {}).get("elements", [])):
-        if "elementId" not in e:
-            sys.exit("%s #%d neizveidojās: %s" % (what, i, e.get("error", e)))
-        out.append(e["elementId"])
-    return out
-
-
-def xy(p):
-    """plāna mm (y uz dienvidiem) -> ArchiCAD m (y uz ziemeļiem)"""
-    return {"x": p[0] * M, "y": (DATA["D"] - p[1]) * M}
-
-
-def favs(kind):
-    if DRY:
-        return []
-    return (cmd("GetFavoritesByType", {"elementType": kind}, soft=True) or {}).get("favorites", [])
-
-
-def window_fav(o, wf):
-    two = o.get("daļas", 1) > 1 or o["platums"] >= 1200
-    fixed = False
-    code = ("L06" if fixed else "L07") if two else ("L01" if fixed else "L02")
-    if o.get("kind") == "hopper":
-        code = "L03" if not two else "L07"
-    if o["palodze"] <= 50:
-        code = "L10" if two else "L05"
-    return next((f for f in wf if f.startswith(code + " ") or f == code), None)
-
-
-def main():
-    d = DATA
-    rep = {"sienas": 0, "logi": 0, "durvis": 0, "zonas": 0, "jumts": 0, "piezīmes": list(d["piezimes"])}
-    connect()
-    cmd("ChangeWindow", {"windowType": "FloorPlan", "storyIndex": 0}, soft=True)
-    cmd("SetStories", {"stories": [{"name": "1. stāvs", "level": 0.0, "dispOnSections": True}]})
-    if FAV_DIR and not DRY:
-        cmd("ImportFavorites", {"path": FAV_DIR, "importFolders": False, "conflictPolicy": "Skip"}, soft=True)
-    wf, wallf = favs("Window"), favs("Wall")
-    # ---- sienas ----
-    h = d["augstums_mm"]
-    items = []
+def project_json(m, nr="001"):
+    """model.json -> project.json priekš SBE dzinēja (SBE-ARHITEKTS: python -m sbe archicad). mm, y uz augšu (plāna y apgriezts)."""
+    d = data_of(m)
+    D = d["D"]
+    flip = lambda pt: [round(pt[0], 2), round(D - pt[1], 2)]
+    wmap = {w["id"]: w for w in d["walls"]}
+    sienas = []
     for w in d["walls"]:
-        o = {"begCoordinate": xy(w["a"]), "endCoordinate": xy(w["b"]), "floorIndex": 0, "zCoordinate": 0.0,
-             "height": (h if w["outer"] else d["eave"] - 300) * M, "referenceLineLocation": "Center"}
-        pref = "MM S-04" if w["outer"] else "MM Starpsiena"
-        f = next((x for x in wallf if x.startswith(pref)), None)
-        if f:
-            o["favoriteName"] = f
+        e = {"id": w["id"], "no": flip(w["a"]), "lidz": flip(w["b"])}
+        if w["outer"]:
+            e["pirags"] = "MM-S04"
+        elif abs(w["t"] - 195) < 1:
+            e["pirags"] = "MM-SS195"
         else:
-            o.update(structureType="Basic", thickness=w["t"] * M)
-        items.append(o)
-    wid = dict(zip([w["id"] for w in d["walls"]], ids(cmd("CreateWalls", {"wallsData": items}), "Siena")))
-    rep["sienas"] = len(items)
-    if not any(x.startswith("MM S-04") for x in wallf):
-        rep["piezīmes"].append("Nav pīrāga favorītu 'MM S-04 / MM Starpsiena': sienas ir ar Basic biezumu (importē favorītus un palaid vēlreiz)")
-    # ---- logi un durvis ----
-    win, door = [], []
+            e["biezums"] = round(w["t"], 1)
+        sienas.append(e)
+    ailas = []
     for a in d["opens"]:
-        x = {"ownerWallId": wid[a["siena"]], "centerOffset": a["poz"] * M, "width": a["platums"] * M,
-             "height": a["augstums"] * M, "sillHeight": a["palodze"] * M}
+        w = wmap[a["siena"]]
+        # dzinējs mēra pozīciju no sienas "no" gala līdz ailas malai; mūsu "poz" = ailas centrs no sienas sākuma
+        o = {"siena": a["siena"], "tips": a["tips"], "pozicija_mm": round(a["poz"] - a["platums"] / 2, 1), "platums": a["platums"],
+             "augstums": a["augstums"]}
         if a["tips"] == "durvis":
-            door.append(x)
+            o["veras"] = _veras(a, w)
         else:
-            f = window_fav(a, wf)
-            if f:
-                x["favoriteName"] = f
-            win.append(x)
-    if win:
-        rep["logi"] = len(ids(cmd("CreateWindows", {"windowsData": win}), "Logs"))
-        if not wf:
-            rep["piezīmes"].append("Nav logu favorītu L01-L12: logi ar noklusējuma iestatījumiem (pievieno --fav <mape>)")
-    if door:
-        rep["durvis"] = len(ids(cmd("CreateDoors", {"doorsData": door}), "Durvis"))
-        rep["piezīmes"].append("Durvju vēršanās pusi pārbaudi ArchiCAD (plāns apgriezts pa y)")
-    # ---- zonas ----
-    zs = [{"floorIndex": 0, "name": z["nosaukums"], "numberStr": z["nr"],
-           "geometry": {"polygonCoordinates": [xy(p) for p in z["poly"]]}} for z in d["zones"]]
-    if zs:
-        rep["zonas"] = len(ids(cmd("CreateZones", {"zonesData": zs}), "Zona"))
-    # ---- jumts: divas vienslīpes plaknes ----
+            o["palodze"] = a["palodze"]
+            o["veids"] = "casement2" if a.get("daļas", 1) > 1 else str(a.get("kind") or "tilt")
+        ailas.append(o)
+    telpas = []
+    for z in d["zones"]:
+        xs, ys = [p[0] for p in z["poly"]], [p[1] for p in z["poly"]]
+        telpas.append({"nr": z["nr"], "nosaukums": z["nosaukums"],
+                       "taisnsturi": [[round(min(xs), 1), round(D - max(ys), 1), round(max(xs) - min(xs), 1), round(max(ys) - min(ys), 1)]]})
+    pr = (d.get("projekts") or {})
+    p = {"nr": nr, "nosaukums": d["nosaukums"], "razotajs": "mm", "klients": pr.get("klients", ""),
+         "revizija": 1, "augstums_mm": d["eave"], "stavi": [{"id": "1", "sienas": sienas, "ailas": ailas, "telpas": telpas}],
+         "objekts": {"nosaukums": "Dzīvojamā māja " + str(d["nosaukums"]),
+                     "adrese": ", ".join(s_.strip() for s_ in (pr.get("adrese") or []) if s_.strip())},
+         "noformejums": "skice"}
     r = d["roof"]
     if r:
-        import math
-        x0, y0, x1, y1 = r["bounds"]
-        ov, ym = r["parkare_mm"], (y0 + y1) / 2
-        a = math.radians(r["slipums"])
-        planes = [((x0 - ov, y0 - ov, x1 + ov, ym), (x0 - ov, y0), (x1 + ov, y0)),
-                  ((x0 - ov, ym, x1 + ov, y1 + ov), (x1 + ov, y1), (x0 - ov, y1))]
-        rd = []
-        for (ax, ay, bx, by), beg, end in planes:
-            rd.append({"level": r["dzega_mm"] * M, "floorIndex": 0, "structureType": "Basic", "thickness": r["biezums_mm"] * M,
-                       "polygonCoordinates": [xy((ax, ay)), xy((bx, ay)), xy((bx, by)), xy((ax, by))],
-                       "pivotLine": {"begCoordinate": xy(beg), "endCoordinate": xy(end)}, "angle": a})
-        res = cmd("CreateRoofs", {"roofsData": rd}, soft=True)
-        rid = [e["elementId"] for e in (res or {}).get("elements", []) if "elementId" in e]
-        rep["jumts"] = len(rid)
-        if not rid:
-            rep["piezīmes"].append("Jumts neizveidojās (Tapir bez CreateRoofs?)")
-        else:
-            outer = [wid[w["id"]] for w in d["walls"] if w["outer"]]
-            if cmd("TrimElements", {"elements": [{"elementId": e} for e in outer + rid]}, soft=True) is None and not DRY:
-                rep["piezīmes"].append("Tapir bez TrimElements: frontonu sienas nav pievilktas jumtam")
-    print("\nATSKAITE %s: sienas %d, logi %d, durvis %d, zonas %d, jumta plaknes %d" % (
-        d["id"], rep["sienas"], rep["logi"], rep["durvis"], rep["zonas"], rep["jumts"]))
-    for n in rep["piezīmes"]:
-        print(" - " + n)
-    print(" - Nav veidots: grīdas plātnes, cokols, mansarda logi, mēbeles, layouti (skat. SBE_skice.tpl)")
+        p["jumts"] = {"forma": "divslipju", "slipums": r["slipums"], "parkare_mm": r["parkare_mm"], "dzega_mm": r["dzega_mm"],
+                      "biezums_mm": r["biezums_mm"], "kore": "x"}
+    p["_piezimes_no_model_json"] = d["piezimes"]
+    return p
 
 
-if __name__ == "__main__":
-    main()
-'''
+RUNNER = r"""# -*- coding: utf-8 -*-
+# __ID__: SBE Architect -> ArchiCAD (Tapir). Ģenerēts no model.json (bot/archicad.py), neko neveido otrreiz:
+# tas tikai ieliek project.json un palaiž TAVU esošo SBE dzinēju (favorīti L01-L12, pīrāgi, Layout Book no SBE_skice.tpl).
+# Palaišana: atver SBE_skice.tpl (tukšs projekts), Tapir > Run script > šis fails.   Pārbaude bez ArchiCAD: python __FILE__ --dry
+import os, sys, io, json, traceback
+
+SBE_DEFAULT = r"__SBE__"
+PROJECT = json.loads(r'''__DATA__''')
+HERE = os.path.dirname(os.path.abspath(__file__))
+DRY = "--dry" in sys.argv
+
+
+def sbe_root():
+    for c in (os.environ.get("SBE_ARHITEKTS"), SBE_DEFAULT, os.path.join(os.path.expanduser("~"), "Desktop", "Projekti", "SBE-ARHITEKTS")):
+        if c and os.path.isdir(os.path.join(c, "sbe")):
+            return c
+    sys.exit("Nav atrasta SBE-ARHITEKTS mape (ar apakšmapi sbe). Norādi vides mainīgo SBE_ARHITEKTS vai labo SBE_DEFAULT šajā failā.")
+
+
+class Tee(io.StringIO):
+    def write(self, s):
+        if sys.__stdout__:
+            sys.__stdout__.write(s)
+        return super().write(s)
+
+
+SBE = sbe_root()
+pdir = os.path.join(HERE, "__ID___projekts")
+os.makedirs(pdir, exist_ok=True)
+json.dump(PROJECT, open(os.path.join(pdir, "project.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+sys.path.insert(0, SBE)
+os.chdir(SBE)
+from sbe.__main__ import main
+
+buf = Tee()
+old = sys.stdout
+sys.stdout = buf
+try:
+    args = ["archicad", pdir, "--jauns", "--force"] + (["--dry"] if DRY else [])
+    print("rezultāts:", main(args))
+except BaseException:
+    traceback.print_exc(file=buf)
+    print("KĻŪDA:", sys.exc_info()[1])
+finally:
+    sys.stdout = old
+    log = os.path.join(HERE, "__ID___archicad_log.txt")
+    open(log, "w", encoding="utf-8").write(buf.getvalue())
+    print("\nŽurnāls: " + log)
+"""
+
+
+def sbe_default():
+    """Ceļš uz SBE-ARHITEKTS: ~/.sbe-arhivs.json "sbe_arhitekts" vai noklusējums."""
+    try:
+        c = json.load(open(os.path.join(os.path.expanduser('~'), '.sbe-arhivs.json'), encoding='utf-8'))
+        if c.get('sbe_arhitekts'):
+            return c['sbe_arhitekts']
+    except Exception:
+        pass
+    return os.path.join(os.path.expanduser('~'), 'Desktop', 'Projekti', 'SBE-ARHITEKTS')
 
 
 def script(m, filename=None):
-    d = data_of(m)
-    name = filename or f"{d['id']}_archicad.py"
-    txt = json.dumps(d, ensure_ascii=False, separators=(",", ":"), default=list)
-    assert '"""' not in txt
-    return TEMPLATE.replace("__ID__", d["id"]).replace("__FILE__", name).replace("__DATA__", txt), name
+    """-> (skripta teksts, faila nosaukums). Skripts ieliek project.json un palaiž SBE dzinēju (SBE-ARHITEKTS)."""
+    pj = project_json(m)
+    name = filename or f"{m.get('id', 'projekts')}_archicad.py"
+    txt = json.dumps(pj, ensure_ascii=False, indent=1)
+    assert "'''" not in txt
+    out = (RUNNER.replace("__ID__", str(m.get("id", "projekts"))).replace("__FILE__", name)
+           .replace("__SBE__", sbe_default()).replace("__DATA__", txt))
+    return out, name
 
 
 def main(argv):
