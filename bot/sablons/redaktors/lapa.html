@@ -1426,7 +1426,6 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Durvis", s: "800 iekšā, 1000 ārsienā", p: { t: "door" } },
     { n: "Starpsiena", s: "divi klikšķi, pielīp sienām", p: { t: "wall" }, ic: "wall" },
     { n: "Izgriezt sienu", s: "divi klikšķi uz sienas", p: { t: "cut" }, ic: "cut" },
-    { n: "Griezums", s: "klikšķis plānā: horizontāls vai vertikāls griezums (Tab maina)", p: { t: "section" }, ic: "sec" },
     { n: "Mērs", s: "plānā divi klikšķi; fasādē klikšķis un izvēle", p: { t: "dim" }, ic: "dim" },
     { n: "Palīglīnija", s: "G · pati izvēlas vert./horiz./slīpi", p: { t: "guide", o: "a" }, ic: "ga" },
     { n: "Vert. palīglīnija", s: "G · pielīp elementiem", p: { t: "guide", o: "v" }, ic: "gv" },
@@ -1443,6 +1442,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Krāsas spainis", s: "B; klikšķis uzliek materiālu, Alt+klikšķis paņem", p: { t: "bucket" }, ic: "bucket" },
     { n: "Ārsiena (brīva)", s: "divi klikšķi plānā: siena jebkur, arī ārpus mājas; telpas un citas sienas nekustas. Esošu sienu pagarina, to atlasot un ierakstot garumu", p: { t: "fwall" }, ic: "ter" },
     { n: "Mājas kontūra (ārsienas)", s: "klikšķi ārsienu stūros (taisnleņķi, arī L un T forma); klikšķis pirmajā punktā noslēdz. Māja tiek pārbūvēta pa šo kontūru, telpas apgrieztas, terases un lievenis pabīdīti", p: { t: "hpoly" }, ic: "ter" },
+    { n: "Griezums", s: "klikšķis plānā: horizontāls vai vertikāls griezums (Tab maina)", p: { t: "section" }, ic: "sec" },
   ];
   // vy: mēbelei ir 3 detalizācijas varianti (bed1 / bed / bed3)
   const FURN_LIB = [
@@ -1673,11 +1673,12 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { id: "er", n: "Dzēšgumija", k: "x", ic: "er", run: () => { const b = OPENB[10]; if (b) b.click(); railSync(); } },
     ...[[7, "gv", "", "gv"], [8, "gh", "", "gh"], [9, "gs", "", "gs"], [11, "ter", "t", "ter"], [12, "terp", "", "terp"], [13, "dec", "", "dec"], [14, "decp", "", "decp"], [15, "post", "", "post"], [16, "zone", "", "zone"], [17, "zonep", "", "zonep"], [18, "bk", "b", "bucket"], [19, "fwall", "", "wall"], [20, "hpoly", "", "ter"]]
       .map(([i, id, k, ic]) => ({ id, n: OPEN[i].n, k, ic, oi: i, run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
+    { id: "sec", n: "Griezums", k: "", ic: "sec", oi: 21, run: () => { const b = OPENB[21]; if (b) b.click(); railSync(); } },
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gx", run: () => { $("bGuideClr").click(); } },
   ];
   // kreisā josla: visi rīki grupās (atlase | ailas | sienas un telpas | mēri un palīglīnijas | terase, fasāde, stabi | materiāls)
-  const RAIL = ["Rīki", ["sel", "er", "bk"], ["t5", "t6", "gv", "gh", "gs", "gc"], "Elementi", ["t0", "t1", "t2"], ["t3", "t4", "fwall", "zone", "zonep", "hpoly"], ["ter", "terp", "dec", "decp", "post"]];
-  const OPEN_ID = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "gh", "gs", "er", "ter", "terp", "dec", "decp", "post", "zone", "zonep", "bk", "fwall", "hpoly"];
+  const RAIL = ["Rīki", ["sel", "er", "bk"], ["t5", "t6", "sec", "gv", "gh", "gs", "gc"], "Elementi", ["t0", "t1", "t2"], ["t3", "t4", "fwall", "zone", "zonep", "hpoly"], ["ter", "terp", "dec", "decp", "post"]];
+  const OPEN_ID = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "gh", "gs", "er", "ter", "terp", "dec", "decp", "post", "zone", "zonep", "bk", "fwall", "hpoly", "sec"];
   IC.terp = '<path d="M3.5 18.5 5.5 9h7l1-4h6.5l-2 13.5z"/>';
   IC.dec = '<path d="M3 20.5V10l9-6.5 9 6.5v10.5"/><rect x="8.5" y="12" width="7" height="6"/>';
   IC.decp = '<path d="M3 20.5V10l9-6.5 9 6.5v10.5"/><path d="M8 18.5v-5l4-3 4 3v5z"/>';
