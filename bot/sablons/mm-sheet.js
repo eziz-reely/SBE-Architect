@@ -173,7 +173,7 @@ function mmNearRal(hex) {
   return best;
 }
 window.mmNearRal = mmNearRal;
-const mmRalTxt = (hex, ral) => ral || (mmNearRal(hex) ? "≈ " + mmNearRal(hex) : hex.toUpperCase());   // RAL kods; brīvai krāsai tikai tuvākais RAL (hex lapā nerāda)
+const mmRalTxt = (hex, ral) => ral || (mmNearRal(hex) ? mmNearRal(hex) : hex.toUpperCase());   // RAL kods; brīvai krāsai tikai tuvākais RAL (hex lapā nerāda)
 function mmMatTones(L, PR) {   // [MM] redaktora spaiņa toņi: katrai atsevišķi nokrāsotai daļai sava leģendas rinda ar RAL kodu
   const out = [];
   const SN = L === "en" ? { south: "south", north: "north", east: "east", west: "west" } : { south: "dienvidu", north: "ziemeļu", east: "austrumu", west: "rietumu" }, FS = PR.fasade_side || {};
@@ -206,7 +206,7 @@ function mmBlockSizes(v, lf, L, K, SC, aw) {
   const k = 1 / SC, RG = roofGeo(v), ids = (K.elementi || []).filter(id => id !== "viz"), out = [];
   const eave = RG.eEdge + RG.thV;
   ids.forEach(id => {
-    if (id === "plan" || (id === "loft" && lf)) { const e = mmPlanExt(v); out.push({ id, w: (v.W + e.l + e.r + 5600) * k, h: (v.D + e.t + e.b + 5600) * k + 8, el: e.l, et: e.t }); }
+    if (id === "plan" || (id === "loft" && lf)) { const e = mmPlanExt(v); out.push({ id, w: (v.W + e.l + e.r + 5600) * k, h: (v.D + e.t + e.b + 7100) * k + 8, el: e.l, et: e.t }); }
     else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 3300) * k + 3 }); }
     else if (id === "griez") { const hz = true, sp = hz ? v.W : v.D; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 2600) * k + 8 }); }
     else if (id === "expl") { const nr = mmRooms(v).length + (lf ? mmRooms(lf).length + 2 : 0); out.push({ id, w: 66, h: 6.5 + (nr + 2) * 5 + 12 }); }
