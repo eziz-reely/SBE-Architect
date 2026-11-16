@@ -616,6 +616,10 @@ details.tr > .trb { padding: 12px 14px 14px; padding-right: max(14px, env(safe-a
 details.tr > .trb > .cap { margin: 4px 0 0; }
 details.tr .selcard { padding: 0; border: 0; background: none; }
 details.tr[data-pane="sel"] > .trb { background: var(--field); }
+.wtbox { margin: 2px 0 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
+.wtbox .wtn { font-weight: 600; font-size: 13px; }
+.wtbox .wtl { font-size: 11.5px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.wtbox small { display: block; margin-top: 5px; font-size: 11px; color: var(--muted); }
 #secPane .secrow { display: grid; gap: 6px; padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
 #secPane .secrow label { display: flex; align-items: center; gap: 8px; font-size: 12px; }
 #secPane .secrow input[type=number] { width: 96px; }
@@ -1276,8 +1280,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         P.forEach((p, i) => { const q = P[(i + 1) % P.length]; if (p[ix] !== q[ix]) return; const d = Math.abs(p[ix] - a[0]); if (d <= 300 && (!best || d < best.d)) best = { d, e: p[ix], m: ix ? (p[0] + q[0]) / 2 : (p[1] + q[1]) / 2 }; });
         if (best) { const pos = k === "x" ? inside(best.e + 5, best.m) : inside(best.m, best.e + 5); a[0] = +(best.e + (pos ? off : -off)).toFixed(1); } }); });
   }
+  // izbīdījuma posmam bez izvēlēta tipa tiek izveidots savs sienas tips (S1 slāņu kopija), lai tas parādās AR sienu specifikācijā un griezumā
+  function padTypes(m) {
+    const pads = m.wallPad; if (!pads || !pads.some(q => !q.wt && !q.nowt)) return;
+    const P = m.projekts = m.projekts || {}, L = P.wall_types = P.wall_types || [];
+    let wt = L.find(w => w.izb);
+    if (!wt) { let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; wt = { id: "P" + i, name: "Izbīdītā siena", izb: 1, layers: ((P.piragi_layers || {}).S1 || LAYERS0.S1.layers).map(l => l.slice()) }; L.push(wt); }
+    pads.forEach(q => { if (!q.wt && !q.nowt) q.wt = wt.id; });
+  }
   function commit(m) {
-    pamNorm(m); fdTag(m);
+    pamNorm(m); fdTag(m); try { padTypes(m); } catch (e) { console.error("padTypes", e.message); }
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
     undo.push(clone(model)); redo = []; model = m; dirty = true; status("Ir nesaglabāti labojumi."); buttons(); panel(); render(); fasTint();
   }
@@ -2862,6 +2874,28 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       if (!ext || w.free != null) g.append(act("Pārbīdīt " + (X ? "pa X" : "pa Y") + ", mm", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, ""));
       if (ext && w.free == null && sel.face) toneRows(g, [sel.face], false);   // [UI1] tā pati siena plānā un fasādē: ģeometrija + tonis vienā kartītē
       if (w.free != null && model.freeWalls && model.freeWalls[w.free]) toneRows(g, facesOf(model.freeWalls[w.free]), true);   // plakņu toņi arī plānā atlasītai izbīdītajai sienai
+      {   // sienas tips: kāds pīrāgs šai sienai, ar slāņiem un biezumu; izbīdījuma posmam tipu var mainīt
+        const P = model.projekts || {}, WT = P.wall_types || [], PLs = P.piragi_layers || {}, th = L => Math.round((L || []).filter(l => l[2] !== "n").reduce((q, l) => q + (+l[1] || 0), 0));
+        const lay = id => id === "S1" || id === "S2" || id === "G1" ? (PLs[id] || (LAYERS0[id] || {}).layers) : (WT.find(x => x.id === id) || {}).layers;
+        const nmT = id => id === "S1" ? "Ārsiena" : id === "S2" ? "Starpsiena" : ((WT.find(x => x.id === id) || {}).name || id);
+        const side = ext ? (X ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south")) : null, along = X ? sel.at[1] : sel.at[0];
+        const pi = side && w.free == null ? (model.wallPad || []).findIndex(q => q.side === side && along >= q.a && along <= q.b) : -1, pd = pi >= 0 ? model.wallPad[pi] : null;
+        const tid = pd ? (pd.wt || "") : ext ? "S1" : "S2", L0 = lay(tid);
+        const bx = document.createElement("div"); bx.className = "full wtbox";
+        const cap = document.createElement("p"); cap.className = "cap"; cap.textContent = "Sienas tips"; bx.append(cap);
+        if (pd) {
+          const so = document.createElement("select"); so.setAttribute("aria-label", "Sienas tips");
+          [["", "Bez pīrāga (tikai biezums)"], ["S1", "S1 · Ārsiena"]].concat(WT.map(x => [x.id, x.id + " · " + (x.name || "")])).forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t; if (v === tid) o.selected = true; so.append(o); });
+          so.onchange = () => { const n = clone(model), q = n.wallPad[pi], pj = n.projekts || {}, L2 = !so.value ? null : so.value === "S1" ? ((pj.piragi_layers || {}).S1 || LAYERS0.S1.layers) : ((pj.wall_types || []).find(x => x.id === so.value) || {}).layers;
+            if (so.value) { q.wt = so.value; delete q.nowt; } else { delete q.wt; q.nowt = 1; } if (L2) q.t = th(L2) || q.t; commit(n); };
+          bx.append(so);
+        } else {
+          const tx = document.createElement("div"); tx.className = "wtn"; tx.textContent = (tid || "–") + " · " + nmT(tid) + (L0 ? " · " + th(L0) + " mm" : ""); bx.append(tx);
+        }
+        if (L0 && L0.length) { const ls = document.createElement("div"); ls.className = "wtl"; ls.textContent = L0.map(l => l[0] + " " + l[1]).join(" · ") + " (no ārpuses uz iekšu)"; bx.append(ls); }
+        const hn = document.createElement("small"); hn.textContent = pd ? "Izbīdījuma posma tips: biezums un pīrāgs sekos izvēlētajam tipam plānā, fasādēs un AR komplektā. Slāņus maini sadaļā „Māja · globālie iestatījumi”." : ext ? "Visas ārsienas ir S1. Izbīdījuma (izvilktam) posmam var izvēlēties savu tipu." : "Starpsienas ir S2. Slāņus maini sadaļā „Māja · globālie iestatījumi”."; bx.append(hn);
+        g.append(bx);
+      }
       // "Pievienot sabiezinājumu" (padUI) noņemts: lieka komanda
       p.append(h, sub, g);
       const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Rasējumā: uzklikšķini uz sienas (gals, kuram tuvāk, ir oranžais kvadrāts), ieraksti garumu, piem., 1000 un Enter: siena pagarinās par 1000 mm tajā galā. Mīnuss saīsina pagarinājumu. Telpas un citas sienas nekustas. Bultiņas pārbīda brīvo sienu."; p.appendChild(nt);
