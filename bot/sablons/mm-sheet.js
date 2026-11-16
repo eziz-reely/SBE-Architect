@@ -195,7 +195,7 @@ function mmMatList(L) {   // materiālu leģenda (tā pati kā klasiskajā lapā
   return out;
 }
 // bloku izmēri (lapas mm) pie mēroga SC; fiksētie (tabulas, materiāli) no mēroga nav atkarīgi
-function mmBlockSizes(v, lf, L, K, SC) {
+function mmBlockSizes(v, lf, L, K, SC, aw) {
   const k = 1 / SC, RG = roofGeo(v), ids = (K.elementi || []).filter(id => id !== "viz"), out = [];
   const eave = RG.eEdge + RG.thV;
   ids.forEach(id => {
@@ -204,7 +204,7 @@ function mmBlockSizes(v, lf, L, K, SC) {
     else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 3300) * k + 3 }); }
     else if (id === "griez") { const hz = true, sp = hz ? v.W : v.D; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 2600) * k + 8 }); }
     else if (id === "expl") { const nr = mmRooms(v).length + (lf ? mmRooms(lf).length + 2 : 0); out.push({ id, w: 66, h: 6.5 + (nr + 2) * 5 + 12 }); }
-    else if (id === "mat") { const n = mmMatList(L).length, cols = Math.max(1, Math.ceil(n / 3)); out.push({ id, w: Math.max(80, cols * 78), h: 12 + Math.min(n, 3) * 11 + 5 }); }
+    else if (id === "mat") { const n = mmMatList(L).length, cols = Math.max(1, Math.min(Math.ceil(n / 3), Math.floor((aw || 220) / 78))), R = Math.max(3, Math.ceil(n / cols)); out.push({ id, w: Math.max(80, cols * 78), h: 12 + Math.min(n, R) * 11 + 5, R }); }   // kolonnu skaits ierobežots ar lapas platumu, rindu skaits kolonnā aug (citādi lapa nesaietilpa un palika tukša)
   });
   return out;
 }
@@ -225,7 +225,7 @@ function mmLayout(v, lf, L, K, area, gap) {
   let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const MINW = 50, MINH = 32;
   for (const SC of cands) {
-    const bl = mmBlockSizes(v, lf, L, K, SC);
+    const bl = mmBlockSizes(v, lf, L, K, SC, aw);
     const orders = [bl, [...bl].sort((a, b) => b.h - a.h), [...bl].sort((a, b) => b.w - a.w)];
     for (let i = 0; i < 500; i++) { const o = [...bl]; for (let j = o.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [o[j], o[r]] = [o[r], o[j]]; } orders.push(o); }
     let best = null;
@@ -234,7 +234,7 @@ function mmLayout(v, lf, L, K, area, gap) {
       const place = [], free = [], n = pk.shelves.length, gy = gap + (n > 1 ? Math.min(14, Math.max(0, (ah - pk.used) / (n - 1) * (vizOn ? 0 : 1))) : 0);
       let y = ay;
       pk.shelves.forEach(sh => {
-        let x = ax; sh.items.forEach(b => { place.push({ id: b.id, x, y, w: b.w, h: b.h }); x += b.w + gap; });
+        let x = ax; sh.items.forEach(b => { place.push({ id: b.id, x, y, w: b.w, h: b.h, R: b.R }); x += b.w + gap; });
         if (aw - sh.w - gap > 20) free.push({ x: ax + sh.w + gap, y, w: aw - sh.w - gap, h: sh.h });
         y += sh.h + gy;
       });
@@ -345,7 +345,7 @@ function mmCompose(v, lf, L, K) {
       if (lf) mmTable(svg, b.x, yy, b.w, tx.expl, tx.f2, mmRooms(lf), L);
     } else if (b.id === "mat") {
       const keep = ARC.materials; ARC.materials = mmMatList(L);
-      const n = ARC.materials.length, mg = materials(svg, b.x, b.y + 4, true); ARC.materials = keep;
+      const n = ARC.materials.length, mg = materials(svg, b.x, b.y + 4, b.R || true); ARC.materials = keep;
       mg.querySelector("text").textContent = tx.matT; el("line", { x1: 0, y1: 2.2, x2: b.w, y2: 2.2, stroke: C.ink, "stroke-width": .3 }, mg); void n;
     }
   });
@@ -356,7 +356,23 @@ function mmCompose(v, lf, L, K) {
   return svg;
 }
 
+// klasiskais izkārtojums pats izvēlas mērogu: ja visi bloki neietilpst lapā, ņem sīkāku mērogu (1:100 → 1:150 → 1:200 → 1:250 → 1:300), lai nekas neiziet ārpus rāmja
+function mmSheetFits(svg) {
+  try {
+    svg.style.cssText = "position:absolute;left:-9999px;top:0;width:1000px;height:" + Math.round(1000 * svg.viewBox.baseVal.height / svg.viewBox.baseVal.width) + "px"; document.body.appendChild(svg);
+    const sr = svg.getBoundingClientRect(), f = svg.viewBox.baseVal.width / sr.width; let ok = true;
+    [...svg.children].filter(g => g.getAttribute && g.getAttribute("data-block") && !/^title/.test(g.getAttribute("data-block"))).forEach(g => { const r = g.getBoundingClientRect(); if (r.height && (r.bottom - sr.top) * f > 408.5) ok = false; });
+    svg.remove(); svg.style.cssText = ""; return ok;
+  } catch (e) { return true; }
+}
 function modelSheet(v) {
+  const K = (window.AR && AR.projekts && AR.projekts.kompozicija);
+  if (K && K.on !== false) { MM_TBLN = 0; return modelSheetAt(v, 0); }
+  let svg;
+  for (const sc of [0, 150, 200, 250, 300]) { MM_TBLN = 0; svg = modelSheetAt(v, sc); if (mmSheetFits(svg)) break; }
+  return svg;
+}
+function modelSheetAt(v, scMin) {
   MM_TBLN = 0;
   const L = window.MM_LANG || "lv", tx = MM_TXT[L];
   const lf = V.find(x => x.id === "A" && x.rev === v.rev + 1);
@@ -366,7 +382,7 @@ function modelSheet(v) {
   el("rect", { x: 20, y: 10, width: 267, height: 400, fill: "none", stroke: C.ink, "stroke-width": .5 }, svg);
   el("line", { x1: 247, y1: 10, x2: 247, y2: 410, stroke: C.ink, "stroke-width": .35, "data-block": "title-strip" }, svg);
   // platām/lielām mājām mērogs 1:150, citādi 1:100
-  const SC = (v.D > 4500 || v.W > 12000) ? 150 : 100, k = 1 / SC, w = v.W * k, d = v.D * k;
+  const SC = Math.max(scMin || 0, (v.D > 4500 || v.W > 12000) ? 150 : 100), k = 1 / SC, w = v.W * k, d = v.D * k;
   window.MM_SCALE = SC;
   const PX = 49, TX = Math.max(168, PX + w + 26), TW = 241 - TX;   // plan origin x, room tables column (moves right for long houses)
 
@@ -412,7 +428,7 @@ function modelSheet(v) {
     ARC.materials.push([PR.sturi_hex || "#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, t[0]] : [`Stūru dēļi ${PR.sturi} mm,`, t[1]])]); }
   ARC.materials.push(...mmMatTones(L, PR));   // fasādes sienu, pārkares un fascijas toņi (redaktora spainis)
   const matN = ARC.materials.length;
-  const mg = materials(svg, 26, row2 + 31, true);
+  const mg = materials(svg, 26, row2 + 31, matN > 6 ? Math.ceil(matN / 2) : true);   // vairāk nekā 6 rindas: divas kolonnas (trešā neietilptu rāmī)
   ARC.materials = keep;
   mg.querySelector("text").textContent = tx.matT;
   el("line", { x1: 0, y1: 2.2, x2: 215, y2: 2.2, stroke: C.ink, "stroke-width": .3 }, mg);
