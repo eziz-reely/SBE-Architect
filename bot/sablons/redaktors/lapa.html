@@ -1060,6 +1060,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     } else if (/duša|dusa/.test(nm) && rw >= 900 && rd >= 900) {   // dušas kabīne telpas stūrī, kur nav durvju
       for (const [x, y, gl] of [[rx, ry, ["n", "w"]], [rx + rw - 900, ry, ["n", "e"]], [rx, ry + rd - 900, ["s", "w"]], [rx + rw - 900, ry + rd - 900, ["s", "e"]]]) {
         if (hit(x, y, x + 900, y + 900)) continue; F.push(["shower", x, y, 900, gl]); add++; break; }
+    } else if (/^wc|tualet/.test(nm) && rw >= 800 && rd >= 800) {   // WC: izlietne un pods pie sienas, kur nav durvju
+      for (const [bx, by, bk, tx, ty] of [[rx, ry, "n", rx + rw - 330, ry + rd - 400], [rx + rw - 600, ry, "n", rx + 330, ry + rd - 400], [rx, ry + rd - 450, "s", rx + rw - 330, ry + 400]]) {
+        if (hit(bx, by, bx + 600, by + 450) || hit(tx - 215, ty - 270, tx + 215, ty + 270)) continue; F.push(["basin", bx, by, 600, 450, bk]); F.push(["toilet", tx, ty, 1]); add += 2; break; }
     } else if (/viesist|dzīvoj|dzivoj/.test(nm) && rw >= 3000 && rd >= 2500) {   // dīvāns pie tās garās sienas, kur nav logu un durvju
       for (const [x, y, bk] of [[rx + (rw - 2000) / 2, ry, "n"], [rx + (rw - 2000) / 2, ry + rd - 900, "s"]]) {
         if (hit(x, y, x + 2000, y + 900)) continue; F.push(["sofa", Math.round(x), y, 2000, 900, bk]); add++; break; }
@@ -1728,6 +1731,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         Object.assign({ "": "Kā visa māja" }, q && !q.ral ? { __c: cKr(q.hex) } : {}, RAL_OPTS()))); });
     g1.appendChild(colorField("Jumta segums", P.jumta_hex ? (P.jumta_ral || "__c") : "", P.jumta_hex || "#40464b", (n, v) => { n.projekts = n.projekts || {}; if (!v) { delete n.projekts.jumta_hex; delete n.projekts.jumta_ral; } else if (v !== "__c") { n.projekts.jumta_ral = v; n.projekts.jumta_hex = (RAL[v] || [0, "#888"])[1]; } },
       Object.assign({ "": "Standarta (tumšs)" }, P.jumta_hex && !P.jumta_ral ? { __c: cKr(P.jumta_hex) } : {}, RAL_OPTS())));
+    g1.appendChild(field("Jumta seguma raksts", P.jumta_tex || "", (n, v) => { n.projekts = n.projekts || {}; if (v) n.projekts.jumta_tex = v; else delete n.projekts.jumta_tex; }, { "": "Falcēts skārds (smalkas līnijas)", spanish: "Spanish tiles" }, "full"));
     g1.appendChild(colorField("Jumta pārkare", P.parkare_hex ? (P.parkare_ral || "__c") : "", P.parkare_hex || P.fasade_hex || TONES[tk].sw, (n, v) => { n.projekts = n.projekts || {}; if (!v) { delete n.projekts.parkare_hex; delete n.projekts.parkare_ral; } else if (v !== "__c") { n.projekts.parkare_ral = v; n.projekts.parkare_hex = (RAL[v] || [0, "#888"])[1]; } },
       Object.assign({ "": "Fasādes tonī" }, P.parkare_hex && !P.parkare_ral ? { __c: cKr(P.parkare_hex) } : {}, RAL_OPTS())));
     g1.appendChild(colorField("Logu un durvju rāmji", wt, hex(wt), (n, v) => { n.projekts = n.projekts || {}; if (v === (TONES[n.projekts.tonis || "peleks"] || {}).logi) delete n.projekts.logu_tonis; else n.projekts.logu_tonis = v; }, opts));

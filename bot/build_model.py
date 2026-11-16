@@ -104,7 +104,10 @@ def _mm_extra(cad):
             '  return best;\n}\nwindow.mmFacEdge = mmFacEdge;\n'
             'function mmParkHex(side) { const P = (window.AR && AR.projekts) || {}, q = (P.parkare_side || {})[side]; return q || P.parkare_hex || null; }   // [MM] jumta pārkares tonis pa fasādes pusēm (projekts.parkare_side), citādi viens visai mājai\n'
             'function mmFasHex(side, d) { const P = (window.AR && AR.projekts) || {}, q = (P.fascia_side || {})[side]; return q || P.fascia_hex || mmParkHex(side) || d; }   // [MM] fascijas dēļa (vējmalas) tonis: pa pusēm (projekts.fascia_side), visai mājai (fascia_hex), citādi kā jumta pārkare\n'
-            'function mmRoofFill(d) { const P = (window.AR && AR.projekts) || {}; return P.jumta_hex || d; }   // [MM] jumta seguma tonis fasādēs (projekts.jumta_hex), citādi šablona noklusējums\n'
+            'function mmRoofFill(d) { const P = (window.AR && AR.projekts) || {}, hx = P.jumta_hex || "#40464b"; if (P.jumta_tex !== "spanish") return P.jumta_hex || d;   // [MM] Spanish tiles: svg raksts (jumta tonis + viļņoti rindu loki)\n'
+            '  const id = "mmSpanish" + hx.slice(1); if (!document.getElementById(id)) { let h = document.getElementById("mmPatHost"); if (!h) { h = document.createElementNS("http://www.w3.org/2000/svg", "svg"); h.id = "mmPatHost"; h.setAttribute("width", 0); h.setAttribute("height", 0); h.style.position = "absolute"; document.body.appendChild(h); }\n'
+            '    h.insertAdjacentHTML("beforeend", `<defs><pattern id="${id}" width="320" height="240" patternUnits="userSpaceOnUse"><rect width="320" height="240" fill="${hx}"/><g fill="none" stroke="#000" stroke-opacity=".38" stroke-width="7"><path d="M0 60Q40 20 80 60T160 60T240 60T320 60"/><path d="M-80 180Q-40 140 0 180T80 180T160 180T240 180T320 180"/></g><g fill="none" stroke="#fff" stroke-opacity=".14" stroke-width="5"><path d="M0 52Q40 12 80 52T160 52T240 52T320 52"/><path d="M0 172Q40 132 80 172T160 172T240 172T320 172"/></g></pattern></defs>`); }\n'
+            '  return `url(#${id})`; }\n'
             'function mmSideHex(side) { const q = ((window.AR && AR.projekts && AR.projekts.fasade_side) || {})[side]; return q ? (q.hex || q) : null; }\n')
     a = 'function cadPlan(parent, v, opt = {}) {'
     assert a in cad, 'SBE cad.js: nav atrasts cadPlan'
