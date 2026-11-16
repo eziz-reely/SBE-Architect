@@ -1835,6 +1835,18 @@
     const nw = origin ? w : Object.assign({}, w, { lo: +(w.lo + d).toFixed(1), hi: +(w.hi + d).toFixed(1) });
     wallDone(N, Object.assign({}, sel, { w: nw, i: nw.axis + ":" + Math.round(nw.lo) }));
   }
+  // starpsienas biezums (sienas tips): siena paliek savā asī, abu pušu telpas kļūst šaurākas vai platākas; durvju biezums seko
+  function wallThick(t) {
+    const w = sel.w; if (!w || w.ext || w.free != null || !(t >= 50 && t <= 600)) return;
+    const lo = w.lo, hi = w.hi, c = (lo + hi) / 2, nl = +(c - t / 2).toFixed(1), nh = +(c + t / 2).toFixed(1); if (Math.abs((hi - lo) - t) < 1) return;
+    const N = clone(M), f = v => v <= lo - 1 || v >= hi + 1 ? v : v < lo + 1 ? nl : v > hi - 1 ? nh : nl + (v - lo) / (hi - lo) * (nh - nl);
+    mapModel(N, w.axis, f);
+    [N, N.loft].forEach(L => L && (L.doors || []).forEach(d => { const k = w.axis === "x" ? "x" : "y"; if (d.o === (w.axis === "x" ? "v" : "h") && Math.abs(d[k] - nl) < 1) d.th = t; }));
+    const bad = [[N, M], [N.loft, M.loft]].some(([A, B]) => A && B && (A.rooms || []).some((rm, ri) => rm.r.some((q, qi) => { const o = (((B.rooms || [])[ri] || {}).r || [])[qi] || q; return (q[2] < MINR && o[2] >= MINR) || (q[3] < MINR && o[3] >= MINR); })));
+    if (bad) { post({ t: "hint", text: "Tā nevar: kāda telpa kļūtu šaurāka par 600 mm." }); return; }
+    stamps(M, N);
+    wallDone(N, Object.assign({}, sel, { w: Object.assign({}, w, { lo: nl, hi: nh }), i: w.axis + ":" + Math.round(nl) }));
+  }
   function wallKey(e) {
     if (!sel || sel.k !== "wall" || e.ctrlKey || e.metaKey || e.altKey) return false;
     const k = e.key, ext = sel.w.ext, show = () => { drawSel(); post({ t: "hint", text: (endPick ? "Gala pārbīde, mm (− uz rietumiem/ziemeļiem): " : ext && sel.w.free == null ? "Pārbīde, mm: " : "Pagarināt (+) / saīsināt (−), mm: ") + (wBuf || "…") + "   (Enter apstiprina, Esc atceļ)" }); };
@@ -1860,6 +1872,7 @@
   addEventListener("message", e => { const m = e.data && e.data.mmWall; if (!m || !sel || sel.k !== "wall") return;
     if (m.end) { const X = sel.w.axis === "x", w = sel.w, S = X ? M.D : M.W, a = w.ext ? 0 : (w.v0 != null ? w.v0 : T), b = w.ext ? S : (w.v1 != null ? w.v1 : S - T), at = sel.at.slice(); at[X ? 1 : 0] = m.end === "hi" ? b : a; sel = Object.assign({}, sel, { at }); drawSel(); post({ t: "sel", sel }); }
     else if (m.size) wallLen(+m.size);
+    else if (m.thick) wallThick(+m.thick);
     else if (m.len) { if (sel.w.ext && sel.w.free == null) wallLen(+m.len); else wallExtend(+m.len); }
     else if (m.shift) wallShift(+m.shift); });
   let moveMode = false;

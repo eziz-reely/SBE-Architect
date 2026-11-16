@@ -2880,7 +2880,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         const nmT = id => id === "S1" ? "Ārsiena" : id === "S2" ? "Starpsiena" : ((WT.find(x => x.id === id) || {}).name || id);
         const side = ext ? (X ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south")) : null, along = X ? sel.at[1] : sel.at[0];
         const pi = side && w.free == null ? (model.wallPad || []).findIndex(q => q.side === side && along >= q.a && along <= q.b) : -1, pd = pi >= 0 ? model.wallPad[pi] : null;
-        const tid = pd ? (pd.wt || "") : ext ? "S1" : "S2", L0 = lay(tid);
+        const tid = pd ? (pd.wt || "") : ext ? "S1" : ((WT.concat([{ id: "S2" }]).find(x => th(lay(x.id)) === Math.round(w.hi - w.lo)) || {}).id || "S2"), L0 = lay(tid);
         const bx = document.createElement("div"); bx.className = "full wtbox";
         const cap = document.createElement("p"); cap.className = "cap"; cap.textContent = "Sienas tips"; bx.append(cap);
         if (pd) {
@@ -2889,11 +2889,18 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
           so.onchange = () => { const n = clone(model), q = n.wallPad[pi], pj = n.projekts || {}, L2 = !so.value ? null : so.value === "S1" ? ((pj.piragi_layers || {}).S1 || LAYERS0.S1.layers) : ((pj.wall_types || []).find(x => x.id === so.value) || {}).layers;
             if (so.value) { q.wt = so.value; delete q.nowt; } else { delete q.wt; q.nowt = 1; } if (L2) q.t = th(L2) || q.t; commit(n); };
           bx.append(so);
+        } else if (!ext && w.free == null) {   // starpsiena: tips pēc biezuma; maiņa pārbīda telpu malas (telpas kļūst šaurākas vai platākas)
+          const cur = Math.round(w.hi - w.lo), opts = [["S2", "S2 · Starpsiena"]].concat(WT.map(x => [x.id, x.id + " · " + (x.name || "")])), match = opts.find(([id]) => th(lay(id)) === cur);
+          const so = document.createElement("select"); so.setAttribute("aria-label", "Sienas tips");
+          if (!match) { const o = document.createElement("option"); o.value = ""; o.textContent = "Pielāgots · " + cur + " mm"; o.selected = true; so.append(o); }
+          opts.forEach(([v, t]) => { const o = document.createElement("option"); o.value = v; o.textContent = t + " · " + th(lay(v)) + " mm"; if (match && match[0] === v) o.selected = true; so.append(o); });
+          so.onchange = () => { if (so.value) toFrame({ mmWall: { thick: th(lay(so.value)) } }); };
+          bx.append(so);
         } else {
           const tx = document.createElement("div"); tx.className = "wtn"; tx.textContent = (tid || "–") + " · " + nmT(tid) + (L0 ? " · " + th(L0) + " mm" : ""); bx.append(tx);
         }
         if (L0 && L0.length) { const ls = document.createElement("div"); ls.className = "wtl"; ls.textContent = L0.map(l => l[0] + " " + l[1]).join(" · ") + " (no ārpuses uz iekšu)"; bx.append(ls); }
-        const hn = document.createElement("small"); hn.textContent = pd ? "Izbīdījuma posma tips: biezums un pīrāgs sekos izvēlētajam tipam plānā, fasādēs un AR komplektā. Slāņus maini sadaļā „Māja · globālie iestatījumi”." : ext ? "Visas ārsienas ir S1. Izbīdījuma (izvilktam) posmam var izvēlēties savu tipu." : "Starpsienas ir S2. Slāņus maini sadaļā „Māja · globālie iestatījumi”."; bx.append(hn);
+        const hn = document.createElement("small"); hn.textContent = pd ? "Izbīdījuma posma tips: biezums un pīrāgs sekos izvēlētajam tipam plānā, fasādēs un AR komplektā. Slāņus maini sadaļā „Māja · globālie iestatījumi”." : ext ? "Visas ārsienas ir S1. Izbīdījuma (izvilktam) posmam var izvēlēties savu tipu." : "Tipa maiņa maina sienas biezumu: siena paliek savā asī, bet abu pušu telpas kļūst šaurākas vai platākas. Slāņus maini sadaļā „Māja · globālie iestatījumi”."; bx.append(hn);
         g.append(bx);
       }
       // "Pievienot sabiezinājumu" (padUI) noņemts: lieka komanda
