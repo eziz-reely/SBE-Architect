@@ -1100,9 +1100,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (!(m.terraces || []).length) return m;
     const T = m.terraces.map(t => Object.assign({}, t)), eff = {}, top = {};
     const res = i => { if (i in eff) return eff[i]; const s = terSupport(m, i); eff[i] = s >= 0 ? (res(s) + (T[s].th || 0) + (m.terraces[i].up || 0)) : (m.terraces[i].up || 0); return eff[i]; };
-    T.forEach((t, i) => { if (terSupport(m, i) >= 0) t.up = res(i); });
+    T.forEach((t, i) => { if (terSupport(m, i) >= 0) { t.__up0 = t.up || 0; t.up = res(i); } });   // __up0 = ievadītais pacēlums: rediģētāja modelis to atgriež (stepUnfix), citādi up katrā izmaiņā aug par terases biezumu
     return Object.assign({}, m, { terraces: T });
   }
+  function stepUnfix(m) { (m && m.terraces || []).forEach(t => { if (t.__up0 !== undefined) { t.up = t.__up0; delete t.__up0; } }); return m; }
   function sheetHtml(m, edit) {
     m = stepFix(m);
     const arView = arOn(m) && edit;   // AR lapas: arī rediģējamas (fasādes un mērs), pārējais iet caur Skici
@@ -1173,7 +1174,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const fromLive = e.source === FR[live].contentWindow, fromPending = pending && e.source === pending.contentWindow;
     if (!fromLive && !fromPending) return;
     if (d.t === "pam") { if (JSON.stringify(d.info) !== JSON.stringify(pamInfo)) { pamInfo = d.info; panel(); } return; }   // pamatu plāna izkārtojums (arī no jaunā rāmja)
-    if (d.t === "replace" && fromPending) { model = d.model; sel = d.sel; panel(); render(); return; }
+    if (d.t === "replace" && fromPending) { model = stepUnfix(d.model); sel = d.sel; panel(); render(); return; }
     if (d.t === "ready" && fromPending) {
       if (d.feat) FEAT = d.feat;
       const nf = pending; FR[live].classList.add("wait"); nf.classList.remove("wait");
@@ -1306,7 +1307,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     pads.forEach(q => { if (!q.wt && !q.nowt) q.wt = wt.id; });
   }
   function commit(m) {
-    pamNorm(m); fdTag(m); try { padTypes(m); } catch (e) { console.error("padTypes", e.message); }
+    stepUnfix(m); pamNorm(m); fdTag(m); try { padTypes(m); } catch (e) { console.error("padTypes", e.message); }
     try { const A0 = (m.projekts || {}).asu_piesaiste; if ((A0 === "c24" || A0 === "fasade") && m.axes && m.poly && !(m.projekts || {}).asisMan) snapAxes(m, A0); } catch (e) { console.error("snapAxes", e.message); }   // asis paliek uz izvēlētās malas pēc katras izmaiņas
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
     undo.push(clone(model)); redo = []; model = m; dirty = true; status("Ir nesaglabāti labojumi."); buttons(); panel(); render(); fasTint();
