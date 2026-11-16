@@ -104,10 +104,12 @@ def _mm_extra(cad):
             '  return best;\n}\nwindow.mmFacEdge = mmFacEdge;\n'
             'function mmParkHex(side) { const P = (window.AR && AR.projekts) || {}, q = (P.parkare_side || {})[side]; return q || P.parkare_hex || null; }   // [MM] jumta pārkares tonis pa fasādes pusēm (projekts.parkare_side), citādi viens visai mājai\n'
             'function mmFasHex(side, d) { const P = (window.AR && AR.projekts) || {}, q = (P.fascia_side || {})[side]; return q || P.fascia_hex || mmParkHex(side) || d; }   // [MM] fascijas dēļa (vējmalas) tonis: pa pusēm (projekts.fascia_side), visai mājai (fascia_hex), citādi kā jumta pārkare\n'
+            'function mmRoofFill(d) { const P = (window.AR && AR.projekts) || {}; return P.jumta_hex || d; }   // [MM] jumta seguma tonis fasādēs (projekts.jumta_hex), citādi šablona noklusējums\n'
             'function mmSideHex(side) { const q = ((window.AR && AR.projekts && AR.projekts.fasade_side) || {})[side]; return q ? (q.hex || q) : null; }\n')
     a = 'function cadPlan(parent, v, opt = {}) {'
     assert a in cad, 'SBE cad.js: nav atrasts cadPlan'
     cad = cad.replace(a, TINT + a, 1)
+    cad = cad.replace('fill: roofSeams() ? "#40464b" : "url(#shingle)"', 'fill: mmRoofFill(roofSeams() ? "#40464b" : "url(#shingle)")')   # [MM] jumta toņa izvēle
     # [MM] piezīmes plānā: projekts.notes_off sarakstā esošās netiek zīmētas; katra piezīme ir atsevišķa grupa ar data-note (dzēšanai redaktorā)
     a = '  notes.forEach((t, i) => { const ls = wrap(t, 64); T_(ex, 0, yL, `${i + 1}.`, { fs: 2.4, fill: "#333" }); ls.forEach((l, j) => T_(ex, 5, yL + j * 3.6, l, { fs: 2.4, fill: "#333" })); yL += ls.length * 3.6 + 1; });'
     assert a in cad, 'SBE cad.js: nav atrastas piezīmes'
