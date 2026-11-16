@@ -498,10 +498,13 @@
       const k = ek(bl), F = (window.__FDF || {})[sel.side] || {}, eE = F.eEdge || 2400, o = overlay(bl.g);
       const sp = span(sel.side), pz = F.pz || [0, 0, 0, 0], eT = F.eT != null ? F.eT : eE;
       const top = u => (pz[0] ? (F.ridge != null ? F.ridge : eT + (sp / 2 + pz[1]) * pz[3]) - Math.abs(u - sp / 2) * pz[3] - 60 : eE);   // gala fasādē siena sniedzas līdz jumta līnijai (tā pati siena)
-      const pts = [[sel.u0, 0], [sel.u1, 0], [sel.u1, -top(sel.u1)]]; if (pz[0] && sel.u0 < sp / 2 && sel.u1 > sp / 2) pts.push([sp / 2, -top(sp / 2)]); pts.push([sel.u0, -top(sel.u0)]);
+      const fb = F.fb != null ? F.fb : 0, fwg = [...document.querySelectorAll("svg.a3 g[data-fw][data-side=" + sel.side + "]")].find(g => Math.abs(+g.getAttribute("data-u0") - sel.u0) < 2 && Math.abs(+g.getAttribute("data-u1") - sel.u1) < 2);
+      if (fwg) { const cp = fwg.querySelector("clipPath polygon"), P0 = cp ? cp.getAttribute("points").trim().split(/\s+/).map(q => q.split(",").map(Number)) : null;   // izbīdītā siena: visa kontūra līdz cokolam
+        if (P0 && P0.length > 2) { const my = Math.max(...P0.map(q => q[1])); mk(o, "polygon", { points: P0.map(q => [q[0], q[1] === my ? fb : q[1]].join(",")).join(" "), fill: "rgba(34,102,216,.16)", stroke: "#2266d8", "stroke-width": 0.8 / k }); return; } }
+      const pts = [[sel.u0, fb], [sel.u1, fb], [sel.u1, -top(sel.u1)]]; if (pz[0] && sel.u0 < sp / 2 && sel.u1 > sp / 2) pts.push([sp / 2, -top(sp / 2)]); pts.push([sel.u0, -top(sel.u0)]);
       const sgS = typeof mmFacSegs === "function" ? mmFacSegs(M, sel.side).find(q => Math.abs(q.u0 - sel.u0) < 2 && Math.abs(q.u1 - sel.u1) < 2) : null;   // ieliekuma siena: tikai zem karnīzes; ārējā siena: arī virs ieliekuma
       const PT = a => a.map(q => q.join(",")).join(" "), ST = { fill: "rgba(34,102,216,.16)", stroke: "#2266d8", "stroke-width": 0.8 / k };
-      if (sgS && sgS.rec) mk(o, "polygon", Object.assign({ points: PT([[sel.u0, 0], [sel.u1, 0], [sel.u1, -eE], [sel.u0, -eE]]) }, ST));
+      if (sgS && sgS.rec) mk(o, "polygon", Object.assign({ points: PT([[sel.u0, fb], [sel.u1, fb], [sel.u1, -eE], [sel.u0, -eE]]) }, ST));
       else mk(o, "polygon", Object.assign({ points: pts.map(q => q.join(",")).join(" ") }, ST));
       if (sgS && !sgS.rec) (sgS.ext || []).forEach(g => mk(o, "polygon", Object.assign({ points: PT([[g[0], -eE], [g[1], -eE], [g[1], -top(g[1])], [g[0], -top(g[0])]]) }, ST)));
       return;

@@ -121,7 +121,7 @@ def _mm_extra(cad):
         # stabs fasādē: augstums q.h (mm virs ±0,000); virs jumta pārkares apakšas tiek nogriezts pa pārkari (gala fasādē pa slīpumu)
         ('    el("rect", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);',
          '    const RLp = (typeof LAYERS === "function" && LAYERS("J1") && LAYERS("J1").layers) || [], kip = RLp.findIndex(l => l[2] === "i"), tPQ = ((kip >= 0 ? RLp.slice(0, kip + 1).reduce((s_, l) => s_ + l[1], 0) : ROOF.th) + 20) / Math.cos(ROOF.pitch * Math.PI / 180), pzc = uu => (gable ? eEdge + (Math.min(uu, span - uu) + (uu < span / 2 ? OVL : OVR)) * tan : eEdge + thV - tPQ) + (gable ? thV - tPQ : 0), ph = pq && +pq.h > 0 ? +pq.h : 0, pzL = ph && ph < pzc(u) ? ph : pzc(u) + 12, pzR = ph && ph < pzc(u + s) ? ph : pzc(u + s) + 12, pzm = Math.min(pzL, pzR);\n'
-         '    if (window.__FDF && window.__FDF[side]) window.__FDF[side].pz = [gable ? 1 : 0, OVL, OVR, tan];\n'
+         '    if (window.__FDF && window.__FDF[side]) window.__FDF[side].pz = [gable ? 1 : 0, OVL, OVR, tan]; window.__FDF[side].fb = ROOF.plinth - 40;\n'
          '    el("polygon", { points: [P(u, -fT), P(u + s, -fT), P(u + s, pzR)].concat(ph && (pzc(u) - ph) * (pzc(u + s) - ph) < 0 ? [P(u + (pzc(u) - ph) / (pzc(u) - pzc(u + s)) * s, ph)] : [], [P(u, pzL)]).join(" "), fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 14 }, g);'),
         ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
          'void 0;'),   # [MM] stabam fasādē nav vektora līniju: tikai tekstūra vai krāsa
@@ -363,9 +363,9 @@ def build(model_path, langs=None):
         ("      face(u0, u1, fT, ROOF.plinth - 40);   // lievenis cokola augstumā",
          "      face(u0, u1, pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);   // lievenis cokola augstumā"),
         ("      jamb(w.x, w.y, w.x, w.y + th); jamb(w.x + L, w.y, w.x + L, w.y + th);\n      el(\"rect\", { x: w.x, y: w.y + th * .36",
-         "      [[w.x - 11, w.y, w.x - 11, w.y + th], [w.x + L + 11, w.y, w.x + L + 11, w.y + th]].forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x, y: w.y + th * .36"),
+         "      (() => { const so_ = [\"north\", \"west\"].includes(winSide(v, w)), ya = so_ ? w.y : w.y + 7, yb = so_ ? w.y + th - 7 : w.y + th; return [[w.x - 11, ya, w.x - 11, yb], [w.x + L + 11, ya, w.x + L + 11, yb]]; })().forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x, y: w.y + th * .36"),
         ("      jamb(w.x, w.y, w.x + th, w.y); jamb(w.x, w.y + L, w.x + th, w.y + L);\n      el(\"rect\", { x: w.x + th * .36",
-         "      [[w.x, w.y - 11, w.x + th, w.y - 11], [w.x, w.y + L + 11, w.x + th, w.y + L + 11]].forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x + th * .36"),
+         "      (() => { const so_ = [\"north\", \"west\"].includes(winSide(v, w)), xa = so_ ? w.x : w.x + 7, xb = so_ ? w.x + th - 7 : w.x + th; return [[xa, w.y - 11, xb, w.y - 11], [xa, w.y + L + 11, xb, w.y + L + 11]]; })().forEach(q => el(\"line\", { x1: q[0], y1: q[1], x2: q[2], y2: q[3], stroke: C.line, \"stroke-width\": 22 }, g));   // [MM] ailas gals ar biezu sienas griezuma līniju\n      el(\"rect\", { x: w.x + th * .36"),
         ("  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT));",
          "  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT + (pc.up || 0)));"),
         ("pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);",
