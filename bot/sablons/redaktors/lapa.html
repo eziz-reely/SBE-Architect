@@ -691,6 +691,122 @@ details.tr[data-pane="sel"] > .trb { background: var(--field); }
 #propBar .hconf { position: absolute; right: 3px; bottom: 3px; margin: 0; }
 #propBar .hconf button { height: 22px; padding: 0 8px; font-size: 11px; }
 
+/* ===== S08 [UI2]: Apple (macOS/iOS) stils — gaiša "vibrancy" josla, iOS segmentētās vadīklas, grupētie saraksti,
+   noapaļoti lauki bez rāmjiem, mīkstas ēnas. Palete paliek: neitrāls grafīts + zils akcents. Šis slānis ir pēdējais. ===== */
+:root {
+  --f-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", "Barlow", system-ui, sans-serif;
+  --r: 8px; --r-lg: 12px;
+  --brand: rgba(246,246,248,.82); --paper: #f5f5f7; --desk: #e5e5ea; --field: #ffffff; --well: rgba(118,118,128,.12);
+  --line: rgba(0,0,0,.07); --line2: rgba(0,0,0,.12); --ink: #1d1d1f; --muted: #6e6e73; --hover: rgba(0,0,0,.045);
+  --acc-soft: rgba(34,102,216,.12); --acc-line: rgba(34,102,216,.35);
+  --sh1: 0 1px 2px rgba(0,0,0,.06), 0 1px 1px rgba(0,0,0,.04); --sh2: 0 8px 30px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.06);
+  --chrome-ink: #1d1d1f; --chrome-mut: #86868b; --seg-on: #ffffff;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --brand: rgba(40,40,42,.82); --paper: #1c1c1e; --desk: #0b0b0c; --field: #2c2c2e; --well: rgba(118,118,128,.24);
+  --line: rgba(255,255,255,.07); --line2: rgba(255,255,255,.13); --ink: #f5f5f7; --muted: #98989d; --hover: rgba(255,255,255,.06);
+  --acc-soft: rgba(59,125,221,.22); --acc-line: rgba(59,125,221,.5);
+  --sh1: 0 1px 2px rgba(0,0,0,.4); --sh2: 0 12px 36px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
+  --chrome-ink: #f5f5f7; --chrome-mut: #98989d; --seg-on: #636366; } }
+:root[data-theme="dark"] {
+  --brand: rgba(40,40,42,.82); --paper: #1c1c1e; --desk: #0b0b0c; --field: #2c2c2e; --well: rgba(118,118,128,.24);
+  --line: rgba(255,255,255,.07); --line2: rgba(255,255,255,.13); --ink: #f5f5f7; --muted: #98989d; --hover: rgba(255,255,255,.06);
+  --acc-soft: rgba(59,125,221,.22); --acc-line: rgba(59,125,221,.5);
+  --sh1: 0 1px 2px rgba(0,0,0,.4); --sh2: 0 12px 36px rgba(0,0,0,.55), 0 2px 8px rgba(0,0,0,.35);
+  --chrome-ink: #f5f5f7; --chrome-mut: #98989d; --seg-on: #636366; }
+body { font-family: var(--f-ui); -webkit-font-smoothing: antialiased; color: var(--ink); }
+button, input, select, textarea { font-family: var(--f-ui); transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s; }
+
+/* virsraksta josla: gaiša, caurspīdīga, kā macOS loga rīkjosla */
+header { background: var(--brand); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--line2); color: var(--chrome-ink); min-height: 48px; }
+header .mark { color: var(--chrome-mut); border-right-color: var(--line2); line-height: 48px; font-weight: 700; letter-spacing: .2em; }
+header h1 { color: var(--chrome-ink); font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+header .tag { color: var(--chrome-mut); border-left-color: var(--line2); }
+header .tb > button, header .tb > .expw > button { color: var(--chrome-ink); border-radius: var(--r); }
+header .tb > button:hover:not(:disabled), header .tb > .expw > button:hover, header .tb > .expw > button[aria-expanded="true"] { background: var(--hover); color: var(--chrome-ink); }
+header .tb > button:disabled { opacity: .35; }
+header .tb > #bRib, header .tb > #bFit, header .tb > #b3d { border-left-color: var(--line2); }
+header .tb > #bRib { border-radius: 0 var(--r) var(--r) 0; }
+header .tb > button.pri { background: var(--accent); color: #fff; border-color: transparent; border-radius: 999px; height: 32px; padding: 0 18px; box-shadow: 0 1px 2px rgba(34,102,216,.35); }
+header .tb > button.pri:hover:not(:disabled) { background: #1d5bc4; }
+header .tseg { background: var(--well); border: 0; border-radius: 9px; padding: 2px; }
+header .tseg button { color: var(--chrome-ink); border-radius: 7px; }
+header .tseg button[aria-checked="true"] { background: var(--seg-on); color: var(--chrome-ink); box-shadow: 0 1px 3px rgba(0,0,0,.14), 0 0 0 .5px rgba(0,0,0,.04); }
+
+/* kreisā rīku josla */
+#rail { background: var(--paper); border-right: 1px solid var(--line); }
+#rail button { border-radius: 10px; color: var(--ink); }
+#rail button:hover { background: var(--hover); }
+#rail button.on { background: var(--accent); color: #fff; border-color: transparent; box-shadow: 0 1px 3px rgba(34,102,216,.4); }
+#rail button.on kbd { color: rgba(255,255,255,.8); }
+#rail hr { border-top-color: var(--line2); }
+
+/* labā josla: iOS "grupētais saraksts" */
+aside, aside#tray { background: var(--paper); border-left: 1px solid var(--line); }
+details.tr { border-bottom: 0; margin: 10px 10px 0; border-radius: var(--r-lg); background: var(--field); box-shadow: var(--sh1); overflow: hidden; }
+details.tr:last-of-type { margin-bottom: 12px; }
+details.tr > summary { background: transparent; text-transform: none; letter-spacing: -.01em; font: 600 14px/1.2 var(--f-ui); padding: 13px 14px; color: var(--ink); }
+details.tr > summary:hover { background: var(--hover); }
+details.tr > summary::before { order: 2; width: 7px; height: 7px; border-color: var(--muted); border-width: 0 2px 2px 0; border-style: solid; margin: 0 2px 0 0; transform: rotate(-45deg); }
+details.tr[open] > summary::before { transform: rotate(45deg); }
+details.tr[open] > summary { border-bottom: 1px solid var(--line); }
+details.tr > .trb { padding: 12px 14px 14px; background: transparent; }
+.group { background: transparent; border: 0; border-radius: 0; padding: 0; margin: 0 0 16px; }
+.group > .cap, .cap, p.cap { text-transform: none; letter-spacing: 0; font: 600 12px/1.3 var(--f-ui); color: var(--muted); border-bottom: 0; margin-bottom: 8px; }
+#mats .group + .group, #lapaSets .group + .group { border-top: 1px solid var(--line); padding-top: 14px; }
+
+/* iOS segmentētās vadīklas */
+.mseg, .seg, #tray .tseg { background: var(--well); border: 0; border-radius: 9px; padding: 2px; gap: 2px; box-shadow: none; margin: 0 0 14px; overflow: visible; }
+.mseg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; }
+.mseg button, .seg button, #tray .tseg button { background: transparent; border: 0 !important; border-radius: 7px; color: var(--ink); font: 500 12.5px/1.15 var(--f-ui); height: auto; min-height: 28px; padding: 5px 6px; white-space: normal; }
+.mseg button:hover, .seg button:hover, #tray .tseg button:hover { background: transparent; color: var(--ink); opacity: .8; }
+.mseg button[aria-selected="true"], .seg button[aria-pressed="true"], .seg button[aria-checked="true"], #tray .tseg button[aria-checked="true"] { background: var(--seg-on); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.14), 0 0 0 .5px rgba(0,0,0,.04); opacity: 1; }
+
+/* lauki: bez rāmja, pelēks pamats, zils fokusa gredzens */
+input, select, textarea { background: var(--well); border: 1px solid transparent; border-radius: var(--r); color: var(--ink); font-size: 13px; }
+input:hover, select:hover { border-color: transparent; background: var(--well); }
+input:focus, select:focus, textarea:focus { background: var(--field); border-color: var(--accent); box-shadow: 0 0 0 3px var(--acc-soft); outline: none; }
+input:disabled { opacity: .55; }
+select { -webkit-appearance: none; appearance: none; padding-right: 26px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='none' stroke='%238e8e93' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 4.5 6 2l2.5 2.5M3.5 7.5 6 10l2.5-2.5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; background-size: 12px; }
+input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+input[type=range] { background: none; accent-color: var(--accent); }
+label { color: var(--muted); font-size: 12px; }
+
+/* pogas */
+aside button:not(.cswb):not([role=tab]):not([role=radio]):not([aria-pressed]), #propBar button:not(.cswb), .pop button:not(.it), #confirm button { border-radius: var(--r); background: var(--well); color: var(--ink); border: 0; font-weight: 500; }
+aside button:not(.cswb):not([role=tab]):not([role=radio]):not([aria-pressed]):hover, #propBar button:not(.cswb):hover { background: var(--hover); filter: brightness(.97); }
+button.del, #propBar button.del { color: #ff3b30 !important; }
+.lib button { background: var(--field) !important; border: 0 !important; border-radius: 10px !important; box-shadow: var(--sh1); }
+.lib button:hover { box-shadow: 0 0 0 2px var(--acc-line), var(--sh1); }
+.lib button.on { box-shadow: 0 0 0 2px var(--accent), var(--sh1); background: var(--acc-soft) !important; }
+p.grp { font: 600 12px/1.3 var(--f-ui); color: var(--muted); text-transform: none; letter-spacing: 0; }
+
+/* krāsas paraugi un materiālu saraksts */
+.cswb { background: var(--field); border: 0; border-radius: 10px; box-shadow: var(--sh1), 0 0 0 .5px var(--line2); }
+.cswb:hover { box-shadow: 0 0 0 2px var(--acc-line); }
+.cswb .sw { border-radius: 7px; border: 0; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.2); }
+#matsPane .mrow + .mrow { margin-top: 2px; }
+#matsPane .mic button { border-radius: 8px; background: transparent !important; }
+#matsPane .mic button:hover { background: var(--hover) !important; }
+
+/* elementa īpašību josla virs rasējuma: caurspīdīga, kā macOS inspektors */
+#propBar { background: color-mix(in srgb, var(--paper) 82%, transparent); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); border-bottom: 1px solid var(--line2); box-shadow: 0 6px 20px -12px rgba(0,0,0,.25); padding: 6px 16px; }
+#propBar #panel > .sel-name { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+#propBar #panel > .sel-name::before { display: none; }
+#propBar #panel .grid > label { color: var(--muted); }
+
+/* uznirstošie logi */
+.pop, .cpop, #dCon { border: .5px solid var(--line2); border-radius: 14px; box-shadow: var(--sh2); background: color-mix(in srgb, var(--paper) 92%, transparent); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px); }
+.cpop .cpc button { border-radius: 50%; border: 0; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.25); }
+.cpop .cpc button.on, .cpop .cpc button:hover { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* statusa rinda */
+#sbar { background: var(--paper); border-top: 1px solid var(--line); color: var(--muted); }
+#sbVal { background: var(--well); border: 0; border-radius: 6px; }
+#stage { background: var(--desk); }
+#propBar #panel > .sel-sub { max-width: 420px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cswb .sw, :root:not([data-theme="light"]) .cpop .cpc button { box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); } }
+:root[data-theme="dark"] .cswb .sw, :root[data-theme="dark"] .cpop .cpc button { box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
 </style>
 
 <header>
