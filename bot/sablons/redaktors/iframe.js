@@ -195,7 +195,9 @@
         const u0 = Math.min(mapU(s, gw.u0), mapU(s, gw.u1)), u1 = Math.max(mapU(s, gw.u0), mapU(s, gw.u1));
         out.push({ k: "gw", i, lv: "main", b: [u0, -(gw.z1 || gwHeights(X, gw).zTop), u1, -gw.z0], pad: 60, side: s });
       });
-      (X.posts || []).forEach((q, i) => {   // stabi fasādē: atlasāmi, velkami gar fasādi, sānu malas maina platumu, augšmala augstumu
+      const fwHide = q => { const XX = s === "west" || s === "east", pos = s === "south" || s === "east", c = XX ? q.y + q.d / 2 : q.x + q.w / 2, fr = XX ? (pos ? q.x + q.w : q.x) : (pos ? q.y + q.d : q.y);   // izbīdītā siena priekšā aizsedz stabu: to nevar atlasīt
+        return (X.freeWalls || []).some(f => { const f0 = XX ? f[1] : f[0], f1 = XX ? f[1] + f[3] : f[0] + f[2], ff = XX ? (pos ? f[0] + f[2] : f[0]) : (pos ? f[1] + f[3] : f[1]); return c > f0 && c < f1 && (pos ? ff > fr + 50 : ff < fr - 50); }); };
+      (X.posts || []).forEach((q, i) => { if (fwHide(q)) return;   // stabi fasādē: atlasāmi, velkami gar fasādi, sānu malas maina platumu, augšmala augstumu
         const a = s === "north" || s === "south" ? q.x : q.y, l = s === "north" || s === "south" ? q.w : q.d, u0 = Math.min(mapU(s, a), mapU(s, a + l)), u1 = Math.max(mapU(s, a), mapU(s, a + l));
         out.push({ k: "post", i, lv: "main", b: [u0, -postTop(s, q, u0, u1), u1, 0], pad: 30, side: s });
       });
@@ -1631,6 +1633,10 @@
         const tm = /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/.exec(tb.getAttribute("transform") || ""), t0 = tm && { tx: +tm[1], ty: +tm[2], k: 1 }; if (t0) { drag = { tbl: true, g: tb, key, t0, mm: (sv.viewBox.baseVal.width || 297) / sv.getBoundingClientRect().width, x0: e.clientX, y0: e.clientY, dx: 0, dy: 0, off0: (((M.projekts || {}).tblOff || {})[key]) || [0, 0], moved: false };
           document.body.style.cursor = "move"; post({ t: "hint", text: "Bīdi tabulu pa lapu. Alt+klikšķis atiestata sākotnējo vietu." }); return true; }
       }
+    }
+    if (!h && !place) {   // klikšķis uz izbīdītās sienas fasādē: atlasa to kā sienas plakni (tonis panelī)
+      const fwg = [...document.querySelectorAll("svg.a3 g[data-fw][data-side]")].find(g => { const r = g.getBoundingClientRect(); return r.width > 0 && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; });
+      if (fwg) { sel = { k: "fsien", side: fwg.getAttribute("data-side"), u0: +fwg.getAttribute("data-u0"), u1: +fwg.getAttribute("data-u1"), lv: "main" }; drawSel(); post({ t: "sel", sel }); return true; }
     }
     if (!h) {
       const wt = !place && bucketTarget(e.clientX, e.clientY);
