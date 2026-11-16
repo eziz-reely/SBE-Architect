@@ -1606,6 +1606,23 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const n = clone(model); n.wallPad = (n.wallPad || []).concat([o]); commit(n); };
     wrap.append(b); g.append(wrap);
   }
+  // krāsas redaktors kā SketchUp: paraugs, HSB slīdņi un HEX; izmaiņa tiek saglabāta, atlaižot slīdni vai nospiežot Enter
+  function hsbEditor(lab, hex0, onCommit) {
+    const h2r = (h, sa, v) => { const f = n => { const k = (n + h / 60) % 6; return v - v * sa * Math.max(0, Math.min(k, 4 - k, 1)); }; return "#" + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join(""); },
+      r2h = hx => { const c = [1, 3, 5].map(i => parseInt(hx.slice(i, i + 2), 16) / 255), mx = Math.max(...c), mn = Math.min(...c), d = mx - mn; let h = 0; if (d) h = mx === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : mx === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4; return [Math.round(h * 60), mx ? d / mx : 0, mx]; };
+    const box = document.createElement("div"); box.style.cssText = "grid-column:1/-1;display:grid;grid-template-columns:18px 1fr 34px;gap:4px 6px;align-items:center;font-size:12px;min-width:210px";
+    const cap = document.createElement("p"); cap.className = "cap"; cap.style.gridColumn = "1/-1"; cap.textContent = lab;
+    const sw = document.createElement("div"); sw.style.cssText = "grid-column:1/-1;height:28px;border:1px solid #b4bac2;border-radius:4px;background:" + hex0;
+    const hx = document.createElement("input"); hx.type = "text"; hx.value = hex0; hx.maxLength = 7; hx.style.cssText = "grid-column:1/-1"; hx.setAttribute("aria-label", "HEX");
+    const hsb = r2h(hex0), rg = [];
+    const cur = () => h2r(+rg[0].value, +rg[1].value / 100, +rg[2].value / 100);
+    box.append(cap, sw);
+    [["H", 360, 0], ["S", 100, 1], ["B", 100, 2]].forEach(([nm, mx, i]) => { const l = document.createElement("span"); l.textContent = nm; const r = document.createElement("input"); r.type = "range"; r.min = 0; r.max = mx; r.step = 1; r.value = Math.round(i ? hsb[i] * 100 : hsb[0]); const o = document.createElement("span"); o.textContent = r.value; rg.push(r);
+      r.oninput = () => { o.textContent = r.value; const c = cur(); sw.style.background = c; hx.value = c; };
+      r.onchange = () => onCommit(cur()); box.append(l, r, o); });
+    hx.onchange = () => { let v = hx.value.trim(); if (/^[0-9a-f]{6}$/i.test(v)) v = "#" + v; if (/^#[0-9a-f]{6}$/i.test(v)) onCommit(v.toLowerCase()); else hx.value = hex0; };
+    box.appendChild(hx); return box;
+  }
   // sienas plaknes toņi (fasādes puses): RAL izvēle un brīva krāsa katrai plaknei; lieto gan fasādē, gan plānā atlasītai sienai
   function facesOf(f) {
     const rg = (s_) => (s_ === "north" || s_ === "south" ? [f[0], f[0] + f[2]] : [f[1], f[1] + f[3]]).map(v => (s_ === "north" ? model.W - v : s_ === "east" ? model.D - v : v)).sort((a, b) => a - b);
@@ -1618,7 +1635,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const setW = fn => { const n = clone(model); n.projekts = n.projekts || {}; const fw = n.projekts.fasade_wall = Object.assign({}, n.projekts.fasade_wall); const l = (fw[sd] || []).filter(q => !same(q, F)); const q = { u0: F.u0, u1: F.u1 }; fn(q, l); if (q.hex) l.push(q); if (l.length) fw[sd] = l; else delete fw[sd]; commit(n); };
       g.append(field(labelled ? "Plakne · " + SIDE[sd] + " puse" : "Krāsa (RAL)", cur && cur.ral || "", (n, v) => { throw "async"; }, Object.assign({ "": cur && !cur.ral ? cKr(cur.hex) : "Kopējais tonis" }, RAL_OPTS()), "full"));
       const sl = g.lastChild.querySelector("select"); if (sl) sl.onchange = () => setW(q => { if (sl.value) { q.ral = sl.value; q.hex = RAL[sl.value][1]; } });
-      const cl = document.createElement("label"); cl.className = "full"; cl.textContent = labelled ? "Brīva krāsa · " + SIDE[sd] : "Brīva krāsa"; const ci = document.createElement("input"); ci.type = "color"; ci.value = /^#[0-9a-f]{6}$/i.test((cur && cur.hex) || base || "") ? (cur && cur.hex) || base : "#c68a58"; ci.onchange = () => setW(q => { q.hex = ci.value; }); cl.appendChild(ci); g.appendChild(cl);
+      g.appendChild(hsbEditor(labelled ? "Krāsa · " + SIDE[sd] : "Krāsa", /^#[0-9a-f]{6}$/i.test((cur && cur.hex) || base || "") ? (cur && cur.hex) || base : "#c68a58", hx => setW(q => { q.hex = hx; })));
       const b = document.createElement("button"); b.type = "button"; b.textContent = labelled ? "Atcelt: " + SIDE[sd] : "Atcelt šīs sienas toni"; b.disabled = !cur; b.onclick = () => setW(() => {}); g.appendChild(b);
     });
   }
