@@ -14,7 +14,7 @@ const T = require('./lib'); const path = require('path');
   T.ok(P.fascia_side && P.fascia_side.west && !P.fascia_side.east && !P.parkare_side, 'spainis krāso tikai rietumu fascijas dēli, nevis pārkari', { f: P.fascia_side, p: P.parkare_side });
   T.ok((P.fascia_side_ral || {}).west === 'RAL 9016', 'fascijas RAL kods saglabāts', P.fascia_side_ral);
   const txt = await (await T.live(page)).evaluate(() => [...document.querySelectorAll('svg text')].map(t => t.textContent).join(' ').replace(/\s+/g, ' '));
-  T.ok(/Fascijas dēlis, rietumu puse/.test(txt) && /RAL 9016/.test(txt), 'lapas materiālu sarakstā ir fascijas dēlis ar RAL kodu', (txt.match(/MATERI.{0,300}/) || [txt.slice(0, 200)])[0]);
+  T.ok(!/Fascijas dēlis/.test(txt), 'fascijas dēļa tonis materiālu sarakstā netiek minēts', (txt.match(/MATERI.{0,300}/) || [txt.slice(0, 200)])[0]);
   // parasts klikšķis (bez spaiņa) uz fascijas dēļa atlasa tā kontūru un panelī ļauj mainīt toni tikai šajā fasādē
   await page.keyboard.press('Escape'); await page.keyboard.press('a');
   await T.click(page, 'elev-west', u, -(F.ridge - 1000 * Math.tan(30 * Math.PI / 180) - 100 - (F.govT || 0) / 2)); await T.ready(page);

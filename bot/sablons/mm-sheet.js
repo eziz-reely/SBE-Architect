@@ -173,16 +173,14 @@ function mmNearRal(hex) {
   return best;
 }
 window.mmNearRal = mmNearRal;
-const mmRalTxt = (hex, ral) => ral || (hex.toUpperCase() + (mmNearRal(hex) ? "  ≈ " + mmNearRal(hex) : ""));   // RAL kods, vai hex ar tuvāko RAL
+const mmRalTxt = (hex, ral) => ral || (mmNearRal(hex) ? "≈ " + mmNearRal(hex) : hex.toUpperCase());   // RAL kods; brīvai krāsai tikai tuvākais RAL (hex lapā nerāda)
 function mmMatTones(L, PR) {   // [MM] redaktora spaiņa toņi: katrai atsevišķi nokrāsotai daļai sava leģendas rinda ar RAL kodu
   const out = [];
   const SN = L === "en" ? { south: "south", north: "north", east: "east", west: "west" } : { south: "dienvidu", north: "ziemeļu", east: "austrumu", west: "rietumu" }, FS = PR.fasade_side || {};
-  const en = L === "en", seen = new Set(), addF = q => { if (!q || !q.hex) return; const key = q.hex.toLowerCase() + "|" + (q.ral || ""); if (seen.has(key)) return; seen.add(key); out.push([q.hex, en ? "Facade, additional tone" : "Fasāde, papildu tonis", mmRalTxt(q.hex, q.ral)]); };   // atsevišķi nokrāsotās fasādes daļas: viena rinda katram tonim (bez sienu nosaukumiem un garumiem)
+  const en = L === "en", seen = new Set(), addF = q => { if (!q || !q.hex) return; const key = q.hex.toLowerCase() + "|" + (q.ral || ""); if (seen.has(key)) return; seen.add(key); out.push([q.hex, en ? (PR.apdare_orient === "h" ? "Facade: horizontal cladding," : "Facade: vertical cladding,") : (PR.apdare_orient === "h" ? "Fasāde: horizontāls apdares dēlis," : "Fasāde: vertikāls apdares dēlis,"), mmRalTxt(q.hex, q.ral)]); };   // atsevišķi nokrāsotās fasādes daļas: viena rinda katram tonim (bez sienu nosaukumiem un garumiem)
   ["south", "north", "east", "west"].forEach(sd => { addF(FS[sd]); (((PR.fasade_wall || {})[sd]) || []).forEach(addF); });
   if (PR.parkare_hex) out.push([PR.parkare_hex, en ? "Roof overhang" : "Jumta pārkare", mmRalTxt(PR.parkare_hex, PR.parkare_ral)]);
   ["south", "north", "east", "west"].forEach(sd => { const q = (PR.parkare_side || {})[sd]; if (q) out.push([q, en ? `Roof overhang, ${SN[sd]} side` : `Jumta pārkare, ${SN[sd]} puse`, ((PR.parkare_side_ral || {})[sd]) || mmRalTxt(q)]); });
-  if (PR.fascia_hex) out.push([PR.fascia_hex, en ? "Fascia board" : "Fascijas dēlis", mmRalTxt(PR.fascia_hex, PR.fascia_ral)]);
-  ["south", "north", "east", "west"].forEach(sd => { const q = (PR.fascia_side || {})[sd]; if (q) out.push([q, en ? `Fascia board, ${SN[sd]} side` : `Fascijas dēlis, ${SN[sd]} puse`, ((PR.fascia_side_ral || {})[sd]) || mmRalTxt(q)]); });
   return out;
 }
 function mmMatList(L) {   // materiālu leģenda (tā pati kā klasiskajā lapā)
@@ -194,13 +192,18 @@ function mmMatList(L) {   // materiālu leģenda (tā pati kā klasiskajā lapā
   out.push(...mmMatTones(L, PR));
   return out;
 }
+// plāna zīmējuma izvirzījumi ārpus mājas taisnstūra (terases, lievenis, kontūra): ap tiem pārvietojas asis un mēru ķēdes, tāpēc bloks par tik lielāks
+function mmPlanExt(vv) {
+  const W = vv.W, D = vv.D, e = { l: 0, r: 0, t: 0, b: 0 }, add = pl => (pl || []).forEach(q => { e.l = Math.max(e.l, -q[0]); e.r = Math.max(e.r, q[0] - W); e.t = Math.max(e.t, -q[1]); e.b = Math.max(e.b, q[1] - D); });
+  add(vv.poly); (vv.terraces || []).forEach(t => { if (!t.up) add(t.poly); }); if (vv.porch) add(vv.porch.poly);
+  return e;
+}
 // bloku izmēri (lapas mm) pie mēroga SC; fiksētie (tabulas, materiāli) no mēroga nav atkarīgi
 function mmBlockSizes(v, lf, L, K, SC, aw) {
   const k = 1 / SC, RG = roofGeo(v), ids = (K.elementi || []).filter(id => id !== "viz"), out = [];
   const eave = RG.eEdge + RG.thV;
   ids.forEach(id => {
-    if (id === "plan") out.push({ id, w: (v.W + 5600) * k, h: (v.D + 5600) * k + 8 });
-    else if (id === "loft" && lf) out.push({ id, w: (v.W + 5600) * k, h: (v.D + 5600) * k + 8 });
+    if (id === "plan" || (id === "loft" && lf)) { const e = mmPlanExt(v); out.push({ id, w: (v.W + e.l + e.r + 5600) * k, h: (v.D + e.t + e.b + 5600) * k + 8, el: e.l, et: e.t }); }
     else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 3300) * k + 3 }); }
     else if (id === "griez") { const hz = true, sp = hz ? v.W : v.D; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 2600) * k + 8 }); }
     else if (id === "expl") { const nr = mmRooms(v).length + (lf ? mmRooms(lf).length + 2 : 0); out.push({ id, w: 66, h: 6.5 + (nr + 2) * 5 + 12 }); }
@@ -225,26 +228,32 @@ function mmLayout(v, lf, L, K, area, gap) {
   let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const MINW = 50, MINH = 32;
   for (const SC of cands) {
-    const bl = mmBlockSizes(v, lf, L, K, SC, aw);
-    const orders = [bl, [...bl].sort((a, b) => b.h - a.h), [...bl].sort((a, b) => b.w - a.w)];
+    const all = mmBlockSizes(v, lf, L, K, SC, aw), matB = all.find(b => b.id === "mat"), bl = all.filter(b => b.id !== "mat");
+    const PRI = ["plan", "expl", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "griez"], pr = b => { const q = PRI.indexOf(b.id); return q < 0 ? 99 : q; };
+    const canon = [...bl].sort((a, b) => pr(a) - pr(b));   // pastāvīga kārtība: plāns, tabula, mansards, fasādes; materiāli vienmēr atsevišķā rindā zem visa (tāpēc neleciena pēc katras krāsu maiņas)
+    const orders = [canon, [...bl].sort((a, b) => b.h - a.h), [...bl].sort((a, b) => b.w - a.w)];
     for (let i = 0; i < 500; i++) { const o = [...bl]; for (let j = o.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [o[j], o[r]] = [o[r], o[j]]; } orders.push(o); }
+    const rsv = matB ? matB.h + gap : 0;   // vieta materiāliem zem fasādēm
     let best = null;
-    orders.forEach(ord => {
-      const pk = mmShelf(ord, aw, ah, gap); if (!pk) return;
-      const place = [], free = [], n = pk.shelves.length, gy = gap + (n > 1 ? Math.min(14, Math.max(0, (ah - pk.used) / (n - 1) * (vizOn ? 0 : 1))) : 0);
+    for (const ord of orders) {
+      if (best && ord !== canon && best.canon) break;   // kanoniskā kārtība ietilpst: lieto to (stabils izkārtojums)
+      const pk = mmShelf(ord, aw, ah - rsv, gap); if (!pk) continue;
+      const place = [], free = [], n = pk.shelves.length, gy = gap + (n > 1 ? Math.min(14, Math.max(0, (ah - rsv - pk.used) / (n - 1) * (vizOn ? 0 : 1))) : 0);
       let y = ay;
       pk.shelves.forEach(sh => {
-        let x = ax; sh.items.forEach(b => { place.push({ id: b.id, x, y, w: b.w, h: b.h, R: b.R }); x += b.w + gap; });
+        let x = ax; sh.items.forEach(b => { place.push({ id: b.id, x, y, w: b.w, h: b.h, R: b.R, el: b.el, et: b.et }); x += b.w + gap; });
         if (aw - sh.w - gap > 20) free.push({ x: ax + sh.w + gap, y, w: aw - sh.w - gap, h: sh.h });
         y += sh.h + gy;
       });
-      const bot = y - gy; if (ay + ah - bot - gap > 20) free.push({ x: ax, y: bot + gap, w: aw, h: ay + ah - bot - gap });
+      let bot = y - gy;
+      if (matB) { place.push({ id: "mat", x: ax, y: bot + gap, w: matB.w, h: matB.h, R: matB.R }); bot += gap + matB.h; }
+      if (ay + ah - bot - gap > 20) free.push({ x: ax, y: bot + gap, w: aw, h: ay + ah - bot - gap });
       let viz = null;
       if (vizOn) free.forEach(f => { let w = f.w, h = w / ratio; if (h > f.h) { h = f.h; w = h * ratio; } if (w >= MINW && h >= MINH && (!viz || w * h > viz.w * viz.h)) viz = { x: f.x + (f.w - w) / 2, y: f.y + (f.h - h) / 2, w, h }; });
-      if (vizOn && !viz) return;
+      if (vizOn && !viz) continue;
       const score = vizOn ? viz.w * viz.h : -pk.used;
-      if (!best || score > best.score) best = { SC, place, viz, score };
-    });
+      if (!best || score > best.score) best = { SC, place, viz, score, canon: ord === canon };
+    }
     if (best) return best;
   }
   return null;
@@ -330,7 +339,7 @@ function mmCompose(v, lf, L, K) {
     const M5 = 2800;   // asu un mēru josla ap plānu (mm)
     if (b.id === "plan" || b.id === "loft") {
       const vv = b.id === "plan" ? v : lf;
-      cadPlan(el("g", { "data-block": b.id === "plan" ? "plan" : "loft", transform: `translate(${b.x + M5 * k} ${b.y + M5 * k}) scale(${k})` }, svg), vv, { furniture: true, axes: true, levels: true, tag: b.id === "plan" ? "-a3" : "-loft", tags: false, axOff: 1650 });
+      cadPlan(el("g", { "data-block": b.id === "plan" ? "plan" : "loft", transform: `translate(${b.x + (M5 + (b.el || 0)) * k} ${b.y + (M5 + (b.et || 0)) * k}) scale(${k})` }, svg), vv, { furniture: true, axes: true, levels: true, tag: b.id === "plan" ? "-a3" : "-loft", tags: false, axOff: 1650 });
       heading(b, b.id === "plan" ? tx.plan : tx.loft);
     } else if (/^fas_/.test(b.id)) {
       const sd = b.id.slice(4), RG = roofGeo(v), gb = sd === "east" || sd === "west", top = (RG.ridgeTop + 600) * k;
