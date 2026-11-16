@@ -1277,7 +1277,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       // starpasis, kas atrodas pie ārsienas (arī mājas spārnu): pielīdzina tuvākajai kontūras malai ±off uz iekšu
       const P = n.poly || [], ix = k === "x" ? 0 : 1, inside = (x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
       if (P.length > 3) A.slice(1, -1).forEach(a => { let best = null;
-        P.forEach((p, i) => { const q = P[(i + 1) % P.length]; if (p[ix] !== q[ix]) return; const d = Math.abs(p[ix] - a[0]); if (d <= 300 && (!best || d < best.d)) best = { d, e: p[ix], m: ix ? (p[0] + q[0]) / 2 : (p[1] + q[1]) / 2 }; });
+        P.forEach((p, i) => { const q = P[(i + 1) % P.length]; if (Math.abs(p[ix] - q[ix]) > 1) return; const d = Math.abs(p[ix] - a[0]); if (d <= 300 && (!best || d < best.d)) best = { d, e: p[ix], m: ix ? (p[0] + q[0]) / 2 : (p[1] + q[1]) / 2 }; });
         if (best) { const pos = k === "x" ? inside(best.e + 5, best.m) : inside(best.m, best.e + 5); a[0] = +(best.e + (pos ? off : -off)).toFixed(1); } }); });
   }
   // izbīdījuma posmam bez izvēlēta tipa tiek izveidots savs sienas tips (S1 slāņu kopija), lai tas parādās AR sienu specifikācijā un griezumā
@@ -1290,6 +1290,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   function commit(m) {
     pamNorm(m); fdTag(m); try { padTypes(m); } catch (e) { console.error("padTypes", e.message); }
+    try { const A0 = (m.projekts || {}).asu_piesaiste; if ((A0 === "c24" || A0 === "fasade") && m.axes && m.poly && !(m.projekts || {}).asisMan) snapAxes(m, A0); } catch (e) { console.error("snapAxes", e.message); }   // asis paliek uz izvēlētās malas pēc katras izmaiņas
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
     undo.push(clone(model)); redo = []; model = m; dirty = true; status("Ir nesaglabāti labojumi."); buttons(); panel(); render(); fasTint();
   }
