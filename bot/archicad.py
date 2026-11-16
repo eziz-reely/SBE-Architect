@@ -258,6 +258,27 @@ json.dump(PROJECT, open(os.path.join(pdir, "project.json"), "w", encoding="utf-8
 sys.path.insert(0, SBE)
 os.chdir(SBE)
 from sbe.__main__ import main
+from sbe import tapir
+
+_post0 = tapir._post
+
+
+def _post(body):
+    # ieraksta žurnālā katru Tapir kļūdu (try_cmd tās citādi norij, piem. jumta izveidi)
+    r = _post0(body)
+    try:
+        c = ((body.get("parameters") or {}).get("addOnCommandId") or {}).get("commandName")
+        resp = (r.get("result") or {}).get("addOnCommandResponse")
+        bad = c and (not r.get("succeeded") or (isinstance(resp, dict) and (resp.get("success") is False or any(
+            isinstance(e, dict) and "error" in e for k in resp.values() if isinstance(k, list) for e in k))))
+        if bad:
+            print("TAPIR KĻŪDA " + c + ": " + json.dumps(r, ensure_ascii=False)[:900])
+    except Exception:
+        pass
+    return r
+
+
+tapir._post = _post
 
 buf = Tee()
 old = sys.stdout
