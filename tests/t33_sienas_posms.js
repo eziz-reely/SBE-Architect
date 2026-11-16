@@ -36,6 +36,9 @@ const T = require('./lib'); const path = require('path');
   await page.keyboard.type('-1000'); await page.keyboard.press('Enter'); await T.ready(page);
   const m4 = await T.model(page), fw2 = (m4.freeWalls || []).filter(q => q[4] === 'h');
   T.ok(m4.W === W0 && m4.D === D0 && fw2.length >= 1 && Math.min(...fw2.map(q => q[0])) <= -1000, 'klikšķis uz gala + -1000 pagarina uz rietumiem', fw2);
+  // sienas gabals redzams arī fasādēs ar kontūru
+  const frw = await T.live(page); const nfw = await frw.evaluate(() => document.querySelectorAll('svg.a3 g[data-block^=elev] g[data-fw]').length);
+  T.ok(nfw >= 2, 'sienas gabals zīmējas fasādēs', nfw);
   // panelis: viss redzams bez ritināšanas
   await T.click(page, 'plan', 3000, 120); await T.ready(page);
   const vis = await page.evaluate(() => { const b = document.getElementById('propBar'); return b.scrollHeight <= b.clientHeight + 2; });
