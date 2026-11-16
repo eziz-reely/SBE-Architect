@@ -1817,7 +1817,7 @@
       }
       if (!N.wallCuts.length) delete N.wallCuts;
       i = N.freeWalls.findIndex(f => f[4] === o && Math.abs(f[X ? 0 : 1] - w.lo) < 1 && Math.abs(f[X ? 2 : 3] - th) < 1 && Math.abs((far ? f[s] : f[s] + f[q]) - end) < 2);   // jau pagarināta: turpina to pašu
-      if (i < 0) { N.freeWalls.push(X ? [w.lo, end, th, 0, o] : [end, w.lo, 0, th, o]); i = N.freeWalls.length - 1; }
+      if (i < 0) { N.freeWalls.push((X ? [w.lo, end, th, 0, o] : [end, w.lo, 0, th, o]).concat(w.ext ? [] : ["i"])); i = N.freeWalls.length - 1; }   // "i" = starpsienas pagarinājums (plānā kā starpsiena, fasādēs neredzams)
     }
     const f = N.freeWalls[i]; if (!f) return;
     const nl = +(f[q] + d).toFixed(1);
@@ -1857,7 +1857,10 @@
     const st = e.shiftKey ? 100 : 10, X = sel.w.axis === "x", dv = X ? { ArrowLeft: -st, ArrowRight: st }[k] : { ArrowUp: -st, ArrowDown: st }[k];
     if (dv) { wallShift(dv); return true; }
     if (/^Arrow/.test(k)) return true;
-    if (k === "Delete" || k === "Backspace") { post({ t: "hint", text: ext ? "Ārsienu dzēst nevar. Garumu maini ar skaitli un Enter." : "Starpsienu dzēš ar dzēšgumiju (X) vai Delete, turot kursoru virs sienas bez izvēles." }); return true; }
+    if (k === "Delete" || k === "Backspace") {
+      const w = sel.w, X = w.axis === "x", padSide = ext && w.free == null ? (X ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south")) : null, al = X ? sel.at[1] : sel.at[0];
+      if (w.free != null || (padSide && (M.wallPad || []).some(q => q.side === padSide && al >= q.a && al <= q.b))) { e.preventDefault(); post({ t: "delete" }); return true; }   // brīvā siena vai izbīdījuma posms: dzēšas
+      post({ t: "hint", text: ext ? "Ārsienu dzēst nevar. Garumu maini ar skaitli un Enter." : "Starpsienu dzēš ar dzēšgumiju (X) vai Delete, turot kursoru virs sienas bez izvēles." }); return true; }
     return false;
   }
   // piebūve ziemeļos vai rietumos: māja aug sākuma (0) pusē, viss pārējais pabīdās; spārna malas pēc tam izgriež ārējā lapa

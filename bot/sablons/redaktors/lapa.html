@@ -2879,7 +2879,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const w = sel.w, X = w.axis === "x", S = X ? model.D : model.W, ext = !!w.ext, sideN = X ? (w.lo <= 0 ? "rietumu" : "austrumu") : (w.lo <= 0 ? "ziemeļu" : "dienvidu");
       const a0 = ext && !w.poly ? 0 : (w.v0 != null ? w.v0 : 0), b0 = ext && !w.poly ? S : (w.v1 != null ? w.v1 : S), far = (X ? sel.at[1] : sel.at[0]) >= (a0 + b0) / 2, L = Math.round(b0 - a0);
       const act = (lab, val, fn, cls, tip) => { const f = field(lab, val, (n, v) => { fn(v); throw "async"; }, null, cls); if (tip) f.title = tip; return f; };   // [UI1] īss nosaukums, skaidrojums tooltip
-      h.textContent = w.free != null ? "Brīva siena" : ext ? "Ārsiena" : "Starpsiena"; sub.textContent = (ext ? (sel.face ? SIDE[sel.face.side] : sideN) + " siena · " : "") + "garums " + Math.round(L) + " mm · biezums " + Math.round(w.hi - w.lo) + " mm";
+      const fwI = w.free != null && ((model.freeWalls || [])[w.free] || [])[5] === "i"; h.textContent = fwI ? "Starpsienas pagarinājums" : w.free != null ? "Brīva siena" : ext ? "Ārsiena" : "Starpsiena"; sub.textContent = (ext ? (sel.face ? SIDE[sel.face.side] : sideN) + " siena · " : "") + "garums " + Math.round(L) + " mm · biezums " + Math.round(w.hi - w.lo) + " mm";
       {
         g.append(act("Garums ±, mm", 0, v => { if (v) toFrame({ mmWall: { len: v } }); }, "", "Pagarināt (+) / saīsināt (−) kustīgajā galā; telpas nekustas"));
         const el = document.createElement("label"), es = document.createElement("select"); el.className = "full"; el.textContent = "Kustīgais gals"; el.title = "Otrs gals paliek vietā";
@@ -2891,7 +2891,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       }
       if (!ext || w.free != null) g.append(act("Pārbīdīt " + (X ? "pa X" : "pa Y") + ", mm", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, ""));
       if (ext && w.free == null && sel.face) toneRows(g, [sel.face], false);   // [UI1] tā pati siena plānā un fasādē: ģeometrija + tonis vienā kartītē
-      if (w.free != null && model.freeWalls && model.freeWalls[w.free]) toneRows(g, facesOf(model.freeWalls[w.free]), true);   // plakņu toņi arī plānā atlasītai izbīdītajai sienai
+      if (w.free != null && !fwI && model.freeWalls && model.freeWalls[w.free]) toneRows(g, facesOf(model.freeWalls[w.free]), true);   // plakņu toņi arī plānā atlasītai izbīdītajai sienai
       {   // sienas tips: kāds pīrāgs šai sienai, ar slāņiem un biezumu; izbīdījuma posmam tipu var mainīt
         const P = model.projekts || {}, WT = P.wall_types || [], PLs = P.piragi_layers || {}, th = L => Math.round((L || []).filter(l => l[2] !== "n").reduce((q, l) => q + (+l[1] || 0), 0));
         const lay = id => id === "S1" || id === "S2" || id === "G1" ? (PLs[id] || (LAYERS0[id] || {}).layers) : (WT.find(x => x.id === id) || {}).layers;
@@ -3215,6 +3215,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     }
     const it = itemOf(model, sel); if (!it) return;
     if (sel.k === "wall" && sel.w.free != null) { const n = clone(model); (n.freeWalls || []).splice(sel.w.free, 1); sel = null; commit(n); return; }
+    if (sel.k === "wall" && sel.w.ext) {   // izbīdījuma posms zem klikšķa: dzēš to (ārsiena paliek)
+      const w = sel.w, X = w.axis === "x", side = X ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south"), al = X ? sel.at[1] : sel.at[0], pi = (model.wallPad || []).findIndex(q => q.side === side && al >= q.a && al <= q.b);
+      if (pi >= 0) { const n = clone(model); n.wallPad.splice(pi, 1); if (!n.wallPad.length) delete n.wallPad; commit(n); status("Izbīdījuma posms dzēsts."); return; }
+    }
     if (sel.k === "wall") { status(sel.w.ext ? "Ārsienu dzēst nevar." : "Starpsienu dzēš ar dzēšgumiju (X)."); return; }
     const n = clone(model);
     if (sel.k === "post") n.posts.splice(sel.i, 1);
