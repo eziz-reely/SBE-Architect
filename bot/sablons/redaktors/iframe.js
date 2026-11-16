@@ -2752,7 +2752,9 @@
     const bl = terBlock(); if (!bl) return true;
     if (place.asking) return true;
     place.pts = place.pts || [];
-    place.alt = e.altKey; const p = terPt(toLocal(bl.g, e.clientX, e.clientY), e.shiftKey), pts = place.pts;
+    place.alt = e.altKey;
+    if (!(place.pts || []).length && place.buf) { place.cur = terPt(toLocal(bl.g, e.clientX, e.clientY), e.shiftKey); terFirstEnter(); if ((place.pts || []).length) return true; }   // ierakstīts attālums + klikšķis: attālums fiksē asi, klikšķis dod otru koordināti
+    const p = terPt(toLocal(bl.g, e.clientX, e.clientY), e.shiftKey), pts = place.pts;
     if (place.rect) {   // taisnstūris: pirmais klikšķis un pretējais stūris
       if (!pts.length) { pts.push(p); terPreview(e.clientX, e.clientY, e.shiftKey); return true; }
       const a = pts[0]; if (Math.abs(p[0] - a[0]) < 100 || Math.abs(p[1] - a[1]) < 100) { post({ t: "hint", text: "Terase par šauru. Uzklikšķini tālāk." }); return true; }
