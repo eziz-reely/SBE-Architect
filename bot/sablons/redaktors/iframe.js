@@ -1716,12 +1716,11 @@
     sel = nsel || sel; post({ t: "edit", model: N, sel, resized: 1 });
     if (w0 && w0.ext && (g > 1 || g2 > 1)) {   // [S01] ārsiena izvilkta uz āru zem jumta pārkares: jautā, vai apgriezt ar jumtu vai pagarināt pārkari
       const X = w0.axis === "x", side = X ? (w0.lo <= 0 ? "west" : "east") : (w0.lo <= 0 ? "north" : "south"), d = X ? g : g2, ov0 = ((N.projekts || {}).ov_side || {})[side], ov = ov0 != null ? +ov0 : +((N.jumts || {}).ov) || 0;
-      if (ov > 0) { pendTrim = { N, side, d, ov }; post({ t: "ask", id: "wtrim", text: "Siena iziet zem jumta pārkares. Trimot ar jumtu?", opts: ["Jā, trimot ar jumtu (pārkare paliek)", "Nē, netrimot (jumta pārkare pagarinās par " + Math.round(d) + " mm)"] }); }
+      if (ov > 0) { pendTrim = { N, side, d, ov }; post({ t: "ask", id: "wtrim", text: "Siena iziet zem jumta pārkares. Trimot ar jumta pārkari?", opts: ["Jā, trimot ar jumta pārkari", "Nē, netrimot (siena iet līdz pārkares apakšējai slīpajai plaknei)"] }); }
     }
   }
   let pendTrim = null;
-  addEventListener("message", e => { const a = e.data && e.data.mmAnswer; if (!a || a.id !== "wtrim" || !pendTrim) return; const h = pendTrim; pendTrim = null; if (a.i !== 1) return;
-    const N2 = clone(h.N); N2.projekts = N2.projekts || {}; N2.projekts.ov_side = Object.assign({}, N2.projekts.ov_side); N2.projekts.ov_side[h.side] = h.ov + Math.round(h.d); post({ t: "edit", model: N2, sel }); });
+  addEventListener("message", e => { const a = e.data && e.data.mmAnswer; if (!a || a.id !== "wtrim" || !pendTrim) return; const h = pendTrim; pendTrim = null; const N2 = clone(h.N); N2.projekts = N2.projekts || {}; N2.projekts.wall_trim = Object.assign({}, N2.projekts.wall_trim); N2.projekts.wall_trim[h.side] = a.i === 0; post({ t: "edit", model: N2, sel }); });
   function wallLen(d) {   // ārsienas garums +d mm: pārbīda šķērsenisko ārsienu kustīgajā galā
     const w = sel.w, X = w.axis === "x", S = X ? M.D : M.W, far = (X ? sel.at[1] : sel.at[0]) >= S / 2, ax = X ? "y" : "x";
     const N = far ? moveWall({ axis: ax, lo: S - T, hi: S, ext: true }, d) : moveWall({ axis: ax, lo: 0, hi: T, ext: true }, -d);
