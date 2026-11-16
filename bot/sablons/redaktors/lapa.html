@@ -2594,7 +2594,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       }
       if (!ext || w.free != null) g.append(act("Pārbīdīt " + (X ? "pa X" : "pa Y") + " par, mm", 0, v => { if (v) toFrame({ mmWall: { shift: v } }); }, "full"));
       if (ext && w.free == null) { const tb = document.createElement("button"); tb.type = "button"; tb.className = "pbtn"; tb.textContent = "Mainīt šīs sienas toni fasādē"; tb.onclick = () => toFrame({ mmWallTone: 1 }); const tr = document.createElement("div"); tr.className = "row"; tr.appendChild(tb); g.append(tr); }
-      if (ext && w.free == null) padUI(g, X ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south"), X ? sel.at[1] : sel.at[0], S);
+      // "Pievienot sabiezinājumu" (padUI) noņemts: lieka komanda
       p.append(h, sub, g);
       const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Rasējumā: uzklikšķini uz sienas (gals, kuram tuvāk, ir oranžais kvadrāts), ieraksti garumu, piem., 1000 un Enter: siena pagarinās par 1000 mm tajā galā. Mīnuss saīsina pagarinājumu. Telpas un citas sienas nekustas. Bultiņas pārbīda brīvo sienu."; p.appendChild(nt);
       return;
