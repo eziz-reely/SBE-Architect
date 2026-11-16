@@ -206,7 +206,7 @@
       const ez = (X.jumts && X.jumts.eave) || 2600, sp = span(s), on = key => NT[key] !== false, gut = (key, b) => { if (on(key)) out.push({ k: "gut", i: key, lv: "main", b, pad: 30, side: s }); };
       if (s === "north" || s === "south") {
         gut(s, [-120, -(ez + 330), sp + 120, -(ez - 120)]);
-        [180, sp - 180].forEach(u => gut(s[0] + (s === "north" ? (u < sp / 2 ? "e" : "w") : (u < sp / 2 ? "w" : "e")), [u - 90, -(ez - 120), u + 90, 250]));
+        [180, sp - 180].forEach(u0 => { const k0 = s[0] + (s === "north" ? (u0 < sp / 2 ? "e" : "w") : (u0 < sp / 2 ? "w" : "e")), u = (((X.projekts || {}).notekas_u || {})[k0]) ?? u0; gut(k0, [u - 90, -(ez - 120), u + 90, 250]); });   // caurules pozīciju var pārbīdīt (notekas_u)
       } else [-1, 1].forEach(sd => {
         const LS = s === "west" ? (sd < 0 ? "north" : "south") : (sd < 0 ? "south" : "north"), ue = sd < 0 ? 0 : sp, uc = ue + sd * 70;
         gut(LS, sd < 0 ? [ue - 170, -(ez + 330), ue + 10, -(ez - 40)] : [ue - 10, -(ez + 330), ue + 170, -(ez - 40)]);
@@ -1184,7 +1184,11 @@
       if (it.k === "win" && it.lv === "loft") syncLoftWin(N, it.i);
       return N;
     }
-    if (it.k === "gut") return null;
+    if (it.k === "gut") {   // notekcauruli (2 burti: ne/nw/se/sw) var pārbīdīt gar fasādi; pati noteka paliek
+      if (String(it.i).length !== 2) return null;
+      const u0 = (it.b[0] + it.b[2]) / 2, nu = Math.round(Math.max(150, u0 + dx) / 10) * 10;
+      N.projekts = N.projekts || {}; (N.projekts.notekas_u = N.projekts.notekas_u || {})[it.i] = nu; return N;
+    }
     const s = d.h.bl.side, du = dx, dz = -dy;
     if (it.k === "decor") {   // [TRE] fasādes elements: pārvieto vai maina izmēru; malas pielīp pie logiem, fasādes malām, ±0, dzegas un citiem elementiem
       const D = N.decor[it.i], b = it.b; let u0 = b[0], u1 = b[2], zt = -b[1], zb = -b[3];
