@@ -165,6 +165,8 @@ def _mm_extra(cad):
          'const WINC = () => { const w = (window.AR && window.AR.win) || {}, o = window.__WO || {}, g = w.colorOut || w.color || "RAL 7016", out = o.out || g, inn = w.colorIn || out; return { out, inn, cas: o.cas || w.casingColor || g }; };'),
         ('    win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), cs0, nz ? Math.max(0, Math.min(cs0, u0 - nz[0])) : cs0, nz ? Math.max(0, Math.min(cs0, nz[1] - u1)) : cs0);',
          '    window.__WO = { out: w.col || null, cas: w.cascol || null }; try { win(u0, u1, w.sill ?? 0, w.head ?? 2100, panesOut(v, w), cs0, nz ? Math.max(0, Math.min(cs0, u0 - nz[0])) : cs0, nz ? Math.max(0, Math.min(cs0, nz[1] - u1)) : cs0); } finally { window.__WO = null; }'),
+        ('p[0] === a && q[0] === a : p[1] === a && q[1] === a);\n    if (!E.length) return a;\n    const [p, q] = E[0], m = dir === "x" ? (p[1] + q[1]) / 2 : (p[0] + q[0]) / 2;\n    return dir === "x" ? (inside(a + 5, m) ? a + off : a - off) : (inside(m, a + 5) ? a + off : a - off);',
+         'Math.abs(p[0] - a) <= 120 && p[0] === q[0] : Math.abs(p[1] - a) <= 120 && p[1] === q[1]);\n    if (!E.length) return a;\n    E.sort(([p], [q]) => Math.abs(p[dir === "x" ? 0 : 1] - a) - Math.abs(q[dir === "x" ? 0 : 1] - a));\n    const [p, q] = E[0], m = dir === "x" ? (p[1] + q[1]) / 2 : (p[0] + q[0]) / 2, e = dir === "x" ? p[0] : p[1];   // [MM] ass tuvu ārsienas malai (±120 mm) tiek pielīdzināta C24 ārmalai\n    return dir === "x" ? (inside(e + 5, m) ? e + off : e - off) : (inside(m, e + 5) ? e + off : e - off);'),
     ]:
         assert a in cad, 'SBE cad.js (mm_extra): nav atrasts ' + a[:60]
         cad = cad.replace(a, b, 1)

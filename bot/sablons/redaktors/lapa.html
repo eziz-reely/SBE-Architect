@@ -1264,6 +1264,18 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (!add) { $("hint").textContent = "Mēbeles netika ievietotas (visas telpas jau aprīkotas vai nosaukumi nav atpazīti)."; return; }
     commit(n); $("hint").textContent = "Ievietotas " + add + " mēbeles visā mājā." + (skip.length ? " Izlaistas: " + skip.join(", ") + "." : "") + " Atsauc ar Ctrl+Z.";
   }
+  // būvasu piesaiste (centrs | c24 | fasade): pirmā un pēdējā ass uz ārsienu, starpasis pie ārsienas (arī spārnu) uz tuvāko kontūras malu
+  function snapAxes(n, v) {
+    const T0 = Math.min(...n.rooms.flatMap(r => r.r.map(q => q[0]))), S1 = (((n.projekts || {}).piragi_layers || {}).S1 || LAYERS0.S1.layers) || [];
+    let c24 = 0; for (const l of S1) { if (/^C24/.test(l[0])) break; c24 += +l[1] || 0; }
+    const off = v === "fasade" ? 0 : v === "c24" ? c24 : T0 / 2;
+    [["x", n.W], ["y", n.D]].forEach(([k, S]) => { const A = (n.axes || {})[k]; if (!A || A.length < 2) return; A[0][0] = +off.toFixed(1); A[A.length - 1][0] = +(S - off).toFixed(1);
+      // starpasis, kas atrodas pie ārsienas (arī mājas spārnu): pielīdzina tuvākajai kontūras malai ±off uz iekšu
+      const P = n.poly || [], ix = k === "x" ? 0 : 1, inside = (x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+      if (P.length > 3) A.slice(1, -1).forEach(a => { let best = null;
+        P.forEach((p, i) => { const q = P[(i + 1) % P.length]; if (p[ix] !== q[ix]) return; const d = Math.abs(p[ix] - a[0]); if (d <= 300 && (!best || d < best.d)) best = { d, e: p[ix], m: ix ? (p[0] + q[0]) / 2 : (p[1] + q[1]) / 2 }; });
+        if (best) { const pos = k === "x" ? inside(best.e + 5, best.m) : inside(best.m, best.e + 5); a[0] = +(best.e + (pos ? off : -off)).toFixed(1); } }); });
+  }
   function commit(m) {
     pamNorm(m); fdTag(m);
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
@@ -2133,12 +2145,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       gs.appendChild(field("Platums, mm", model.D, (n, v) => { toFrame({ mmSize: { W: model.W, D: Math.round(v) } }); throw "async"; }));
       {   // būvasu piesaiste: ārējās asis uz sienas centru (pēc noklusējuma), C24 karkasa ārmalu vai fasādes ārmalu; iekšējās asis netiek skartas
         const ASM = { centrs: "Sienas centrs", c24: "C24 karkasa ārmala", fasade: "Fasādes ārmala" };
-        gs.appendChild(field("Būvasu piesaiste", (model.projekts || {}).asu_piesaiste || "centrs", (n, v) => {
-          n.projekts = n.projekts || {}; if (v === "centrs") delete n.projekts.asu_piesaiste; else n.projekts.asu_piesaiste = v;
-          const T0 = Math.min(...n.rooms.flatMap(r => r.r.map(q => q[0]))), S1 = ((n.projekts.piragi_layers || {}).S1 || LAYERS0.S1.layers) || [];
-          let c24 = 0; for (const l of S1) { if (/^C24/.test(l[0])) break; c24 += +l[1] || 0; }
-          const off = v === "fasade" ? 0 : v === "c24" ? c24 : T0 / 2;
-          [["x", n.W], ["y", n.D]].forEach(([k, S]) => { const A = (n.axes || {})[k]; if (!A || A.length < 2) return; A[0][0] = +off.toFixed(1); A[A.length - 1][0] = +(S - off).toFixed(1); });
+        gs.appendChild(field("Būvasu piesaiste", (model.projekts || {}).asu_piesaiste || "c24", (n, v) => {
+          n.projekts = n.projekts || {}; n.projekts.asu_piesaiste = v; snapAxes(n, v);
         }, ASM, "full"));
       }
       gs.appendChild(field("Kores augstums, mm", I.augstums || 0, (n, v) => { n.ievade = n.ievade || {}; n.ievade.augstums = Math.max(3000, Math.min(9000, Math.round(v))); roofFix(n); }));
@@ -3839,6 +3847,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     catch (e) { status(e && e.code === "declined" ? "DXF netika saglabāts." : "DXF neizdevās: " + ((e && (e.message || e.code)) || e)); }
   };
 
+  // noklusējums: būvasis precīzi uz C24 karkasa ārmalu (maināms uz fasādi vai sienas centru); vecie projekti bez izvēles tiek pārrēķināti vienreiz
+  try { const P0 = model.projekts = model.projekts || {}; if (!P0.asu_piesaiste && model.axes && model.poly && !(P0.asisMan)) { P0.asu_piesaiste = "c24"; snapAxes(model, "c24"); } } catch (e) { console.error("snapAxes", e.message); }
   panel(); try { matsPane(); } catch (e) { console.error("matsPane", e.message); } render();
   (async () => {
     if (!window.claude || !window.claude.use) return;
