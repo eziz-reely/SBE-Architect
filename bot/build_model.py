@@ -378,7 +378,7 @@ def build(model_path, langs=None):
         ("  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT));",
          "  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT + (pc.up || 0)));"),
         ("pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT, ROOF.plinth - 40);",
-         "(pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - pc.th) : fT) - (pc.up || 0), ROOF.plinth - 40);"),
+         "(pc.__ter && pc.th ? Math.max(-300, ROOF.plinth - 40 - Math.max(pc.th, pc.up ? Math.max(0, ...(v.terraces || []).filter(q => !q.up).map(q => q.th || 0)) : 0)) : fT) - (pc.up || 0), ROOF.plinth - 40);"),   # [MM] pakāpiens: virs zemākās terases augšas (ne zem tās, ja pakāpiena th mazāks)),
         ("  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
          "  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));\n  (v.posts || []).forEach(q => { el(\"rect\", { x: q.x, y: q.y, width: q.w, height: q.d, fill: \"#fff\", stroke: C.ink, \"stroke-width\": 12 }, g); el(\"path\", { d: `M ${q.x} ${q.y} L ${q.x + q.w} ${q.y + q.d} M ${q.x + q.w} ${q.y} L ${q.x} ${q.y + q.d}`, stroke: C.ink, \"stroke-width\": 6 }, g); });   // [MM] brīvie stabi"),
         ("  // openings\n  const reveal =",
@@ -473,7 +473,7 @@ def build(model_path, langs=None):
          '    el("rect", { x: u0, y: -eEdge, width: u1 - u0, height: eEdge + ROOF.plinth, fill: "none", stroke: "#000", "stroke-width": 8 }, g);'),
         # [MM] terases/lieveņa zīme (nosaukums, Nr., m²) pārvietojama: pozīcija v.stampAt[nr], atlasāma kā telpas zīme
         ('  stamp(g, tx, cy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);\n  lvlMark(g, tx, cy + 720, lv(-ROOF.floorT + (pc.up || 0)));',
-         '  { let sa = (window.__SA || {})[nr];\n    if (!sa && pc.__ter && !pc.up) {   // noklusēti: terases kontūras iekšienē vistālāk no malām (L formas terasei nav bbox centrā mājas iekšā)\n      const P_ = pc.poly, inP = (x, y) => { let c = false; for (let i = 0, j = P_.length - 1; i < P_.length; j = i++) if ((P_[i][1] > y) !== (P_[j][1] > y) && x < (P_[j][0] - P_[i][0]) * (y - P_[i][1]) / (P_[j][1] - P_[i][1]) + P_[i][0]) c = !c; return c; };\n      const dE = (x, y) => Math.min(...P_.map((q, i) => { const r_ = P_[(i + 1) % P_.length], dx = r_[0] - q[0], dy = r_[1] - q[1], l2 = dx * dx + dy * dy || 1, t_ = Math.max(0, Math.min(1, ((x - q[0]) * dx + (y - q[1]) * dy) / l2)); return Math.hypot(x - q[0] - t_ * dx, y - q[1] - t_ * dy); }));\n      let bd = -1; for (let x = x0 + 100; x < x1; x += 150) for (let y = y0 + 100; y < y1; y += 150) if (inP(x, y)) { const d_ = dE(x, y); if (d_ > bd) { bd = d_; sa = [x, y]; } }\n    }\n    const zx = sa ? sa[0] : tx, zy = sa ? sa[1] : cy, sg = el("g", pc.__ter ? { "data-tstamp": nr } : {}, g);\n    stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);\n    lvlMark(g, zx, zy + 720, lv(-ROOF.floorT + (pc.up || 0))); }'),
+         '  { let sa = (window.__SA || {})[nr];\n    if (!sa && pc.__ter && !pc.up) {   // noklusēti: terases kontūras iekšienē vistālāk no malām (L formas terasei nav bbox centrā mājas iekšā)\n      const P_ = pc.poly, inP = (x, y) => { let c = false; for (let i = 0, j = P_.length - 1; i < P_.length; j = i++) if ((P_[i][1] > y) !== (P_[j][1] > y) && x < (P_[j][0] - P_[i][0]) * (y - P_[i][1]) / (P_[j][1] - P_[i][1]) + P_[i][0]) c = !c; return c; };\n      const dE = (x, y) => Math.min(...P_.map((q, i) => { const r_ = P_[(i + 1) % P_.length], dx = r_[0] - q[0], dy = r_[1] - q[1], l2 = dx * dx + dy * dy || 1, t_ = Math.max(0, Math.min(1, ((x - q[0]) * dx + (y - q[1]) * dy) / l2)); return Math.hypot(x - q[0] - t_ * dx, y - q[1] - t_ * dy); }));\n      let bd = -1; for (let x = x0 + 100; x < x1; x += 150) for (let y = y0 + 100; y < y1; y += 150) if (inP(x, y)) { const d_ = dE(x, y); if (d_ > bd) { bd = d_; sa = [x, y]; } }\n    }\n    const zx = sa ? sa[0] : tx, zy = sa ? sa[1] : cy, sg = el("g", pc.__ter ? { "data-tstamp": nr } : {}, g);\n    stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);\n    if (!(pc.__ter && pc.up)) lvlMark(g, zx, zy + 720, lv(-ROOF.floorT + (pc.up || 0))); }'),
         ('  const g = el("g", { "data-block": "plan" }, parent);\n  const pts = v.poly.map(p => p.join(",")).join(" ");',
          '  const g = el("g", { "data-block": "plan" }, parent);\n  window.__SA = v.stampAt || {};\n  const pts = v.poly.map(p => p.join(",")).join(" ");'),
         # [MM] ārējās mēru ķēdes sākas aiz terasēm un lieveņa (noklusēti nedrīkst iet pāri tām)
@@ -486,7 +486,7 @@ def build(model_path, langs=None):
         ('axX, "x", 1, v.D + E);', 'axX, "x", 1, v.D + E + (EXS ? EXS + 300 : 0) + (CO.s || 0));'),
         # [MM] pakāpiens nav telpa: zīmē tikai nosaukumu (bez Nr. un m²), eksplikācijā neiet
         ('    stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);',
-         '    if (pc.__ter && pc.up) T_(sg, zx, zy, pc.name || "Pakāpiens", { a: "middle", fs: 190, fw: 500 }); else stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);'),
+         '    if (pc.__ter && pc.up) lvlMark(sg, zx, zy, lv(-ROOF.floorT + (pc.up || 0))); else stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);'),
         # [MM] noteksūkņa skavas garajā fasādē: smalka melna kontūra
         ('x: u - 65, y: -z - 25, width: 130, height: 50, fill: "#24282b" }, g);',
          'x: u - 65, y: -z - 25, width: 130, height: 50, fill: "#24282b", stroke: "#000", "stroke-width": 5 }, g);'),
@@ -499,7 +499,7 @@ def build(model_path, langs=None):
         ('cell(c1 / 2, yy + RH, String(n + 1), { a: "middle" }); cell(c1 + 2, yy + RH, v.porch.name || "Lievenis"); cell(WX - 2, yy + RH, f2(polyArea(v.porch.poly)), { a: "end" });',
          'OUT.forEach((o, oi) => { const y2 = yy + (oi + 1) * RH; cell(c1 / 2, y2, String(n + 1 + oi), { a: "middle" }); cell(c1 + 2, y2, o.name || (o === v.porch ? "Lievenis" : "Terase")); cell(WX - 2, y2, f2(polyArea(o.poly)), { a: "end" }); });'),
         ("(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
-         "(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + (v.terraces || []).slice(0, ti).filter(q => !q.up).length));"),
+         "(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), t.up ? 1000 + ti : v.rooms.length + (v.porch ? 2 : 1) + (v.terraces || []).slice(0, ti).filter(q => !q.up).length));"),
         # [MM] loga ārējā aploda nedrīkst iziet ārpus ieejas nišas (ieliekuma) uz blakus sienu: ailu sānu aplodas apgriež pie nišas malas
         ("const win = (u0, u1, z0, z1, PN, cas) => {", "const win = (u0, u1, z0, z1, PN, cas, cl = cas, cr = cas) => {"),
         ("      R(u0 - cas, u1 + cas, z0 - CB, z1 + cas, { fill: cc, ...ln });",
