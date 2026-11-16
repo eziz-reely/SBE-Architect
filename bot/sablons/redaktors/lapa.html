@@ -1659,6 +1659,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const withTone = Object.assign({ tonis: "Fasādes tonī" }, opts);
     const g1 = group("Krāsas", host);
     g1.appendChild(colorField("Fasāde", tk, TONES[tk].sw, (n, v) => { n.projekts = n.projekts || {}; n.projekts.tonis = v; }, tOpts));
+    g1.appendChild(field("Fasādes dēļu virziens", P.apdare_orient === "h" ? "h" : "v", (n, v) => { n.projekts = n.projekts || {}; if (v === "h") n.projekts.apdare_orient = "h"; else delete n.projekts.apdare_orient; }, { v: "Vertikāls", h: "Horizontāls" }, "full"));   // dēļu tekstūra visās fasādēs un materiālu sarakstā
     g1.appendChild(colorField("Fasāde (RAL)", P.fasade_ral || "", P.fasade_hex || TONES[tk].sw, (n, v) => { n.projekts = n.projekts || {}; if (!v) { delete n.projekts.fasade_ral; delete n.projekts.fasade_hex; } else { n.projekts.fasade_ral = v; n.projekts.fasade_hex = (RAL[v] || [0, "#888"])[1]; } }, Object.assign({ "": "Pēc toņa" }, RAL_OPTS())));
     // fasādes tonis pa pusēm un jumta pārkares tonis (arī ar krāsas spaini: klikšķis fasādē krāso tikai to sienu)
     ["south", "north", "east", "west"].forEach(sd => { const q = (P.fasade_side || {})[sd];

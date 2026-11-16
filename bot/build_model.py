@@ -140,6 +140,9 @@ def _mm_extra(cad):
          '      el("rect", { x: a, y: top, width: b - a, height: tPV, fill: PKH || (FAS ? "#F2F0EA" : ((window.AR && AR.projekts && AR.projekts.tonis_sw) || "#4a4f54")) }, g);\n'
          '      if (!FAS || PKH) { el("rect", { x: a, y: top, width: b - a, height: tPV }, el("clipPath", { id: cid }, g));\n'
          '        const tg = el("g", { transform: "rotate(-90)" }, el("g", Object.assign({ "clip-path": `url(#${cid})` }, PKH ? { filter: `url(#${mmTint(g, PKH)})` } : {}), g));'),
+        # [MM] fasādes dēļu virziens (projekts.apdare_orient = "h": horizontāli): visa dēļu tekstūra (fasādes, materiālu paraugs) pagriezta par 90°
+        ('for (let x = x0; x < x1; x += TS) for (let y = y0; y < y1; y += TS) el("use", { href: "#cladTex", x, y }, g);',
+         'const HZ = window.AR && AR.projekts && AR.projekts.apdare_orient === "h";\n  for (let x = x0; x < x1; x += TS) for (let y = y0; y < y1; y += TS) el("use", Object.assign({ href: "#cladTex", x, y }, HZ ? { transform: `rotate(90 ${x + TS / 2} ${y + TS / 2})` } : {}), g);'),
         # [MM] fascijas dēļa tonis atsevišķi (projekts.fascia_side / fascia_hex), pēc noklusējuma tāds pats kā jumta pārkare
         ('P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? "#F2F0EA" : "#4a5055"',
          'P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? mmFasHex(side, "#F2F0EA") : "#4a5055"'),   # metāla vējmala vienmēr jumta tonī; tonis maināms tikai baltajam fascijas dēlim (sarkanais)

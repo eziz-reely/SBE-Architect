@@ -183,6 +183,8 @@ function mmMatTones(L, PR) {   // [MM] redaktora spaiņa toņi: katrai atseviš�
   ["south", "north", "east", "west"].forEach(sd => { const q = (PR.parkare_side || {})[sd]; if (q) out.push([q, en ? `Roof overhang, ${SN[sd]} side` : `Jumta pārkare, ${SN[sd]} puse`, ((PR.parkare_side_ral || {})[sd]) || mmRalTxt(q)]); });
   return out;
 }
+// fasādes dēļu virziens (projekts.apdare_orient = "h"): koka apdares rindas teksts "horizontāls"
+const mmOri = r => { const h = window.AR && AR.projekts && AR.projekts.apdare_orient === "h"; return !h || r[0] !== "wood" ? r : r.map((t, i) => (i && typeof t === "string" ? t.replace(/vertikāl(a|s|o)/g, "horizontāl$1").replace(/vertical/g, "horizontal") : t)); };
 function mmMatList(L) {   // materiālu leģenda (tā pati kā klasiskajā lapā)
   const tx = MM_TXT[L], PR = (window.ARC && ARC.projekts) || (window.AR && AR.projekts) || {}, plate = PR.pamati === "platne";
   const out = tx.mats.map(m => m[0] === "wood" && PR.tonis_lv ? ["wood", ...(L === "en" ? PR.tonis_en : PR.tonis_lv)]
@@ -190,7 +192,7 @@ function mmMatList(L) {   // materiālu leģenda (tā pati kā klasiskajā lapā
     : m[0] === "#383E42" && PR.logi ? [PR.logi_hex || m[0], m[1], PR.logi]
     : m[0] === "#1d1d1d" && PR.cokols ? [PR.cokols_hex || m[0], m[1], PR.cokols] : m);
   out.push(...mmMatTones(L, PR));
-  return out;
+  return out.map(mmOri);
 }
 // plāna zīmējuma izvirzījumi ārpus mājas taisnstūra (terases, lievenis, kontūra): ap tiem pārvietojas asis un mēru ķēdes, tāpēc bloks par tik lielāks
 function mmPlanExt(vv) {
@@ -435,7 +437,8 @@ function modelSheetAt(v, scMin) {
   }
   if (PR.sturi) { const o = PR.sturi_opc || "balts", t = { balts: ["white", "balti"], melns: ["black", "melni"], tonis: ["facade colour", "fasādes tonī"] }[o] || ["white", "balti"];
     ARC.materials.push([PR.sturi_hex || "#F2F0EA", ...(L === "en" ? [`Corner boards ${PR.sturi} mm,`, t[0]] : [`Stūru dēļi ${PR.sturi} mm,`, t[1]])]); }
-  ARC.materials.push(...mmMatTones(L, PR));   // fasādes sienu, pārkares un fascijas toņi (redaktora spainis)
+  ARC.materials.push(...mmMatTones(L, PR));
+  ARC.materials = ARC.materials.map(mmOri);   // fasādes sienu, pārkares un fascijas toņi (redaktora spainis)
   const matN = ARC.materials.length;
   const mg = materials(svg, 26, row2 + 31, matN > 6 ? Math.ceil(matN / 2) : true);   // vairāk nekā 6 rindas: divas kolonnas (trešā neietilptu rāmī)
   ARC.materials = keep;
