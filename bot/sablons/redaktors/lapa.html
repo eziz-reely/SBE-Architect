@@ -1087,7 +1087,24 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const rs = (m.rooms || []).flatMap(rm => rm.r).sort((a, b) => b[2] * b[3] - a[2] * a[3]), q = rs[0] || [0, 0, m.W, m.D];
     return [{ n: "1", o: "v", at: Math.round(q[0] + q[2] / 2), look: 1 }, { n: "2", o: "h", at: Math.round(q[1] + q[3] / 2), look: -1 }];
   }
+  // pakāpiens = terase, kuras centrs atrodas citas terases kontūrā (ja nav atzīmēta kā "flat"): stāv uz tās augšas; up = papildu pacēlums virs terases
+  const terIn = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const [xi, yi] = P[i], [xj, yj] = P[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+  const terArea = P => Math.abs(P.reduce((a, q, i) => a + q[0] * P[(i + 1) % P.length][1] - P[(i + 1) % P.length][0] * q[1], 0)) / 2;
+  function terSupport(m, i) {
+    const T = (m.terraces || []), t = T[i]; if (!t || t.flat || !t.poly || t.poly.length < 3) return -1;
+    const cx = t.poly.reduce((s, q) => s + q[0], 0) / t.poly.length, cy = t.poly.reduce((s, q) => s + q[1], 0) / t.poly.length, A0 = terArea(t.poly); let best = -1, ba = Infinity;
+    T.forEach((o, j) => { if (j === i || !o.poly || o.poly.length < 3 || o.flat) return; const A = terArea(o.poly); if (A > A0 && A < ba && terIn(o.poly, cx, cy)) { best = j; ba = A; } });
+    return best;
+  }
+  function stepFix(m) {   // lapai: pakāpieniem up kļūst par bloka apakšas augstumu no zemes (terases augša + papildu pacēlums)
+    if (!(m.terraces || []).length) return m;
+    const T = m.terraces.map(t => Object.assign({}, t)), eff = {}, top = {};
+    const res = i => { if (i in eff) return eff[i]; const s = terSupport(m, i); eff[i] = s >= 0 ? (res(s) + (T[s].th || 0) + (m.terraces[i].up || 0)) : (m.terraces[i].up || 0); return eff[i]; };
+    T.forEach((t, i) => { if (terSupport(m, i) >= 0) t.up = res(i); });
+    return Object.assign({}, m, { terraces: T });
+  }
   function sheetHtml(m, edit) {
+    m = stepFix(m);
     const arView = arOn(m) && edit;   // AR lapas: arī rediģējamas (fasādes un mērs), pārējais iet caur Skici
     if (arOn(m) && !(m.sections && m.sections.length >= 2)) m = Object.assign({}, m, { sections: padSections(m) });
     else if (!arOn(m) && !(m.sections && m.sections.length)) m = Object.assign({}, m, { sections: [defaultSection(m)] });   // Skice: tas pats noklusētais griezums, ko rāda lapa, lai līniju var vilkt
@@ -1587,7 +1604,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       rows.push({ t: title, col: o.col || null, ral: o.ral || "", tex: o.tex || null, note: L.length > 1 ? L.length + " gab." : "", tex_ok: true,
         apply: (N, m) => { (N[arr] || []).forEach(q => setCol(q, m)); }, texImport: url => put(N => (N[arr] || []).forEach(q => { q.tex = url; q.texW = q.texW || 1000; delete q.col; delete q.ral; })) }); };
     grp("Stabi", "posts", q => q);
-    (model.terraces || []).forEach((t, i) => rows.push({ t: t.name || "Terase", col: t.col || null, ral: t.ral || "", tex: t.tex || null, note: t.up ? "pakāpiens" : "", apply: (N, m) => { const o = N.terraces[i]; setCol(o, m); if (!m.tex) delete o.tex; },
+    (model.terraces || []).forEach((t, i) => rows.push({ t: t.name || "Terase", col: t.col || null, ral: t.ral || "", tex: t.tex || null, note: terSupport(model, i) >= 0 || t.up ? "pakāpiens" : "", apply: (N, m) => { const o = N.terraces[i]; setCol(o, m); if (!m.tex) delete o.tex; },
       texImport: url => put(N => { const o = N.terraces[i]; o.tex = url; o.texW = o.texW || 1000; delete o.col; delete o.ral; }) }));
     if (model.porch) rows.push({ t: model.porch.name || "Lievenis", col: model.porch.col || null, ral: model.porch.ral || "", tex: model.porch.tex || null, note: "", apply: (N, m) => { setCol(N.porch, m); if (!m.tex) delete N.porch.tex; }, texImport: url => put(N => { N.porch.tex = url; N.porch.texW = N.porch.texW || 1000; delete N.porch.col; delete N.porch.ral; }) });
     rows.forEach(r => {
@@ -2489,7 +2506,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const I = () => sel.i;
     g.append(field("Nosaukums", t.name || "Terase", (n, v) => { n.terraces[I()].name = v; }, "text", "full"));
     g.append(field("Pīrāgs", t.preset || "deck", (n, v) => { const q = n.terraces[I()]; q.preset = v; if (TER_PRE[v] && TER_PRE[v][1] != null) q.th = TER_PRE[v][1]; }, Object.fromEntries(Object.entries(TER_PRE).map(([k, a]) => [k, a[0] + (a[1] != null ? " · " + a[1] + " mm" : "")])), "full"));
-    g.append(field(t.up ? "Bloka apakšas augstums no zemes, mm" : "Augstums virs pamata, mm", t.up || 0, (n, v) => { n.terraces[I()].up = Math.max(0, Math.min(2000, v)); }));
+    g.append(field(terSupport(model, sel.i) >= 0 ? "Pacēlums virs terases, mm (0 = stāv uz terases)" : "Augstums virs pamata, mm", t.up || 0, (n, v) => { n.terraces[I()].up = Math.max(0, Math.min(2000, v)); }));
     g.append(field("Pīrāga biezums, mm", t.th || 120, (n, v) => { const q = n.terraces[I()]; q.th = Math.max(20, Math.min(1500, v)); q.preset = "cits"; }));
     g.append(field("Stūra statņi", t.corners ? "1" : "0", (n, v) => { const q = n.terraces[I()]; q.corners = v === "1"; if (q.corners) delete q.posts; }, { 0: "Nav", 1: "Lamellu statņi stūros" }));
     g.append(field("Tekstūras platums, mm", t.texW || 1000, (n, v) => { n.terraces[I()].texW = Math.max(100, v); }));

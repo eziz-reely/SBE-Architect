@@ -2739,8 +2739,8 @@
     } else if (place.fix) { const pt = place.cur; place.fix = null; place.axSw = undefined; (place.pts = place.pts || []).push(pt); }   // Enter bez skaitļa: otra ass pēc peles
     terPreview(place.lx, place.ly, false);
   }
-  function terCommit(pts, up, name) {
-    const N = clone(M); N.terraces = (N.terraces || []).concat([{ name: name || "Terase", poly: pts, th: 120, preset: "deck", tex: null, texRot: 0, texW: 1000, corners: false, up }]);
+  function terCommit(pts, up, name, flat) {
+    const N = clone(M); N.terraces = (N.terraces || []).concat([Object.assign({ name: name || "Terase", poly: pts, th: 120, preset: "deck", tex: null, texRot: 0, texW: 1000, corners: false, up }, flat ? { flat: true } : {})]);
     place = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
     post({ t: "edit", model: N, sel: { k: "ter", i: N.terraces.length - 1, lv: "main" }, placed: true });
   }
@@ -2751,7 +2751,7 @@
     if (pts.length < 3) { post({ t: "hint", text: "Terasei vajag vismaz 3 punktus." }); return; }
     const T = M.terraces || [];
     if (!T.length) { terCommit(pts, 0); return; }
-    if (place.step != null && T[place.step]) { terCommit(pts, (T[place.step].up || 0) + (T[place.step].th || 0), "Pakāpiens"); return; }   // pakāpiens no terases paneļa: bez jautājuma
+    if (place.step != null && T[place.step]) { terCommit(pts, 0, "Pakāpiens"); return; }   // pakāpiens no terases paneļa: bez jautājuma
     const cx = pts.reduce((s, q) => s + q[0], 0) / pts.length, cy = pts.reduce((s, q) => s + q[1], 0) / pts.length;
     let par = T.length - 1;   // esošā terase, kurā ietilpst jaunā centrs (citādi pēdējā)
     T.forEach((t, i) => { const xs = t.poly.map(q => q[0]), ys = t.poly.map(q => q[1]); if (cx >= Math.min(...xs) && cx <= Math.max(...xs) && cy >= Math.min(...ys) && cy <= Math.max(...ys)) par = i; });
@@ -2760,8 +2760,8 @@
     const box = document.createElement("div");
     box.style.cssText = "position:fixed;z-index:99;left:50%;top:40%;transform:translateX(-50%);background:#fff;color:#1c2024;border:1px solid #2266d8;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.25);padding:14px;font:14px system-ui,sans-serif;display:grid;gap:8px;min-width:300px;height:auto!important;max-height:none!important;overflow:visible!important";
     const q = document.createElement("div"); q.textContent = "Kur novietot jauno terasi?"; q.style.cssText = "font-weight:600"; box.appendChild(q);
-    const done = (up, name) => { box.remove(); place && (place.asking = false); terCommit(pts, up, name); };
-    [["Virs esošās (pakāpiens uz terases augšas)", () => done(up0 + RISE, "Pakāpiens")], ["Vienā līmenī ar esošo", () => done(T[par].up || 0)], ["Atcelt", () => { box.remove(); place && (place.asking = false); place.pts = []; }]].forEach(([t, f], i) => {
+    const done = (up, name, flat) => { box.remove(); place && (place.asking = false); terCommit(pts, up, name, flat); };
+    [["Virs esošās (pakāpiens uz terases augšas)", () => done(0, "Pakāpiens")], ["Vienā līmenī ar esošo", () => done(T[par].up || 0, null, true)], ["Atcelt", () => { box.remove(); place && (place.asking = false); place.pts = []; }]].forEach(([t, f], i) => {
       const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.style.cssText = "padding:8px 10px;border-radius:8px;border:1px solid #c9ced4;background:" + (i === 0 ? "#2266d8;color:#fff;border-color:#2266d8" : "#f4f5f7") + ";cursor:pointer;font:inherit";
       b.addEventListener("pointerdown", e => e.stopPropagation()); b.onclick = f; box.appendChild(b);
     });
