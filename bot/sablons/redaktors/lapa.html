@@ -1212,25 +1212,46 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const [rx, ry, rw, rd] = R, nm = (rm.n || "").toLowerCase(), F = L.furniture = L.furniture || [], T = 300;
     const hit = (x0, y0, x1, y1) => { const bx = (q, w, h) => q.x < x1 && q.x + w > x0 && q.y < y1 && q.y + h > y0;   // vai taisnstūris skar logu vai durvis (ar rezervi pie sienas)
       return (L.windows || []).some(q => q.o === "h" ? bx({ x: q.x, y: q.y - T }, q.len, 2 * T) : bx({ x: q.x - T, y: q.y }, 2 * T, q.len)) || (L.doors || []).some(q => q.o === "h" ? bx({ x: q.x - 100, y: q.y - T }, q.w + 200, q.th + 2 * T) : bx({ x: q.x - T, y: q.y - 100 }, q.th + 2 * T, q.w + 200)); };
+    const used = q => { const ctr = ["toilet", "Ci", "chair", "armchair"].includes(q[0]); const w = typeof q[3] === "number" && !ctr ? q[3] : 600, h = typeof q[4] === "number" && !ctr ? q[4] : 600;   // jau saliktās mēbeles aptuvenais laukums
+      return ctr ? [q[1] - 300, q[2] - 300, q[1] + 300, q[2] + 300] : [q[1], q[2], q[1] + w, q[2] + h]; };
+    const hit0 = hit, free = (x0, y0, x1, y1) => !hit0(x0, y0, x1, y1) && !F.some(q => { const [a, b, c, d] = used(q); return a < x1 && c > x0 && b < y1 && d > y0; });
+    const hitF = (x0, y0, x1, y1) => !free(x0, y0, x1, y1);
     let add = 0;
+    if (/sanit|vann|mezgl/.test(nm) && !/guļam|duša|dusa|^wc|tualet/.test(nm)) {   // sanitārais mezgls: duša un WC, ja vieta (veļasmašīna pie sienas, ja paliek vieta)
+      for (const t of ["duša", "wc"]) add += autoFurn(n, Object.assign({}, rm, { n: t }), L);
+      for (const [x, y] of [[rx, ry + rd - 600], [rx + rw - 600, ry + rd - 600], [rx, ry], [rx + rw - 600, ry]]) { if (rw < 1800 || !free(x, y, x + 600, y + 600)) continue; F.push(["washer", x, y]); add++; break; }
+      return add;
+    }
+    if (/priekšn|gaite|halle|vējtvers/.test(nm) && Math.min(rw, rd) >= 1500) {   // priekšnams / gaitenis: skapis pie brīvas sienas
+      const bw = 1200, bh = 600;
+      for (const [x, y, bk] of [[rx, ry, "s"], [rx + rw - bw, ry, "s"], [rx, ry + rd - bh, "n"], [rx + rw - bw, ry + rd - bh, "n"]]) { if (!free(x, y, x + bw, y + bh) || !free(x, y + (bk === "s" ? bh : -400), x + bw, y + (bk === "s" ? bh + 400 : 0))) continue; F.push(["wardrobe", x, y, bw, bh, bk]); add++; break; }
+      return add;
+    }
+    if (/tehnisk|palīg|veļas|katl/.test(nm) && rw >= 1200 && rd >= 1200) {   // tehniskā / palīgtelpa: veļasmašīna stūrī
+      for (const [x, y] of [[rx, ry], [rx + rw - 600, ry], [rx, ry + rd - 600], [rx + rw - 600, ry + rd - 600]]) { if (!free(x, y, x + 600, y + 600)) continue; F.push(["washer", x, y]); add++; break; }
+      return add;
+    }
+    if (/virtuv/.test(nm) && rw >= 3000 && rd >= 2500 && !F.some(q => q[0] === "kitchen")) {   // virtuves zona: virsma pie garākās brīvās sienas (pirms dīvāna)
+      for (const [x, y, bk] of [[rx, ry + rd - 600, "s"], [rx, ry, "n"]]) { if (!free(x, y, x + 2600, y + 600)) continue; F.push(["kitchen", x, y, 2600, 600, ["sink", "dish", "hob4", "fridge"]]); add++; break; }
+    }
     if (/guļam/.test(nm) && rw >= 3200 && rd >= 2000) {   // gulta ar galvgali pie rietumu vai austrumu sienas, naktsgaldiņi abās pusēs
       const bw = 2000, bh = rd >= 2900 ? 1600 : 1400, cy = ry + rd / 2 - bh / 2;
       for (const side of ["w", "e"]) { const x = side === "w" ? rx : rx + rw - bw;
-        if (hit(x, cy, x + bw, cy + bh)) continue;
+        if (hitF(x, cy, x + bw, cy + bh)) continue;
         F.push(["bed", x, cy, bw, bh, side]); add++;
         const nx = side === "w" ? rx : rx + rw - 450;
-        if (cy - 420 >= ry && !hit(nx, cy - 420, nx + 450, cy)) { F.push(["nightstand", nx, cy - 420]); add++; }
-        if (cy + bh + 420 <= ry + rd && !hit(nx, cy + bh, nx + 450, cy + bh + 420)) { F.push(["nightstand", nx, cy + bh]); add++; }
+        if (cy - 420 >= ry && !hitF(nx, cy - 420, nx + 450, cy)) { F.push(["nightstand", nx, cy - 420]); add++; }
+        if (cy + bh + 420 <= ry + rd && !hitF(nx, cy + bh, nx + 450, cy + bh + 420)) { F.push(["nightstand", nx, cy + bh]); add++; }
         break; }
     } else if (/duša|dusa/.test(nm) && rw >= 900 && rd >= 900) {   // dušas kabīne telpas stūrī, kur nav durvju
       for (const [x, y, gl] of [[rx, ry, ["n", "w"]], [rx + rw - 900, ry, ["n", "e"]], [rx, ry + rd - 900, ["s", "w"]], [rx + rw - 900, ry + rd - 900, ["s", "e"]]]) {
-        if (hit(x, y, x + 900, y + 900)) continue; F.push(["shower", x, y, 900, gl]); add++; break; }
+        if (hitF(x, y, x + 900, y + 900)) continue; F.push(["shower", x, y, 900, gl]); add++; break; }
     } else if (/^wc|tualet/.test(nm) && rw >= 800 && rd >= 800) {   // WC: izlietne un pods pie sienas, kur nav durvju
       for (const [bx, by, bk, tx, ty] of [[rx, ry, "n", rx + rw - 330, ry + rd - 400], [rx + rw - 600, ry, "n", rx + 330, ry + rd - 400], [rx, ry + rd - 450, "s", rx + rw - 330, ry + 400]]) {
-        if (hit(bx, by, bx + 600, by + 450) || hit(tx - 215, ty - 270, tx + 215, ty + 270)) continue; F.push(["basin", bx, by, 600, 450, bk]); F.push(["toilet", tx, ty, 1]); add += 2; break; }
+        if (hitF(bx, by, bx + 600, by + 450) || hitF(tx - 215, ty - 270, tx + 215, ty + 270)) continue; F.push(["basin", bx, by, 600, 450, bk]); F.push(["toilet", tx, ty, 1]); add += 2; break; }
     } else if (/viesist|dzīvoj|dzivoj/.test(nm) && rw >= 3000 && rd >= 2500) {   // dīvāns pie tās garās sienas, kur nav logu un durvju
       for (const [x, y, bk] of [[rx + (rw - 2000) / 2, ry, "n"], [rx + (rw - 2000) / 2, ry + rd - 900, "s"]]) {
-        if (hit(x, y, x + 2000, y + 900)) continue; F.push(["sofa", Math.round(x), y, 2000, 900, bk]); add++; break; }
+        if (hitF(x, y, x + 2000, y + 900)) continue; F.push(["sofa", Math.round(x), y, 2000, 900, bk]); add++; break; }
     }
     return add;
   }
