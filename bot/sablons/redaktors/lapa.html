@@ -874,6 +874,7 @@ p.grp { font: 600 12px/1.3 var(--f-ui); color: var(--muted); text-transform: non
     </div></details>
     <details class="tr" data-pane="sec"><summary><span>Griezumi</span></summary><div class="trb"><div id="secPane"></div></div></details>
     <details class="tr" data-pane="add" open><summary><span>Mēbeles un kāpnes</span></summary><div class="trb">
+      <button type="button" id="furnAll" title="Ar vienu klikšķi ievieto mēbeles visās telpās (1. stāvā un mansardā), kur nav mēbeļu un nosaukums ir atpazīts">Salikt mēbeles visā mājā</button>
       <div class="seg" id="detail" role="group" aria-label="Mēbeļu detalizācija visai lapai"><button type="button" data-v="1" aria-pressed="false">Vienkāršs</button><button type="button" data-v="2" aria-pressed="true">Standarta</button><button type="button" data-v="3" aria-pressed="false">Detalizēts</button></div>
       <div class="lib" id="libFurn"></div>
     </div></details>
@@ -1233,6 +1234,15 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     }
     return add;
   }
+  // viss nams ar vienu klikšķi: katrai telpai bez mēbelēm autoFurn; pārējās netiek aiztiktas
+  function furnAll() {
+    const n = clone(model); let add = 0, skip = [];
+    [n, n.loft].forEach(L => { if (!L) return;
+      (L.rooms || []).forEach(rm => { const R = (rm.r || []); const has = (L.furniture || []).some(q => R.some(([x, y, w, d]) => q[1] >= x && q[1] <= x + w && q[2] >= y && q[2] <= y + d));
+        if (has) return; const c = autoFurn(n, rm, L); if (c) add += c; else skip.push(rm.n || "?"); }); });
+    if (!add) { $("hint").textContent = "Mēbeles netika ievietotas (visas telpas jau aprīkotas vai nosaukumi nav atpazīti)."; return; }
+    commit(n); $("hint").textContent = "Ievietotas " + add + " mēbeles visā mājā." + (skip.length ? " Izlaistas: " + skip.join(", ") + "." : "") + " Atsauc ar Ctrl+Z.";
+  }
   function commit(m) {
     pamNorm(m); fdTag(m);
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
@@ -1253,6 +1263,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     };
     im.src = "data:image/jpeg;base64," + TONES[tk].tex;
   }
+  { const fa = document.getElementById("furnAll"); if (fa) fa.onclick = furnAll; }
   function doUndo() { if (!undo.length) return; redo.push(model); model = undo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function doRedo() { if (!redo.length) return; undo.push(model); model = redo.pop(); dirty = true; check(); buttons(); panel(); render(); }
   function check() { if (sel && !itemOf(model, sel)) sel = null; }
