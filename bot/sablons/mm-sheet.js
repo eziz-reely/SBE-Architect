@@ -201,6 +201,14 @@ function mmPlanExt(vv) {
   add(vv.poly); (vv.terraces || []).forEach(t => { if (!t.up) add(t.poly); }); if (vv.porch) add(vv.porch.poly);
   return e;
 }
+// griezumi, kas rādās Skices lapā: tie, kam s.skice = true; ja neviens nav atzīmēts, pirmais (vai noklusētais horizontālais)
+function mmSkSecs(v) {
+  const all = (v.sections || []).map((s, i) => ({ s, i })), on = all.filter(q => q.s.skice);
+  if (on.length) return on;
+  if (all[0]) return [all[0]];
+  const q = ((v.rooms || []).flatMap(rm => rm.r).sort((a, b) => b[2] * b[3] - a[2] * a[3]))[0];   // noklusēti: horizontāls griezums caur lielāko telpu
+  return [{ s: { n: "1", o: "h", at: Math.round(q ? q[1] + q[3] / 2 : v.D / 2), look: -1 }, i: 0 }];
+}
 // bloku izmēri (lapas mm) pie mēroga SC; fiksētie (tabulas, materiāli) no mēroga nav atkarīgi
 function mmBlockSizes(v, lf, L, K, SC, aw) {
   const k = 1 / SC, RG = roofGeo(v), ids = (K.elementi || []).filter(id => id !== "viz"), out = [];
@@ -208,7 +216,7 @@ function mmBlockSizes(v, lf, L, K, SC, aw) {
   ids.forEach(id => {
     if (id === "plan" || (id === "loft" && lf)) { const e = mmPlanExt(v); out.push({ id, w: (v.W + e.l + e.r + 5600) * k, h: (v.D + e.t + e.b + 7100) * k + 8, el: e.l, et: e.t }); }
     else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 3300) * k + 3 }); }
-    else if (id === "griez") { const hz = true, sp = hz ? v.W : v.D; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 2600) * k + 8 }); }
+    else if (id === "griez") mmSkSecs(v).forEach((q, j) => { const sp = q.s.o === "v" ? v.D : v.W; out.push({ id, si: j, w: (sp + 5400) * k, h: (RG.ridgeTop + 2600) * k + 8 }); });   // katrs izvēlētais griezums savs bloks
     else if (id === "expl") { const nr = mmRooms(v).length + (lf ? mmRooms(lf).length + 2 : 0); out.push({ id, w: 66, h: 6.5 + (nr + 2) * 5 + 12 }); }
     else if (id === "mat") { const n = mmMatList(L).length, cols = Math.max(1, Math.min(Math.ceil(n / 3), Math.floor((aw || 220) / 78))), R = Math.max(3, Math.ceil(n / cols)); out.push({ id, w: Math.max(80, cols * 78), h: 12 + Math.min(n, R) * 11 + 5, R }); }   // kolonnu skaits ierobežots ar lapas platumu, rindu skaits kolonnā aug (citādi lapa nesaietilpa un palika tukša)
   });
@@ -231,12 +239,14 @@ function mmLayout(v, lf, L, K, area, gap) {
   let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const MINW = 50, MINH = 32;
   for (const SC of cands) {
-    const all = mmBlockSizes(v, lf, L, K, SC, aw), matB = all.find(b => b.id === "mat"), bl = all.filter(b => b.id !== "mat");
+    const all = mmBlockSizes(v, lf, L, K, SC, aw), matB = all.find(b => b.id === "mat"), gz = all.filter(b => b.id === "griez");
+    // griezumi stāv blakus materiālu (krāsu pases) blokam apakšējā rindā, ja tur ietilpst; citādi kopā ar pārējiem blokiem
+    const beside = !!(matB && gz.length && matB.w + gz.reduce((a, b) => a + gap + b.w, 0) <= aw + .01), bl = all.filter(b => b.id !== "mat" && !(beside && b.id === "griez")), rowH = matB ? Math.max(matB.h, ...(beside ? gz.map(b => b.h) : [0])) : 0;
     const PRI = ["plan", "expl", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "griez"], pr = b => { const q = PRI.indexOf(b.id); return q < 0 ? 99 : q; };
     const canon = [...bl].sort((a, b) => pr(a) - pr(b));   // pastāvīga kārtība: plāns, tabula, mansards, fasādes; materiāli vienmēr atsevišķā rindā zem visa (tāpēc neleciena pēc katras krāsu maiņas)
     const orders = [canon, [...bl].sort((a, b) => b.h - a.h), [...bl].sort((a, b) => b.w - a.w)];
     for (let i = 0; i < 500; i++) { const o = [...bl]; for (let j = o.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [o[j], o[r]] = [o[r], o[j]]; } orders.push(o); }
-    const rsv = matB ? matB.h + gap : 0;   // vieta materiāliem zem fasādēm
+    const rsv = matB ? rowH + gap : 0;   // vieta materiāliem (un griezumiem blakus) zem fasādēm
     let best = null;
     for (const ord of orders) {
       if (best && ord !== canon && best.canon) break;   // kanoniskā kārtība ietilpst: lieto to (stabils izkārtojums)
@@ -244,12 +254,12 @@ function mmLayout(v, lf, L, K, area, gap) {
       const place = [], free = [], n = pk.shelves.length, gy = gap + (n > 1 ? Math.min(14, Math.max(0, (ah - rsv - pk.used) / (n - 1) * (vizOn ? 0 : 1))) : 0);
       let y = ay;
       pk.shelves.forEach(sh => {
-        let x = ax; sh.items.forEach(b => { place.push({ id: b.id, x, y, w: b.w, h: b.h, R: b.R, el: b.el, et: b.et }); x += b.w + gap; });
+        let x = ax; sh.items.forEach(b => { place.push({ id: b.id, si: b.si, x, y, w: b.w, h: b.h, R: b.R, el: b.el, et: b.et }); x += b.w + gap; });
         if (aw - sh.w - gap > 20) free.push({ x: ax + sh.w + gap, y, w: aw - sh.w - gap, h: sh.h });
         y += sh.h + gy;
       });
       let bot = y - gy;
-      if (matB) { place.push({ id: "mat", x: ax, y: bot + gap, w: matB.w, h: matB.h, R: matB.R }); bot += gap + matB.h; }
+      if (matB) { place.push({ id: "mat", x: ax, y: bot + gap, w: matB.w, h: matB.h, R: matB.R }); if (beside) { let gx = ax + matB.w + gap; gz.forEach(b => { place.push({ id: "griez", si: b.si, x: gx, y: bot + gap, w: b.w, h: b.h }); gx += b.w + gap; }); } bot += gap + rowH; }
       if (ay + ah - bot - gap > 20) free.push({ x: ax, y: bot + gap, w: aw, h: ay + ah - bot - gap });
       let viz = null;
       if (vizOn) free.forEach(f => { let w = f.w, h = w / ratio; if (h > f.h) { h = f.h; w = h * ratio; } if (w >= MINW && h >= MINH && (!viz || w * h > viz.w * viz.h)) viz = { x: f.x + (f.w - w) / 2, y: f.y + (f.h - h) / 2, w, h }; });
@@ -342,16 +352,17 @@ function mmCompose(v, lf, L, K) {
     const M5 = 2800;   // asu un mēru josla ap plānu (mm)
     if (b.id === "plan" || b.id === "loft") {
       const vv = b.id === "plan" ? v : lf;
-      cadPlan(el("g", { "data-block": b.id === "plan" ? "plan" : "loft", transform: `translate(${b.x + (M5 + (b.el || 0)) * k} ${b.y + (M5 + (b.et || 0)) * k}) scale(${k})` }, svg), vv, { furniture: true, axes: true, levels: true, tag: b.id === "plan" ? "-a3" : "-loft", tags: false, axOff: 1650 });
+      const skOn = b.id === "plan" && (K.elementi || []).includes("griez");   // izvēlēto griezumu līnijas plānā
+      cadPlan(el("g", { "data-block": b.id === "plan" ? "plan" : "loft", transform: `translate(${b.x + (M5 + (b.el || 0)) * k} ${b.y + (M5 + (b.et || 0)) * k}) scale(${k})` }, svg), skOn ? Object.assign({}, vv, { sections: mmSkSecs(v).map(q => q.s) }) : vv, { furniture: true, axes: true, levels: true, tag: b.id === "plan" ? "-a3" : "-loft", tags: false, axOff: 1650, sections: skOn });
       heading(b, b.id === "plan" ? tx.plan : tx.loft);
     } else if (/^fas_/.test(b.id)) {
       const sd = b.id.slice(4), RG = roofGeo(v), gb = sd === "east" || sd === "west", top = (RG.ridgeTop + 600) * k;
       elevation(el("g", { "data-block": "elev-" + sd, transform: `translate(${b.x + 3200 * k} ${b.y + top}) scale(${k})` }, svg), v, sd, { levels: firstFas, noScale: !firstFas, ground: 0, title: `${tx.fas} ${sideAxes(v, sd)}` });
       firstFas = false;
     } else if (b.id === "griez") {
-      const s = (v.sections && v.sections[0]) || { n: "1", o: "h", at: v.D / 2, look: -1 }, RG = roofGeo(v);
-      const gs = el("g", { "data-block": "sec-1", transform: `translate(${b.x + 3200 * k} ${b.y + (RG.ridgeTop + 600) * k}) scale(${k})` }, svg);
-      section(gs, v, Object.assign({ o: "h" }, s));
+      const q = mmSkSecs(v)[b.si || 0], RG = roofGeo(v);
+      const gs = el("g", { "data-block": "sec-" + (q.i + 1), transform: `translate(${b.x + 3200 * k} ${b.y + (RG.ridgeTop + 600) * k}) scale(${k})` }, svg);
+      section(gs, v, Object.assign({ o: "h" }, q.s));
     } else if (b.id === "expl") {
       let yy = b.y + mmTable(svg, b.x, b.y, b.w, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly)) + 4;
       if (lf) mmTable(svg, b.x, yy, b.w, tx.expl, tx.f2, mmRooms(lf), L);

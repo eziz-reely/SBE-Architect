@@ -546,6 +546,15 @@ def build(model_path, langs=None):
          '        const ga = el("g", { "data-block": "elev-" + a, transform: `translate(${x1} ${gy_}) scale(${fs_})` }, svg); elevation(ga, v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` }); arFix(ga, 0.01 / fs_);\n'
          '        const gb = el("g", { "data-block": "elev-" + b, transform: `translate(${x2} ${gy_}) scale(${fs_})` }, svg); elevation(gb, v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` }); arFix(gb, 0.01 / fs_);\n'
          '        window.AR_K = 1; window.MM_SCALE = 100; void xa; void xb; }\n'),
+        # [MM] griezuma noformējums: s.fill = aizpildīta krāsa (griezto elementu pildījums), citādi kontūra ar šrafējumu
+        ('  const g = el("g", {}, parent), span = s.o === "v" ? v.D : v.W, ov = ROOF.ov, { eEdge, thV, ridgeTop } = roofGeo(v);',
+         '  const g = el("g", {}, parent), span = s.o === "v" ? v.D : v.W, ov = ROOF.ov, { eEdge, thV, ridgeTop } = roofGeo(v), SF = s.fill || null;'),
+        ('    el("polygon", { points: pts, fill: "#fff", stroke: C.ink, "stroke-width": 14 }, g);',
+         '    el("polygon", { points: pts, fill: SF || "#fff", stroke: C.ink, "stroke-width": 14 }, g);'),
+        ('    bands.forEach(b => el("path", { d: loops(...b), ...INS, "stroke-width": 5, "clip-path": `url(#${id})` }, g));',
+         '    if (!SF) bands.forEach(b => el("path", { d: loops(...b), ...INS, "stroke-width": 5, "clip-path": `url(#${id})` }, g));'),
+        ('bld.forEach(([p, q]) => el("rect", { x: p, y: 0, width: q - p, height: flT, fill: fl.some(l => (l[2] || "").includes("c")) ? "url(#concrete)" : "#fff", stroke: C.ink, "stroke-width": 14 }, g));',
+         'bld.forEach(([p, q]) => el("rect", { x: p, y: 0, width: q - p, height: flT, fill: SF || (fl.some(l => (l[2] || "").includes("c")) ? "url(#concrete)" : "#fff"), stroke: C.ink, "stroke-width": 14 }, g));'),
         # [MM] starpstāvu pārseguma pīrāgs griezumā: slāņi virs istabām un starpsienām (agrāk plāna līnija); slāņi no ARC.layers.P1 vai noklusētie
         ('  // ceilings in rooms that are not open to the roof; room names\n  iv.forEach(c => {\n    if (!open(c.i)) el("rect", { x: c.a, y: -CEIL - 60, width: c.b - c.a, height: 60, fill: "#d9d9d6", stroke: C.ink, "stroke-width": 8 }, g);\n',
          '  const P1 = (LAYERS("P1") || { layers: [["OSB 22", 22, "o"], ["C24 sijas 45x195, minerālvate", 195, "i"], ["C24 latojums 45x45 instalācijas slānis", 45, "a"], ["Ģipškartons", 13, "k"]] }).layers.filter(l => l[1] > 0), P1T = P1.reduce((a, l) => a + l[1], 0);\n'
@@ -553,8 +562,8 @@ def build(model_path, langs=None):
          '    sl.forEach(c => { bld.forEach(([p, q]) => { if (c.a >= p - 1 && c.a - p < 400) c.a = p; if (c.b <= q + 1 && q - c.b < 400) c.b = q; });\n'
          '      let z = CEIL; P1.slice().reverse().forEach(([n, th, f = ""]) => { const cid = "p1-" + Math.random().toString(36).slice(2, 8), y0 = -z - th;\n'
          '        el("rect", { x: c.a, y: y0, width: c.b - c.a, height: th }, el("clipPath", { id: cid }, g));\n'
-         '        el("rect", { x: c.a, y: y0, width: c.b - c.a, height: th, fill: "#fff", stroke: C.ink, "stroke-width": 6 }, g);\n'
-         '        if (f.includes("i")) el("path", { d: loops(c.a, y0, 1, 0, 0, 1, c.b - c.a, th), ...INS, "stroke-width": 5, "clip-path": `url(#${cid})` }, g); else hatchBox(g, c.a, y0, c.b - c.a, th, f, 100, cid);\n'
+         '        el("rect", { x: c.a, y: y0, width: c.b - c.a, height: th, fill: SF || "#fff", stroke: C.ink, "stroke-width": 6 }, g);\n'
+         '        if (SF) { /* aizpildīts griezums: bez šrafējuma */ } else if (f.includes("i")) el("path", { d: loops(c.a, y0, 1, 0, 0, 1, c.b - c.a, th), ...INS, "stroke-width": 5, "clip-path": `url(#${cid})` }, g); else hatchBox(g, c.a, y0, c.b - c.a, th, f, 100, cid);\n'
          '        z += th; });\n'
          '      el("rect", { x: c.a, y: -CEIL - P1T, width: c.b - c.a, height: P1T, fill: "none", stroke: C.ink, "stroke-width": 12 }, g); }); }\n'
          '  // ceilings in rooms that are not open to the roof; room names\n  iv.forEach(c => {\n'),

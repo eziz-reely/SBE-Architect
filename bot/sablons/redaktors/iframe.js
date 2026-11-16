@@ -1620,6 +1620,7 @@
       if (h.it.k === "stamp") return true;
       sel = { k: h.it.k, i: h.it.i, lv: h.it.lv }; post({ t: "sel", sel }); post({ t: "delete" }); return true;
     }
+    if (place && place.t === "section") { secClick(e); return true; }
     if (place && place.t === "guide") {
       const gd = guideNow(place, e.clientX, e.clientY, e.shiftKey); delete gd.hit; delete gd.hp;
       const N = clone(M); N.projekts = N.projekts || {}; N.projekts.guides = (N.projekts.guides || []).concat([gd]);
@@ -1877,6 +1878,7 @@
     if (place && place.t === "terrace") { place.alt = e.altKey; place.lx = e.clientX; place.ly = e.clientY; terPreview(e.clientX, e.clientY, e.shiftKey); return; }
     if (place && ((place.t === "zone" && place.poly) || place.t === "hpoly")) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
+    if (place && place.t === "section") { place.lx = e.clientX; place.ly = e.clientY; secPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "guide") { document.body.style.cursor = GDC; drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
     if (drag && drag.secd) {
       const m0 = drag.g.getScreenCTM(), sv = drag.g.ownerSVGElement, q0 = sv.createSVGPoint(); q0.x = e.clientX; q0.y = e.clientY; const a = (() => { const r = q0.matrixTransform(m0.inverse()); return [r.x, r.y]; })(), V = drag.o === "v", at = Math.round(a[V ? 0 : 1] / 10) * 10; drag.at = at;
@@ -2094,6 +2096,7 @@
       if (e.key === "Enter") { e.preventDefault(); const n = +divBuf.s, op = divBuf.op; divBuf = null; if (n >= (op === "/" ? 2 : 1)) postDiv(n, op); return; }
       if (e.key === "Escape") { divBuf = null; post({ t: "hint", text: "" }); return; }
     }
+    if (place && place.t === "section" && !e.ctrlKey && !e.metaKey && (e.key === "Tab" || /^[vh]$/i.test(e.key))) { e.preventDefault(); place.so = e.key === "Tab" ? (place.so === "v" ? "h" : "v") : e.key.toLowerCase(); secPreview(place.lx, place.ly); return; }
     if (place && place.t === "terrace" && !(place.pts || []).length && place.cur) {   // pirmais punkts bez klikšķa: attālums no tuvākās ārsienas (Tab maina asi, Enter fiksē, otrais Enter noliek punktu)
       if (/^[0-9]$/.test(e.key) && !e.ctrlKey) { e.preventDefault(); place.buf = (place.buf || "") + e.key; terFirstHint(); terPreview(place.lx, place.ly, false); return; }
       if (place.buf && e.key === "Backspace") { e.preventDefault(); place.buf = place.buf.slice(0, -1); terFirstHint(); terPreview(place.lx, place.ly, false); return; }
@@ -2684,6 +2687,21 @@
       [bx, by].forEach((w, wi) => { if (w && w.d > 20) { const on = wi === act; mk(g, "line", { x1: w.from[0], y1: w.from[1], x2: w.to[0], y2: w.to[1], stroke: ACC, "stroke-width": (on ? 1.2 : 0.5) / k, "pointer-events": "none" }); label(g, (w.from[0] + w.to[0]) / 2, (w.from[1] + w.to[1]) / 2 - 3 / k, (on ? "▶ " : "") + (on && place.buf ? place.buf + " mm (Enter)" : `${Math.round(w.d)} mm`) + " no ārsienas" + (on ? "  · Tab maina" : ""), k); } }); }
     const last = pts[pts.length - 1]; place.cur = q;
     label(g, q[0] + 3 / k, q[1] + (last ? -3 : 14) / k, place.buf && last ? `⌨ ${place.buf} mm (Enter)` : !last ? "Terase: uzklikšķini pirmo stūri vai ieraksti attālumu" : `${Math.round(Math.hypot(q[0] - last[0], q[1] - last[1]))} mm` + (pts.length > 2 ? "  · dubultklikšķis vai Enter noslēdz" : ""), k);
+  }
+  // ---- griezuma rīks: horizontāls vai vertikāls griezums plānā (Tab / V / H maina virzienu) ----
+  function secAt(cx, cy) {
+    const bl = terBlock(); if (!bl) return null; const p = toLocal(bl.g, cx, cy), V = place.so === "v";
+    return { bl, p, at: Math.round(p[V ? 0 : 1] / 10) * 10, V };
+  }
+  function secPreview(cx, cy) {
+    if (cx == null) return; const a = secAt(cx, cy); if (!a) return; const { bl, V, at } = a, o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
+    const k = ek(bl), g = mk(o, "g", { class: "gh" }), sp = V ? M.D : M.W, p0 = -2300, p1 = sp + 2300;
+    mk(g, "line", { x1: V ? at : p0, y1: V ? p0 : at, x2: V ? at : p1, y2: V ? p1 : at, stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${5 / k} ${1.6 / k} ${1 / k} ${1.6 / k}`, "pointer-events": "none" });
+    label(g, a.p[0] + 3 / k, a.p[1] - 3 / k, `Griezums ${V ? "vertikāls" : "horizontāls"} · ${V ? "x" : "y"} = ${at} mm · Tab maina virzienu`, k);
+  }
+  function secClick(e) {
+    const a = secAt(e.clientX, e.clientY); if (!a) return;
+    post({ t: "secAdd", o: a.V ? "v" : "h", at: a.at }); document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
   }
   // tuvākā mājas ārsienas līnija pa x un pa y no punkta q; ax = ass, kurai siena ir tuvāk (vai Tab izvēlētā)
   function terWalls(q) {
