@@ -538,6 +538,13 @@ def build(model_path, langs=None):
     ar = ar[:n0] + ARFIX + ar[n0:]
     for a_, b_ in [
         # [MM] pamatu un komunikāciju plāns kā AR lapa
+        # [MM] griezumi virs diviem: 3. un 4. griezums nāk atsevišķā lapā "griez2" (lapu saraksts tiek sinhronizēts ar griezumu skaitu)
+        ('  const total = ARC.parts.length, out = [];',
+         '  { const ns = (v.sections || []).length, gi = ARC.parts.indexOf("griez"), g2 = ARC.parts.indexOf("griez2");   // [MM] papildu griezumu lapa\n    if (gi >= 0 && ns > 2 && g2 < 0) ARC.parts.splice(gi + 1, 0, "griez2"); else if (ns <= 2 && g2 >= 0) ARC.parts.splice(g2, 1);\n    if (ns > 2) { const q = v.sections.slice(2, 4).map(z => z.n); AR_PARTS.griez2 = q.length > 1 ? `Griezumi ${q[0]}-${q[0]} un ${q[1]}-${q[1]}` : `Griezums ${q[0]}-${q[0]}`; } }\n  const total = ARC.parts.length, out = [];'),
+        ('    if (k === "griez") {\n      const [s1, s2] = v.sections;\n      section(el("g", { "data-block": "sec-2", transform: "translate(52 122) scale(0.01)" }, svg), v, s2);\n      section(el("g", { "data-block": "sec-1", transform: "translate(52 222) scale(0.01)" }, svg), v, s1);',
+         '    if (k === "griez" || k === "griez2") {\n      const G2 = k === "griez2", [s1, s2] = G2 ? [v.sections[2], v.sections[3]] : v.sections;\n      if (s2) section(el("g", { "data-block": "sec-" + (G2 ? 4 : 2), transform: "translate(52 122) scale(0.01)" }, svg), v, s2);\n      section(el("g", { "data-block": "sec-" + (G2 ? 3 : 1), transform: `translate(52 ${s2 ? 222 : 172}) scale(0.01)` }, svg), v, s1);'),
+        ('const r = 300, ar = 1.414 * r, d = s.look, sheet = arNo("griez");',
+         'const r = 300, ar = 1.414 * r, d = s.look, sheet = (si >= 2 && arNo("griez2")) || arNo("griez");'),
         ('    if (k === "plan" || k === "mebel") {', '    if (/^pam\\d$/.test(k)) { out.push(pamArSheet(v, k, sc => sheet(k, title, sc))); return; }\n    if (k === "plan" || k === "mebel") {'),
         ('      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:100"),',
          '      const [ps_, pd_] = arScalePlan(v); window.AR_PK = ps_ === 0.01 ? null : ps_; window.AR_PD = pd_; window.MM_SCALE = pd_;\n      const svg = planSheet(v, { sheetEl: sheet(k, title, "1:" + pd_),'),
