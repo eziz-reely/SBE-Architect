@@ -524,6 +524,10 @@ def build(model_path, langs=None):
         '  for (const d of [50, 75]) { const s = 1 / d; if ((L + D) * s <= 315 && H * s <= 120) return [s, d]; }\n'
         '  return [0.01, 100];\n'
         '}\n'
+        'function mmSP() {   // palodzes profils (projekts.palodzes_prof): 0 = nav, citādi augstums mm (noklusēti 30)\n'
+        '  const c = (window.AR && AR.projekts && AR.projekts.palodzes_prof) || {};\n'
+        '  return c.on === false ? 0 : (+c.h > 0 ? +c.h : 30);\n'
+        '}\n'
         'function arScalePlan(v) {\n'
         '  for (const d of [50, 75]) { const s = 1 / d; if ((v.W + 6900) * s <= 222 && (v.D + 6900) * s <= 148) return [s, d]; }\n'
         '  return [0.01, 100];\n'
@@ -546,6 +550,17 @@ def build(model_path, langs=None):
          '        const ga = el("g", { "data-block": "elev-" + a, transform: `translate(${x1} ${gy_}) scale(${fs_})` }, svg); elevation(ga, v, a, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, a)}` }); arFix(ga, 0.01 / fs_);\n'
          '        const gb = el("g", { "data-block": "elev-" + b, transform: `translate(${x2} ${gy_}) scale(${fs_})` }, svg); elevation(gb, v, b, { levels: true, title: `FASĀDE ASĪS ${sideAxes(v, b)}` }); arFix(gb, 0.01 / fs_);\n'
          '        window.AR_K = 1; window.MM_SCALE = 100; void xa; void xb; }\n'),
+        # [MM] logu iestatījums: palodzes profils (ir/nav, augstums) montāžas mezglā un specifikācijā
+        ('const f0 = studA + 14, f1 = f0 + 82, jb = kind === "sill" ? 50 : 20;',
+         'const SP = kind === "sill" ? mmSP() : 0, f0 = studA + 14, f1 = f0 + 82, jb = kind === "sill" ? 20 + SP : 20; DET_ITEMS[4] = "Palodzes profils " + mmSP() + " mm";'),
+        ('if (kind === "sill") poly([[f0, -20], [f1, -20], [f1, -50], [f0, -50]], { fill: "#dfe3e6" });',
+         'if (kind === "sill" && SP) poly([[f0, -20], [f1, -20], [f1, -20 - SP], [f0, -20 - SP]], { fill: "#dfe3e6" });'),
+        ('pl([[f0 + 6, -50], [-45, -26], [-45, 2]], { "stroke-width": .45 });',
+         'pl([[f0 + 6, -20 - SP], [-45, -26], [-45, 2]], { "stroke-width": .45 });'),
+        ('...(kind === "sill" ? [[DET_ITEMS[4], (f0 + f1) / 2, -35], [DET_ITEMS[5], -20, -26], [DET_ITEMS[6], Wt - 10, -12]]',
+         '...(kind === "sill" ? [...(SP ? [[DET_ITEMS[4], (f0 + f1) / 2, -20 - SP / 2]] : []), [DET_ITEMS[5], -20, -26], [DET_ITEMS[6], Wt - 10, -12]]'),
+        ('${r.sill ? "" : ", līdz grīdai"}.`, cas: r.cas,',
+         '${r.sill ? (mmSP() ? ", palodzes profils " + mmSP() + " mm" : ", bez palodzes profila") : ", līdz grīdai"}.`, cas: r.cas,'),
         # [MM] griezuma noformējums: s.fill = aizpildīta krāsa (griezto elementu pildījums), citādi kontūra ar šrafējumu
         ('  const g = el("g", {}, parent), span = s.o === "v" ? v.D : v.W, ov = ROOF.ov, { eEdge, thV, ridgeTop } = roofGeo(v);',
          '  const g = el("g", {}, parent), span = s.o === "v" ? v.D : v.W, ov = ROOF.ov, { eEdge, thV, ridgeTop } = roofGeo(v), SF = s.fill || null;'),
