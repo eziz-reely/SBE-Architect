@@ -548,6 +548,35 @@ class H(BaseHTTPRequestHandler):
                     nm = f"{stem}_{time.strftime('%Y-%m-%d_%H%M')}{ext}"; fp = os.path.join(ed, nm)
                 open(fp, 'wb').write(data)
                 return self.send(200, {'ok': True, 'name': nm})
+            if p.startswith('/api/archicad/'):   # ArchiCAD (Tapir) skripts no pašreizējā modeļa; body = model.json no redaktora
+                d = path_for(p[14:]); b = self.body()
+                if not d or not isinstance(b, dict) or 'W' not in b:
+                    return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
+                try:
+                    import archicad
+                    txt, nm = archicad.script(b)
+                    notes = archicad.data_of(b)['piezimes']
+                except Exception as e:
+                    return self.send(500, 'ArchiCAD skriptu neizdevās uzģenerēt: ' + str(e), 'text/plain; charset=utf-8')
+                ed = os.path.join(d, 'eksports'); os.makedirs(ed, exist_ok=True)
+                stem, ext = os.path.splitext(nm); fp = os.path.join(ed, nm)
+                if os.path.exists(fp):
+                    nm = f"{stem}_{time.strftime('%Y-%m-%d_%H%M')}{ext}"; fp = os.path.join(ed, nm)
+                open(fp, 'w', encoding='utf-8', newline='\n').write(txt)
+                return self.send(200, {'ok': True, 'name': nm, 'path': fp, 'notes': notes})
+            if p.startswith('/api/archicad-claude/'):   # rezerve: skripta rakstīšanu nodod Claude (saglabā modeli, atgriež uzdevuma tekstu)
+                d = path_for(p[21:]); b = self.body()
+                if not d:
+                    return self.send(404, 'Projekts nav atrasts', 'text/plain; charset=utf-8')
+                if isinstance(b, dict) and 'W' in b:
+                    with LOCK:
+                        mp0 = os.path.join(d, 'model.json'); json.dump(b, open(mp0 + '.tmp', 'w', encoding='utf-8'), ensure_ascii=False, indent=1); os.replace(mp0 + '.tmp', mp0)
+                mp = os.path.join(d, 'model.json')
+                prompt = (f'Uzraksti ArchiCAD (Tapir) skriptu šim SBE projektam: {mp}\n'
+                          'Atsauces: bot/archicad.py (ģenerators no model.json), systems-by-eziz: sbe/archicad_model.py un sbe/tapir.py (esošā Tapir loģika, favorīti L01-L12 un pīrāgu favorīti). '
+                          'Skriptam jābūt vienam .py failam (dati iekšā), ko palaiž ArchiCAD: Tapir > Run script. Pārbaudi ar --dry. '
+                          'Neko repo nemaini, nekomitē un nepushā, kamēr lietotājs nepasaka.')
+                return self.send(200, {'ok': True, 'prompt': prompt, 'chat': load_cfg().get('claude_url') or CLAUDE_URL})
             if p.startswith('/api/thumb/') or p.startswith('/api/viz/'):
                 isT = p.startswith('/api/thumb/'); d = path_for(p[11 if isT else 9:])
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
