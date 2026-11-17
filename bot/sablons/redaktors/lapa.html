@@ -1042,7 +1042,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   let pst = null, pamInfo = null, pamMode = null;   // pamMode: paliekošs pamatu plāna rīks (kontūra, stabs), ko jaunais rāmis turpina   // pamatu plāns: izvēlētais stabs, izkārtojuma dati no lapas
 
   // ---- the same model block build_model.py writes, plus a map from each furniture entry to its drawn shapes ----
-  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "noLeaf", "decor", "entryInChain", "porch", "terraces", "axOff", "posts", "freeWalls", "wallCuts", "wallPad"];
+  const KEYS = ["level", "W", "D", "rooms", "doors", "windows", "axes", "stampAt", "stampScale", "levelAt", "innerDims", "userDims", "wallTags", "sections", "gableWins", "ceiling", "ceilingNote", "planNotes", "winOk", "noLeaf", "decor", "entryInChain", "porch", "terraces", "axOff", "posts", "freeWalls", "apbuve", "dimOff", "wallCuts", "wallPad"];
   const call = f => f[0] === "_rot"
     ? `{ const i0 = F.length; ${call(f[4])} for (let i = i0; i < F.length; i++) F[i].tr = "rotate(${f[1]} ${f[2]} ${f[3]})" + (F[i].tr ? " " + F[i].tr : ""); }`
     : `${f[0]}(${f.slice(1).map(a => JSON.stringify(a)).join(", ")});`;
@@ -2252,6 +2252,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Zīmēt apbūves laukumu"; b1.onclick = () => { const b = OPENB[22]; if (b) b.click(); railSync(); };
         row.append(t, b1, bA);
         if (L.length) { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Dzēst"; b2.onclick = () => { const N = clone(model); delete N.apbuve; commit(N); }; row.appendChild(b2); }
+        if ((model.dimOff || []).length) { const b3 = document.createElement("button"); b3.type = "button"; b3.textContent = "Atjaunot mēru ķēdes (" + model.dimOff.length + ")"; b3.title = "Dzēšgumija nodzēš plāna mēru ķēdi ar klikšķi uz tās; šeit tās var atjaunot"; b3.onclick = () => { const N = clone(model); delete N.dimOff; commit(N); }; row.appendChild(b3); }
         gs.appendChild(row);
       }
       gs.appendChild(field("Jumta slīpums, °", J.pitch || 30, (n, v) => { n.jumts = n.jumts || {}; n.jumts.pitch = Math.max(10, Math.min(55, Math.round(v))); roofFix(n); }));

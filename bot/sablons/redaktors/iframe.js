@@ -1614,6 +1614,10 @@
     if (place && place.t === "erase") {
       const gi = guideHit(e.clientX, e.clientY);
       if (gi >= 0) { const N = clone(M); N.projekts.guides.splice(gi, 1); post({ t: "edit", model: N, sel: null }); return true; }
+      { // plāna ārējā mēru ķēde: klikšķis uz ķēdes joslas to nodzēš (model.dimOff), pārējās ķēdes pieliecas tuvāk mājai
+        let dk = null, da = Infinity; document.querySelectorAll("g[data-dimrow]").forEach(g => { const r = g.getBoundingClientRect(), m = 4; if (e.clientX >= r.left - m && e.clientX <= r.right + m && e.clientY >= r.top - m && e.clientY <= r.bottom + m && r.width * r.height < da) { da = r.width * r.height; dk = g.getAttribute("data-dimrow"); } });
+        if (dk) { const N = clone(M); N.dimOff = (N.dimOff || []).filter(k => k !== dk).concat([dk]); post({ t: "edit", model: N, sel: null }); post({ t: "hint", text: "Mēru ķēde nodzēsta, atlikušās pieliecas tuvāk mājai. Atjaunot var mājas iestatījumos." }); return true; }
+      }
       const h = hit(e.clientX, e.clientY); if (!h) return true;
       if (h.wall) {
         if (!hovWall || h.it.w.ext) { post({ t: "hint", text: "Ārsienu dzēst nevar. Starpsienu dzēs ar klikšķi uz tās." }); return true; }

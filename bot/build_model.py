@@ -24,7 +24,7 @@ RAL = {'RAL 7016': '#383E42', 'RAL 7024': '#474A50', 'RAL 7021': '#2F3234', 'RAL
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'userDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts', 'freeWalls', 'apbuve', 'wallCuts', 'wallPad']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts', 'freeWalls', 'apbuve', 'dimOff', 'wallCuts', 'wallPad']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
@@ -650,6 +650,28 @@ def build(model_path, langs=None):
     assert a_ in cad, 'cad.js: nav atrasta apbūves tabula'
     cad = cad.replace(a_, 'FL.forEach((e, i) => { cell(c2 / 2, y + (2 + i) * RH, e.n, { a: "middle" }); cell(WX - 2, y + (2 + i) * RH, m2(e.a), { a: "end" }); ln(0, y + (3 + i) * RH, WX, y + (3 + i) * RH); });\n    cell(c2 - 2, y + (2 + FL.length) * RH, "Kopā:", { a: "end" }); cell(WX - 2, y + (2 + FL.length) * RH, m2(footA(v)), { a: "end" });', 1)
     cad = cad.replace('function cadPlan(', FOOT + 'function cadPlan(', 1)
+    # [MM] plāna ārējās mēru ķēdes: katrai rindai atslēga "puse:veids" (o atveres, w sienas, a asis, t kopējais); izdzēstās (v.dimOff) izlaiž, pārējās salīdzina vienādos attālumos
+    old = cad[cad.index('  const side = (open, wall, ax, dir, sgn, base) => {'):cad.index('  side([0, v.W, ...wins(w => w.o === "h" && winSide(v, w) === "north"')]
+    new = ('''  const side = (open, wall, ax, dir, sgn, base, sid) => {
+    const rows = [open], kinds = ["o"], uniq = p => [...new Set(p.map(Math.round))];
+    const wl = uniq([...wall, ...(ax ? [Math.min(...ax), Math.max(...ax)] : [])]);
+    if (wl.length > 2) { rows.push(wl); kinds.push("w"); }
+    if (ax) { if (ax.length > 2) { rows.push(ax); kinds.push("a"); } rows.push([Math.min(...ax), Math.max(...ax)]); kinds.push("t"); }
+    else if (wl.length > 2) { rows.push([Math.min(...wl), Math.max(...wl)]); kinds.push("t"); }
+    else rows[0] = [...open, ...wl];
+    if (rows.length > 1 && uniq(open).length <= 2) { rows.shift(); kinds.shift(); }   // atveru ķēde bez atverēm = tas pats kopējais izmērs, nedublē
+    const HID = v.dimOff || []; let vi = 0;
+    rows.forEach((p, i) => { const key = sid + ":" + kinds[i]; if (HID.includes(key)) return; const gg = el("g", { "data-dimrow": key }, dg); chainCad(gg, p, dir, base + sgn * (650 + 600 * vi++)); });
+  };
+''')
+    cad = cad.replace(old, new, 1)
+    _ids = iter("newse"[:4]); _sl = []
+    for ln_ in cad.split('\n'):
+        if ln_.startswith('  side([') and ln_.endswith(');'):
+            ln_ = ln_[:-2] + ', "' + next(_ids) + '");'
+        _sl.append(ln_)
+    cad = '\n'.join(_sl)
+    assert cad.count(', "s");') >= 1, 'cad.js: ķēžu izsaukumi bez atslēgām'
     # [MM] fasādes: zem būvasu mēru ķēdes kopējais būvasu izmērs (ja asu ir vairāk nekā divas)
     a_ = '    if (ax.length > 1) chainCad(AG, axU, "x", 1000, 0, true);'
     assert a_ in cad, 'cad.js: nav atrasta fasādes asu ķēde'
