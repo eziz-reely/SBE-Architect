@@ -630,6 +630,13 @@ def build(model_path, langs=None):
     a_ = 'const yy = twoCols ? 7 + (i % 3) * 11 : 6 + i * 11, xx = twoCols ? Math.floor(i / 3) * 78 : 0;'
     assert a_ in ar, 'SBE ar.js: materials rindas'
     ar = ar.replace(a_, 'const RR = typeof twoCols === "number" ? twoCols : 3, yy = twoCols ? 7 + (i % RR) * 11 : 6 + i * 11, xx = twoCols ? Math.floor(i / RR) * 78 : 0;', 1)
+    # [MM] AR fasāžu lapa: materiālu leģenda tā pati, kas Skicē (mmMatList: projekta toņi, cokols, logi, redaktora spaiņa toņi), nevis fiksētais saraksts
+    a_ = '      materials(svg, 30, 196, false);'
+    assert a_ in ar, 'SBE ar.js: fasāžu materiāli'
+    ar = ar.replace(a_, '      { const keep_ = ARC.materials; let n_ = 0; try { ARC.materials = mmMatList("lv"); n_ = ARC.materials.length; } catch (e) { ARC.materials = keep_; }\n        window.AR_MATC = n_ > 8 ? 2 : 1; materials(svg, 30, 196, n_ > 8 ? Math.ceil(n_ / 2) : false); ARC.materials = keep_; }', 1)
+    a_ = '      notesBlock(svg, 118, 196, 100, [...arNotes([]).slice(0, 2), "Fasāžu materiālu krāsu toņus'
+    assert a_ in ar, 'SBE ar.js: fasāžu piezīmes'
+    ar = ar.replace(a_, '      notesBlock(svg, window.AR_MATC > 1 ? 196 : 118, 196, window.AR_MATC > 1 ? 80 : 100, [...arNotes([]).slice(0, 2), "Fasāžu materiālu krāsu toņus', 1)
     # [MM] piezīmju bloks: notes_off piezīmes netiek zīmētas, katra piezīme ir grupa ar data-note
     a_ = '  notes.forEach((t, i) => {\n    const lines = wrap(t, Math.floor(w / 1.18));\n    T_(g, 0, yy, `${i + 1}.`, { fs: 2.4, fill: "#333" });\n    lines.forEach((l, j) => T_(g, 5, yy + j * 3.6, l, { fs: 2.4, fill: "#333" }));'
     assert a_ in ar, 'SBE ar.js: nav atrasts notesBlock'
