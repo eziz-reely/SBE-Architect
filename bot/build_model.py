@@ -24,7 +24,7 @@ RAL = {'RAL 7016': '#383E42', 'RAL 7024': '#474A50', 'RAL 7021': '#2F3234', 'RAL
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'userDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts', 'freeWalls', 'wallCuts', 'wallPad']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts', 'freeWalls', 'apbuve', 'wallCuts', 'wallPad']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
@@ -635,7 +635,21 @@ def build(model_path, langs=None):
     cad = _ov_per_edge(cad)
     cad = _mm_extra(cad)
     cad = cad.replace('/*AR*/', ar + '\n' + sheet, 1)
-    cad = cad.replace('polyArea(v.poly)', 'polyArea(v.apbuve || v.poly)')   # [MM] apbūves laukums: redaktorā uzzīmētais kontūrs (model.apbuve), citādi mājas kontūra
+    # [MM] apbūves laukums: redaktorā uzzīmētie kontūri (model.apbuve = [{n, poly}], vecais formāts = viens poligons), citādi mājas kontūra
+    FOOT = ('function footList(v) {\n  let a = v.apbuve;\n  if (a && a.length && typeof a[0][0] === "number") a = [{ n: "Dzīvojamā māja", poly: a }];\n'
+            '  const L = (a || []).filter(e => e && e.poly && e.poly.length > 2).map(e => ({ n: e.n || "Apbūve", a: polyArea(e.poly) }));\n'
+            '  return L.length ? L : [{ n: "Dzīvojamā māja", a: polyArea(v.poly) }];\n}\n'
+            'function footA(v) { return footList(v).reduce((s, e) => s + e.a, 0); }\n')
+    cad = cad.replace('polyArea(v.poly)', 'footA(v)')
+    for a_, b_ in [('    box(y, 4);\n', '    const FL = footList(v);\n    box(y, 3 + FL.length);\n'),
+                   ('    ln(c2, y + RH, c2, y + 4 * RH);\n', '    ln(c2, y + RH, c2, y + (3 + FL.length) * RH);\n'),
+                   ('    y = 4 * RH + 8;\n', '    y = (3 + FL.length) * RH + 8;\n')]:
+        assert a_ in cad, 'cad.js: nav atrasts ' + a_[:30]
+        cad = cad.replace(a_, b_, 1)
+    a_ = 'cell(c2 / 2, y + 2 * RH, "Dzīvojamā māja", { a: "middle" }); cell(WX - 2, y + 2 * RH, m2(footA(v)), { a: "end" }); ln(0, y + 3 * RH, WX, y + 3 * RH);\n    cell(c2 - 2, y + 3 * RH, "Kopā:", { a: "end" }); cell(WX - 2, y + 3 * RH, m2(footA(v)), { a: "end" });'
+    assert a_ in cad, 'cad.js: nav atrasta apbūves tabula'
+    cad = cad.replace(a_, 'FL.forEach((e, i) => { cell(c2 / 2, y + (2 + i) * RH, e.n, { a: "middle" }); cell(WX - 2, y + (2 + i) * RH, m2(e.a), { a: "end" }); ln(0, y + (3 + i) * RH, WX, y + (3 + i) * RH); });\n    cell(c2 - 2, y + (2 + FL.length) * RH, "Kopā:", { a: "end" }); cell(WX - 2, y + (2 + FL.length) * RH, m2(footA(v)), { a: "end" });', 1)
+    cad = cad.replace('function cadPlan(', FOOT + 'function cadPlan(', 1)
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
     import re

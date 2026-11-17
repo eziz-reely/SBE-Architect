@@ -3097,7 +3097,7 @@
         }
         if (P.t === "apbuve") {   // apbūves laukums: tikai skaitlis eksplikācijā (model.apbuve), māja netiek pārbūvēta
           if (bl.lv !== "main") return { miss: "Apbūves laukumu zīmē 1. stāva plānā." };
-          const fin = c => { P.pts = []; P.p0 = null; if (Math.abs(c.reduce((a_, q, i) => a_ + q[0] * c[(i + 1) % c.length][1] - c[(i + 1) % c.length][0] * q[1], 0)) / 2 < 1e6) return { miss: "Apbūves laukums par mazu (vismaz 1 m²)." }; N.apbuve = c.map(q => [Math.round(q[0]), Math.round(q[1])]); return { N, sel: null }; };
+          const fin = c => { P.pts = []; P.p0 = null; if (Math.abs(c.reduce((a_, q, i) => a_ + q[0] * c[(i + 1) % c.length][1] - c[(i + 1) % c.length][0] * q[1], 0)) / 2 < 1e6) return { miss: "Apbūves laukums par mazu (vismaz 1 m²)." }; N.apbuve_wait = c.map(q => [Math.round(q[0]), Math.round(q[1])]); return { N, sel: null }; };   // lapa.html pajautā: aizstāt vai pievienot eksplikācijā
           if (P.mode === "rect") {
             const q = [Math.round(snapAx("main", "x", p[0], 200)), Math.round(snapAx("main", "y", p[1], 200))];
             if (!P.p0) { P.p0 = q; return { pending: "Uzklikšķini apbūves laukuma pretējo stūri." }; }

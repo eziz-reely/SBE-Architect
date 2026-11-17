@@ -1731,16 +1731,31 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     document.querySelectorAll("#rail button[data-id]").forEach(b => b.classList.toggle("on", b.dataset.id === id));
     syncBar();
   }
+  const apbArea = p => p && p.length > 2 ? Math.abs(p.reduce((s_, q, i) => s_ + q[0] * p[(i + 1) % p.length][1] - p[(i + 1) % p.length][0] * q[1], 0)) / 2e6 : 0;
+  const apbFmt = x => x.toFixed(2).replace(".", ",") + " m²";
+  const apbList = m => { const a = m.apbuve; if (a && a.length && typeof a[0][0] === "number") return [{ n: "Dzīvojamā māja", poly: a }]; return (a || []).filter(e => e && e.poly && e.poly.length > 2); };   // vecais formāts = viens poligons
+  function apbApply(mode, name) {   // mode: "replace" | "add" | "cancel"
+    const N = clone(model), w = N.apbuve_wait; delete N.apbuve_wait;
+    if (w && mode !== "cancel") { const e = { n: (name || "").trim() || (mode === "replace" ? "Dzīvojamā māja" : "Terase"), poly: w }; N.apbuve = mode === "replace" ? [e] : apbList(N).concat([e]); }
+    commit(N);
+  }
   function toolOpt() {
     const box = $("toolOpt"); if (!box) return;
-    const on = !!(placing && placing.t === "apbuve"); box.hidden = !on; if (!on) { box.textContent = ""; return; }
-    box.textContent = ""; const t = document.createElement("span"); t.className = "tn"; t.textContent = "Apbūves laukums"; box.appendChild(t);
+    const wait = model.apbuve_wait, on = !!(placing && placing.t === "apbuve"); box.hidden = !(on || wait); box.textContent = "";
+    if (!(on || wait)) return;
+    const mk = (tag, txt, cls) => { const e = document.createElement(tag); if (txt) e.textContent = txt; if (cls) e.className = cls; return e; };
+    if (wait) {   // kontūrs noslēgts: jājautā, vai aizstāt eksplikācijā
+      box.appendChild(mk("span", "Kontūrs " + apbFmt(apbArea(wait)), "tn")); const inp = document.createElement("input"); inp.type = "text"; inp.placeholder = "Nosaukums eksplikācijā"; inp.value = apbList(model).length ? "Terase" : "Dzīvojamā māja"; inp.style.cssText = "height:32px;border:1px solid #cfd3d8;border-radius:6px;padding:0 8px;width:170px"; box.appendChild(inp);
+      [["Aizstāt eksplikācijā", "replace", "Eksplikācijā paliek tikai šis kontūrs"], ["Pievienot eksplikācijai", "add", "Šis kontūrs kļūst par vēl vienu rindu, kopā tiek saskaitīts"], ["Atcelt", "cancel", "Neko nemainīt"]].forEach(([t, m, tt]) => { const b = mk("button", t); b.type = "button"; b.title = tt; b.style.cssText = "width:auto;padding:0 10px"; b.onclick = () => apbApply(m, inp.value); box.appendChild(b); });
+      return;
+    }
+    box.appendChild(mk("span", "Apbūves laukums", "tn"));
     [["rect", "apbR", "Taisnstūris: divi klikšķi pretējos stūros"], ["poly", "apbP", "Poligons: klikšķi stūros, klikšķis pirmajā punktā noslēdz"]].forEach(([m, ic, tt]) => {
       const b = document.createElement("button"); b.type = "button"; b.title = tt; b.setAttribute("aria-label", tt); b.className = placing.mode === m ? "on" : ""; b.innerHTML = icon(ic);
       b.onclick = () => { placing.mode = m; placing.p0 = null; placing.pts = []; toFrame({ mmPlace: placing }); toolOpt(); }; box.appendChild(b); });
-    const a = document.createElement("span"); a.className = "ta"; const ap = model.apbuve; a.textContent = ap && ap.length > 2 ? "Pašreizējais: " + (Math.abs(ap.reduce((s_, q, i) => s_ + q[0] * ap[(i + 1) % ap.length][1] - ap[(i + 1) % ap.length][0] * q[1], 0)) / 2e6).toFixed(2).replace(".", ",") + " m²" : "Nav uzzīmēts, eksplikācijā ir mājas kontūra";
-    box.appendChild(a);
-    if (ap) { const d = document.createElement("button"); d.type = "button"; d.style.width = "auto"; d.style.padding = "0 10px"; d.textContent = "Dzēst"; d.title = "Atgriezt apbūves laukumu pēc mājas kontūras"; d.onclick = () => { const N = clone(model); delete N.apbuve; commit(N); }; box.appendChild(d); }
+    const L = apbList(model), tot = L.reduce((s_, e) => s_ + apbArea(e.poly), 0);
+    box.appendChild(mk("span", L.length ? "Eksplikācijā: " + L.map(e => e.n + " " + apbFmt(apbArea(e.poly))).join(" · ") + (L.length > 1 ? " · kopā " + apbFmt(tot) : "") : "Nav uzzīmēts, eksplikācijā ir mājas kontūra", "ta"));
+    if (L.length) { const d = mk("button", "Dzēst visus"); d.type = "button"; d.style.cssText = "width:auto;padding:0 10px"; d.title = "Atgriezt apbūves laukumu pēc mājas kontūras"; d.onclick = () => { const N = clone(model); delete N.apbuve; commit(N); }; box.appendChild(d); }
   }
   function syncBar() {
     try { toolOpt(); } catch (_) {}
@@ -2217,14 +2232,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         if (model.loft) { const sm = document.createElement("small"); sm.textContent = `Virs griestiem mansarda panelis ${PANEL} mm. 2. stāva logi nav zemāk par ${gwBase(model)} mm.`; cf.appendChild(sm); }
         gs.appendChild(cf);
       }
-      { // apbūves laukums: kontūras laukums (poly vai uzzīmētais) manuālai pārbaudei + rīks jaunam kontūram
-        const pa = p => p && p.length > 2 ? Math.abs(p.reduce((s_, q, i) => s_ + q[0] * p[(i + 1) % p.length][1] - p[(i + 1) % p.length][0] * q[1], 0)) / 2e6 : 0, f2 = x => x.toFixed(2).replace(".", ",");
-        const auto = pa(model.poly && model.poly.length > 2 ? model.poly : [[0, 0], [model.W, 0], [model.W, model.D], [0, model.D]]), man = pa(model.apbuve);
+      { // apbūves laukums: kontūra laukums (poly vai uzzīmētie) manuālai pārbaudei + rīks jauniem kontūriem
+        const auto = apbArea(model.poly && model.poly.length > 2 ? model.poly : [[0, 0], [model.W, 0], [model.W, model.D], [0, model.D]]), L = apbList(model), tot = L.reduce((s_, e) => s_ + apbArea(e.poly), 0);
         const row = document.createElement("div"); row.className = "full"; row.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0";
-        const t = document.createElement("span"); t.style.cssText = "font-size:12px"; t.innerHTML = "<b>Apbūves laukums:</b> " + (man ? f2(man) + " m² (uzzīmēts)" : f2(auto) + " m² (pēc mājas kontūras)") + (man ? " · kontūra: " + f2(auto) + " m²" : "");
-        const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = man ? "Zīmēt no jauna" : "Zīmēt apbūves laukumu"; b1.onclick = () => { const b = OPENB[22]; if (b) b.click(); railSync(); };
+        const t = document.createElement("span"); t.style.cssText = "font-size:12px"; t.innerHTML = "<b>Apbūves laukums:</b> " + (L.length ? apbFmt(tot) + " (uzzīmēts: " + L.map(e => e.n + " " + apbFmt(apbArea(e.poly))).join(", ") + ") · mājas kontūra: " + apbFmt(auto) : apbFmt(auto) + " (pēc mājas kontūras)");
+        const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Zīmēt apbūves laukumu"; b1.onclick = () => { const b = OPENB[22]; if (b) b.click(); railSync(); };
         row.append(t, b1);
-        if (man) { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Dzēst"; b2.onclick = () => { const N = clone(model); delete N.apbuve; commit(N); }; row.appendChild(b2); }
+        if (L.length) { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Dzēst"; b2.onclick = () => { const N = clone(model); delete N.apbuve; commit(N); }; row.appendChild(b2); }
         gs.appendChild(row);
       }
       gs.appendChild(field("Jumta slīpums, °", J.pitch || 30, (n, v) => { n.jumts = n.jumts || {}; n.jumts.pitch = Math.max(10, Math.min(55, Math.round(v))); roofFix(n); }));
