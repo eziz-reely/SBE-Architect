@@ -737,7 +737,7 @@ class H(BaseHTTPRequestHandler):
                 res = []
                 with LOCK:
                     for m in new:
-                        vid = var_next(d); var_save(d, vid, m); res.append({'id': vid, 'model': m})
+                        vid = var_next(d); m['planLabel'] = 'Variants %d' % int(vid[1:]); var_save(d, vid, m); res.append({'id': vid, 'model': m})
                 return self.send(200, {'variants': res, 'total': len(have) + len(res), 'why': why[:6]})
             if p.startswith('/api/variant-del/'):
                 d = path_for(p[17:]); vid = re.sub(r'[^A-Za-z0-9_-]', '', str(b.get('id') or ''))

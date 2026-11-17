@@ -842,6 +842,9 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
 #vars .vh button.x { width: 26px; padding: 0; font-size: 16px; line-height: 1; }
 #vars .vb { position: relative; overflow: hidden; background: #fff; cursor: pointer; }
 #stage #vars .vb iframe { position: absolute !important; left: 0 !important; top: 0 !important; border: 0; background: #fff; transform-origin: 0 0; pointer-events: none; width: 1600px !important; height: 1600px !important; }
+.vtoast { position: fixed; top: 58px; right: 20px; max-width: 420px; z-index: 50; padding: 10px 14px; border-radius: 6px; background: #1f2328; color: #fff; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.3); }
+.vtoast.err { background: #b42318; }
+#vars .vcur { position: sticky; top: -10px; z-index: 2; margin: -10px -10px 10px; padding: 9px 12px; background: #2266d8; color: #fff; font-size: 13px; font-weight: 600; }
 #vars .vn { margin: 0 0 10px; font-size: 12px; color: var(--muted, #6b7178); }
 </style>
 <script>try { const t = localStorage.getItem("mmTheme"); if (t === "light" || t === "dark") document.documentElement.dataset.theme = t; } catch (_) {}</script>
@@ -1446,7 +1449,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       } }
     { const ft = document.createElement("div"); ft.className = "rfoot"; const ca = document.createElement("button"); ca.type = "button"; ca.textContent = "Atcelt"; ca.title = "Atcelt izmaiņas, kas veiktas šajā panelī"; ca.onclick = ribCancel; const sv = document.createElement("button"); sv.type = "button"; sv.className = "sv"; sv.textContent = "Saglabāt noformējumu"; sv.onclick = () => ribToggle(false); ft.append(ca, sv); R.appendChild(ft); }
   }
-  function buttons() { ribbon(); try { matsPane(); } catch (e) { console.error("matsPane", e.message); } try { topSync(); } catch (e) {} gClrSync(); $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
+  function buttons() { try { varHead(); } catch (e) { console.error("varHead", e.message); } ribbon(); try { matsPane(); } catch (e) { console.error("matsPane", e.message); } try { topSync(); } catch (e) {} gClrSync(); $("bUndo").disabled = !undo.length; $("bRedo").disabled = !redo.length; const nm = (() => { const P = model.projekts || {}; return "modela_nosaukums" in P ? P.modela_nosaukums : (model.nosaukums || ""); })(); $("hName").textContent = nm || "Bez nosaukuma"; const A = (model.projekts || {}).ar; $("hTag").textContent = A && A.on ? `AR projekts · ${AR_ALL.length - (A.off || []).length} lapas` : "Skices labošana"; }
   $("bRib").onclick = e => { e.stopPropagation(); ribToggle(!ribOpen); };
   $("bUndo").onclick = doUndo; $("bRedo").onclick = doRedo;
   { // [UI2] krāsu režīms: Auto (kā sistēmā) → Gaišs → Tumšs; izvēli atceras šajā pārlūkā
@@ -4121,6 +4124,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   // ---- plānojuma varianti: tā pati māja, cits telpu izkārtojums; saglabājas projekta mapē varianti/ ----
   const VK = () => (window.MM_LOCAL || {}).key;
   let VARS = [], varBusy = false;
+  const planLbl = m => (m && m.planLabel) || "Sākotnējais";
+  const varNo = v => { const n = /(\d+)/.exec(planLbl(v.model)); return n ? +n[1] : 0; };
+  function varHead() {
+    const t = $("hTag"); if (!t) return; const on = VARS.length > 0 || (model && model.planLabel);
+    t.textContent = on ? "Skices labošana · plānojums: " + planLbl(model) : "Skices labošana";
+    const b = document.querySelector("#vars .vcur"); if (b) b.textContent = "Šobrīd galvenais: " + planLbl(model);
+  }
   const varTxt = async r => { if (!r.ok) throw new Error((await r.text()) || r.status); return r.json(); };
   const varPost = (u, b) => fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }).then(varTxt);
   function varFit(fr, wrap) {
@@ -4136,14 +4146,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const H = $("vars"); H.textContent = "";
     $("stage").classList.toggle("hasv", VARS.length > 0);
     if (!VARS.length) return;
-    const n = document.createElement("p"); n.className = "vn"; n.textContent = "Plānojuma varianti: " + VARS.length + ". Klikšķis uz lapas vai „Galvenais” to padara par galveno (līdzšinējais galvenais paliek šeit).";
+    VARS.sort((a, b) => varNo(a) - varNo(b));
+    const cb = document.createElement("div"); cb.className = "vcur"; cb.textContent = "Šobrīd galvenais: " + planLbl(model); H.appendChild(cb);
+    const n = document.createElement("p"); n.className = "vn"; n.textContent = "Citi plānojumi: " + VARS.length + ". Klikšķis uz lapas vai „Galvenais” to padara par galveno (līdzšinējais galvenais paliek šeit ar savu nosaukumu).";
     H.appendChild(n);
     VARS.forEach((v, i) => {
       const c = document.createElement("div"); c.className = "vc";
       const pm = v.model._planner || {}, h = document.createElement("div"); h.className = "vh";
-      const t = document.createElement("b"); t.textContent = v.id + (pm.forma ? " · " + pm.forma : "") + (pm.tips ? " · " + pm.tips : ""); t.title = t.textContent;
+      const t = document.createElement("b"); t.textContent = planLbl(v.model); t.title = planLbl(v.model) + (pm.forma ? " · " + pm.forma : "") + (pm.tips ? " · " + pm.tips : "");
       const mb = document.createElement("button"); mb.type = "button"; mb.textContent = "Galvenais"; mb.title = "Padarīt par galveno plānojumu"; mb.onclick = () => varMain(v);
-      const xb = document.createElement("button"); xb.type = "button"; xb.className = "x"; xb.textContent = "×"; xb.title = "Aizvērt šo variantu"; xb.setAttribute("aria-label", "Aizvērt variantu " + v.id);
+      const xb = document.createElement("button"); xb.type = "button"; xb.className = "x"; xb.textContent = "×"; xb.title = "Aizvērt šo variantu"; xb.setAttribute("aria-label", "Aizvērt: " + planLbl(v.model));
       xb.onclick = async () => { try { await varPost("/api/variant-del/" + VK(), { id: v.id }); VARS = VARS.filter(q => q !== v); varsRender(); } catch (e) { status("Variantu neizdevās aizvērt: " + e.message); } };
       h.append(t, mb, xb);
       const w = document.createElement("div"); w.className = "vb"; w.style.height = "200px"; w.onclick = () => varMain(v);
@@ -4153,27 +4165,31 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       setTimeout(() => { try { const m = clone(v.model); delete m._planner; fr.srcdoc = sheetHtml(m, false); } catch (e) { console.error("variants", e); } }, 60 + i * 250);
     });
   }
+  function varNote(t, err) {
+    status(t); let n = $("vtoast"); if (!n) { n = document.createElement("div"); n.id = "vtoast"; n.className = "vtoast"; n.setAttribute("role", "status"); document.body.appendChild(n); }
+    n.textContent = t; n.classList.toggle("err", !!err); n.hidden = false; clearTimeout(n._t); n._t = setTimeout(() => { n.hidden = true; }, 9000);
+  }
   async function varsLoad() {
     if (!VK()) return;
     $("bRepl").hidden = false;
-    try { VARS = (await fetch("/api/variants/" + VK()).then(varTxt)).variants || []; varsRender(); } catch (e) { console.warn("varianti", e); }
+    try { VARS = (await fetch("/api/variants/" + VK()).then(varTxt)).variants || []; varsRender(); varHead(); } catch (e) { console.warn("varianti", e); }
   }
   async function varMain(v) {
     try {
-      const old = clone(model); delete old._planner;
+      const old = clone(model); delete old._planner; old.planLabel = planLbl(model);
       await varPost("/api/variant-swap/" + VK(), { id: v.id, model: old });
       const nm = clone(v.model); delete nm._planner;
-      v.model = old; sel = null; commit(nm); varsRender();
-      status("Variants " + v.id + " ir galvenais plānojums. Nospied „Saglabāt”; līdzšinējais galvenais ir pieejams sarakstā pa labi.");
+      v.model = old; sel = null; commit(nm); varsRender(); varHead();
+      varNote("Galvenais plānojums tagad: " + planLbl(nm) + ". Nospied „Saglabāt”. Iepriekšējais (" + planLbl(old) + ") ir sarakstā pa labi.");
     } catch (e) { status("Neizdevās nomainīt: " + e.message); }
   }
   $("bRepl").onclick = async () => {
-    if (varBusy) return; varBusy = true; const b = $("bRepl"); b.disabled = true; status("Plānotājs veido jaunus plānojumus…");
+    if (varBusy) return; varBusy = true; const b = $("bRepl"); b.disabled = true; varNote("Plānotājs veido jaunus plānojumus…");
     try {
       const j = await varPost("/api/replan/" + VK(), { model, skip: VARS.length });
-      if (!j.variants.length) status("Citu plānojumu šiem gabarītiem plānotājs neatrada" + (VARS.length ? " (esošie ir pa labi)." : "."));
-      else { VARS = VARS.concat(j.variants); varsRender(); status("Pievienoti " + j.variants.length + " jauni plānojumi pa labi no skices."); }
-    } catch (e) { status("Plānojumus neizdevās izveidot: " + e.message); }
+      if (!j.variants.length) varNote("Citu plānojumu šiem gabarītiem plānotājs neatrada" + (VARS.length ? " (esošie ir pa labi)." : ".") + (j.why && j.why.length ? " Iemesls: " + j.why[0] : ""));
+      else { VARS = VARS.concat(j.variants); varsRender(); varHead(); varNote("Pievienoti " + j.variants.length + " jauni plānojumi pa labi no skices."); }
+    } catch (e) { varNote("Plānojumus neizdevās izveidot: " + (e.message || e) + " (pārstartē programmu, ja tā nav atjaunināta).", true); }
     b.disabled = false; varBusy = false;
   };
   varsLoad();
