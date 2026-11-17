@@ -2237,6 +2237,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       gs.appendChild(field("Garums, mm", model.W, (n, v) => { toFrame({ mmSize: { W: Math.round(v), D: model.D } }); throw "async"; }));
       gs.appendChild(field("Platums, mm", model.D, (n, v) => { toFrame({ mmSize: { W: model.W, D: Math.round(v) } }); throw "async"; }));
       gs.appendChild(field("Kores augstums, mm", I.augstums || 0, (n, v) => { n.ievade = n.ievade || {}; n.ievade.augstums = Math.max(3000, Math.min(9000, Math.round(v))); roofFix(n); }));
+      if (!monoNums(model)) gs.appendChild(field("Ārsienu augstums (dzega), mm", J.eave || 0, (n, v) => {   // sienu augstums zem jumta (tur, kur nav frontona); jumts nolaižas vai paceļas līdzi, slīpums paliek
+        const pt = +(n.jumts || {}).pitch || 30, plat = ((n.projekts || {}).pamati || "stabveida") === "platne", ev = Math.max(2000, Math.min(5000, Math.round(v)));
+        n.ievade = n.ievade || {}; n.ievade.augstums = Math.max(3000, Math.min(9000, Math.round(ev + ROOF_T / Math.cos(pt * Math.PI / 180) + n.D / 2 * Math.tan(pt * Math.PI / 180) + (plat ? 0 : FLOOR_T)))); roofFix(n); n.jumts.eave = ev; }));
       if (model.ceiling) {   // griestu augstums: ar mansardu pārbīda arī 2. stāva paneli un logus
         const cf = field("Griestu augstums, mm", model.ceiling, (n, v) => {
           v = Math.max(2100, Math.min(model.loft ? 3000 : 3500, Math.round(v / 10) * 10));
