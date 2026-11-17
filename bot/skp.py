@@ -144,7 +144,7 @@ def build(m):
                 M.box('sturi', cx, cy, -FT, cx + s, cy + s, eave)
 
     # iekšsienas = iekšējais laukums − telpas
-    rooms = [tuple(r) for rm in m['rooms'] for r in rm['r']]
+    rooms = [tuple(r[:4]) for rm in m['rooms'] for r in rm['r']]   # r[4:] = sienu pielaides
     xs = sorted({T, W - T, *[r[0] for r in rooms], *[r[0] + r[2] for r in rooms]})
     ys = sorted({T, D - T, *[r[1] for r in rooms], *[r[1] + r[3] for r in rooms]})
     cells = []

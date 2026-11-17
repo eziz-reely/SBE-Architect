@@ -5,6 +5,7 @@
 Izvade: <id>_archicad.py: viens Python skripts ar project.json iekšā, kas palaiž SBE dzinēju (SBE-ARHITEKTS: python -m sbe archicad).
 ArchiCAD: atver SBE_skice.tpl, Tapir > Run script > <id>_archicad.py. Favorīti un layouti nāk no veidnes un dzinēja, netiek veidoti otrreiz.
 Uzbūvē: stāvu, ārsienas (pa ēkas kontūru), starpsienas (no telpu spraugām), logus, durvis, zonas, divslīpju jumtu.
+Ar mansardu (loft.poly + loft.level) veido 2. stāvu, un jumts ceļas pa tā kontūru; jumts.papildu = papildu jumti (ieejas bloks), projekts.siena_mm = ārsienas biezums.
 Koordinātas: plāna mm (y uz dienvidiem) → ArchiCAD m, y apgriezts (y_ac = D - y), lai plāns nebūtu spoguļots.
 Ko skripts vēl NEdara (atskaitē parādās kā piezīmes): grīdas plātnes, cokols, četrslīpju jumts, mansarda logi, mēbeles, layouti.
 Ģeometrijas loģika ir kopīga ar IngeTrazo spraudni (ingetrazo/mm_homes/geometry.py, klase Ctx).
@@ -27,8 +28,8 @@ def _line_int(p, d, q, e):
     return (p[0] + d[0] * t, p[1] + d[1] * t)
 
 
-def data_of(m):
-    """model.json -> vienkārši dati skriptam (mm, plāna koordinātes, y uz dienvidiem)."""
+def _floor_data(m, pref="", fl=1):
+    """Viena stāva dati: ārsienas pa kontūru, starpsienas, ailas, zonas. pref = sienu id priekšvārds (2. stāvam "L")."""
     c = G.Ctx(m)
     T = c.T
     notes = []
@@ -46,11 +47,11 @@ def data_of(m):
     edge_wall = {}
     for i, e in enumerate(c.edges):
         a, b = pts[i], pts[(i + 1) % n_e]
-        wid = f"E{i + 1}"
+        wid = f"{pref}E{i + 1}"
         walls.append({"id": wid, "a": a, "b": b, "t": T, "outer": True})
         edge_wall[i] = wid
     # ---- starpsienas (tā pati loģika kā geometry.py): spraugas 100..200 mm starp telpām ----
-    R = [r for room in (m.get("rooms") or []) for r in room.get("r", [])]
+    R = [tuple(r[:4]) for room in (m.get("rooms") or []) for r in room.get("r", [])]   # r[4:] = sienu pielaides (cad.js), ģeometrijai nevajag
     in_room = lambda px, py: any(rx < px < rx + rw and ry < py < ry + rh for rx, ry, rw, rh in R)
     inside = lambda px, py: c.in_poly(px, py) and all(G._seg_d(px, py, e["a"], e["b"]) > T - 1 for e in c.edges)
 
@@ -85,10 +86,10 @@ def data_of(m):
         k_ += 1
         if o == "v":
             a_, b_ = reach(x + w / 2, y, 0, -1), reach(x + w / 2, y + h, 0, 1)
-            walls.append({"id": f"P{k_}", "a": (x + w / 2, y - a_), "b": (x + w / 2, y + h + b_), "t": w, "outer": False})
+            walls.append({"id": f"{pref}P{k_}", "a": (x + w / 2, y - a_), "b": (x + w / 2, y + h + b_), "t": w, "outer": False})
         else:
             a_, b_ = reach(x, y + h / 2, -1, 0), reach(x + w, y + h / 2, 1, 0)
-            walls.append({"id": f"P{k_}", "a": (x - a_, y + h / 2), "b": (x + w + b_, y + h / 2), "t": h, "outer": False})
+            walls.append({"id": f"{pref}P{k_}", "a": (x - a_, y + h / 2), "b": (x + w + b_, y + h / 2), "t": h, "outer": False})
     # ---- ailas ----
     def host(o, s, p0, p1, outer_only=False):
         """Siena, uz kuras guļ aila: ārsienai pēc ārējās malas (on_edge), starpsienai pēc ass."""
@@ -144,23 +145,43 @@ def data_of(m):
     # ---- telpas (zonas) ----
     zones = []
     for i, room in enumerate(m.get("rooms") or []):
-        for j, (rx, ry, rw, rh) in enumerate(room.get("r", [])):
-            zones.append({"nr": f"1.{i + 1:02d}" + (f".{j + 1}" if j else ""), "nosaukums": room.get("n", ""),
+        for j, (rx, ry, rw, rh) in enumerate(tuple(r_[:4]) for r_ in room.get("r", [])):
+            zones.append({"nr": f"{fl}.{i + 1:02d}" + (f".{j + 1}" if j else ""), "nosaukums": room.get("n", ""),
                           "poly": [(rx, ry), (rx + rw, ry), (rx + rw, ry + rh), (rx, ry + rh)]})
-    # ---- jumts ----
-    x0, y0, x1, y1 = (min(p[0] for p in c.poly), min(p[1] for p in c.poly), max(p[0] for p in c.poly), max(p[1] for p in c.poly))
+    return {"c": c, "walls": walls, "opens": opens, "zones": zones, "notes": notes}
+
+
+def data_of(m):
+    """model.json -> vienkārši dati skriptam (mm, plāna koordinātes, y uz dienvidiem). Ar mansardu (m["loft"]) otrs stāvs."""
+    f1 = _floor_data(m)
+    c, notes = f1["c"], f1["notes"]
+    floors = [f1]
+    lf = m.get("loft") or {}
+    if lf.get("poly") and lf.get("level"):
+        m2 = {**m, **lf, "id": str(m.get("id", "")) + " mansards"}
+        f2 = _floor_data(m2, "L", 2)
+        floors.append(f2)
+        notes += f2["notes"]
+    top = floors[-1]["c"]
+    # ---- jumts: pamats = augšējā stāva ārsienu kontūra (ar mansardu tā ir korpuss bez ieejas bloka, tāpēc kore nav nobīdīta) ----
+    x0, y0, x1, y1 = (min(p[0] for p in top.poly), min(p[1] for p in top.poly), max(p[0] for p in top.poly), max(p[1] for p in top.poly))
     roof = None
-    if m.get("jumts"):
+    J = m.get("jumts") or {}
+    if J:
         if c.tanH:
             notes.append("Četrslīpju jumts šajā versijā netiek veidots (tikai divslīpju); jumts izlaists")
         else:
-            roof = {"slipums": c.pitch, "dzega_mm": c.eave, "parkare_mm": c.ov, "biezums_mm": G.ROOF_TH, "bounds": (x0, y0, x1, y1)}
-    if len(c.poly) > 4:
+            roof = {"slipums": c.pitch, "dzega_mm": c.eave, "parkare_mm": c.ov, "biezums_mm": float(J.get("biezums_mm") or G.ROOF_TH), "bounds": (x0, y0, x1, y1),
+                    "papildu": [e for e in (J.get("papildu") or []) if e.get("taisnsturis")]}
+    if len(top.poly) > 4:
         notes.append("Ēkas kontūra nav taisnstūris: jumts var neatbilst")
-    ridge = c.eave + (min(x1 - x0, y1 - y0) / 2) * c.tan + G.ROOF_TH
-    return {"id": m.get("id", "projekts"), "nosaukums": m.get("nosaukums", m.get("id", "")), "D": c.D, "W": c.W,
-            "augstums_mm": c.eave if not roof else ridge, "eave": c.eave, "walls": walls, "opens": opens, "zones": zones,
-            "roof": roof, "piezimes": notes, "razotajs": "MM", "projekts": m.get("projekts") or {}}
+    ridge = c.eave + (min(x1 - x0, y1 - y0) / 2) * c.tan + float(J.get("biezums_mm") or G.ROOF_TH)
+    d = {"id": m.get("id", "projekts"), "nosaukums": m.get("nosaukums", m.get("id", "")), "D": c.D, "W": c.W,
+         "augstums_mm": c.eave if not roof else ridge, "eave": c.eave, "walls": f1["walls"], "opens": f1["opens"], "zones": f1["zones"],
+         "roof": roof, "piezimes": notes, "razotajs": "MM", "projekts": m.get("projekts") or {}}
+    if len(floors) > 1:
+        d["loft"] = {"level": float(lf["level"]), "walls": floors[1]["walls"], "opens": floors[1]["opens"], "zones": floors[1]["zones"]}
+    return d
 
 
 def _veras(o, wall):
@@ -178,24 +199,22 @@ def _veras(o, wall):
     return ("L" if start_hinge else "R") + ("+" if plus else "-")
 
 
-def project_json(m, nr="001"):
-    """model.json -> project.json priekš SBE dzinēja (SBE-ARHITEKTS: python -m sbe archicad). mm, y uz augšu (plāna y apgriezts)."""
-    d = data_of(m)
-    D = d["D"]
+def _stavs(items, D, pre, nr_id, level, height):
+    """Viena stāva bloks project.json: sienas, ailas, telpas (y apgriezts uz augšu)."""
     flip = lambda pt: [round(pt[0], 2), round(D - pt[1], 2)]
-    wmap = {w["id"]: w for w in d["walls"]}
+    wmap = {w["id"]: w for w in items["walls"]}
     sienas = []
-    for w in d["walls"]:
+    for w in items["walls"]:
         e = {"id": w["id"], "no": flip(w["a"]), "lidz": flip(w["b"])}
         if w["outer"]:
-            e["pirags"] = "MM-S04"
+            e["pirags"] = f"{pre}-S04"
         elif abs(w["t"] - 195) < 1:
-            e["pirags"] = "MM-SS195"
+            e["pirags"] = f"{pre}-SS195"
         else:
             e["biezums"] = round(w["t"], 1)
         sienas.append(e)
     ailas = []
-    for a in d["opens"]:
+    for a in items["opens"]:
         w = wmap[a["siena"]]
         # dzinējs mēra pozīciju no sienas "no" gala līdz ailas malai; mūsu "poz" = ailas centrs no sienas sākuma
         o = {"siena": a["siena"], "tips": a["tips"], "pozicija_mm": round(a["poz"] - a["platums"] / 2, 1), "platums": a["platums"],
@@ -207,20 +226,39 @@ def project_json(m, nr="001"):
             o["veids"] = "casement2" if a.get("daļas", 1) > 1 else str(a.get("kind") or "tilt")
         ailas.append(o)
     telpas = []
-    for z in d["zones"]:
+    for z in items["zones"]:
         xs, ys = [p[0] for p in z["poly"]], [p[1] for p in z["poly"]]
         telpas.append({"nr": z["nr"], "nosaukums": z["nosaukums"],
                        "taisnsturi": [[round(min(xs), 1), round(D - max(ys), 1), round(max(xs) - min(xs), 1), round(max(ys) - min(ys), 1)]]})
+    return {"id": nr_id, "limenis_mm": level, "augstums_mm": round(height), "sienas": sienas, "telpas": telpas, "ailas": ailas}
+
+
+def project_json(m, nr="001"):
+    """model.json -> project.json priekš SBE dzinēja (SBE-ARHITEKTS: python -m sbe archicad). mm, y uz augšu (plāna y apgriezts).
+    Ar mansardu (loft.poly + loft.level) tiek veidots 2. stāvs, un jumts ceļas pa tā ārsienu kontūru."""
+    d = data_of(m)
+    D = d["D"]
+    pre = str((m.get("projekts") or {}).get("pirags_prefikss") or "MM")
+    lf = d.get("loft")
+    st1 = _stavs(d, D, pre, "1", 0, lf["level"] if lf else d["eave"])
+    if not lf:   # vienstāva projektā bloks kā agrāk (bez limeņa un augstuma)
+        st1.pop("limenis_mm"); st1.pop("augstums_mm")
     pr = (d.get("projekts") or {})
     p = {"nr": nr, "nosaukums": d["nosaukums"], "razotajs": "mm", "klients": pr.get("klients", ""),
-         "revizija": 1, "augstums_mm": d["eave"], "stavi": [{"id": "1", "sienas": sienas, "ailas": ailas, "telpas": telpas}],
+         "revizija": 1, "augstums_mm": lf["level"] if lf else d["eave"], "stavi": [st1],
          "objekts": {"nosaukums": "Dzīvojamā māja " + str(d["nosaukums"]),
                      "adrese": ", ".join(s_.strip() for s_ in (pr.get("adrese") or []) if s_.strip())},
          "noformejums": "skice"}
     r = d["roof"]
+    if lf:   # 2. stāva sienas līdz kores augstumam (jumts tās apgriež ar TrimElements)
+        p["stavi"].append(_stavs(lf, D, pre, "2", lf["level"], max(d["augstums_mm"] - lf["level"], 1000)))
     if r:
         p["jumts"] = {"forma": "divslipju", "slipums": r["slipums"], "parkare_mm": r["parkare_mm"], "dzega_mm": r["dzega_mm"],
                       "biezums_mm": r["biezums_mm"], "kore": "x"}
+        if r.get("papildu"):   # papildu jumti (piem. ieejas mezgla plakanais): model.json plāna koordinātēs -> y uz augšu
+            p["jumts"]["papildu"] = [{**{k: v for k, v in e.items() if k != "taisnsturis"},
+                                      "taisnsturis": [e["taisnsturis"][0], round(D - e["taisnsturis"][3], 2), e["taisnsturis"][2], round(D - e["taisnsturis"][1], 2)]}
+                                     for e in r["papildu"]]
     p["_piezimes_no_model_json"] = d["piezimes"]
     return p
 

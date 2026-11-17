@@ -116,6 +116,8 @@ class Ctx:
         self.poly = [(float(p[0]), float(p[1])) for p in poly] if poly and len(poly) > 2 else [(0, 0), (self.W, 0), (self.W, self.D), (0, self.D)]
         P = m.get("projekts") or {}
         self.P = P
+        if P.get("siena_mm"):   # ārsienas biezums no projekta (piem. TRE Building 303,5), citādi MM noklusējums
+            self.T = float(P["siena_mm"])
         self.tone = P.get("tonis") if P.get("tonis") in TONES else "peleks"
         self.edges = self._edges()
 

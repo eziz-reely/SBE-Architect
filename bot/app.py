@@ -309,6 +309,23 @@ def pick_set(cs, sid=None):
     return next((k for k in sets if k['id'] == (sid or act)), None) or next(k for k in sets if k['id'] == act)
 
 
+def archicad_model(d, m):
+    """Modelis ArchiCAD skriptam: ārsienas biezums no uzņēmuma pīrāgu komplekta (kā redaktors, S1 bez latojuma "n" kārtām) un pīrāgu priekšvārds (uznemums.json "pirags_prefikss",
+    piem. "TB"; noklusēti "MM"). Bez uzņēmuma iestatījumiem modelis paliek kā ir (MM noklusējums 283,5 mm). Jau norādītas projekts.siena_mm / pirags_prefikss netiek pārrakstītas."""
+    cs = company_spec(os.path.dirname(os.path.abspath(d)))
+    if not cs:
+        return m
+    m = json.loads(json.dumps(m)); P = m.setdefault('projekts', {})
+    S1 = (pick_set(cs).get('piragi_layers') or {}).get('S1')
+    if S1 and not P.get('siena_mm'):
+        t = sum(l[1] for l in S1 if not (len(l) > 2 and l[2] == 'n'))
+        if t > 0:
+            P['siena_mm'] = round(t, 1)
+    if cs.get('pirags_prefikss') and not P.get('pirags_prefikss'):
+        P['pirags_prefikss'] = str(cs['pirags_prefikss'])
+    return m
+
+
 def clean_layers(L):
     out = {}
     for k in SPEC_KEYS:
@@ -579,6 +596,7 @@ class H(BaseHTTPRequestHandler):
                     return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
                 try:
                     import archicad
+                    b = archicad_model(d, b)
                     txt, nm = archicad.script(b)
                     notes = archicad.data_of(b)['piezimes']
                 except Exception as e:
