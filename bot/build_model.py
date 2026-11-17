@@ -635,6 +635,7 @@ def build(model_path, langs=None):
     cad = _ov_per_edge(cad)
     cad = _mm_extra(cad)
     cad = cad.replace('/*AR*/', ar + '\n' + sheet, 1)
+    cad = cad.replace('polyArea(v.poly)', 'polyArea(v.apbuve || v.poly)')   # [MM] apbūves laukums: redaktorā uzzīmētais kontūrs (model.apbuve), citādi mājas kontūra
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
     import re

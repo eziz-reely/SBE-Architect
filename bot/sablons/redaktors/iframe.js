@@ -1896,6 +1896,7 @@
     if (place && (place.t === "wall" || place.t === "cut")) { wallPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "terrace") { place.alt = e.altKey; place.lx = e.clientX; place.ly = e.clientY; terPreview(e.clientX, e.clientY, e.shiftKey); return; }
+    if (place && place.t === "apbuve") { apbPreview(e.clientX, e.clientY); return; }
     if (place && ((place.t === "zone" && place.poly) || place.t === "hpoly")) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "section") { place.lx = e.clientX; place.ly = e.clientY; secPreview(e.clientX, e.clientY); return; }
@@ -2612,6 +2613,21 @@
     const ni = N.rooms.length - 1; N.stampAt[ni] = ctr; N.stampScale[ni] = 0.7;
     return { N, sel: { k: "stamp", i: ni, lv: "main" }, nameFocus: true };
   }
+  function apbPreview(cx, cy) {
+    const bl = terBlock(); if (!bl) return;
+    const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
+    const k = ek(bl), g = mk(o, "g", { class: "gh" }), st = { fill: "rgba(34,102,216,.12)", stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${2.4 / k} ${1.6 / k}` };
+    let all, q;
+    if (place.mode === "rect") {
+      q = [snapAx("main", "x", p[0], 200), snapAx("main", "y", p[1], 200)]; const a = place.p0;
+      all = a ? [a, [q[0], a[1]], q, [a[0], q[1]]] : [q];
+    } else { const pts = place.pts || []; q = zonePt(p, pts); all = pts.concat([q]); pts.forEach(a => snapMark(g, a, true, k)); }
+    if (all.length > 1) mk(g, "polyline", Object.assign({ points: (all.length > 2 ? all.concat([all[0]]) : all).map(a => a.join(",")).join(" ") }, st));
+    snapMark(g, q, false, k);
+    let t = "Apbūves laukums: uzklikšķini pirmo stūri";
+    if (all.length > 2) { const ar = Math.abs(all.reduce((a_, c, i) => a_ + c[0] * all[(i + 1) % all.length][1] - all[(i + 1) % all.length][0] * c[1], 0)) / 2e6; t = ar.toFixed(2).replace(".", ",") + " m²" + (place.mode === "rect" ? "" : "  · klikšķis pirmajā punktā noslēdz"); }
+    label(g, q[0] + 3 / k, q[1] - 3 / k, t);
+  }
   function zonePreview(cx, cy) {
     const bl = terBlock(); if (!bl) return;
     const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
@@ -3078,6 +3094,20 @@
           const r = addPartitionAcross(N, vertical, c, v0, v1);
           if (r.err) { P.p0 = null; return { miss: r.err }; }
           return { N, sel: null };
+        }
+        if (P.t === "apbuve") {   // apbūves laukums: tikai skaitlis eksplikācijā (model.apbuve), māja netiek pārbūvēta
+          if (bl.lv !== "main") return { miss: "Apbūves laukumu zīmē 1. stāva plānā." };
+          const fin = c => { P.pts = []; P.p0 = null; if (Math.abs(c.reduce((a_, q, i) => a_ + q[0] * c[(i + 1) % c.length][1] - c[(i + 1) % c.length][0] * q[1], 0)) / 2 < 1e6) return { miss: "Apbūves laukums par mazu (vismaz 1 m²)." }; N.apbuve = c.map(q => [Math.round(q[0]), Math.round(q[1])]); return { N, sel: null }; };
+          if (P.mode === "rect") {
+            const q = [Math.round(snapAx("main", "x", p[0], 200)), Math.round(snapAx("main", "y", p[1], 200))];
+            if (!P.p0) { P.p0 = q; return { pending: "Uzklikšķini apbūves laukuma pretējo stūri." }; }
+            const a_ = P.p0; if (a_[0] === q[0] || a_[1] === q[1]) { P.p0 = null; return { miss: "Taisnstūris nav izveidots." }; }
+            return fin([a_, [q[0], a_[1]], q, [a_[0], q[1]]]);
+          }
+          P.pts = P.pts || []; const pts = P.pts, q = zonePt(p, pts);
+          if (pts.length > 2 && Math.hypot(q[0] - pts[0][0], q[1] - pts[0][1]) < 300) return fin(pts.slice());
+          if (pts.length && Math.hypot(q[0] - pts[pts.length - 1][0], q[1] - pts[pts.length - 1][1]) < 50) return { pending: "Uzklikšķini nākamo stūri." };
+          pts.push(q); return { pending: pts.length < 3 ? "Turpini likt apbūves kontūras stūrus." : "Turpini vai uzklikšķini pirmajā punktā, lai noslēgtu kontūru." };
         }
         if (P.t === "hpoly") {   // mājas kontūra no ārsienām: klikšķi stūros, klikšķis pirmajā punktā noslēdz
           P.pts = P.pts || []; const pts = P.pts, q = zonePt(p, pts);
