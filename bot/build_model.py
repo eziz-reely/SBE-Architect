@@ -694,6 +694,16 @@ def build(model_path, langs=None):
         ('chainCad(dg, [-ov, W + ov], "x", Dd + 2450);', 'chainCad(dg, [-oW, W + oE], "x", Dd + 2450);'),
         ('chainCad(dg, [-ov, 0, Dd / 2, Dd, Dd + ov], "y", -1250);', 'chainCad(dg, [-oN, 0, Dd / 2, Dd, Dd + oS], "y", -1250);'),
         ('chainCad(dg, [-ov, Dd + ov], "y", -1850);', 'chainCad(dg, [-oN, Dd + oS], "y", -1850);'),
+        # [MM] notekas un caurules: tās pašas, ko fasādēs (projekts.notekas), kas nodzēstas fasādē, pazūd arī jumta plānā
+        ('const OS_ =', 'const NT_ = k => ((window.AR && AR.projekts && AR.projekts.notekas) || {})[k] !== false;\n  const OS_ ='),
+        ('if (!ROOF.hip) el("path", { d: `M ${-oW}', 'if (!ROOF.hip && NT_(k ? "south" : "north")) el("path", { d: `M ${-oW}'),
+        ('[-oW + 140, W + oE - 140].forEach(x => el("circle"', '[-oW + 140, W + oE - 140].forEach((x, xi) => NT_((k ? "s" : "n") + (xi ? "e" : "w")) && el("circle"'),
+        ('  leader(W * .55, -oN', '  if (NT_("north")) leader(W * .55, -oN'),
+        ('  leader(W * .45, Dd + oS', '  if (NT_("south")) leader(W * .45, Dd + oS'),
+        ('  leader(-oW + 140, -oN - 75', '  if (NT_("nw")) leader(-oW + 140, -oN - 75'),
+        ('  leader(W + oE - 140, Dd + oS + 75', '  if (NT_("se")) leader(W + oE - 140, Dd + oS + 75'),
+        # [MM] zem jumta redzamie ārsienas izvilkumi (brīvās sienas, sienu sabiezinājumi) un stabi: raustīta kontūra kā ārsienām
+        ('  // slope arrows (down the slope), pitch', '  [...(v.freeWalls || []).filter(f => f[5] !== "i"), ...(typeof padRects === "function" ? padRects(v) : []), ...(v.posts || []).map(q => [q.x, q.y, q.w, q.d])].forEach(f => el("rect", { x: f[0], y: f[1], width: f[2], height: f[3], fill: "none", stroke: C.ink, "stroke-width": 12, "stroke-dasharray": "160 90" }, g));\n  // slope arrows (down the slope), pitch'),
     ]:
         assert a_ in rp, 'ar.js roofPlan: nav atrasts ' + a_[:50]
         rp = rp.replace(a_, b_, 1)
