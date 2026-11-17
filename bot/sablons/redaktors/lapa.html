@@ -3622,6 +3622,18 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       });
       l.append(sg); $("arForm").append(l);
     }
+    ((model.projekts || {}).ar_vizl || []).forEach((S, si) => {   // vizualizāciju lapu formāts un rāmja atkāpe no augšas (rakstlauks paliek apakšā labajā stūrī)
+      const l = document.createElement("label"), sg = document.createElement("div"); l.textContent = (S.n || "Vizualizācijas") + ": lapa"; l.className = "w2"; sg.className = "seg";
+      [["Horizontāla", S.o !== "p", null], ["Vertikāla", S.o === "p", "p"]].forEach(([t, on, v]) => {
+        const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.setAttribute("role", "radio"); b.setAttribute("aria-checked", String(on));
+        b.onclick = () => { if (on) return; const n = clone(model), Q = n.projekts.ar_vizl[si]; if (v) Q.o = v; else delete Q.o; (Q.im || []).forEach(q => { q.x = Math.round((q.x + q.w / 2) * (v ? 297 / 420 : 420 / 297) * 10 - q.w * 5) / 10; q.y = Math.round((q.y + q.h / 2) * (v ? 420 / 297 : 297 / 420) * 10 - q.h * 5) / 10; }); view = null; commit(n); syncAr(); };
+        sg.append(b);
+      });
+      l.append(sg); $("arForm").append(l);
+      const l2 = document.createElement("label"), i2 = document.createElement("input"); l2.textContent = "Rāmja atkāpe no augšas, mm"; i2.type = "text"; i2.value = String(vizTop(model, S));
+      i2.onchange = () => { const n = clone(model), Q = n.projekts.ar_vizl[si], v = Math.max(10, Math.min(120, Math.round(+i2.value) || 10)); if (v > 10) Q.top = v; else delete Q.top; view = null; commit(n); syncAr(); };
+      l2.append(i2); $("arForm").append(l2);
+    });
   }
   const arLogoSet = v => { const n = clone(model); n.projekts.ar.tb = n.projekts.ar.tb || {}; n.projekts.ar.tb.logo = v; commit(n); syncAr(); };
   $("arFile").onchange = async () => {
