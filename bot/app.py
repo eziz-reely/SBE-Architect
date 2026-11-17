@@ -387,6 +387,17 @@ def pick_set(cs, sid=None):
     return next((k for k in sets if k['id'] == (sid or act)), None) or next(k for k in sets if k['id'] == act)
 
 
+def pick_any(cos, co, val):
+    """Pīrāgu komplekts jaunam projektam: val = "<uzņēmuma atslēga>::<komplekta id>" (jebkura uzņēmuma komplekts) vai tikai id (izvēlētā uzņēmuma komplekts)."""
+    if val and '::' in str(val):
+        ck, sid = str(val).split('::', 1)
+        for n, d in cos.items():
+            if key_of(d) == ck:
+                return pick_set(company_spec(d), sid)
+        val = sid
+    return pick_set(company_spec(cos[co]), val)
+
+
 def archicad_model(d, m):
     """Modelis ArchiCAD skriptam: ārsienas biezums no uzņēmuma pīrāgu komplekta (kā redaktors, S1 bez latojuma "n" kārtām) un pīrāgu priekšvārds (uznemums.json "pirags_prefikss",
     piem. "TB"; noklusēti "MM"). Bez uzņēmuma iestatījumiem modelis paliek kā ir (MM noklusējums 283,5 mm). Jau norādītas projekts.siena_mm / pirags_prefikss netiek pārrakstītas."""
@@ -448,7 +459,7 @@ def new_project(b):
         H = math.ceil(float(b.get('dzega') or 2600) + RT / math.cos(p) + B / 2 * math.tan(p) + flT)
     if not (3000 <= L <= 40000 and 2500 <= B <= 15000 and 2500 <= H <= 12000):
         raise ValueError('Izmēri ārpus robežām (garums 3–40 m, platums 2,5–15 m, kore 2,5–12 m).')
-    p1 = sum(l[1] for l in (pick_set(company_spec(cos[co]), b.get('komplekts')).get('piragi_layers') or {}).get('P1', []) if (len(l) < 3 or l[2] != 'n'))
+    p1 = sum(l[1] for l in (pick_any(cos, co, b.get('komplekts')).get('piragi_layers') or {}).get('P1', []) if (len(l) < 3 or l[2] != 'n'))
     args = [sys.executable, os.path.join(HERE, 'generate.py'), str(L), str(B), str(H), '--valodas', 'LV']
     if pitch: args += ['--slipums', f'{pitch:g}']
     pid = safe_name(b.get('id'))
@@ -496,7 +507,7 @@ def new_project(b):
             import build_model; build_model.build(mp0)
         except Exception as ex:
             print('Lapas pārbūve neizdevās:', ex, file=sys.stderr)
-    cs0 = pick_set(company_spec(cos[co]), b.get('komplekts')); sp = cs0.get('piragi_layers')
+    cs0 = pick_any(cos, co, b.get('komplekts')); sp = cs0.get('piragi_layers')
     if cs0.get('piragi_names'):
         mp = os.path.join(dest, 'model.json'); mj = json.load(open(mp, encoding='utf-8'))
         mj.setdefault('projekts', {})['piragi_names'] = cs0['piragi_names']
@@ -591,7 +602,7 @@ class H(BaseHTTPRequestHandler):
                 pr = scan(); c = load_cfg()
                 cos = [{'name': n, 'key': key_of(d), 'path': d, 'n': sum(1 for x in pr if x['company'] == n),
                         'spec': bool(company_spec(d).get('specifikacija_apstiprinata')),
-                        'komplekti': [{'id': k['id'], 'nosaukums': k['nosaukums']} for k in spec_sets(company_spec(d))[0]], 'aktivs': spec_sets(company_spec(d))[1]} for n, d in companies(c).items()]
+                        'komplekti': [{'id': k['id'], 'nosaukums': k['nosaukums'], 'auto': not company_spec(d).get('komplekti') and k['id'] == 'classic'} for k in spec_sets(company_spec(d))[0]], 'aktivs': spec_sets(company_spec(d))[1]} for n, d in companies(c).items()]
                 return self.send(200, {'projects': pr, 'companies': cos, 'root': c['root']})
             if p.startswith('/api/variants/'):
                 d = path_for(p[14:])
@@ -835,7 +846,7 @@ class H(BaseHTTPRequestHandler):
                 c = load_cfg(); cos = companies(c); co = b.get('company') or ''
                 if co not in cos:
                     return self.send(400, 'Nav tāda uzņēmuma.', 'text/plain; charset=utf-8')
-                ks = pick_set(company_spec(cos[co]), b.get('komplekts'))
+                ks = pick_any(cos, co, b.get('komplekts'))
                 lab = {'garums': 'garums, mm', 'platums': 'platums, mm', 'augstums': 'kores augstums, mm', 'slipums': 'jumta slīpums, °', 'dzega': 'dzegas augstums, mm', 'nosaukums': 'modeļa nosaukums', 'id': 'ID',
                        'mansards': 'mansards (ja/ne)', 'pamati': 'pamati', 'tonis': 'fasādes tonis', 'veids': 'projekta veids (maja/pamati)'}
                 zin = {k: b[k] for k in lab if b.get(k) not in (None, '')}

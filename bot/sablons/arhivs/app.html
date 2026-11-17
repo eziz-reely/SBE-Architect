@@ -540,11 +540,14 @@ $("q").addEventListener("input", render);
 $("sort").addEventListener("change", () => { try { localStorage.setItem("sbeSort", $("sort").value); } catch (_) {} render(); });
 function nSetFill(keep) {
   const c = D.companies.find(x => x.name === $("nCo").value);
-  $("nSet").innerHTML = ((c && c.komplekti) || []).map(k => `<option value="${esc(k.id)}"${k.id === (keep || (c && c.aktivs)) ? " selected" : ""}>${esc(k.nosaukums)}</option>`).join("");
+  // visu uzņēmumu komplekti (MM, TRE, CLASSIC, LWDC …), grupēti pa uzņēmumiem; izvēlētā uzņēmuma noklusējuma komplekts atzīmēts
+  const want = keep || (c ? `${c.key}::${c.aktivs}` : ""), cs = [c, ...D.companies.filter(x => x !== c)].filter(Boolean);
+  $("nSet").innerHTML = cs.map(x => { const ks = (x.komplekti || []).filter(k => x === c || !k.auto); return ks.length ? `<optgroup label="${esc(x.name)}">` + ks.map(k => { const v = `${x.key}::${k.id}`; return `<option value="${esc(v)}"${v === want ? " selected" : ""}>${esc(k.nosaukums)}</option>`; }).join("") + `</optgroup>` : ""; }).join("");
 }
 $("nCo").addEventListener("change", () => nSetFill());
 $("nSetOpen").onclick = () => { const c = D.companies.find(x => x.name === $("nCo").value); if (!c) return;
-  const sid = $("nSet").value; specDlg(c.key, null, sid).then(() => { spAfter = () => nSetFill(sid); }).catch(er => toast(er.message)); };
+  const [ck, sid0] = $("nSet").value.split("::"), cc = D.companies.find(x => x.key === ck) || c, sid = sid0;
+  specDlg(cc.key, null, sid).then(() => { spAfter = () => nSetFill(cc.key + "::" + sid); }).catch(er => toast(er.message)); };
 function newDlg() {
   $("nCo").innerHTML = D.companies.map(c => `<option${c.name === cur ? " selected" : ""}>${esc(c.name)}</option>`).join("");
   if (!D.companies.length) { toast("Vispirms izveido uzņēmumu."); $("dCo").showModal(); return; }

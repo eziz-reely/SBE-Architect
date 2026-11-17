@@ -3575,6 +3575,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const n = clone(model), R = (n.rooms || []).flatMap(rm => rm.r), T = 283.5;
     if (!R.length) { varNote("Nav telpu, mērus nav kam rēķināt."); return; }
     delete n.dimOff; if (n.projekts) delete n.projekts.chainOff;
+    n.entryInChain = true;   // ārdurvis iekļautas ārsienas mēru ķēdē (attālums no ārsienas līdz durvīm)
     const y0 = Math.min(...R.map(q => q[1])), xs = [...new Set(R.map(q => q[0]))].sort((a, b) => a - b), cols = [];
     xs.forEach(x => { if (!cols.length || x - cols[cols.length - 1] > 500) cols.push(x); });
     n.innerDims = [["x", Math.round(y0 + 400)]].concat(cols.filter(x => x > T + 500).slice(0, 3).map(x => ["y", Math.round(x + 400)]));

@@ -341,6 +341,13 @@ def build(model_path, langs=None):
         ('  v.doors.forEach(d => {\n    const { x, y, w, th, o, hinge, side } = d, lt = 40;', '  v.doors.forEach(d => {\n    const { th, o, hinge, side } = d, KB = 35, x = o === "h" ? d.x + KB : d.x, y = o === "h" ? d.y : d.y + KB, w = d.w - 2 * KB, lt = 40, frm = (a, b, c, e) => el("rect", { x: a, y: b, width: c, height: e, fill: "#fff", stroke: C.line, "stroke-width": 6 }, g);'),
         ('      gap(x, y - 14, w, th + 28); jamb(x, y, x, y + th); jamb(x + w, y, x + w, y + th);\n      const py', '      gap(x - KB, y - 14, w + 2 * KB, th + 28); jamb(x - KB, y, x - KB, y + th); jamb(x + w + KB, y, x + w + KB, y + th); frm(x - KB, y, KB, th); frm(x + w, y, KB, th);\n      const py'),
         ('      gap(x - 14, y, th + 28, w); jamb(x, y, x + th, y); jamb(x, y + w, x + th, y + w);\n      const px', '      gap(x - 14, y - KB, th + 28, w + 2 * KB); jamb(x, y - KB, x + th, y - KB); jamb(x, y + w + KB, x + th, y + w + KB); frm(x, y - KB, th, KB); frm(x, y + w, th, KB);\n      const px'),
+        # [MM] ārdurvis (entry) mēru ķēdē visās četrās pusēs (nevis tikai dienvidos): attālums no ārsienas līdz durvīm
+        ('  const S = opt.axes ? 1 : 0, E = opt.tags ? 300 : 0;',
+         '  const ent = sd => v.entryInChain ? v.doors.filter(d => d.entry && (d.o === "h" ? (d.y < v.D / 2 ? "north" : "south") : (d.x < v.W / 2 ? "west" : "east")) === sd).flatMap(d => d.o === "h" ? [d.x, d.x + d.w] : [d.y, d.y + d.w]) : [];\n  const S = opt.axes ? 1 : 0, E = opt.tags ? 300 : 0;'),
+        ('winSide(v, w) === "north", w => w.x)], [0, v.W, ...at(1, 0)]', 'winSide(v, w) === "north", w => w.x), ...ent("north")], [0, v.W, ...at(1, 0)]'),
+        ('winSide(v, w) === "west", w => w.y)], [0, v.D, ...at(0, 0)]', 'winSide(v, w) === "west", w => w.y), ...ent("west")], [0, v.D, ...at(0, 0)]'),
+        ('winSide(v, w) === "east", w => w.y)], [0, v.D, ...at(0, v.W)]', 'winSide(v, w) === "east", w => w.y), ...ent("east")], [0, v.D, ...at(0, v.W)]'),
+        ('  const entryX = v.entryInChain ? v.doors.filter(d => d.entry).flatMap(d => [d.x, d.x + d.w]) : [];', '  const entryX = ent("south");'),
         # [MM] lietotāja pievienotie mēri plānā: [ass, novietojums, no, līdz]
         ('  (v.innerDims || []).forEach(([axis, at], k) => chainCad(dg, cross(axis, at), axis, at, 0, true, k > 0));', '  (v.innerDims || []).forEach(([axis, at], k) => chainCad(dg, cross(axis, at), axis, at, 0, true, k > 0));\n  (v.userDims || []).forEach(([axis, at, a, b]) => chainCad(dg, [a, b], axis, at, 0, true));'),
         # [MM] mansarda logiem arī aplodu varianti (gw.casing, gw.casingAll)
