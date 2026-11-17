@@ -22,5 +22,11 @@ Saglabāšana: `/api/save/` ieraksta `model.json` (vecais → `model.json.bak`) 
 Mapes: `<arhīvs>/<uzņēmums>/<projekts>/model.json`; apakšmapes `eksports`, `rasejumi`, `viz`, `miniaturas`, `3d`, `ref` nav projekti (`SKIP`). Uzņēmuma sienu spec. `<uzņēmums>/uznemums.json`. Iestatījumi `~/.sbe-arhivs.json` (`root`, `companies`; "MM Homes" = `Desktop\MM System\MĀJAS`).
 `arhivs.py` ir vecais statiskais arhīva ģenerators (`PROJEKTI/arhivs.html`).
 
+## ArchiCAD skripts (3D, Tapir)
+Poga redaktorā → `/api/archicad/<key>` → `archicad.script(model)`: `data_of` (sienas pa kontūru, starpsienas no spraugām, ailas, zonas, 2. stāvs no `loft`), `project_json` (formāts SBE dzinējam SBE-ARHITEKTS, etalons: `projekti/trebuilding/001_tireli_b_r1_A/project.json`). Skripts neveido ģeometriju pats, tikai ieliek `project.json` un palaiž dzinēju. Ģeometrija kopīga ar IngeTrazo (`ingetrazo/mm_homes/geometry.py`, `Ctx`).
+Modeļa atslēgas, ko ģenerators lasa: `poly` (kontūra), `rooms` (r[:4]; 5. elements = sienu pielaides, ignorē), `loft.poly` + `loft.level` (mansards = 2. stāvs; jumts ceļas pa tā kontūru, tātad kore ir pa korpusu), `jumts.pitch/eave/ov/biezums_mm/papildu` (papildu = ieejas bloka plakanais jumts, plāna koordinātēs), `projekts.siena_mm` (ārsienas biezums; `app.archicad_model` to ņem no uzņēmuma S1 komplekta, citādi 283,5), `projekts.pirags_prefikss` (vai `uznemums.json`: MM/TB…), `projekts.ieejas_virsma` (cita fasādes virsma ieejas bloka sienām), `axes` (ja vairāk par A-B/1-2), kāpnes no telpas "Kāpnes" (gājiens uz "Gaitenis"), `furniture` netiek pārnesta. Vienstāva MM modeļa izvade nemainās.
+Kad dzinējs jumtu neveido, skripta žurnālā (`<id>_archicad_log.txt`) ir `TAPIR KĻŪDA CreateRoofs: ...`; skripts norij Tapir kļūdas tikai `try_cmd` līmenī, bet žurnāls tās izdrukā.
+Vecs ar roku rakstīts projekts bez `model.json`: mape ar `lapa.html` (+ `info.json`) arhīvā ir "ārēja lapa" (`/lapa/<key>`).
+
 ## Noteikumi un zināšanas
 Mēbeļu un logu noteikumi: `bot/zinasanas_mebeles_logi.md` (avoti [MM], [MyCabin], [prakse]). Skaitļi un slēdži `R` vārdnīcā `planner.py`; sliekšņi augšā `rules_check.py`. Jauns noteikums: pievieno `rules_check.py`, ja pārbaudāms, un ieraksti zināšanu failā ar avotu.

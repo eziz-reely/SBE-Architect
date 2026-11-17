@@ -616,7 +616,7 @@ class H(BaseHTTPRequestHandler):
                         mp0 = os.path.join(d, 'model.json'); json.dump(b, open(mp0 + '.tmp', 'w', encoding='utf-8'), ensure_ascii=False, indent=1); os.replace(mp0 + '.tmp', mp0)
                 mp = os.path.join(d, 'model.json')
                 prompt = (f'Uzraksti ArchiCAD (Tapir) skriptu šim SBE projektam: {mp}\n'
-                          'Atsauces: bot/archicad.py (ģenerators no model.json), systems-by-eziz: sbe/archicad_model.py un sbe/tapir.py (esošā Tapir loģika, favorīti L01-L12 un pīrāgu favorīti). '
+                          'Atsauces: bot/archicad.py (ģenerators no model.json; modeļa atslēgas aprakstītas docs/arhitektura.md sadaļā ArchiCAD skripts), systems-by-eziz: sbe/archicad_model.py un sbe/tapir.py (esošā Tapir loģika, favorīti L01-L12 un pīrāgu favorīti). Etalons: SBE-ARHITEKTS/projekti/trebuilding/001_tireli_b_r1_A/project.json. 3D jāatbilst plānam un fasādēm: sienu biezums, mansarda stāvs, divslīpju jumts pa korpusu, ieejas bloka jumts, logi/durvis uz visām sienām, kāpnes, asis. '
                           'Skriptam jābūt vienam .py failam (dati iekšā), ko palaiž ArchiCAD: Tapir > Run script. Pārbaudi ar --dry. '
                           'Neko repo nemaini, nekomitē un nepushā, kamēr lietotājs nepasaka.')
                 return self.send(200, {'ok': True, 'prompt': prompt, 'chat': load_cfg().get('claude_url') or CLAUDE_URL})

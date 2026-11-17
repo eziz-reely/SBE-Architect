@@ -259,6 +259,38 @@ def project_json(m, nr="001"):
             p["jumts"]["papildu"] = [{**{k: v for k, v in e.items() if k != "taisnsturis"},
                                       "taisnsturis": [e["taisnsturis"][0], round(D - e["taisnsturis"][3], 2), e["taisnsturis"][2], round(D - e["taisnsturis"][1], 2)]}
                                      for e in r["papildu"]]
+    flip = lambda x, y: [round(x, 2), round(D - y, 2)]
+    # ---- kāpnes uz mansardu: telpa "Kāpnes" 1. stāvā; augšējais gals = tas, kam blakus gaitenis (citādi dienvidu gals) ----
+    if lf:
+        rm = [(room, tuple(r_[:4])) for room in (m.get("rooms") or []) for r_ in room.get("r", [])]
+        st = next((r_ for room, r_ in rm if str(room.get("n", "")).lower().startswith(("kāpnes", "kapnes"))), None)
+        if st:
+            x, y, w, h = st
+            vert = h >= w
+            ga = [r_ for room, r_ in rm if str(room.get("n", "")).lower().startswith("gaiten") and r_ != st]
+            near = lambda r_, ex, ey: abs(r_[0] - ex) < 400 and abs(r_[1] - ey) < 400 or (r_[0] <= ex <= r_[0] + r_[2] and r_[1] - 400 <= ey <= r_[1] + r_[3] + 400)
+            if vert:
+                cx = x + w / 2; ends = [(cx, y), (cx, y + h)]; run = h
+            else:
+                cy = y + h / 2; ends = [(x, cy), (x + w, cy)]; run = w
+            top = 1 if any(near(g, *ends[1]) for g in ga) or not any(near(g, *ends[0]) for g in ga) else 0
+            bot, up = ends[1 - top], ends[top]
+            n = max(2, round(lf["level"] / 173))
+            p["kapnes"] = [{"stavs": 0, "no": flip(*bot), "lidz": flip(*up), "platums": round(w if vert else h, 1), "pakapieni": n,
+                            "augstums": lf["level"], "piezime": "ģenerēts no telpas 'Kāpnes' (gājiens uz gaiteni)"}]
+    # ---- asis no modeļa (y apgriezts, kā plānā) ----
+    ax = m.get("axes") or {}
+    if ax.get("x") and ax.get("y") and (len(ax["x"]) > 2 or len(ax["y"]) > 2):   # tikai papildu asis; parastās A-B / 1-2 uzliek dzinējs pats
+        p["asis"] = {"x": [[round(v, 1), str(n_)] for v, n_ in ax["x"]], "y": [[round(D - v, 1), str(n_)] for v, n_ in ax["y"]]}
+    # ---- ieejas bloka (jumts.papildu) ārsienām cita fasādes virsma, ja norādīta projekts.ieejas_virsma ----
+    iv = (m.get("projekts") or {}).get("ieejas_virsma")
+    if iv and r and r.get("papildu"):
+        ax0, ay0, ax1, ay1 = r["papildu"][0]["taisnsturis"]
+        mg = float((m.get("projekts") or {}).get("siena_mm") or 283.5) + 50   # sienu ass ir iebīdīta, stūris ar korpusa sienu iznāk līdz T aiz bloka malas
+        inb = lambda q: ax0 - mg <= q[0] <= ax1 + mg and ay0 - mg <= q[1] <= ay1 + mg
+        ids = [w["id"] for w in d["walls"] if w["outer"] and inb(w["a"]) and inb(w["b"])]
+        if ids:
+            p["fasades_virsmas"] = [{"virsma": iv, "stavs": 0, "sienas": ids}]
     p["_piezimes_no_model_json"] = d["piezimes"]
     return p
 
