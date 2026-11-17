@@ -3355,6 +3355,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const doc = FR[live].contentDocument; sv = sv || sheetsAll()[0];
       const c = sv.cloneNode(true), [vw, vh] = vbOf(sv);
       c.querySelectorAll("g.mm-ov, g.mm-ghost-ed").forEach(e => e.remove());
+      c.querySelectorAll("g.mm-gd line").forEach(l => { l.setAttribute("stroke-width", "0.3"); l.setAttribute("stroke-opacity", "1"); });   // palīglīnijas eksportā: vienmēr redzamas, fiksēts biezums (ekrāna tālummaiņa tās citādi padara par matadatu)
       c.removeAttribute("style"); c.setAttribute("width", vw + "mm"); c.setAttribute("height", vh + "mm");
       c.setAttribute("xmlns", "http://www.w3.org/2000/svg"); c.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
       const st = doc.createElementNS("http://www.w3.org/2000/svg", "style");

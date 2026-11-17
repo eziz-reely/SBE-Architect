@@ -213,9 +213,11 @@ function mmSkSecs(v) {
 function mmBlockSizes(v, lf, L, K, SC, aw) {
   const k = 1 / SC, RG = roofGeo(v), ids = (K.elementi || []).filter(id => id !== "viz"), out = [];
   const eave = RG.eEdge + RG.thV;
+  // plāna un gar X ass fasāžu (dienvidu, ziemeļu) kreisā mala ir viena: ēkas kreisā siena stāv vienā vertikālē (M = kopīgā kreisā josla, mm)
+  const PE = mmPlanExt(v), FM = Math.max(3200, 2800 + PE.l);
   ids.forEach(id => {
-    if (id === "plan" || (id === "loft" && lf)) { const e = mmPlanExt(v); out.push({ id, w: (v.W + e.l + e.r + 5600) * k, h: (v.D + e.t + e.b + 7100) * k + 8, el: e.l, et: e.t }); }
-    else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + 5400) * k, h: (RG.ridgeTop + 3300) * k + 3 }); }
+    if (id === "plan" || (id === "loft" && lf)) { const e = mmPlanExt(v); out.push({ id, w: (v.W + (FM - 2800) + e.r + 5600) * k, h: (v.D + e.t + e.b + 7100) * k + 8, el: FM - 2800, et: e.t }); }
+    else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + (gb ? 5400 : FM + 2200)) * k, h: (RG.ridgeTop + 3300) * k + 3, fm: gb ? 3200 : FM }); }
     else if (id === "griez") mmSkSecs(v).forEach((q, j) => { const sp = q.s.o === "v" ? v.D : v.W; out.push({ id, si: j, w: (sp + 5400) * k, h: (RG.ridgeTop + 2600) * k + 8 }); });   // katrs izvēlētais griezums savs bloks
     else if (id === "expl") { const nr = mmRooms(v).length + (lf ? mmRooms(lf).length + 2 : 0); out.push({ id, w: 66, h: 6.5 + (nr + 2) * 5 + 12 }); }
     else if (id === "mat") { const n = mmMatList(L).length, cols = Math.max(1, Math.min(Math.ceil(n / 3), Math.floor((aw || 220) / 78))), R = Math.max(3, Math.ceil(n / cols)); out.push({ id, w: Math.max(80, cols * 78), h: 12 + Math.min(n, R) * 11 + 5, R }); }   // kolonnu skaits ierobežots ar lapas platumu, rindu skaits kolonnā aug (citādi lapa nesaietilpa un palika tukša)
@@ -262,7 +264,7 @@ function mmLayout(v, lf, L, K, area, gap) {
       let y = ay;
       pk.shelves.forEach(sh => {
         const nc = sh.cols.length, jx = !vizOn && nc > 1 && !sh.items.some(b => b.id === "expl") ? Math.min(25, (aw - sh.w) / (nc - 1)) : 0;   // rindas bloki izkliedēti pa platumu (ne visi pie kreisās malas); rindā ar tabulu nē, jo tabulas pabīdījums (tblOff) ir no tās vietas
-        sh.items.forEach(b => place.push({ id: b.id, si: b.si, x: ax + b.dx + b.ci * jx, y: y + b.dy, w: b.w, h: b.h, R: b.R, el: b.el, et: b.et }));
+        sh.items.forEach(b => place.push({ id: b.id, si: b.si, x: ax + b.dx + b.ci * jx, y: y + b.dy, w: b.w, h: b.h, R: b.R, el: b.el, et: b.et, fm: b.fm }));
         sh.w += jx * (nc - 1);
         if (aw - sh.w - gap > 20) free.push({ x: ax + sh.w + gap, y, w: aw - sh.w - gap, h: sh.h });
         y += sh.h + gy;
@@ -368,7 +370,7 @@ function mmCompose(v, lf, L, K) {
       heading(b, b.id === "plan" ? tx.plan : tx.loft);
     } else if (/^fas_/.test(b.id)) {
       const sd = b.id.slice(4), RG = roofGeo(v), gb = sd === "east" || sd === "west", top = (RG.ridgeTop + 600) * k;
-      elevation(el("g", { "data-block": "elev-" + sd, transform: `translate(${b.x + 3200 * k} ${b.y + top}) scale(${k})` }, svg), v, sd, { levels: firstFas, noScale: !firstFas, ground: 0, title: `${tx.fas} ${sideAxes(v, sd)}` });
+      elevation(el("g", { "data-block": "elev-" + sd, transform: `translate(${b.x + (b.fm || 3200) * k} ${b.y + top}) scale(${k})` }, svg), v, sd, { levels: firstFas, noScale: !firstFas, ground: 0, title: `${tx.fas} ${sideAxes(v, sd)}` });
       firstFas = false;
     } else if (b.id === "griez") {
       const q = mmSkSecs(v)[b.si || 0], RG = roofGeo(v);
