@@ -3543,6 +3543,16 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       cb.onchange = () => { const n = clone(model), a = n.projekts.ar; a.off = AR_ALL.map(x => x[0]).filter(x => x === k ? !cb.checked : (a.off || []).includes(x)); if (a.off.length === AR_ALL.length) { cb.checked = true; return; } commit(n); syncAr(); };
       lb.append(cb, nb, sp); $("arParts").append(lb);
     });
+    // vizualizāciju lapas AR komplekta beigās: katra ir sava lapa ar numuru, pievienot var ar pogu (bildes pievieno mājas iestatījumos → Vizualizāciju lapas)
+    ((model.projekts || {}).ar_vizl || []).forEach((S, si) => {
+      const lb = document.createElement("label"), nb = document.createElement("b"), sp = document.createElement("span"), x = document.createElement("button");
+      nb.textContent = "AR-" + (++no); sp.textContent = S.n || "Vizualizācijas"; x.type = "button"; x.className = "del"; x.textContent = "×"; x.title = "Dzēst vizualizāciju lapu";
+      x.onclick = e => { e.preventDefault(); if ((S.im || []).length && !confirm("Dzēst lapu kopā ar tās bildēm?")) return; const n = clone(model); n.projekts.ar_vizl.splice(si, 1); if (!n.projekts.ar_vizl.length) delete n.projekts.ar_vizl; sel = null; view = null; commit(n); syncAr(); };
+      lb.append(nb, sp, x); $("arParts").append(lb);
+    });
+    { const b = document.createElement("button"); b.type = "button"; b.className = "wide"; b.textContent = "+ Pievienot vizualizāciju lapu";
+      b.onclick = () => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.ar_vizl = (n.projekts.ar_vizl || []).concat([{ n: "Vizualizācijas", im: [] }]); view = null; commit(n); syncAr(); };
+      $("arParts").append(b); }
     $("arForm").innerHTML = "";
     AR_F.forEach(([path, lab, wide]) => {
       const l = document.createElement("label"), i = document.createElement("input"); l.textContent = lab; if (wide) l.className = "w2";
