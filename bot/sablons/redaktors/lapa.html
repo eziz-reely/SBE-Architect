@@ -2322,6 +2322,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         const bA = document.createElement("button"); bA.type = "button"; bA.textContent = "Pievienot būvasi"; bA.onclick = () => { const b = OPENB[23]; if (b) b.click(); railSync(); };
         const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Zīmēt apbūves laukumu"; b1.onclick = () => { const b = OPENB[22]; if (b) b.click(); railSync(); };
         row.append(t, b1, bA);
+        { const bR = document.createElement("button"); bR.type = "button"; bR.textContent = "Pārģenerēt visus izmērus"; bR.title = "Mēru ķēdes no jauna pēc pašreizējā plāna: iekšējās ķēdes, durvju un logu pozīcijas, ārējie mājas izmēri. Pašu zīmētie mēri (D) paliek."; bR.onclick = regenDims; row.appendChild(bR); }
         if (L.length) { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Dzēst"; b2.onclick = () => { const N = clone(model); delete N.apbuve; commit(N); }; row.appendChild(b2); }
         if ((model.dimOff || []).length) { const b3 = document.createElement("button"); b3.type = "button"; b3.textContent = "Atjaunot mēru ķēdes (" + model.dimOff.length + ")"; b3.title = "Dzēšgumija nodzēš plāna mēru ķēdi ar klikšķi uz tās; šeit tās var atjaunot"; b3.onclick = () => { const N = clone(model); delete N.dimOff; commit(N); }; row.appendChild(b3); }
         gs.appendChild(row);
@@ -3568,6 +3569,19 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function secDel(i) {
     secSet(null, n => { if (n.sections[i]) n.sections.splice(i, 1); });   // nosaukumi netiek pārnumurēti; ja griezumu nav, lapa rāda automātisko noklusēto griezumu "1"
     varNote("Griezums izdzēsts.");
+  }
+  // visi automātiskie mēri no jauna: ārējās ķēdes (durvju, logu pozīcijas un mājas gabarīti) atgriežas standarta vietā, iekšējās ķēdes pārrēķinātas pēc telpām
+  function regenDims() {
+    const n = clone(model), R = (n.rooms || []).flatMap(rm => rm.r), T = 283.5;
+    if (!R.length) { varNote("Nav telpu, mērus nav kam rēķināt."); return; }
+    delete n.dimOff; if (n.projekts) delete n.projekts.chainOff;
+    const y0 = Math.min(...R.map(q => q[1])), xs = [...new Set(R.map(q => q[0]))].sort((a, b) => a - b), cols = [];
+    xs.forEach(x => { if (!cols.length || x - cols[cols.length - 1] > 500) cols.push(x); });
+    n.innerDims = [["x", Math.round(y0 + 400)]].concat(cols.filter(x => x > T + 500).slice(0, 3).map(x => ["y", Math.round(x + 400)]));
+    if (!n.innerDims.some(q => q[0] === "y")) n.innerDims.push(["y", Math.round(T + 400)]);
+    if (n.loft) delete n.loft.innerDims;   // mansards atkal pārņem 1. stāva ķēdes
+    commit(n);
+    varNote("Mēri pārģenerēti: ārējās ķēdes (durvis, logi, mājas izmēri) un " + n.innerDims.length + " iekšējās ķēdes. Pašu zīmētie mēri (D) nav aiztikti.");
   }
   function secKm(n) {   // Skices lapā griezums rādās automātiskajā kompozīcijā: ieslēdz elementu "Griezums"
     n.projekts = n.projekts || {}; let K = n.projekts.kompozicija;
