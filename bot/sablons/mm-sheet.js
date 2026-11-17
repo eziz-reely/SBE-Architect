@@ -217,7 +217,7 @@ function mmBlockSizes(v, lf, L, K, SC, aw) {
   const PE = mmPlanExt(v), FM = Math.max(3200, 2800 + PE.l);
   ids.forEach(id => {
     if (id === "plan" || (id === "loft" && lf)) { const e = mmPlanExt(v); out.push({ id, w: (v.W + (FM - 2800) + e.r + 5600) * k, h: (v.D + e.t + e.b + 7100) * k + 8, el: FM - 2800, et: e.t }); }
-    else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + (gb ? 5400 : FM + 2200)) * k, h: (RG.ridgeTop + 3300) * k + 3, fm: gb ? 3200 : FM }); }
+    else if (/^fas_/.test(id)) { const sd = id.slice(4), gb = sd === "east" || sd === "west", sp = gb ? v.D : v.W; out.push({ id, w: (sp + (gb ? 5400 : FM + 2200)) * k, h: (RG.ridgeTop + 3650) * k + 3, fm: gb ? 3200 : FM }); }
     else if (id === "griez") mmSkSecs(v).forEach((q, j) => { const sp = q.s.o === "v" ? v.D : v.W; out.push({ id, si: j, w: (sp + 5400) * k, h: (RG.ridgeTop + 2600) * k + 8 }); });   // katrs izvēlētais griezums savs bloks
     else if (id === "expl") { const nr = mmRooms(v).length + (lf ? mmRooms(lf).length + 2 : 0); out.push({ id, w: 66, h: 6.5 + (nr + 2) * 5 + 12 }); }
     else if (id === "mat") { const n = mmMatList(L).length, cols = Math.max(1, Math.min(Math.ceil(n / 3), Math.floor((aw || 220) / 78))), R = Math.max(3, Math.ceil(n / cols)); out.push({ id, w: Math.max(80, cols * 78), h: 12 + Math.min(n, R) * 11 + 5, R }); }   // kolonnu skaits ierobežots ar lapas platumu, rindu skaits kolonnā aug (citādi lapa nesaietilpa un palika tukša)

@@ -676,6 +676,12 @@ def build(model_path, langs=None):
     a_ = '    if (ax.length > 1) chainCad(AG, axU, "x", 1000, 0, true);'
     assert a_ in cad, 'cad.js: nav atrasta fasādes asu ķēde'
     cad = cad.replace(a_, '    if (ax.length > 1) chainCad(AG, axU, "x", ax.length > 2 ? 1180 : 1000, 0, true);\n    if (ax.length > 2) chainCad(AG, [Math.min(...axU), Math.max(...axU)], "x", 1430, 0, true);', 1)
+    # [MM] fasādes nosaukums (FASĀDE ASĪS …) un tā līnija zemāk, zem asu burbuļiem ir vieta
+    import re as _re2
+    cad, n1 = _re2.subn(r'(T_\(g, -[\w.]+, )2450(, ttl,)', r'\g<1>2800\2', cad, count=1)
+    cad, n2 = _re2.subn(r'(ttl\.length \* 262 \+ 350\)? ?(?:\* \(window\.AR_K \|\| 1\))?, )2450(, "M 1:)', r'\g<1>2800\2', cad, count=1)
+    cad, n3 = _re2.subn(r'(y1: )2560(, x2: [^\n]*?, y2: )2560', r'\g<1>2910\g<2>2910', cad, count=1)
+    assert n1 and n3, 'cad.js: fasādes nosaukums nav pārvietots'
     # [MM] fasādes asu burbuļi zemāk, lai mēru skaitļi ir salasāmi un neuzbrauc zemes līnijai un uzrakstam "FASĀDE ASĪS"
     for a_, b_ in [('x2: u, y2: 1150, stroke: C.axis', 'x2: u, y2: 1530, stroke: C.axis'), ('cx: u, cy: 1450, r: 300', 'cx: u, cy: 1830, r: 300'), ('T_(AG, u, 1540, n,', 'T_(AG, u, 1922, n,'), ('ROOF.plinth + 80, Math.max(...axU) + 350, 1800]', 'ROOF.plinth + 80, Math.max(...axU) + 350, 2300]')]:
         assert a_ in cad, 'cad.js: fasādes asu bloks ' + a_[:30]
