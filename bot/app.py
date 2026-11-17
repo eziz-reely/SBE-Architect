@@ -78,6 +78,9 @@ def scan():
         for dp, dn, fn in os.walk(base):
             dn[:] = sorted(d for d in dn if d not in SKIP and not d.startswith('.'))
             if 'model.json' not in fn:
+                if 'lapa.html' in fn:   # ārēja lapa (gatava HTML bez model.json): kartīte atver lapu, nevis redaktoru
+                    out.append(ext_entry(dp, co, base))
+                    dn[:] = []
                 continue
             mp = os.path.join(dp, 'model.json')
             try:
@@ -85,7 +88,7 @@ def scan():
             except Exception:
                 continue
             P = m.get('projekts') or {}
-            rooms = [[round(v) for v in r] for rm in (m.get('rooms') or []) for r in (rm.get('r') or [])]
+            rooms = [[round(v) for v in r[:4]] for rm in (m.get('rooms') or []) for r in (rm.get('r') or [])]   # r[4:] = sienu pielaides
             mm = re.match(r'\d+', m.get('platiba_grupa') or '')
             out.append({'key': key_of(dp), 'company': co, 'ckey': key_of(base), 'id': m.get('id', os.path.basename(dp)),
                         'name': P.get('modela_nosaukums') or m.get('nosaukums') or m.get('id'),
@@ -95,6 +98,20 @@ def scan():
                         **media(dp, key_of(dp), os.path.getmtime(mp))})
             dn[:] = []   # projekta apakšmapēs (varianti u.c.) citu model.json nemeklē
     return out
+
+
+def ext_entry(dp, co, base):
+    """Ārējā lapa: mape ar lapa.html (+ neobligāts info.json {"nosaukums","id","fazes"}). Redaktora laukus aizpilda ar tukšiem."""
+    mp = os.path.join(dp, 'lapa.html')
+    try:
+        info = json.load(open(os.path.join(dp, 'info.json'), encoding='utf-8'))
+    except Exception:
+        info = {}
+    nm = info.get('nosaukums') or os.path.basename(dp)
+    return {'key': key_of(dp), 'company': co, 'ckey': key_of(base), 'id': info.get('id') or os.path.basename(dp), 'name': nm, 'ext': True,
+            'info': info.get('apraksts') or '', 'W': 0, 'D': 0, 'area': 0, 'loft': False, 'rooms': [], 'poly': None,
+            'mtime': int(os.path.getmtime(mp)), 'rel': os.path.relpath(dp, base), 'tone': 'peleks', 'nfiles': 0, 'lastSent': '',
+            **media(dp, key_of(dp), 0), 'thumbOk': True}
 
 
 IMG = ('.png', '.jpg', '.jpeg', '.webp')
@@ -512,6 +529,14 @@ class H(BaseHTTPRequestHandler):
                 self.send_response(200); self.send_header('Content-Type', mimetypes.guess_type(fp)[0] or 'application/octet-stream')
                 self.send_header('Content-Length', str(len(body))); self.send_header('Cache-Control', 'max-age=31536000'); self.end_headers(); self.wfile.write(body)
                 return
+            if p.startswith('/lapa/'):   # ārējā lapa: /lapa/<key>[/<fails mapē>], pēc noklusējuma lapa.html
+                k, _, rel = p[6:].partition('/'); d = path_for(k); rel = urllib.parse.unquote(rel) or 'lapa.html'
+                fp = os.path.normpath(os.path.join(d or '', rel))
+                if not d or not os.path.isfile(os.path.join(d, 'lapa.html')) or not fp.startswith(os.path.join(d, '')) or not os.path.isfile(fp) or os.path.basename(fp) == 'model.json':
+                    return self.send(404, 'Nav', 'text/plain; charset=utf-8')
+                import mimetypes
+                ct = mimetypes.guess_type(fp)[0] or 'application/octet-stream'
+                return self.send(200, open(fp, 'rb').read(), ct + ('; charset=utf-8' if ct.startswith('text/') else ''))
             if p == '/api/ping':
                 return self.send(200, {'ok': True})
             if p.startswith('/edit/'):
@@ -614,7 +639,7 @@ class H(BaseHTTPRequestHandler):
                 return self.send(200, {'ok': True})
             if p.startswith('/api/delete/'):   # projektu pārvieto uz <uzņēmums>/_dzestie (var atgūt, pārvelkot mapi atpakaļ)
                 d = path_for(p[12:])
-                if not d or not os.path.isfile(os.path.join(d, 'model.json')):
+                if not d or not (os.path.isfile(os.path.join(d, 'model.json')) or os.path.isfile(os.path.join(d, 'lapa.html'))):
                     return self.send(404, 'Projekts nav atrasts', 'text/plain; charset=utf-8')
                 td = os.path.join(os.path.dirname(d), '_dzestie'); os.makedirs(td, exist_ok=True)
                 dst = os.path.join(td, os.path.basename(d)); n = 2
