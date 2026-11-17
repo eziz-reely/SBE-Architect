@@ -56,6 +56,9 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .pop .chk label:hover { background: var(--field); }
 .pop .chk b { font: 600 11px/1 var(--f-cap); color: var(--muted); min-width: 34px; letter-spacing: .04em; }
 .pop .chk .off { opacity: .45; }
+.pop .chk label > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pop .chk label button { flex: none; width: auto; margin: 0; padding: 3px 7px; font-size: 11px; line-height: 1.2; border-radius: 5px; }   /* vizualizāciju lapas rindas pogas: ▲ ▼ formāts × */
+.pop .chk label button.fmt { font-weight: 600; }
 .pop .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
 .pop .fg label { display: grid; gap: 3px; font-size: 11.5px; color: var(--muted); }
 .pop .fg label.w2 { grid-column: 1 / -1; }
@@ -3582,6 +3585,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const mv = d => () => { const n = clone(model); if (arVizMove(n, si, d)) { view = null; commit(n); syncAr(); } };
       lb.append(cb, nb, sp);
       if (cb.checked) lb.append(mk("▲", "Augstāk sarakstā", mv(-1)), mk("▼", "Zemāk sarakstā", mv(1)));
+      if (cb.checked) { const pt = S.o === "p"; lb.append(mk(pt ? "Vertikāla" : "Horizontāla", "Lapas formāts: " + (pt ? "vertikāla" : "horizontāla") + ". Nospied, lai mainītu uz " + (pt ? "horizontālu" : "vertikālu") + ".", () => { const n = clone(model), Q = n.projekts.ar_vizl[si], v = pt ? null : "p"; if (v) Q.o = v; else delete Q.o; (Q.im || []).forEach(q => { q.x = Math.round((q.x + q.w / 2) * (v ? 297 / 420 : 420 / 297) * 10 - q.w * 5) / 10; q.y = Math.round((q.y + q.h / 2) * (v ? 420 / 297 : 297 / 420) * 10 - q.h * 5) / 10; }); view = null; commit(n); syncAr(); })); lb.lastChild.classList.add("fmt"); }
       lb.append(mk("×", "Dzēst vizualizāciju lapu", () => { if ((S.im || []).length && !confirm("Dzēst lapu kopā ar tās bildēm?")) return; const n = clone(model); n.projekts.ar_vizl.splice(si, 1); if (!n.projekts.ar_vizl.length) delete n.projekts.ar_vizl; sel = null; view = null; commit(n); syncAr(); }));
       $("arParts").append(lb);
     };
