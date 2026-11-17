@@ -1170,7 +1170,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     m = stepFix(m);
     const arView = arOn(m) && edit;   // AR lapas: arī rediģējamas (fasādes un mērs), pārējais iet caur Skici
     if (arOn(m) && !(m.sections && m.sections.length >= 2)) m = Object.assign({}, m, { sections: padSections(m) });
-    else if (!arOn(m) && !(m.sections && m.sections.length)) m = Object.assign({}, m, { sections: [defaultSection(m)] });   // Skice: tas pats noklusētais griezums, ko rāda lapa, lai līniju var vilkt
+    else if (!arOn(m) && !(m.sections && m.sections.length) && !(m.projekts || {}).sec_off) m = Object.assign({}, m, { sections: [defaultSection(m)] });   // Skice: tas pats noklusētais griezums, ko rāda lapa, lai līniju var vilkt
     const blocks = revBlock(m, 100) + (m.loft ? revBlock(Object.assign({}, m, m.loft, { id: m.id + " mansards" }), 101) : "");
     let h = TPL.split(MARK).join(blocks);
     h = h.replace("window.MM_LANG='lv'", "window.MM_LANG='" + ((m.projekts || {}).lang === "en" ? "en" : "lv") + "'");
@@ -1262,8 +1262,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     else if (d.t === "redo") doRedo();
     else if (d.t === "delete") del();
     else if (d.t === "vizFile") vizAdd(d.files, d.s, d.at);
+    else if (d.t === "secDel") secDel(d.i);
+    else if (d.t === "secSo") { if (placing && placing.t === "section") { placing.so = d.so; toolOpt(); } }
     else if (d.t === "secMove") { const n = clone(model); secEnsure(n); if (n.sections[d.i]) { n.sections[d.i].at = d.at; commit(n); } }
-    else if (d.t === "secAdd") { secSet(null, n => { n.sections.push({ n: String(n.sections.length + 1), o: d.o, at: d.at, look: d.o === "v" ? 1 : -1, skice: !arOn(n) }); if (!arOn(n)) secKm(n); }); const dp = document.querySelector('details.tr[data-pane="sec"]'); if (dp) dp.open = true; status("Griezums " + (model.sections || []).length + " pievienots. Iestatījumi labajā joslā, sadaļā „Griezumi”."); }
+    else if (d.t === "secAdd") { secSet(null, n => { if (n.projekts) delete n.projekts.sec_off; n.sections.push({ n: String(n.sections.length + 1), o: d.o, at: d.at, look: d.o === "v" ? 1 : -1, skice: !arOn(n) }); if (!arOn(n)) secKm(n); }); const dp = document.querySelector('details.tr[data-pane="sec"]'); if (dp) dp.open = true; status("Griezums " + (model.sections || []).length + " pievienots. Iestatījumi labajā joslā, sadaļā „Griezumi”."); }
     else if (d.t === "hint") { $("hint").textContent = d.text; if (d.text) status(d.text); }
     else if (d.t === "ask") {   // izvēles logs no zīmēšanas lapas (piem. siena sasniedz terasi): atbilde atgriežas lapā kā mmAnswer
       const ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;background:rgba(20,24,30,.35);z-index:9999;display:flex;align-items:center;justify-content:center";
@@ -1797,6 +1799,19 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const axOff = snap => { if (snap === "fasade" || snap === "brivi") return 0; const S1 = (((model.projekts || {}).piragi_layers || {}).S1 || LAYERS0.S1.layers) || []; let c = 0; for (const l of S1) { if (/^C24/.test(l[0])) break; c += +l[1] || 0; } return c; };
   function toolOpt() {
     const box = $("toolOpt"); if (!box) return;
+    if (placing && placing.t === "section") {   // griezums: virziens un simbols augšējā joslā
+      box.hidden = false; box.textContent = "";
+      const mk2 = (txt, cls) => { const e = document.createElement("span"); e.textContent = txt; e.className = cls; return e; };
+      const sw = (list, on, set) => list.forEach(([v, t, tt]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = tt; b.className = on === v ? "on" : ""; b.style.cssText = "width:auto;padding:0 10px"; b.onclick = () => set(v); box.appendChild(b); });
+      const so = placing.so === "v" ? "v" : "h", WS = (model.projekts || {}).wall_style || {}, sv = +WS.section || 1;
+      box.appendChild(mk2("Griezums", "tn"));
+      sw([["h", "Horizontāls", "Griezuma līnija pa X asi (Tab maina)"], ["v", "Vertikāls", "Griezuma līnija pa Y asi (Tab maina)"]], so, v => { placing.so = v; toFrame({ mmPlace: placing }); toolOpt(); });
+      box.appendChild(mk2("Simbols", "ta"));
+      sw([[1, "Bultiņas", "Raustīta līnija ar bultiņām"], [2, "Melna zīme", "Melns trijstūris ar apli un numuru"], [3, "Pelēka zīme", "Pelēks trijstūris ar apli, numuru un lapas numuru"]], sv, v => {
+        const n = clone(model); n.projekts = n.projekts || {}; const w = n.projekts.wall_style = n.projekts.wall_style || {}; if (v === 1) delete w.section; else w.section = v; if (!Object.keys(w).length) delete n.projekts.wall_style;
+        commit(n); toolOpt(); });
+      box.appendChild(mk2("Klikšķis plānā noliek griezumu, E vai Delete dzēš atlasītu", "ta")); return;
+    }
     if (placing && placing.t === "axis" && !model.apbuve_wait) {   // būvasis: virziens un piesaiste augšējā joslā
       box.hidden = false; box.textContent = ""; placing.off = axOff(placing.snap);
       const mk2 = (txt, cls) => { const e = document.createElement("span"); e.textContent = txt; e.className = cls; return e; };
@@ -3547,6 +3562,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   // ---- griezumi: saraksts ar katra iestatījumiem (pozīcija, skata virziens, Skicē, kontūra / aizpildījums) ----
   function secEnsure(n) { if (!n.sections || !n.sections.length) n.sections = arOn(n) ? padSections(n) : [defaultSection(n)]; else if (arOn(n) && n.sections.length < 2) n.sections = padSections(n); }
   function secSet(i, fn) { const n = clone(model); secEnsure(n); fn(n, i == null ? null : n.sections[i]); commit(n); }
+  function secDel(i) {
+    secSet(null, n => {
+      if (!n.sections[i]) return; n.sections.splice(i, 1); n.sections.forEach((q, j) => { q.n = String(j + 1); });
+      if (!n.sections.length && !arOn(n)) { n.projekts = n.projekts || {}; n.projekts.sec_off = true; let K = n.projekts.kompozicija; if (K) K.elementi = (K.elementi || []).filter(x => x !== "griez"); else n.projekts.kompozicija = { orient: "p", elementi: ["plan", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "expl", "mat"], merogs: "auto" }; }   // pēdējais griezums izdzēsts: Skicē vairs netiek rādīts
+    });
+    varNote("Griezums izdzēsts.");
+  }
   function secKm(n) {   // Skices lapā griezums rādās automātiskajā kompozīcijā: ieslēdz elementu "Griezums"
     n.projekts = n.projekts || {}; let K = n.projekts.kompozicija;
     if (!K) K = n.projekts.kompozicija = { orient: "p", elementi: ["plan", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "expl", "mat"], merogs: "auto" };
@@ -3554,7 +3576,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   function syncSec() {
     const P = $("secPane"); if (!P) return; P.innerHTML = "";
-    const ar = arOn(model), list = model.sections && model.sections.length ? model.sections : (ar ? padSections(model) : [defaultSection(model)]);
+    const ar = arOn(model), list = model.sections && model.sections.length ? model.sections : (ar ? padSections(model) : (model.projekts || {}).sec_off ? [] : [defaultSection(model)]);
     const mkEl = (t, c, x) => { const e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
     list.forEach((sc, i) => {
       const row = mkEl("div", "secrow"), hd = mkEl("p", "pcap", `Griezums ${sc.n || i + 1}-${sc.n || i + 1} · ${sc.o === "v" ? "vertikāls" : "horizontāls"}`);

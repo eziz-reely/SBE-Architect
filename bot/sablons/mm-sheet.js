@@ -210,7 +210,7 @@ function mmSkSecs(v) {
   return [{ s: { n: "1", o: "h", at: Math.round(q ? q[1] + q[3] / 2 : v.D / 2), look: -1 }, i: 0 }];
 }
 // bloku izmēri (lapas mm) pie mēroga SC; fiksētie (tabulas, materiāli) no mēroga nav atkarīgi
-function mmBlockSizes(v, lf, L, K, SC, aw) {
+function mmBlockSizes(v, lf, L, K, SC, aw, vizBlk) {
   const k = 1 / SC, RG = roofGeo(v), ids = (K.elementi || []).filter(id => id !== "viz"), out = [];
   const eave = RG.eEdge + RG.thV;
   // plāna un gar X ass fasāžu (dienvidu, ziemeļu) kreisā mala ir viena: ēkas kreisā siena stāv vienā vertikālē (M = kopīgā kreisā josla, mm)
@@ -222,6 +222,7 @@ function mmBlockSizes(v, lf, L, K, SC, aw) {
     else if (id === "expl") { const nr = mmRooms(v).length + (lf ? mmRooms(lf).length + 2 : 0); out.push({ id, w: 66, h: 6.5 + (nr + 2) * 5 + 12 }); }
     else if (id === "mat") { const n = mmMatList(L).length, cols = Math.max(1, Math.min(Math.ceil(n / 3), Math.floor((aw || 220) / 78))), R = Math.max(3, Math.ceil(n / cols)); out.push({ id, w: Math.max(80, cols * 78), h: 12 + Math.min(n, R) * 11 + 5, R }); }   // kolonnu skaits ierobežots ar lapas platumu, rindu skaits kolonnā aug (citādi lapa nesaietilpa un palika tukša)
   });
+  if (vizBlk) out.push({ id: "viz", w: vizBlk.w, h: vizBlk.h });
   return out;
 }
 // plauktu iepakošana: bloki pa rindām pēc dotās kārtības; rindā bloki stāv kolonnās, un šaurāku bloku var nolikt zem cita, ja rindas augstumā vieta paliek
@@ -245,13 +246,14 @@ function mmLayout(v, lf, L, K, area, gap) {
   const cands = K.merogs && K.merogs !== "auto" ? [+K.merogs] : MM_MER;
   let seed = 12345; const rnd = () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
   const MINW = 50, MINH = 32;
-  for (const SC of cands) {
-    const all = mmBlockSizes(v, lf, L, K, SC, aw);
+  for (const SC of cands) for (const vizTry of vizOn ? [true, false] : [false]) {
+    const vizBlk = vizOn && vizTry ? (() => { let w = Math.min(aw * .5, 110), h = w / ratio; if (h > 70) { h = 70; w = h * ratio; } return { w, h }; })() : null;   // vizualizācija ir pilnvērtīgs bloks un stāv virs fasādēm
+    const all = mmBlockSizes(v, lf, L, K, SC, aw, vizBlk);
     for (const matIn of all.some(b => b.id === "mat") ? [false, true] : [false]) {   // materiāli apakšējā rindā; ja šajā mērogā tā neietilpst, materiāli tiek iepakoti kopā ar citiem blokiem (lielāks mērogs, mazāk tukšas vietas)
     const matB = matIn ? null : all.find(b => b.id === "mat"), gz = all.filter(b => b.id === "griez");
     // griezumi stāv blakus materiālu (krāsu pases) blokam apakšējā rindā, ja tur ietilpst; citādi kopā ar pārējiem blokiem
     const beside = !!(matB && gz.length && matB.w + gz.reduce((a, b) => a + gap + b.w, 0) <= aw + .01), bl = all.filter(b => (matIn || b.id !== "mat") && !(beside && b.id === "griez")), rowH = matB ? Math.max(matB.h, ...(beside ? gz.map(b => b.h) : [0])) : 0;
-    const PRI = ["plan", "expl", "loft", "fas_south", "fas_west", "fas_north", "fas_east", "griez", "mat"], pr = b => { const q = PRI.indexOf(b.id); return q < 0 ? 99 : q; };
+    const PRI = ["plan", "expl", "loft", "viz", "fas_south", "fas_west", "fas_north", "fas_east", "griez", "mat"], pr = b => { const q = PRI.indexOf(b.id); return q < 0 ? 99 : q; };
     const canon = [...bl].sort((a, b) => pr(a) - pr(b));   // pastāvīga kārtība: plāns, tabula, mansards, fasādes; materiāli vienmēr atsevišķā rindā zem visa (tāpēc neleciena pēc katras krāsu maiņas)
     const orders = [canon, [...bl].sort((a, b) => b.h - a.h), [...bl].sort((a, b) => b.w - a.w)];
     for (let i = 0; i < 500; i++) { const o = [...bl]; for (let j = o.length - 1; j > 0; j--) { const r = Math.floor(rnd() * (j + 1)); [o[j], o[r]] = [o[r], o[j]]; } orders.push(o); }
@@ -273,7 +275,8 @@ function mmLayout(v, lf, L, K, area, gap) {
       if (matB) { place.push({ id: "mat", x: ax, y: bot + gap, w: matB.w, h: matB.h, R: matB.R }); if (beside) { let gx = ax + matB.w + gap; gz.forEach(b => { place.push({ id: "griez", si: b.si, x: gx, y: bot + gap, w: b.w, h: b.h }); gx += b.w + gap; }); } bot += gap + rowH; }
       if (ay + ah - bot - gap > 20) free.push({ x: ax, y: bot + gap, w: aw, h: ay + ah - bot - gap });
       let viz = null;
-      if (vizOn) free.forEach(f => { let w = f.w, h = w / ratio; if (h > f.h) { h = f.h; w = h * ratio; } if (w >= MINW && h >= MINH && (!viz || w * h > viz.w * viz.h)) viz = { x: f.x + (f.w - w) / 2, y: f.y + (f.h - h) / 2, w, h }; });
+      if (vizBlk) { const pv = place.find(q => q.id === "viz"); if (pv) viz = { x: pv.x, y: pv.y, w: pv.w, h: pv.h }; }
+      else if (vizOn) free.forEach(f => { let w = f.w, h = w / ratio; if (h > f.h) { h = f.h; w = h * ratio; } if (w >= MINW && h >= MINH && (!viz || w * h > viz.w * viz.h)) viz = { x: f.x + (f.w - w) / 2, y: f.y + (f.h - h) / 2, w, h }; });
       if (vizOn && !viz) continue;
       let inv = 0; ord.forEach((a, i) => ord.slice(i + 1).forEach(b => { if (pr(a) > pr(b)) inv++; }));   // cik tālu no kanoniskās kārtības (plāns, tabula, fasādes, materiāli)
       const score = vizOn ? viz.w * viz.h : -(inv * 1000 + pk.used);

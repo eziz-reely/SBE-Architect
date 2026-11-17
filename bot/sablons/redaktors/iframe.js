@@ -2008,7 +2008,7 @@
   addEventListener("pointerup", () => {
     if (zdrag) { zoneUp(); return; }
     if (!drag) return;
-    if (drag.secd) { const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); if (d.moved && d.at != null) post({ t: "secMove", i: d.i, at: d.at }); return; }
+    if (drag.secd) { const d = drag; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); if (d.moved && d.at != null) post({ t: "secMove", i: d.i, at: d.at }); else if (!d.moved) secPick(d); return; }
     if (drag.fmk) {
       const d = drag; drag = null; document.body.style.cursor = "";
       document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
@@ -2122,7 +2122,9 @@
       if (e.key === "Enter") { e.preventDefault(); const n = +divBuf.s, op = divBuf.op; divBuf = null; if (n >= (op === "/" ? 2 : 1)) postDiv(n, op); return; }
       if (e.key === "Escape") { divBuf = null; post({ t: "hint", text: "" }); return; }
     }
-    if (place && place.t === "section" && !e.ctrlKey && !e.metaKey && (e.key === "Tab" || /^[vh]$/i.test(e.key))) { e.preventDefault(); place.so = e.key === "Tab" ? (place.so === "v" ? "h" : "v") : e.key.toLowerCase(); secPreview(place.lx, place.ly); return; }
+    if (place && place.t === "section" && !e.ctrlKey && !e.metaKey && (e.key === "Tab" || /^[vh]$/i.test(e.key))) { e.preventDefault(); place.so = e.key === "Tab" ? (place.so === "v" ? "h" : "v") : e.key.toLowerCase(); post({ t: "secSo", so: place.so }); secPreview(place.lx, place.ly); return; }
+    if (secSel && !place && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "Delete" || e.key === "Backspace" || /^[eE]$/.test(e.key))) { e.preventDefault(); const i = secSel.i; secClear(); post({ t: "secDel", i }); return; }
+    if (secSel && e.key === "Escape") { secClear(); return; }
     if (place && place.t === "terrace" && !(place.pts || []).length && place.cur) {   // pirmais punkts bez klikšķa: attālums no tuvākās ārsienas (Tab maina asi, Enter fiksē, otrais Enter noliek punktu)
       if (/^[0-9]$/.test(e.key) && !e.ctrlKey) { e.preventDefault(); place.buf = (place.buf || "") + e.key; terFirstHint(); terPreview(place.lx, place.ly, false); return; }
       if (place.buf && e.key === "Backspace") { e.preventDefault(); place.buf = place.buf.slice(0, -1); terFirstHint(); terPreview(place.lx, place.ly, false); return; }
@@ -2755,6 +2757,15 @@
     const k = ek(bl), g = mk(o, "g", { class: "gh" }), sp = V ? M.D : M.W, p0 = -2300, p1 = sp + 2300;
     mk(g, "line", { x1: V ? at : p0, y1: V ? p0 : at, x2: V ? at : p1, y2: V ? p1 : at, stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${5 / k} ${1.6 / k} ${1 / k} ${1.6 / k}`, "pointer-events": "none" });
     label(g, a.p[0] + 3 / k, a.p[1] - 3 / k, `Griezums ${V ? "vertikāls" : "horizontāls"} · ${V ? "x" : "y"} = ${at} mm · Tab maina virzienu`, k);
+  }
+  // atlasīts griezums: E vai Delete dzēš līniju un pašu griezumu visās lapās
+  let secSel = null;
+  function secClear() { secSel = null; document.querySelectorAll("g.mm-ov .secsel").forEach(x => x.remove()); }
+  function secPick(d) {
+    secClear(); const ln = d.g.querySelector(`[data-sec="${d.i}"]`); if (!ln) return;
+    const o = overlay(d.g), k = Math.abs(d.g.getScreenCTM().a) || 1, g = mk(o, "g", { class: "secsel" });
+    mk(g, "line", { x1: ln.getAttribute("x1"), y1: ln.getAttribute("y1"), x2: ln.getAttribute("x2"), y2: ln.getAttribute("y2"), stroke: ACC, "stroke-width": 2.4 / k, "stroke-dasharray": `${6 / k} ${3 / k}`, "pointer-events": "none" });
+    secSel = { i: d.i }; post({ t: "hint", text: `Griezums ${+d.i + 1} atlasīts: E vai Delete dzēš to, vilkšana pārbīda. Esc atceļ.` });
   }
   function secClick(e) {
     const a = secAt(e.clientX, e.clientY); if (!a) return;
