@@ -2210,10 +2210,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const J = model.jumts || {}, ov = +J.ov || 0, gj = group("Jumts", host);
       const f = field("Pārkare no sienas, mm", ov, (n, v) => { n.jumts = n.jumts || {}; n.jumts.ov = Math.max(0, Math.min(1200, Math.round(v / 10) * 10)); }, null);
       { // jumta forma: divslīpju / vienslīpu; vienslīpu: kritums ar bultiņu pogām, zemās un augstās sienas augstums
-        const mo = monoNums(model), jf = field("Jumta forma", mo ? (mo.par ? "parapets" : "vienslipa") : "divslipju", (n, v) => { n.jumts = n.jumts || {};
+        const mo = monoNums(model), jf = field("Jumta forma", mo ? (mo.par ? "parapets" : "vienslipa") : (+(model.jumts || {}).hip || /^(cetr|četr)/i.test((model.jumts || {}).forma || "") ? "cetrslipju" : "divslipju"), (n, v) => { n.jumts = n.jumts || {};
           if (v === "vienslipa" || v === "parapets") { const pr = v === "parapets"; n.jumts.forma = v; n.jumts.krit = n.jumts.krit || "south"; if (!n.jumts.h_zema) n.jumts.h_zema = Math.round(+n.jumts.eave || 2600); if (!n.jumts.h_augsta || (pr && n.jumts.h_augsta - n.jumts.h_zema > 1500)) n.jumts.h_augsta = n.jumts.h_zema + (pr ? 500 : 900); if (pr && n.jumts.dz == null) n.jumts.dz = 300; }
-          else { n.jumts.forma = "divslipju"; delete n.jumts.h_zema; delete n.jumts.h_augsta; }
-          roofFix(n); }, { divslipju: "Divslīpju", vienslipa: "Vienslīpu", parapets: "Plakans ar parapetu" });
+          else { n.jumts.forma = v === "cetrslipju" ? "cetrslipju" : "divslipju"; if (v !== "cetrslipju") delete n.jumts.hip; delete n.jumts.h_zema; delete n.jumts.h_augsta; }
+          roofFix(n); }, { divslipju: "Divslīpju", cetrslipju: "Četrslīpju", vienslipa: "Vienslīpu", parapets: "Plakans ar parapetu" });
         gj.appendChild(jf);
         if (mo) {
           const kp = document.createElement("div"); kp.className = "full"; kp.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:150px;margin:2px 0 6px";

@@ -7,7 +7,7 @@ ArchiCAD: atver SBE_skice.tpl, Tapir > Run script > <id>_archicad.py. Favorīti 
 Uzbūvē: stāvu, ārsienas (pa ēkas kontūru), starpsienas (no telpu spraugām), logus, durvis, zonas, divslīpju jumtu.
 Ar mansardu (loft.poly + loft.level) veido 2. stāvu, un jumts ceļas pa tā kontūru; jumts.papildu = papildu jumti (ieejas bloks), projekts.siena_mm = ārsienas biezums.
 Koordinātas: plāna mm (y uz dienvidiem) → ArchiCAD m, y apgriezts (y_ac = D - y), lai plāns nebūtu spoguļots.
-Ko skripts vēl NEdara (atskaitē parādās kā piezīmes): grīdas plātnes, cokols, četrslīpju jumts, mansarda logi, mēbeles, layouti.
+Ko skripts vēl NEdara (atskaitē parādās kā piezīmes): grīdas plātnes, cokols, mansarda logi, mēbeles, layouti.
 Ģeometrijas loģika ir kopīga ar IngeTrazo spraudni (ingetrazo/mm_homes/geometry.py, klase Ctx).
 """
 import json, math, os, sys
@@ -168,11 +168,11 @@ def data_of(m):
     roof = None
     J = m.get("jumts") or {}
     if J:
+        roof = {"forma": "cetrslipju" if c.tanH else "divslipju", "slipums": c.pitch, "dzega_mm": c.eave, "parkare_mm": c.ov,
+                "biezums_mm": float(J.get("biezums_mm") or G.ROOF_TH), "bounds": (x0, y0, x1, y1),
+                "papildu": [e for e in (J.get("papildu") or []) if e.get("taisnsturis")]}
         if c.tanH:
-            notes.append("Četrslīpju jumts šajā versijā netiek veidots (tikai divslīpju); jumts izlaists")
-        else:
-            roof = {"slipums": c.pitch, "dzega_mm": c.eave, "parkare_mm": c.ov, "biezums_mm": float(J.get("biezums_mm") or G.ROOF_TH), "bounds": (x0, y0, x1, y1),
-                    "papildu": [e for e in (J.get("papildu") or []) if e.get("taisnsturis")]}
+            notes.append("Četrslīpju jumts veidots pa ēkas apvalka robežrāmi (ne pa precīzo kontūru)")
     if len(top.poly) > 4:
         notes.append("Ēkas kontūra nav taisnstūris: jumts var neatbilst")
     ridge = c.eave + (min(x1 - x0, y1 - y0) / 2) * c.tan + float(J.get("biezums_mm") or G.ROOF_TH)
@@ -253,7 +253,7 @@ def project_json(m, nr="001"):
     if lf:   # 2. stāva sienas līdz kores augstumam (jumts tās apgriež ar TrimElements)
         p["stavi"].append(_stavs(lf, D, pre, "2", lf["level"], max(d["augstums_mm"] - lf["level"], 1000)))
     if r:
-        p["jumts"] = {"forma": "divslipju", "slipums": r["slipums"], "parkare_mm": r["parkare_mm"], "dzega_mm": r["dzega_mm"],
+        p["jumts"] = {"forma": r.get("forma", "divslipju"), "slipums": r["slipums"], "parkare_mm": r["parkare_mm"], "dzega_mm": r["dzega_mm"],
                       "biezums_mm": r["biezums_mm"], "kore": "x"}
         if r.get("papildu"):   # papildu jumti (piem. ieejas mezgla plakanais): model.json plāna koordinātēs -> y uz augšu
             p["jumts"]["papildu"] = [{**{k: v for k, v in e.items() if k != "taisnsturis"},

@@ -120,6 +120,36 @@ class Ctx:
             self.T = float(P["siena_mm"])
         self.tone = P.get("tonis") if P.get("tonis") in TONES else "peleks"
         self.edges = self._edges()
+        if not P.get("siena_mm"):
+            self._infer_T(m)
+
+    def _infer_T(self, m):
+        """Ārsienas biezums no logiem: dienvidu/austrumu ārsienās logs ir enkurots pie malas minimuma (mala - T).
+        Ja nav nevienas ailas, kas sakrīt ar noklusējuma T, bet vairākas sakrīt ar citu T (100..500), ņem to."""
+        wins = [w for w in (m.get("windows") or []) if w.get("o") in ("h", "v") and not w.get("shape")]
+        if not wins:
+            return
+        def hits(T):
+            self.T = T
+            self.edges = self._edges()
+            return sum(1 for w in wins if self.on_edge(w["o"], w["y"] if w["o"] == "h" else w["x"],
+                                                       w["x"] if w["o"] == "h" else w["y"],
+                                                       (w["x"] if w["o"] == "h" else w["y"]) + w["len"]) is not None)
+        base = self.T
+        cand = {base}
+        for e in self.edges:
+            if e["st"] is None:
+                continue
+            for w in wins:
+                if w["o"] != e["o"]:
+                    continue
+                s = w["y"] if w["o"] == "h" else w["x"]
+                coord = (e["a"][1] if e["o"] == "h" else e["a"][0])
+                t = round(coord - s, 1)
+                if 100 <= t <= 500:
+                    cand.add(t)
+        best = max(cand, key=lambda T: (hits(T), T == base))
+        hits(best)
 
     def P3(self, p):   # plan mm -> metres, north = +Y
         return (p[0] / 1000.0, (self.D - p[1]) / 1000.0, p[2] / 1000.0)
