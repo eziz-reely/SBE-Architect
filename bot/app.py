@@ -138,7 +138,7 @@ def media(dp, key, mtime):
                 bot.setdefault(m.group(2), []).append(url(os.path.join('viz', f)))
             else:
                 own.append({'url': url(os.path.join('viz', f)), 'mtime': os.path.getmtime(os.path.join(vd, f))})
-    own.sort(key=lambda x: -x['mtime'])
+    own.sort(key=lambda x: (x['mtime'], x['url']))   # pirmā ielikta bilde ir vāks
     return {'thumbs': th, 'thumbOk': fresh, 'vizBot': bot, 'vizOwn': [x['url'] for x in own]}
 
 
