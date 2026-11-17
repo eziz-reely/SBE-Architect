@@ -682,6 +682,7 @@ def build(model_path, langs=None):
     cad, n2 = _re2.subn(r'(ttl\.length \* 262 \+ 350\)? ?(?:\* \(window\.AR_K \|\| 1\))?, )2450(, "M 1:)', r'\g<1>2800\2', cad, count=1)
     cad, n3 = _re2.subn(r'(y1: )2560(, x2: [^\n]*?, y2: )2560', r'\g<1>2910\g<2>2910', cad, count=1)
     assert n1 and n3, 'cad.js: fasādes nosaukums nav pārvietots'
+    cad = cad.replace('y2: 2910, stroke: C.ink, "stroke-width": 12, "data-keep": 1', 'y2: 2910, stroke: C.ink, "stroke-width": 12, "data-keep": 1, "data-fasrule": 1', 1)   # nosaukuma līnija = fasādes jumta plašums, pēc tā lapā saliek pretējās fasādes vienā vertikālē
     # [MM] fasādes asu burbuļi zemāk, lai mēru skaitļi ir salasāmi un neuzbrauc zemes līnijai un uzrakstam "FASĀDE ASĪS"
     for a_, b_ in [('x2: u, y2: 1150, stroke: C.axis', 'x2: u, y2: 1530, stroke: C.axis'), ('cx: u, cy: 1450, r: 300', 'cx: u, cy: 1830, r: 300'), ('T_(AG, u, 1540, n,', 'T_(AG, u, 1922, n,'), ('ROOF.plinth + 80, Math.max(...axU) + 350, 1800]', 'ROOF.plinth + 80, Math.max(...axU) + 350, 2300]')]:
         assert a_ in cad, 'cad.js: fasādes asu bloks ' + a_[:30]

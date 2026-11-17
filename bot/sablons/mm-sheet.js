@@ -384,6 +384,9 @@ function mmCompose(v, lf, L, K) {
       const n = ARC.materials.length, mg = materials(svg, b.x, b.y + 4, b.R || true); ARC.materials = keep;
       mg.querySelector("text").textContent = tx.matT; el("line", { x1: 0, y1: 2.2, x2: b.w, y2: 2.2, stroke: C.ink, "stroke-width": .3 }, mg); void n;
     }
+  // pretējās fasādes (dienvidu/ziemeļu, rietumu/austrumu) vienā kolonnā: ēkas apjoms (jumta plašums) vienā vertikālē; spoguļfasādei pārbīda tā, lai kontūras sakrīt
+  { const FR_ = sd => { const g = svg.querySelector(`g[data-block=elev-${sd}]`), l = g && g.querySelector("[data-fasrule]"), m = g && /translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)\s*scale\(([-\d.e]+)\)/.exec(g.getAttribute("transform") || ""); return l && m && { g, tx: +m[1], ty: +m[2], k: +m[3], x1: +m[1] + +m[3] * +l.getAttribute("x1") }; };
+    [["south", "north"], ["west", "east"]].forEach(([a, b]) => { const A = FR_(a), B = FR_(b); if (!A || !B || Math.abs(A.tx - B.tx) > .5 || Math.abs(A.x1 - B.x1) < .05) return; B.g.setAttribute("transform", `translate(${B.tx + A.x1 - B.x1} ${B.ty}) scale(${B.k})`); }); }
   });
   if (lay.viz && K.viz && K.viz.src) { const z = lay.viz;
     el("image", { href: K.viz.src, x: z.x, y: z.y, width: z.w, height: z.h, preserveAspectRatio: "xMidYMid meet", "data-block": "viz-sheet" }, svg);
