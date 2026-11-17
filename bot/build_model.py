@@ -558,9 +558,20 @@ def build(model_path, langs=None):
         # [MM] pamatu un komunikāciju plāns kā AR lapa
         # [MM] griezumi virs diviem: 3. un 4. griezums nāk atsevišķā lapā "griez2" (lapu saraksts tiek sinhronizēts ar griezumu skaitu)
         ('  const total = ARC.parts.length, out = [];',
-         '  { const ns = (v.sections || []).length, gi = ARC.parts.indexOf("griez"), g2 = ARC.parts.indexOf("griez2");   // [MM] papildu griezumu lapa\n    if (gi >= 0 && ns > 2 && g2 < 0) ARC.parts.splice(gi + 1, 0, "griez2"); else if (ns <= 2 && g2 >= 0) ARC.parts.splice(g2, 1);\n    if (ns > 2) { const q = v.sections.slice(2, 4).map(z => z.n); AR_PARTS.griez2 = q.length > 1 ? `Griezumi ${q[0]}-${q[0]} un ${q[1]}-${q[1]}` : `Griezums ${q[0]}-${q[0]}`; } }\n  const total = ARC.parts.length, out = [];'),
+         '  { const ns = (v.sections || []).length, gi = ARC.parts.indexOf("griez"), g2 = ARC.parts.indexOf("griez2");   // [MM] papildu griezumu lapa\n    if (gi >= 0 && ns > 2 && g2 < 0) ARC.parts.splice(gi + 1, 0, "griez2"); else if (ns <= 2 && g2 >= 0) ARC.parts.splice(g2, 1);\n    ARC.parts.forEach(k_ => { const m_ = /^viz(\\d+)$/.exec(k_); if (m_) AR_PARTS[k_] = (((ARC.projekts || {}).ar_vizl || [])[+m_[1] - 1] || {}).n || "Vizualizācijas"; });\n    if (ns > 2) { const q = v.sections.slice(2, 4).map(z => z.n); AR_PARTS.griez2 = q.length > 1 ? `Griezumi ${q[0]}-${q[0]} un ${q[1]}-${q[1]}` : `Griezums ${q[0]}-${q[0]}`; } }\n  const total = ARC.parts.length, out = [];'),
         ('    if (k === "griez") {\n      const [s1, s2] = v.sections;\n      section(el("g", { "data-block": "sec-2", transform: "translate(52 122) scale(0.01)" }, svg), v, s2);\n      section(el("g", { "data-block": "sec-1", transform: "translate(52 222) scale(0.01)" }, svg), v, s1);',
          '    if (k === "griez" || k === "griez2") {\n      const G2 = k === "griez2", [s1, s2] = G2 ? [v.sections[2], v.sections[3]] : v.sections;\n      if (s2) section(el("g", { "data-block": "sec-" + (G2 ? 4 : 2), transform: "translate(52 122) scale(0.01)" }, svg), v, s2);\n      section(el("g", { "data-block": "sec-" + (G2 ? 3 : 1), transform: `translate(52 ${s2 ? 222 : 172}) scale(0.01)` }, svg), v, s1);'),
+        # [MM] vizualizāciju lapas AR komplektā (ARC.parts atslēgas viz1, viz2 …): lapa ar rakstlauku, bildes un tukšas lapas "pievienot attēlu" laukums
+        ('    const title = titles[k] || AR_PARTS[k];\n',
+         '    const title = titles[k] || AR_PARTS[k];\n'
+         '    const vm_ = /^viz(\\d+)$/.exec(k);\n'
+         '    if (vm_) {\n'
+         '      const vs_ = +vm_[1] - 1, S_ = ((ARC.projekts || {}).ar_vizl || [])[vs_] || {}, svg = sheet(k, S_.n || "Vizualizācijas", "-");\n'
+         '      svg.setAttribute("class", "a3 vizl"); svg.dataset.part = "viz"; svg.dataset.vs = String(vs_);\n'
+         '      (S_.im || []).forEach((q, i) => { const g = el("g", { class: "vimg", "data-i": i, transform: `rotate(${q.r || 0} ${q.x + q.w / 2} ${q.y + q.h / 2})` }, svg); el("image", { href: q.src, x: q.x, y: q.y, width: q.w, height: q.h, preserveAspectRatio: "none" }, g); });\n'
+         '      if (!(S_.im || []).length) { const g = el("g", { "data-vadd": vs_, style: "cursor:pointer" }, svg); el("rect", { x: 120, y: 90, width: 180, height: 100, rx: 3, fill: "#f6f7f8", stroke: "#2266d8", "stroke-width": .5, "stroke-dasharray": "3 2" }, g); T_(g, 210, 138, "+ Pievienot attēlu", { a: "middle", fs: 6, fw: 600 }); T_(g, 210, 150, "klikšķis vai Ctrl+V", { a: "middle", fs: 3.6 }); }\n'
+         '      out.push(svg); return;\n'
+         '    }\n'),
         ('const r = 300, ar = 1.414 * r, d = s.look, sheet = arNo("griez");',
          'const r = 300, ar = 1.414 * r, d = s.look, sheet = (si >= 2 && arNo("griez2")) || arNo("griez");'),
         ('    if (k === "plan" || k === "mebel") {', '    if (/^pam\\d$/.test(k)) { out.push(pamArSheet(v, k, sc => sheet(k, title, sc))); return; }\n    if (k === "plan" || k === "mebel") {'),

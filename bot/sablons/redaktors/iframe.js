@@ -3307,6 +3307,12 @@
     n.x += { ArrowLeft: -st, ArrowRight: st }[e.key] || 0; n.y += { ArrowUp: -st, ArrowDown: st }[e.key] || 0;
     post({ t: "edit", model: N, sel });
   });
+  addEventListener("click", e => {   // tukša vizualizāciju lapa: klikšķis centrā atver failu izvēli (var arī ielīmēt Ctrl+V vai ievilkt)
+    const pa = e.target.closest && e.target.closest("[data-vadd]"); if (!pa || place) return;
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.multiple = true;
+    inp.onchange = () => { const fs = vImgFiles(inp); if (fs.length) post({ t: "vizFile", files: fs, s: +pa.dataset.vadd }); };
+    inp.click();
+  });
   addEventListener("paste", e => { const fs = vImgFiles(e.clipboardData); if (!fs.length) return; e.preventDefault(); post({ t: "vizFile", files: fs, s: sel && sel.k === "vimg" ? sel.s : null }); });
   addEventListener("dragover", e => { if (e.dataTransfer && [...e.dataTransfer.types].includes("Files")) e.preventDefault(); });
   addEventListener("drop", e => {

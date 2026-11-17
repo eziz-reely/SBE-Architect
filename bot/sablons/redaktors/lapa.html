@@ -1067,7 +1067,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const vizOf = m => (m.projekts || {})[vizKey(m)] || [];
   const vizEsc = t => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   function vizSvgs(m) {
-    const L = vizOf(m); if (!L.length) return "";
+    const L = vizOf(m); if (!L.length || arOn(m)) return "";   // AR komplektā lapas zīmē pats AR šablons (ar rakstlauku un numuru)
     const [W, H] = vizDims(m);
     return `<style>@media screen{svg.a3.vizl{background:#fff}${arOn(m) ? "" : "svg.a3.vizl{margin-top:14mm}"}}</style>` + L.map((S, si) => `<svg class="a3 vizl" data-part="viz" data-vs="${si}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" role="img" aria-label="${vizEsc(S.n || "Vizualizācijas")}"><rect width="${W}" height="${H}" fill="#fff"/>`
       + `<rect x="20" y="10" width="${W - 30}" height="${H - 20}" fill="none" stroke="#111" stroke-width=".5"/>`
@@ -1085,7 +1085,23 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   // AR lapu secība: pamatu lapas uzreiz pēc vispārīgajiem rādītājiem
   function arPartsOf(m) {
     const off = (m.projekts.ar.off || []), a = AR_ALL.map(x => x[0]).filter(k => !off.includes(k)), pm = pamAr(m).map((_, i) => "pam" + (i + 1));
-    const i = a.indexOf("visp"); a.splice(i < 0 ? 0 : i + 1, 0, ...pm); return a;
+    const i = a.indexOf("visp"); a.splice(i < 0 ? 0 : i + 1, 0, ...pm);
+    return arWithViz(m, a).map(x => x.k || "viz" + (x.v + 1));
+  }
+  // vizualizāciju lapas (projekts.ar_vizl) lapu secībā: S.at = cik parastu lapu ir pirms tās; S.off = nav komplektā
+  function arWithViz(m, a) {
+    const L = (m.projekts || {}).ar_vizl || [], res = [];
+    for (let j = 0; j <= a.length; j++) { L.forEach((S, v) => { if (!S.off && Math.min(S.at == null ? a.length : S.at, a.length) === j) res.push({ v }); }); if (j < a.length) res.push({ k: a[j] }); }
+    return res;
+  }
+  function arVizMove(n, v, dir) {   // pārbīda vizualizāciju lapu par vienu vietu augšup/lejup sarakstā (tikai komplektā esošo lapu starpā)
+    const a0 = arPartsOf(n).filter(k => !/^viz\d+$/.test(k)), seq = arWithViz(n, a0), p = seq.findIndex(x => x.v === v), q = p + dir;
+    if (p < 0 || q < 0 || q >= seq.length) return false;
+    [seq[p], seq[q]] = [seq[q], seq[p]];
+    const L = n.projekts.ar_vizl, out = []; let c = 0;
+    seq.forEach(x => { if (x.k) c++; else { const S = L[x.v]; S.at = c; out.push(S); } });
+    L.filter(S => S.off).forEach(S => out.push(S));
+    n.projekts.ar_vizl = out; return true;
   }
   function defaultSection(m) {   // Skices noklusētais griezums: horizontāls caur lielāko telpu (tāds pats kā mm-sheet.js)
     const q = (m.rooms || []).flatMap(rm => rm.r).sort((a, b) => b[2] * b[3] - a[2] * a[3])[0];
@@ -1138,7 +1154,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         const inP = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) c = !c; } return c; };
         const pl = sl.map(s => { let g = null, best = 0; const Q = s.pts; for (let a = 0; a < Q.length; a++) for (let b = a + 1; b < Q.length; b++) for (let c = b + 1; c < Q.length; c++) { const ax = Q[b][0] - Q[a][0], ay = Q[b][1] - Q[a][1], az = Q[b][2] - Q[a][2], bx = Q[c][0] - Q[a][0], by = Q[c][1] - Q[a][1], bz = Q[c][2] - Q[a][2], det = ax * by - ay * bx; if (Math.abs(det) > best) { best = Math.abs(det); g = [(az * by - bz * ay) / det, (ax * bz - bx * az) / det, Q[a]]; } } return { P: Q.map(p => [p[0], p[1]]), g }; });
         const z = []; for (let j = 0; j < ny; j++) { const row = []; for (let i = 0; i < nx; i++) { const x = x0 + i * 200, y = y0 + j * 200; let zz = null; pl.forEach(q => { if (q.g && inP(q.P, x, y)) { const v = q.g[2][2] + q.g[0] * (x - q.g[2][0]) + q.g[1] * (y - q.g[2][1]); if (zz == null || v > zz) zz = v; } }); row.push(zz == null ? null : Math.round(zz)); } z.push(row); }
-        return { slopes: sl, grid: { x0, y0, d: 200, nx, ny, z } }; } catch (e) { return null; } })(), parkare_ral: P.parkare_ral || null, fasade_lum: P.fasade_hex && P.fasade_tex ? [1, 3, 5].reduce((a, i, j) => a + [.299, .587, .114][j] * parseInt(P.fasade_hex.slice(i, i + 2), 16), 0) / 255 : (tn.lum || .25), layer_marks: P.layer_marks || null, fonts: P.fonts || null, ...("modela_nosaukums" in P ? { modela_nosaukums: P.modela_nosaukums } : {}), ...(Array.isArray(P.adrese) ? { adrese: P.adrese } : {}), logo: P.logo || null, arOn: arOn(m), arParts: arOn(m) ? arPartsOf(m) : null, pamatu_plans: P.pamatu_plans || null, arTb: (P.ar && P.ar.tb) || {}, arData: (P.ar && P.ar.data) || {}, uznemums: P.uznemums || (window.MM_LOCAL || {}).company || "", vejkaste: (m.jumts || {}).vejkaste !== false, palodzes: P.palodzes || null, aplodas: P.aplodas || null, notekas: P.notekas || {}, tonis: tk, tonis_lv: P.fasade_hex && P.fasade_ral ? P.fasade_ral : tn.lv, tonis_en: P.fasade_hex && P.fasade_ral ? P.fasade_ral : tn.en, tonis_sw: P.fasade_hex || tn.sw, sturi: P.sturi_opc ? (P.sturi_opc === "nav" ? 0 : 90) : (tn.sturi || 0), sturi_opc: P.sturi_opc || null, sturi_hex: P.sturi_opc ? ({ balts: "#F2F0EA", melns: "#1d1d1d", tonis: tn.sw }[P.sturi_opc] || "#F2F0EA") : null, fascia: tn.vejmala === "balta", logi: lg, logi_hex: P.logu_hex || (RAL[lg] || [0, "#383E42"])[1],
+        return { slopes: sl, grid: { x0, y0, d: 200, nx, ny, z } }; } catch (e) { return null; } })(), parkare_ral: P.parkare_ral || null, ar_vizl: P.ar_vizl || null, fasade_lum: P.fasade_hex && P.fasade_tex ? [1, 3, 5].reduce((a, i, j) => a + [.299, .587, .114][j] * parseInt(P.fasade_hex.slice(i, i + 2), 16), 0) / 255 : (tn.lum || .25), layer_marks: P.layer_marks || null, fonts: P.fonts || null, ...("modela_nosaukums" in P ? { modela_nosaukums: P.modela_nosaukums } : {}), ...(Array.isArray(P.adrese) ? { adrese: P.adrese } : {}), logo: P.logo || null, arOn: arOn(m), arParts: arOn(m) ? arPartsOf(m) : null, pamatu_plans: P.pamatu_plans || null, arTb: (P.ar && P.ar.tb) || {}, arData: (P.ar && P.ar.data) || {}, uznemums: P.uznemums || (window.MM_LOCAL || {}).company || "", vejkaste: (m.jumts || {}).vejkaste !== false, palodzes: P.palodzes || null, aplodas: P.aplodas || null, notekas: P.notekas || {}, tonis: tk, tonis_lv: P.fasade_hex && P.fasade_ral ? P.fasade_ral : tn.lv, tonis_en: P.fasade_hex && P.fasade_ral ? P.fasade_ral : tn.en, tonis_sw: P.fasade_hex || tn.sw, sturi: P.sturi_opc ? (P.sturi_opc === "nav" ? 0 : 90) : (tn.sturi || 0), sturi_opc: P.sturi_opc || null, sturi_hex: P.sturi_opc ? ({ balts: "#F2F0EA", melns: "#1d1d1d", tonis: tn.sw }[P.sturi_opc] || "#F2F0EA") : null, fascia: tn.vejmala === "balta", logi: lg, logi_hex: P.logu_hex || (RAL[lg] || [0, "#383E42"])[1],
         pamati: P.pamati === "platne" ? "platne" : "stabveida", pamatu_augstums: +P.pamatu_augstums > 0 ? +P.pamatu_augstums : null, cokols: P.cokols || "RAL 9005", cokols_hex: P.cokols === "RAL 7016" ? "#383E42" : "#1d1d1d", cokols_plate: P.cokols_plate && P.cokols_plate !== "betons" ? P.cokols_plate : null, cokols_plate_hex: ({ "RAL 9005": "#2b2b2d", "RAL 7016": "#575c60" })[P.cokols_plate] || "#9b9c98" };
       const ov = `;window.MM_EDITOR=1;(function(){var P=AR.projekts=AR.projekts||{},X=${JSON.stringify(X)};for(var k in X)P[k]=X[k];var PL=${JSON.stringify(P.piragi_layers||null)};if(PL&&AR.layers)for(var lk in PL){if(AR.layers[lk])AR.layers[lk].layers=PL[lk];}var PN=${JSON.stringify(P.piragi_names||null)};if(PN&&AR.layers)for(var nk in PN){if(AR.layers[nk]&&PN[nk])AR.layers[nk].name=PN[nk];}var WT=${JSON.stringify((P.wall_types||[]).map(function(w){return{id:w.id,name:w.name,layers:w.layers}}))};if(AR.layers)WT.forEach(function(w){if(w.id&&w.layers)AR.layers[w.id]={name:w.name||w.id,layers:w.layers};});var F0=AR.floor||{},pg=X.pamatu_augstums||F0.posts_ground||(F0.foundation==="stabi"?F0.above:0)||600;AR.floor=X.pamati==="platne"?{foundation:"plate",above:180,posts_ground:pg}:{foundation:"stabi",above:pg,posts_ground:pg};var PZ={stabveida:[["Pamati: stabveida pamati.","Cokols: metāla apdare "+X.cokols+"."],["Foundation: post foundation.","Plinth: metal cladding "+X.cokols+"."]],platne:[["Pamati: pamatu plātne.",X.cokols_plate?"Cokols: tonēts betons "+X.cokols_plate+".":"Cokols: betons."],["Foundation: slab foundation.",X.cokols_plate?"Plinth: tinted concrete "+X.cokols_plate+".":"Plinth: concrete."]]}[X.pamati],fx=function(a,re,nw){a=(a||[]).filter(function(t){return !re.test(t)});return nw.concat(a)};P.piezimes=fx(P.piezimes,/^(Pamati|Cokols):/,PZ[0]);P.piezimes_en=fx(P.piezimes_en,/^(Foundation|Plinth):/,PZ[1]);AR.win=AR.win||{};AR.win.colorOut=X.logi;var tc=function(c){return c==="tonis"?X.tonis_sw:c};AR.win.casingColor=tc(X.aplodas)||X.logi;AR.win.sillColor=tc(X.palodzes);if(X.arOn){AR.parts=X.arParts;AR.tb=Object.assign({},AR.tb,X.arTb);AR.data=Object.assign({},AR.data,X.arData);AR.tb.logo=X.arTb&&X.arTb.logo?X.arTb.logo:X.logo==="none"?"":(X.logo||((!X.uznemums||X.uznemums==="MM Homes")&&window.MM_LOGO)||"");}})();`;
       if (P.fasade_hex && P.fasade_tex) h = h.replace(/const CLAD_TEX = "data:image\/jpeg;base64,[^"]*";/, () => `const CLAD_TEX = "data:image/jpeg;base64,${P.fasade_tex}";`);
@@ -3360,7 +3376,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   function sheetSvg(sv) {
       const doc = FR[live].contentDocument; sv = sv || sheetsAll()[0];
       const c = sv.cloneNode(true), [vw, vh] = vbOf(sv);
-      c.querySelectorAll("g.mm-ov, g.mm-ghost-ed").forEach(e => e.remove());
+      c.querySelectorAll("g.mm-ov, g.mm-ghost-ed, [data-vadd]").forEach(e => e.remove());
       c.querySelectorAll("g.mm-gd line").forEach(l => { l.setAttribute("stroke-width", "0.3"); l.setAttribute("stroke-opacity", "1"); });   // palīglīnijas eksportā: vienmēr redzamas, fiksēts biezums (ekrāna tālummaiņa tās citādi padara par matadatu)
       c.removeAttribute("style"); c.setAttribute("width", vw + "mm"); c.setAttribute("height", vh + "mm");
       c.setAttribute("xmlns", "http://www.w3.org/2000/svg"); c.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
@@ -3535,21 +3551,29 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const PPa = (model.projekts || {}).pamatu_plans, stab = (model.projekts || {}).pamati !== "platne";
     const pamRows = stab ? (PPa && PPa.ar ? pamSheetsOf(PPa).map((L, i) => ["pam" + (i + 1), L.length === 3 ? "Pamatu un komunikāciju plāns" : L.map(k => PAMV.find(x => x[0] === k)[1]).join(" + ")]) : [["pam1", "Pamatu un komunikāciju plāns"]]) : [];
     const LIST = AR_ALL.slice(); { const i = LIST.findIndex(x => x[0] === "visp"); LIST.splice(i + 1, 0, ...pamRows); }
+    let onIdx = 0, vDone = 0;
+    const vizRow = (S, si) => {   // vizualizāciju lapa sarakstā: ķeksis (ieslēgt/izslēgt), numurs, nosaukums, ▲ ▼ pārbīde, × dzēst
+      const lb = document.createElement("label"), cb = document.createElement("input"), nb = document.createElement("b"), sp = document.createElement("span");
+      cb.type = "checkbox"; cb.checked = !S.off; nb.textContent = cb.checked ? "AR-" + (++no) : "–"; sp.textContent = S.n || "Vizualizācijas"; if (!cb.checked) lb.className = "off";
+      cb.onchange = () => { const n = clone(model), Q = n.projekts.ar_vizl[si]; if (cb.checked) delete Q.off; else Q.off = true; view = null; commit(n); syncAr(); };
+      const mk = (t, ti, f) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = ti; b.className = "mv"; b.onclick = e => { e.preventDefault(); f(); }; return b; };
+      const mv = d => () => { const n = clone(model); if (arVizMove(n, si, d)) { view = null; commit(n); syncAr(); } };
+      lb.append(cb, nb, sp);
+      if (cb.checked) lb.append(mk("▲", "Augstāk sarakstā", mv(-1)), mk("▼", "Zemāk sarakstā", mv(1)));
+      lb.append(mk("×", "Dzēst vizualizāciju lapu", () => { if ((S.im || []).length && !confirm("Dzēst lapu kopā ar tās bildēm?")) return; const n = clone(model); n.projekts.ar_vizl.splice(si, 1); if (!n.projekts.ar_vizl.length) delete n.projekts.ar_vizl; sel = null; view = null; commit(n); syncAr(); }));
+      $("arParts").append(lb);
+    };
+    const flushViz = slot => (model.projekts.ar_vizl || []).forEach((S, si) => { if (S.off || vDone & (1 << si)) return; if (Math.min(S.at == null ? 1e9 : S.at, 1e9) <= slot || slot >= 1e9) { vDone |= 1 << si; vizRow(S, si); } });
     LIST.forEach(([k, t]) => {
       const lb = document.createElement("label"), cb = document.createElement("input"), nb = document.createElement("b"), sp = document.createElement("span");
       const isPam = /^pam\d$/.test(k);
-      cb.type = "checkbox"; cb.checked = isPam ? !!(PPa && PPa.ar) : !off.includes(k); nb.textContent = cb.checked ? "AR-" + (++no) : "–"; sp.textContent = t; if (!cb.checked) lb.className = "off";
+      cb.type = "checkbox"; cb.checked = isPam ? !!(PPa && PPa.ar) : !off.includes(k);
+      if (cb.checked) { flushViz(onIdx); onIdx++; } nb.textContent = cb.checked ? "AR-" + (++no) : "–"; sp.textContent = t; if (!cb.checked) lb.className = "off";
       if (isPam) { cb.onchange = () => { const n = clone(model); pamPP(n).ar = cb.checked; commit(n); syncAr(); }; lb.append(cb, nb, sp); $("arParts").append(lb); return; }
       cb.onchange = () => { const n = clone(model), a = n.projekts.ar; a.off = AR_ALL.map(x => x[0]).filter(x => x === k ? !cb.checked : (a.off || []).includes(x)); if (a.off.length === AR_ALL.length) { cb.checked = true; return; } commit(n); syncAr(); };
       lb.append(cb, nb, sp); $("arParts").append(lb);
     });
-    // vizualizāciju lapas AR komplekta beigās: katra ir sava lapa ar numuru, pievienot var ar pogu (bildes pievieno mājas iestatījumos → Vizualizāciju lapas)
-    ((model.projekts || {}).ar_vizl || []).forEach((S, si) => {
-      const lb = document.createElement("label"), nb = document.createElement("b"), sp = document.createElement("span"), x = document.createElement("button");
-      nb.textContent = "AR-" + (++no); sp.textContent = S.n || "Vizualizācijas"; x.type = "button"; x.className = "del"; x.textContent = "×"; x.title = "Dzēst vizualizāciju lapu";
-      x.onclick = e => { e.preventDefault(); if ((S.im || []).length && !confirm("Dzēst lapu kopā ar tās bildēm?")) return; const n = clone(model); n.projekts.ar_vizl.splice(si, 1); if (!n.projekts.ar_vizl.length) delete n.projekts.ar_vizl; sel = null; view = null; commit(n); syncAr(); };
-      lb.append(nb, sp, x); $("arParts").append(lb);
-    });
+    flushViz(1e9);   // vizualizāciju lapas, kas ir pēc visām parastajām
     { const b = document.createElement("button"); b.type = "button"; b.className = "wide"; b.textContent = "+ Pievienot vizualizāciju lapu";
       b.onclick = () => { const n = clone(model); n.projekts = n.projekts || {}; n.projekts.ar_vizl = (n.projekts.ar_vizl || []).concat([{ n: "Vizualizācijas", im: [] }]); view = null; commit(n); syncAr(); };
       $("arParts").append(b); }
