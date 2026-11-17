@@ -1457,6 +1457,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     { n: "Mājas kontūra (ārsienas)", s: "klikšķi ārsienu stūros (taisnleņķi, arī L un T forma); klikšķis pirmajā punktā noslēdz. Māja tiek pārbūvēta pa šo kontūru, telpas apgrieztas, terases un lievenis pabīdīti", p: { t: "hpoly" }, ic: "ter" },
     { n: "Griezums", s: "klikšķis plānā: horizontāls vai vertikāls griezums (Tab maina)", p: { t: "section" }, ic: "sec" },
     { n: "Apbūves laukums", s: "zīmē apbūves kontūru (taisnstūris vai poligons, režīmu izvēlies augšā); jaunais laukums nonāk eksplikācijā, māja netiek mainīta", p: { t: "apbuve", mode: "rect" }, ic: "apb" },
+    { n: "Būvasis", s: "klikšķis plānā pievieno būvasi; pielīp pie ārsienas malas (fasāde vai C24 ārmala, izvēle augšā), terases malas un esošajām asīm; numerācija pārkārtojas pa secību", p: { t: "axis", o: "x", snap: "c24" }, ic: "axis" },
   ];
   // vy: mēbelei ir 3 detalizācijas varianti (bed1 / bed / bed3)
   const FURN_LIB = [
@@ -1688,17 +1689,19 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     ...[[7, "gv", "", "gv"], [8, "gh", "", "gh"], [9, "gs", "", "gs"], [11, "ter", "t", "ter"], [12, "terp", "", "terp"], [13, "dec", "", "dec"], [14, "decp", "", "decp"], [15, "post", "", "post"], [16, "zone", "", "zone"], [17, "zonep", "", "zonep"], [18, "bk", "b", "bucket"], [19, "fwall", "", "wall"], [20, "hpoly", "", "ter"]]
       .map(([i, id, k, ic]) => ({ id, n: OPEN[i].n, k, ic, oi: i, run: () => { const b = OPENB[i]; if (b) b.click(); railSync(); } })),
     { id: "sec", n: "Griezums", k: "", ic: "sec", oi: 21, run: () => { const b = OPENB[21]; if (b) b.click(); railSync(); } },
+    { id: "bva", n: "Būvasis", k: "", ic: "axis", oi: 23, run: () => { const b = OPENB[23]; if (b) b.click(); railSync(); } },
     { id: "apb", n: "Apbūves laukums", k: "", ic: "apb", oi: 22, run: () => { const b = OPENB[22]; if (b) b.click(); railSync(); } },
     { id: "gc", n: "Dzēst visas palīglīnijas", k: "", ic: "gx", run: () => { $("bGuideClr").click(); } },
   ];
   // kreisā josla: visi rīki grupās (atlase | ailas | sienas un telpas | mēri un palīglīnijas | terase, fasāde, stabi | materiāls)
-  const RAIL = ["Rīki", ["sel", "er", "bk"], ["t5", "t6", "sec", "gv", "gh", "gs", "gc"], "Elementi", ["t0", "t1", "t2"], ["t3", "t4", "fwall", "zone", "zonep", "hpoly", "apb"], ["ter", "terp", "dec", "decp", "post"]];
-  const OPEN_ID = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "gh", "gs", "er", "ter", "terp", "dec", "decp", "post", "zone", "zonep", "bk", "fwall", "hpoly", "sec", "apb"];
+  const RAIL = ["Rīki", ["sel", "er", "bk"], ["t5", "t6", "sec", "gv", "gh", "gs", "bva", "gc"], "Elementi", ["t0", "t1", "t2"], ["t3", "t4", "fwall", "zone", "zonep", "hpoly", "apb"], ["ter", "terp", "dec", "decp", "post"]];
+  const OPEN_ID = ["t0", "t1", "t2", "t3", "t4", "t5", "t6", "gv", "gh", "gs", "er", "ter", "terp", "dec", "decp", "post", "zone", "zonep", "bk", "fwall", "hpoly", "sec", "apb", "bva"];
   IC.terp = '<path d="M3.5 18.5 5.5 9h7l1-4h6.5l-2 13.5z"/>';
   IC.dec = '<path d="M3 20.5V10l9-6.5 9 6.5v10.5"/><rect x="8.5" y="12" width="7" height="6"/>';
   IC.decp = '<path d="M3 20.5V10l9-6.5 9 6.5v10.5"/><path d="M8 18.5v-5l4-3 4 3v5z"/>';
   IC.zone = '<rect x="3.5" y="5.5" width="17" height="13" stroke-dasharray="3 2"/><path d="M9 12h6"/>';
   IC.zonep = '<path d="M3.5 5.5h10v6h7v7h-17z" stroke-dasharray="3 2"/>';
+  IC.axis = '<path d="M12 3v18" stroke-dasharray="4 1.5 1 1.5"/><circle cx="12" cy="21" r="0"/><circle cx="18" cy="6" r="3"/>';
   IC.apb = '<rect x="4" y="6" width="16" height="12"/><path d="M4 6l16 12" stroke-dasharray="2 2"/>';
   IC.apbR = '<rect x="4" y="6" width="16" height="12"/><circle cx="4" cy="6" r="1.3"/><circle cx="20" cy="18" r="1.3"/>';
   IC.apbP = '<path d="M4 18V8l6-3 7 4 3 9z"/><circle cx="4" cy="18" r="1.3"/><circle cx="4" cy="8" r="1.3"/><circle cx="10" cy="5" r="1.3"/><circle cx="17" cy="9" r="1.3"/><circle cx="20" cy="18" r="1.3"/>';
@@ -1739,8 +1742,17 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (w && mode !== "cancel") { const e = { n: (name || "").trim() || (mode === "replace" ? "Dzīvojamā māja" : "Terase"), poly: w }; N.apbuve = mode === "replace" ? [e] : apbList(N).concat([e]); }
     commit(N);
   }
+  const axOff = snap => { if (snap === "fasade" || snap === "brivi") return 0; const S1 = (((model.projekts || {}).piragi_layers || {}).S1 || LAYERS0.S1.layers) || []; let c = 0; for (const l of S1) { if (/^C24/.test(l[0])) break; c += +l[1] || 0; } return c; };
   function toolOpt() {
     const box = $("toolOpt"); if (!box) return;
+    if (placing && placing.t === "axis" && !model.apbuve_wait) {   // būvasis: virziens un piesaiste augšējā joslā
+      box.hidden = false; box.textContent = ""; placing.off = axOff(placing.snap);
+      const mk2 = (txt, cls) => { const e = document.createElement("span"); e.textContent = txt; e.className = cls; return e; };
+      const sw = (list, key) => list.forEach(([v, t, tt]) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; b.title = tt; b.className = placing[key] === v ? "on" : ""; b.style.cssText = "width:auto;padding:0 10px"; b.onclick = () => { placing[key] = v; placing.off = axOff(placing.snap); toFrame({ mmPlace: placing }); toolOpt(); }; box.appendChild(b); });
+      box.appendChild(mk2("Būvasis", "tn")); sw([["x", "Vertikāla (1, 2, 3)", "Ass ar ciparu, pozīcija pa X"], ["y", "Horizontāla (A, B, C)", "Ass ar burtu, pozīcija pa Y"]], "o");
+      box.appendChild(mk2("Piesaiste", "ta")); sw([["fasade", "Pa fasādi", "Ass uz fasādes ārmalas"], ["c24", "C24 ārējā mala", "Ass uz C24 karkasa ārmalas, " + axOff("c24") + " mm no fasādes"], ["brivi", "Brīvi", "Ass jebkurā vietā, pielīp tikai pie ārsienas, terases malas un esošām asīm; ar peli precīzi gar terases ārmalu"]], "snap");
+      box.appendChild(mk2("Klikšķis plānā: pielīp ārsienai, terasei un esošām asīm", "ta")); return;
+    }
     const wait = model.apbuve_wait, on = !!(placing && placing.t === "apbuve"); box.hidden = !(on || wait); box.textContent = "";
     if (!(on || wait)) return;
     const mk = (tag, txt, cls) => { const e = document.createElement(tag); if (txt) e.textContent = txt; if (cls) e.className = cls; return e; };
@@ -2236,8 +2248,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         const auto = apbArea(model.poly && model.poly.length > 2 ? model.poly : [[0, 0], [model.W, 0], [model.W, model.D], [0, model.D]]), L = apbList(model), tot = L.reduce((s_, e) => s_ + apbArea(e.poly), 0);
         const row = document.createElement("div"); row.className = "full"; row.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0";
         const t = document.createElement("span"); t.style.cssText = "font-size:12px"; t.innerHTML = "<b>Apbūves laukums:</b> " + (L.length ? apbFmt(tot) + " (uzzīmēts: " + L.map(e => e.n + " " + apbFmt(apbArea(e.poly))).join(", ") + ") · mājas kontūra: " + apbFmt(auto) : apbFmt(auto) + " (pēc mājas kontūras)");
+        const bA = document.createElement("button"); bA.type = "button"; bA.textContent = "Pievienot būvasi"; bA.onclick = () => { const b = OPENB[23]; if (b) b.click(); railSync(); };
         const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "Zīmēt apbūves laukumu"; b1.onclick = () => { const b = OPENB[22]; if (b) b.click(); railSync(); };
-        row.append(t, b1);
+        row.append(t, b1, bA);
         if (L.length) { const b2 = document.createElement("button"); b2.type = "button"; b2.textContent = "Dzēst"; b2.onclick = () => { const N = clone(model); delete N.apbuve; commit(N); }; row.appendChild(b2); }
         gs.appendChild(row);
       }

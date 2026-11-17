@@ -650,6 +650,10 @@ def build(model_path, langs=None):
     assert a_ in cad, 'cad.js: nav atrasta apbūves tabula'
     cad = cad.replace(a_, 'FL.forEach((e, i) => { cell(c2 / 2, y + (2 + i) * RH, e.n, { a: "middle" }); cell(WX - 2, y + (2 + i) * RH, m2(e.a), { a: "end" }); ln(0, y + (3 + i) * RH, WX, y + (3 + i) * RH); });\n    cell(c2 - 2, y + (2 + FL.length) * RH, "Kopā:", { a: "end" }); cell(WX - 2, y + (2 + FL.length) * RH, m2(footA(v)), { a: "end" });', 1)
     cad = cad.replace('function cadPlan(', FOOT + 'function cadPlan(', 1)
+    # [MM] fasādes: zem būvasu mēru ķēdes kopējais būvasu izmērs (ja asu ir vairāk nekā divas)
+    a_ = '    if (ax.length > 1) chainCad(AG, axU, "x", 1000, 0, true);'
+    assert a_ in cad, 'cad.js: nav atrasta fasādes asu ķēde'
+    cad = cad.replace(a_, '    if (ax.length > 1) chainCad(AG, axU, "x", ax.length > 2 ? 700 : 1000, 0, true);\n    if (ax.length > 2) chainCad(AG, [Math.min(...axU), Math.max(...axU)], "x", 1000, 0, true);', 1)
     cad = cad.replace('function sheetHeading(svg, x, y, w, title, scale = "M 1:100")', 'function sheetHeading(svg, x, y, w, title, scale = "M 1:" + (window.MM_SCALE || 100))', 1)
     # fasādes tonis: SBE apdares tekstūru aizstāj ar izvēlēto (sablons/tex)
     import re

@@ -1897,6 +1897,7 @@
     if (place && place.t === "post") { postPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "terrace") { place.alt = e.altKey; place.lx = e.clientX; place.ly = e.clientY; terPreview(e.clientX, e.clientY, e.shiftKey); return; }
     if (place && place.t === "apbuve") { apbPreview(e.clientX, e.clientY); return; }
+    if (place && place.t === "axis") { axPreview(e.clientX, e.clientY); return; }
     if (place && ((place.t === "zone" && place.poly) || place.t === "hpoly")) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "section") { place.lx = e.clientX; place.ly = e.clientY; secPreview(e.clientX, e.clientY); return; }
@@ -2613,6 +2614,22 @@
     const ni = N.rooms.length - 1; N.stampAt[ni] = ctr; N.stampScale[ni] = 0.7;
     return { N, sel: { k: "stamp", i: ni, lv: "main" }, nameFocus: true };
   }
+  // būvasis manuāli: vieta = tuvākā mājas ārsienas mala (fasāde: 0, C24 ārmala: place.off uz iekšu), terases mala vai esoša ass
+  function axisPos(v, o, off, free) {
+    const X = o === "x", ix = X ? 0 : 1, P = M.poly && M.poly.length > 2 ? M.poly : [[0, 0], [M.W, 0], [M.W, M.D], [0, M.D]], c = [];
+    P.forEach((p, i) => { const q = P[(i + 1) % P.length]; if (Math.abs(p[ix] - q[ix]) > 1) return; const e = p[ix], m = (p[1 - ix] + q[1 - ix]) / 2, pt = X ? [e + 5, m] : [m, e + 5]; c.push(free ? e : inPolyPt(P, pt[0], pt[1]) ? e + off : e - off); });
+    (M.terraces || []).forEach(t => (t.poly || []).forEach(q => c.push(q[ix])));
+    ((M.axes || {})[o] || []).forEach(a => c.push(a[0]));
+    let best = null; c.forEach(t => { if (Math.abs(t - v) < (free ? 120 : 300) && (best == null || Math.abs(t - v) < Math.abs(best - v))) best = t; });
+    return best != null ? Math.round(best * 10) / 10 : r10(v);
+  }
+  function axPreview(cx, cy) {
+    const bl = terBlock(); if (!bl) return;
+    const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
+    const k = ek(bl), g = mk(o, "g", { class: "gh" }), X = place.o === "x", pos = axisPos(X ? p[0] : p[1], place.o, place.off || 0, place.snap === "brivi");
+    mk(g, "line", X ? { x1: pos, y1: -1500, x2: pos, y2: M.D + 1500, stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${6 / k} ${2 / k} ${1 / k} ${2 / k}` } : { x1: -1500, y1: pos, x2: M.W + 1500, y2: pos, stroke: ACC, "stroke-width": 1.2 / k, "stroke-dasharray": `${6 / k} ${2 / k} ${1 / k} ${2 / k}` });
+    label(g, (X ? pos : p[0]) + 3 / k, (X ? p[1] : pos) - 3 / k, `${Math.round(pos)} mm`);
+  }
   function apbPreview(cx, cy) {
     const bl = terBlock(); if (!bl) return;
     const p = toLocal(bl.g, cx, cy), o = overlay(bl.g); o.querySelectorAll(".gh").forEach(e => e.remove());
@@ -3093,6 +3110,16 @@
           const c = partC("main", vertical ? "x" : "y", vertical ? a[0] : a[1]).v, v0 = snapAx("main", vertical ? "y" : "x", vertical ? a[1] : a[0], 300), v1 = snapAx("main", vertical ? "y" : "x", vertical ? p[1] : p[0], 300);
           const r = addPartitionAcross(N, vertical, c, v0, v1);
           if (r.err) { P.p0 = null; return { miss: r.err }; }
+          return { N, sel: null };
+        }
+        if (P.t === "axis") {   // būvasis manuāli: jauna ass pielīp pie esošajām, numerācija tiek pārrakstīta pa secību
+          if (bl.lv !== "main") return { miss: "Būvasis liek 1. stāva plānā." };
+          const X = P.o === "x", pos = axisPos(X ? p[0] : p[1], P.o, P.off || 0, P.snap === "brivi"), LETS = "ABCDEFGHIJKLMNOPRSTUVZ";
+          N.axes = N.axes || { x: [], y: [] }; const A = N.axes[P.o] = N.axes[P.o] || [];
+          if (A.some(a_ => Math.abs(a_[0] - pos) < 20)) return { miss: "Šajā vietā jau ir būvasis." };
+          A.push([pos, "?"]); A.sort((a_, b_) => a_[0] - b_[0]);
+          A.forEach((a_, i) => { a_[1] = X ? String(i + 1) : (LETS[A.length - 1 - i] || "Y" + i); });
+          N.projekts = N.projekts || {}; N.projekts.asisMan = true;
           return { N, sel: null };
         }
         if (P.t === "apbuve") {   // apbūves laukums: tikai skaitlis eksplikācijā (model.apbuve), māja netiek pārbūvēta
