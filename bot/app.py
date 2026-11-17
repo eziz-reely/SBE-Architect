@@ -17,7 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("SBE_PORT") or 8737)
 CFG_PATH = os.path.join(os.path.expanduser('~'), '.sbe-arhivs.json')
-SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', '3d', 'node_modules', '.git', 'ref', '_dzestie', '_claude_uzdevumi'}
+SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', 'varianti', '3d', 'node_modules', '.git', 'ref', '_dzestie', '_claude_uzdevumi'}
 LOCK = threading.Lock()
 KEYS = {}   # atslēga -> projekta mape
 
@@ -144,7 +144,85 @@ def media(dp, key, mtime):
 
 def _counts(dp):
     f = files_of(dp)
-    return {'nfiles': len(f['files']), 'lastSent': max((x.get('when', '') for x in f['sent']), default='')}
+    vd = os.path.join(dp, 'varianti')
+    nv = len([x for x in os.listdir(vd) if x.endswith('.json')]) if os.path.isdir(vd) else 0
+    return {'nfiles': len(f['files']), 'lastSent': max((x.get('when', '') for x in f['sent']), default=''), 'nvar': nv}
+
+
+# ---- plānojuma varianti: tā pati māja (globālie iestatījumi), cits telpu izkārtojums; glabājas <projekts>/varianti/<id>.json ----
+LAYOUT_KEYS = ('rooms', 'doors', 'windows', 'furniture', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'wallTags', 'sections', 'gableWins',
+               'ceiling', 'ceilingNote', 'winOk', 'entryInChain', 'loft', 'planNotes')
+
+
+def replan_variants(cur, skip=0, n=3):
+    """Plānotājs ar mājas gabarītiem; no katra varianta pārņem tikai izkārtojumu, pārējais paliek no pašreizējā modeļa."""
+    import copy
+    sys.path.insert(0, HERE)
+    import planner, generate
+    W, D = float(cur['W']), float(cur['D'])
+    H = float((cur.get('ievade') or {}).get('augstums') or 4000)
+    griesti = int(cur.get('ceiling') or 2200)
+    b0, v0 = generate.auto_telpas(W * D / 1e6)
+    loft = bool(cur.get('loft'))
+    out, why = [], []
+    want = skip + n
+    for b in [b0, b0 - 1, b0 + 1]:
+        if b < 1:
+            continue
+        vs, rej, _k = planner.plan(W, D, H, b, v0, ('II', 'L', 'T'), 'only' if loft else False, want + 2, griesti)
+        why += rej or []
+        if vs:
+            break
+    else:
+        vs = []
+    sig = None
+    try:
+        sig = planner.signature(cur)
+    except Exception:
+        pass
+    for m in vs:
+        if sig is not None and planner.signature(m) == sig:
+            continue
+        N = copy.deepcopy(cur)
+        for k in LAYOUT_KEYS:
+            if k in m:
+                N[k] = copy.deepcopy(m[k])
+            else:
+                N.pop(k, None)
+        N['_planner'] = m.get('_planner')
+        out.append(N)
+    return out[skip:skip + n], why
+
+
+def var_dir(d):
+    return os.path.join(d, 'varianti')
+
+
+def var_list(d):
+    vd = var_dir(d); out = []
+    if os.path.isdir(vd):
+        for f in sorted(os.listdir(vd)):
+            if f.endswith('.json'):
+                try:
+                    out.append({'id': f[:-5], 'model': json.load(open(os.path.join(vd, f), encoding='utf-8'))})
+                except Exception:
+                    pass
+    return out
+
+
+def var_save(d, vid, m):
+    vd = var_dir(d); os.makedirs(vd, exist_ok=True)
+    tmp = os.path.join(vd, vid + '.tmp')
+    json.dump(m, open(tmp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    os.replace(tmp, os.path.join(vd, vid + '.json'))
+
+
+def var_next(d):
+    vd = var_dir(d); n = 1
+    ids = {f[:-5] for f in os.listdir(vd)} if os.path.isdir(vd) else set()
+    while f'V{n:02d}' in ids:
+        n += 1
+    return f'V{n:02d}'
 
 
 def path_for(key):
@@ -515,6 +593,9 @@ class H(BaseHTTPRequestHandler):
                         'spec': bool(company_spec(d).get('specifikacija_apstiprinata')),
                         'komplekti': [{'id': k['id'], 'nosaukums': k['nosaukums']} for k in spec_sets(company_spec(d))[0]], 'aktivs': spec_sets(company_spec(d))[1]} for n, d in companies(c).items()]
                 return self.send(200, {'projects': pr, 'companies': cos, 'root': c['root']})
+            if p.startswith('/api/variants/'):
+                d = path_for(p[14:])
+                return self.send(200, {'variants': var_list(d)}) if d else self.send(404, 'Nav projekta', 'text/plain; charset=utf-8')
             if p == '/api/update':
                 return self.send(200, update_state())
             if p.startswith('/api/files/'):
@@ -644,6 +725,34 @@ class H(BaseHTTPRequestHandler):
                 open(fp, 'wb').write(data)
                 return self.send(200, {'ok': True, 'name': os.path.basename(fp)})
             b = self.body()
+            if p.startswith('/api/replan/'):   # body: {model, skip}; ģenerē jaunus variantus un saglabā projekta mapē varianti/
+                d = path_for(p[12:]); cur = b.get('model')
+                if not d or not isinstance(cur, dict) or 'W' not in cur:
+                    return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
+                have = var_list(d)
+                try:
+                    new, why = replan_variants(cur, int(b.get('skip') or 0), 3)
+                except SystemExit as e:
+                    return self.send(400, str(e), 'text/plain; charset=utf-8')
+                res = []
+                with LOCK:
+                    for m in new:
+                        vid = var_next(d); var_save(d, vid, m); res.append({'id': vid, 'model': m})
+                return self.send(200, {'variants': res, 'total': len(have) + len(res), 'why': why[:6]})
+            if p.startswith('/api/variant-del/'):
+                d = path_for(p[17:]); vid = re.sub(r'[^A-Za-z0-9_-]', '', str(b.get('id') or ''))
+                fp = os.path.join(var_dir(d or ''), vid + '.json')
+                if not d or not vid or not os.path.isfile(fp):
+                    return self.send(400, 'Nav varianta', 'text/plain; charset=utf-8')
+                os.remove(fp)
+                return self.send(200, {'ok': True})
+            if p.startswith('/api/variant-swap/'):   # variants kļūst par galveno: tā vietā ieraksta līdzšinējo galveno modeli
+                d = path_for(p[18:]); vid = re.sub(r'[^A-Za-z0-9_-]', '', str(b.get('id') or '')); old = b.get('model')
+                if not d or not vid or not isinstance(old, dict) or not os.path.isfile(os.path.join(var_dir(d), vid + '.json')):
+                    return self.send(400, 'Nav varianta', 'text/plain; charset=utf-8')
+                with LOCK:
+                    var_save(d, vid, old)
+                return self.send(200, {'ok': True})
             if p.startswith('/api/viz-del/'):   # paša ielikto bildi pārvieto uz viz/_dzestas (var atgūt no mapes)
                 d = path_for(p[13:]); nm = os.path.basename(str(b.get('name') or ''))
                 fp = os.path.join(d or '', 'viz', nm)
