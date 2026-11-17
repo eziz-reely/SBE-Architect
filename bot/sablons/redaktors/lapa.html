@@ -872,6 +872,7 @@ p.grp { font: 600 12px/1.3 var(--f-ui); color: var(--muted); text-transform: non
         <input id="tbFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden><input id="arFile" type="file" accept="image/png,image/jpeg,image/svg+xml" hidden>
         <p class="pnote" id="tbNote">PNG, JPG vai SVG. Rakstlaukuma tumšais lauks paliek arī bez logo.</p>
       </div></span>
+    <button id="bTop3d" type="button" title="3D skats, references PNG un Gemini prompts" aria-label="3D skats"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg><span>3D skats</span></button>
     <button id="bSave" class="pri" type="button"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-7H7v7M7 3v4h8"/></svg><span>Saglabāt</span></button>
   </div>
 </header>
@@ -1677,6 +1678,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     b.onclick = () => { if (!((model.projekts || {}).guides || []).length) { status("Palīglīniju nav."); return; } const n = clone(model); n.projekts.guides = []; if (sel && sel.k === "guide") sel = null; commit(n); status("Visas palīglīnijas dzēstas."); };
     $("libOpen").appendChild(b); }
   $("gClr").onclick = () => $("bGuideClr").click();
+  $("bTop3d").onclick = () => $("b3d").click();   // 3D skats arī augšējā joslā blakus rakstlaukumam
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
   { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk", "tv"]], ["Virtuve un vannas istaba", ["kit", "ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]], ["Glabāšana un priekšnams", "fx1"], ["Dzīvojamā, kabinets", "fx2"], ["Tehnika un vannas istaba", "fx3"], ["Apkure", "fx4"]], host = $("libFurn");
     GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
