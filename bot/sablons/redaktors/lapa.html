@@ -3546,6 +3546,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const A = (model.projekts || {}).ar, on = !!(A && A.on);
     document.querySelectorAll(".modeseg button").forEach(b => b.setAttribute("aria-checked", String((b.dataset.m === "ar") === on)));
     $("arBox").hidden = !on; if (!on) return;
+    if (!A.vizInit) {   // pirmoreiz AR: skices vizualizāciju lapas kļūst par AR pirmajām lapām (tālāk AR lapas ir neatkarīgas, vietu maina ▲ ▼)
+      const n = clone(model); n.projekts.ar.vizInit = true; const sk = n.projekts.vizl || [];
+      if (sk.length && !(n.projekts.ar_vizl || []).length) n.projekts.ar_vizl = clone(sk).map(S => Object.assign(S, { at: 0 }));
+      view = null; commit(n); syncAr(); return;
+    }
     const off = A.off || []; let no = 0;
     $("arParts").innerHTML = "";
     const PPa = (model.projekts || {}).pamatu_plans, stab = (model.projekts || {}).pamati !== "platne";
