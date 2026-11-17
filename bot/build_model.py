@@ -672,6 +672,32 @@ def build(model_path, langs=None):
         _sl.append(ln_)
     cad = '\n'.join(_sl)
     assert cad.count(', "s");') >= 1, 'cad.js: ķēžu izsaukumi bez atslēgām'
+    # [MM] jumta plāns: pārkare pa malām (projekts.ov_side), nevis vienāda visām malām
+    i_ = cad.index('function roofPlan(parent, v) {'); j_ = cad.index('\n}\n', i_) + 3
+    rp = cad[i_:j_]
+    for a_, b_ in [
+        ('const g = el("g", { "data-block": "plan" }, parent), ov = ROOF.ov, W = v.W, Dd = v.D;',
+         'const g = el("g", { "data-block": "plan" }, parent), ov = ROOF.ov, W = v.W, Dd = v.D;\n  const OS_ = (window.AR && AR.projekts && AR.projekts.ov_side) || {}, od_ = q => (!ROOF.hip && OS_[q] != null && !isNaN(+OS_[q])) ? +OS_[q] : ov, oW = od_("west"), oE = od_("east"), oN = od_("north"), oS = od_("south");'),
+        ('const box = [-ov, -ov, W + 2 * ov, Dd + 2 * ov];', 'const box = [-oW, -oN, W + oW + oE, Dd + oN + oS];'),
+        ('r0 = -ov + hi, r1 = W + ov - hi', 'r0 = -oW + hi, r1 = W + oE - hi'),
+        (': [[[-ov, -ov], [W + ov, -ov], [W + ov, ym], [-ov, ym], "x"], [[-ov, ym], [W + ov, ym], [W + ov, Dd + ov], [-ov, Dd + ov], "x"]];',
+         ': [[[-oW, -oN], [W + oE, -oN], [W + oE, ym], [-oW, ym], "x"], [[-oW, ym], [W + oE, ym], [W + oE, Dd + oS], [-oW, Dd + oS], "x"]];'),
+        ('along ? [-ov, Dd + ov, -ov, W + ov] : [-ov, W + ov, -ov, Dd + ov]', 'along ? [-oN, Dd + oS, -oW, W + oE] : [-oW, W + oE, -oN, Dd + oS]'),
+        ('[-ov, Dd + ov].forEach((y, k) => {', '[-oN, Dd + oS].forEach((y, k) => {'),
+        ('`M ${-ov} ${y} V ${yo} H ${W + ov} V ${y}`', '`M ${-oW} ${y} V ${yo} H ${W + oE} V ${y}`'),
+        ('[-ov + 140, W + ov - 140].forEach(x => el("circle"', '[-oW + 140, W + oE - 140].forEach(x => el("circle"'),
+        ('leader(W * .55, -ov - 150, W * .55 + 350, -ov - 700, "1");', 'leader(W * .55, -oN - 150, W * .55 + 350, -oN - 700, "1");'),
+        ('leader(W * .45, Dd + ov + 150, W * .45 + 350, Dd + ov + 700, "1");', 'leader(W * .45, Dd + oS + 150, W * .45 + 350, Dd + oS + 700, "1");'),
+        ('leader(-ov + 140, -ov - 75, -ov + 520, -ov - 700, "2");', 'leader(-oW + 140, -oN - 75, -oW + 520, -oN - 700, "2");'),
+        ('leader(W + ov - 140, Dd + ov + 75, W + ov - 520 - 260, Dd + ov + 700, "2");', 'leader(W + oE - 140, Dd + oS + 75, W + oE - 520 - 260, Dd + oS + 700, "2");'),
+        ('chainCad(dg, [-ov, ...v.axes.x.map(a => a[0]), W + ov], "x", Dd + 1250);', 'chainCad(dg, [-oW, ...v.axes.x.map(a => a[0]), W + oE], "x", Dd + 1250);'),
+        ('chainCad(dg, [-ov, W + ov], "x", Dd + 2450);', 'chainCad(dg, [-oW, W + oE], "x", Dd + 2450);'),
+        ('chainCad(dg, [-ov, 0, Dd / 2, Dd, Dd + ov], "y", -1250);', 'chainCad(dg, [-oN, 0, Dd / 2, Dd, Dd + oS], "y", -1250);'),
+        ('chainCad(dg, [-ov, Dd + ov], "y", -1850);', 'chainCad(dg, [-oN, Dd + oS], "y", -1850);'),
+    ]:
+        assert a_ in rp, 'ar.js roofPlan: nav atrasts ' + a_[:50]
+        rp = rp.replace(a_, b_, 1)
+    cad = cad[:i_] + rp + cad[j_:]
     # [MM] fasādes: zem būvasu mēru ķēdes kopējais būvasu izmērs (ja asu ir vairāk nekā divas)
     a_ = '    if (ax.length > 1) chainCad(AG, axU, "x", 1000, 0, true);'
     assert a_ in cad, 'cad.js: nav atrasta fasādes asu ķēde'
