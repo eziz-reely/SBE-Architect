@@ -1063,7 +1063,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const arOn = m => !!(m.projekts && m.projekts.ar && m.projekts.ar.on);
   // ---- vizualizāciju lapas: papildu lapas ar bildēm (Skicei un AR atsevišķi); bildes ir lapas mm, x/y kreisais augšējais stūris, r pagrieziens ap centru ----
   const vizKey = m => arOn(m) ? "ar_vizl" : "vizl";
-  const vizDims = m => arOn(m) ? [420, 297] : [297, 420];
+  const vizDims = (m, S) => arOn(m) ? (S && S.o === "p" ? [297, 420] : [420, 297]) : [297, 420];   // AR lapai var izvēlēties vertikālu formātu (S.o = "p")
+  const vizTop = (m, S) => arOn(m) ? Math.max(10, Math.min(120, +(S && S.top) || 10)) : 10;   // rāmja atkāpe no lapas augšmalas, mm (AR: S.top)
   const vizOf = m => (m.projekts || {})[vizKey(m)] || [];
   const vizEsc = t => String(t).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
   function vizSvgs(m) {
@@ -2385,10 +2386,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const n = clone(model); n.projekts = n.projekts || {}; const k = vizKey(n), L = n.projekts[k] = (n.projekts[k] || []).slice();
       if (!L.length) L.push({ n: "Vizualizācijas", im: [] });
       si = si != null && L[si] ? si : (sel && sel.k === "vimg" && L[sel.s] ? sel.s : 0);
-      const [W, H] = vizDims(n), S = L[si]; S.im = (S.im || []).slice();
+      const S = L[si], [W, H] = vizDims(n, S), tm = vizTop(n, S); S.im = (S.im || []).slice();
       arr.forEach(a => {
-        const bw = (W - 30) * .7, bh = (H - 20) * .7, w = Math.min(bw, bh / a.ar), h = w * a.ar, o = (S.im.length % 5) * 8;
-        const cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v)), cx = at ? cl(at[0], 20 + w / 2, W - 10 - w / 2) : 20 + (W - 30) / 2 + o, cy = at ? cl(at[1], 10 + h / 2, H - 10 - h / 2) : 10 + (H - 20) / 2 + o;
+        const bw = (W - 30) * .7, bh = (H - tm - 10) * .7, w = Math.min(bw, bh / a.ar), h = w * a.ar, o = (S.im.length % 5) * 8;
+        const cl = (v, lo, hi) => Math.max(lo, Math.min(hi, v)), cx = at ? cl(at[0], 20 + w / 2, W - 10 - w / 2) : 20 + (W - 30) / 2 + o, cy = at ? cl(at[1], tm + h / 2, H - 10 - h / 2) : tm + (H - tm - 10) / 2 + o;
         S.im.push({ src: a.src, x: Math.round((cx - w / 2) * 10) / 10, y: Math.round((cy - h / 2) * 10) / 10, w: Math.round(w * 10) / 10, h: Math.round(h * 10) / 10, r: 0 });
       });
       if (!S.im.length || S.im.length === arr.length) view = null; sel = { k: "vimg", s: si, i: S.im.length - 1, lv: "main" }; commit(n); status("Bilde pievienota. Velc, maini izmēru vai pagriez.");
@@ -2405,6 +2406,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = (arOn(model) ? "AR lapām" : "Skices lapai") + ": papildu lapa ar bildēm (renderi, foto). Ielīmē bildi ar Ctrl+V, ievelc to no mapes vai spied «+ Bilde». Bildi var pārbīdīt, mainīt izmēru un pagriezt."; g.appendChild(nt);
     L.forEach((S, si) => {
       g.appendChild(field(`${si + 1}. lapas nosaukums`, S.n || "", (n, v) => { vizOf(n)[si].n = v.trim(); }, "text", "full"));
+      if (arOn(model)) {   // AR lapai: formāts un rāmja atkāpe no augšas (rakstlauks paliek apakšā labajā stūrī)
+        g.appendChild(field("Lapas formāts", S.o === "p" ? "p" : "h", (n, v) => { const Q = vizOf(n)[si]; if (v === "p") Q.o = "p"; else delete Q.o; }, { h: "Horizontāla A3", p: "Vertikāla A3" }));
+        g.appendChild(field("Rāmja atkāpe no augšas, mm", vizTop(model, S), (n, v) => { const Q = vizOf(n)[si]; v = Math.max(10, Math.min(120, Math.round(v))); if (v > 10) Q.top = v; else delete Q.top; }));
+      }
       const r = document.createElement("div"); r.className = "row full";
       const up = document.createElement("input"); up.type = "file"; up.accept = "image/*"; up.multiple = true; up.hidden = true; up.onchange = () => { vizAdd(up.files, si); up.value = ""; };
       const b1 = document.createElement("button"); b1.type = "button"; b1.textContent = "+ Bilde"; b1.onclick = () => up.click();
@@ -3110,7 +3115,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const r = document.createElement("div"); r.className = "row";
       const bt = (t, fn, cls) => { const b = document.createElement("button"); b.type = "button"; b.textContent = t; if (cls) b.className = cls; b.onclick = fn; r.appendChild(b); };
       bt("Pagriezt 90°", () => { const n = clone(model); const q = Q(n); q.r = (((q.r || 0) + 90) % 360); commit(n); });
-      bt("Ietilpināt lapā", () => { const n = clone(model), q = Q(n), [W, H] = vizDims(n), rot = Math.round(((q.r || 0) % 180) / 90) % 2 === 1, bw = W - 30 - 12, bh = H - 20 - 12 - (vizOf(n)[sel.s].n ? 10 : 0), ow = rot ? q.h : q.w, oh = rot ? q.w : q.h, k = Math.min(bw / ow, bh / oh), cx = 20 + (W - 30) / 2, cy = 10 + 6 + (vizOf(n)[sel.s].n ? 10 : 0) + bh / 2; q.w *= k; q.h *= k; q.x = cx - q.w / 2; q.y = cy - q.h / 2; commit(n); });
+      bt("Ietilpināt lapā", () => { const n = clone(model), q = Q(n), [W, H] = vizDims(n, vizOf(n)[sel.s]), tm = vizTop(n, vizOf(n)[sel.s]), rot = Math.round(((q.r || 0) % 180) / 90) % 2 === 1, bw = W - 30 - 12, bh = H - tm - 10 - 12 - (vizOf(n)[sel.s].n ? 10 : 0), ow = rot ? q.h : q.w, oh = rot ? q.w : q.h, k = Math.min(bw / ow, bh / oh), cx = 20 + (W - 30) / 2, cy = tm + 6 + (vizOf(n)[sel.s].n ? 10 : 0) + bh / 2; q.w *= k; q.h *= k; q.x = cx - q.w / 2; q.y = cy - q.h / 2; commit(n); });
       bt("Uz priekšu", () => { const n = clone(model), a = vizOf(n)[sel.s].im, [q] = a.splice(sel.i, 1); a.push(q); sel = { k: "vimg", s: sel.s, i: a.length - 1, lv: "main" }; commit(n); });
       bt("Uz aizmuguri", () => { const n = clone(model), a = vizOf(n)[sel.s].im, [q] = a.splice(sel.i, 1); a.unshift(q); sel = { k: "vimg", s: sel.s, i: 0, lv: "main" }; commit(n); });
       bt("Dzēst bildi", del, "del");

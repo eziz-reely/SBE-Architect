@@ -566,10 +566,13 @@ def build(model_path, langs=None):
          '    const title = titles[k] || AR_PARTS[k];\n'
          '    const vm_ = /^viz(\\d+)$/.exec(k);\n'
          '    if (vm_) {\n'
-         '      const vs_ = +vm_[1] - 1, S_ = ((ARC.projekts || {}).ar_vizl || [])[vs_] || {}, svg = sheet(k, S_.n || "Vizualizācijas", "-");\n'
-         '      svg.setAttribute("class", "a3 vizl"); svg.dataset.part = "viz"; svg.dataset.vs = String(vs_);\n'
+         '      const vs_ = +vm_[1] - 1, S_ = ((ARC.projekts || {}).ar_vizl || [])[vs_] || {}, por_ = S_.o === "p", W_ = por_ ? 297 : 420, H_ = por_ ? 420 : 297, tm_ = Math.max(10, Math.min(120, +S_.top || 10));\n'
+         '      const svg = el("svg", { viewBox: `0 0 ${W_} ${H_}`, class: "a3 vizl", role: "img", "aria-label": S_.n || "Vizualizācijas" });   // [MM] vertikāla/horizontāla lapa, rāmis ar atkāpi no augšas, rakstlauks apakšā labajā stūrī\n'
+         '      el("rect", { width: W_, height: H_, fill: "#fff" }, svg); el("rect", { x: 20, y: tm_, width: W_ - 30, height: H_ - tm_ - 10, fill: "none", stroke: C.ink, "stroke-width": .5 }, svg);\n'
+         '      arTitle(svg, S_.n || "Vizualizācijas", arNo(k), total, "-"); if (por_) svg.querySelector("[data-block=title]").setAttribute("transform", `translate(${W_ - 10 - 185} ${H_ - 10 - 44})`);\n'
+         '      svg.dataset.part = "viz"; svg.dataset.vs = String(vs_);\n'
          '      (S_.im || []).forEach((q, i) => { const g = el("g", { class: "vimg", "data-i": i, transform: `rotate(${q.r || 0} ${q.x + q.w / 2} ${q.y + q.h / 2})` }, svg); el("image", { href: q.src, x: q.x, y: q.y, width: q.w, height: q.h, preserveAspectRatio: "none" }, g); });\n'
-         '      if (!(S_.im || []).length) { const g = el("g", { "data-vadd": vs_, style: "cursor:pointer" }, svg); el("rect", { x: 120, y: 90, width: 180, height: 100, rx: 3, fill: "#f6f7f8", stroke: "#2266d8", "stroke-width": .5, "stroke-dasharray": "3 2" }, g); T_(g, 210, 138, "+ Pievienot attēlu", { a: "middle", fs: 6, fw: 600 }); T_(g, 210, 150, "klikšķis vai Ctrl+V", { a: "middle", fs: 3.6 }); }\n'
+         '      if (!(S_.im || []).length) { const g = el("g", { "data-vadd": vs_, style: "cursor:pointer" }, svg); const cx_ = W_ / 2, cy_ = (tm_ + H_ - 10) / 2; el("rect", { x: cx_ - 90, y: cy_ - 50, width: 180, height: 100, rx: 3, fill: "#f6f7f8", stroke: "#2266d8", "stroke-width": .5, "stroke-dasharray": "3 2" }, g); T_(g, cx_, cy_ - 2, "+ Pievienot attēlu", { a: "middle", fs: 6, fw: 600 }); T_(g, cx_, cy_ + 10, "klikšķis vai Ctrl+V", { a: "middle", fs: 3.6 }); }\n'
          '      out.push(svg); return;\n'
          '    }\n'),
         ('const r = 300, ar = 1.414 * r, d = s.look, sheet = arNo("griez");',
