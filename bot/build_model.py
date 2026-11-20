@@ -281,9 +281,9 @@ def build(model_path, langs=None):
     cad = cad.replace('postsU.forEach(([u, s]) => {', 'postsU.forEach(([u, s, pq]) => {', 1)
     # MM labojumi SBE plānam: īsākas asis (axOff), plāns bez izmēriem (noDims), telpa bez zīmes (void)
     for a, b in [('el("line", { x1: x, y1: -3150, x2: x, y2: v.D + 3150, ...dash }, ag);\n      bub(x, -3450, n); bub(x, v.D + 3450, n);',
-                  'const AX = axOffs(v, opt); el("line", { x1: x, y1: -AX.n, x2: x, y2: v.D + AX.s, ...dash }, ag);\n      bub(x, -AX.n - 300, n); bub(x, v.D + AX.s + 300, n);'),
+                  'const AX = axOffs(v, opt); const onW = x < 300 || x > v.W - 300; if (onW) { el("line", { x1: x, y1: -AX.n, x2: x, y2: -30, ...dash }, ag); el("line", { x1: x, y1: v.D + 30, x2: x, y2: v.D + AX.s, ...dash }, ag); } else el("line", { x1: x, y1: -AX.n, x2: x, y2: v.D + AX.s, ...dash }, ag);\n      bub(x, -AX.n - 300, n); bub(x, v.D + AX.s + 300, n);'),
                  ('el("line", { x1: -3150, y1: y, x2: v.W + (longPlan ? 1600 : 3150), y2: y, ...dash }, ag);\n      bub(-3450, y, n); bub(v.W + (longPlan ? 1900 : 3450), y, n);',
-                  'const AX = axOffs(v, opt); el("line", { x1: -AX.w, y1: y, x2: v.W + (longPlan ? 1600 : AX.e), y2: y, ...dash }, ag);\n      bub(-AX.w - 300, y, n); bub(v.W + (longPlan ? 1900 : AX.e + 300), y, n);'),
+                  'const AX = axOffs(v, opt); const onW = y < 300 || y > v.D - 300, XE = v.W + (longPlan ? 1600 : AX.e); if (onW) { el("line", { x1: -AX.w, y1: y, x2: -30, y2: y, ...dash }, ag); el("line", { x1: v.W + 30, y1: y, x2: XE, y2: y, ...dash }, ag); } else el("line", { x1: -AX.w, y1: y, x2: XE, y2: y, ...dash }, ag);\n      bub(-AX.w - 300, y, n); bub(v.W + (longPlan ? 1900 : AX.e + 300), y, n);'),
                  ('lvlMark(g, ...(v.levelAt || [7750, 8250]), lv(0)', 'lvlMark(g, ...(v.levelAt || [7750, 8250]), lv(v.level || 0)'),
                  ('  const dg = el("g", {}, g);', '  const dg = el("g", opt.noDims ? { display: "none" } : {}, g);'),
                  ('    stamp(g, cx, cy, FULL[rm.n] || rm.n, i + 1,', '    if (!rm.void) stamp(g, cx, cy, FULL[rm.n] || rm.n, i + 1,'),
