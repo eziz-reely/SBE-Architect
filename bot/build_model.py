@@ -24,10 +24,12 @@ RAL = {'RAL 7016': '#383E42', 'RAL 7024': '#474A50', 'RAL 7021': '#2F3234', 'RAL
 
 def rev_block(m, rev=REV):
     keys = ['level', 'W', 'D', 'rooms', 'doors', 'windows', 'axes', 'stampAt', 'stampScale', 'levelAt', 'innerDims', 'userDims',
-            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts', 'freeWalls', 'apbuve', 'dimOff', 'wallCuts', 'wallPad']
+            'wallTags', 'sections', 'gableWins', 'ceiling', 'ceilingNote', 'planNotes', 'winOk', 'noLeaf', 'decor', 'entryInChain', 'porch', 'terraces', 'axOff', 'posts', 'railings', 'freeWalls', 'apbuve', 'dimOff', 'wallCuts', 'wallPad']
     rv = {'id': 'A', 'rev': rev, 'short': m['nosaukums'], 'marks': True, 'openRooms': [], 'fixtures': [], 'openings': [],
           'poly': m.get('poly') or [[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]], 'recess': m.get('recess', {})}
     rv.update({k: m[k] for k in keys if k in m})
+    if (m.get('loft')):
+        rv['loftLevel'] = m['loft'].get('level')
     rv['wcs'] = [f[1:] for f in m.get('furniture', []) if f[0] == 'toilet']   # tualetes pamatu plāna Ø110 izvadam (mm-pamati.js)
     calls = []
     def call(f):
@@ -279,6 +281,45 @@ def build(model_path, langs=None):
         pass
     # [MM] stabu materiāls fasādēs: krāsa vai tekstūra (q.col / q.tex), citādi lamellu koks
     cad = cad.replace('postsU.forEach(([u, s]) => {', 'postsU.forEach(([u, s, pq]) => {', 1)
+    # [MM] margas: kopīgie parametri (plāns, fasāde, griezums): redeles bal × balD, sprauga gap, lenteris railW × railH, apakšas atzīme z0
+    RAIL_JS = r"""// [MM] margas: parametri un redeļu punkti
+function mmRailBase(v, r) { return r.z0 != null ? +r.z0 : r.lv === "loft" ? (v.loftLevel || v.level || ((v.ceiling || 2200) + 164.5)) : 0; }
+function mmRailBals(r) {
+  const bal = +r.bal || 45, gap = r.gap != null ? +r.gap : 50, P = r.pts || [], out = [];
+  P.forEach((a, j) => { const c = P[j + 1]; if (!c) return; const dx = c[0] - a[0], dy = c[1] - a[1], L = Math.hypot(dx, dy), n = Math.max(1, Math.round(L / (bal + gap))), ang = Math.atan2(dy, dx);
+    for (let i = j ? 1 : 0; i <= n; i++) out.push([a[0] + dx * i / n, a[1] + dy * i / n, ang]); });
+  return out;
+}
+function mmRailTop(v, r, x, y) { return Math.min(mmRailBase(v, r) + (r.h != null ? +r.h : 1000), ROOF.eave + Math.max(0, Math.min(y, v.D - y)) * tan - 5); }
+"""
+    cad = cad.replace('const ROOF = { ov: 600,', RAIL_JS + 'const ROOF = { ov: 600,', 1)
+    ELEV_RAIL = r"""  (v.railings || []).forEach(r => {   // [MM] margas fasādē: ārpus mājas pēc noklusējuma vai r.fas = true
+    const P0 = r.pts || []; if (P0.length < 2) return;
+    const cx = P0.reduce((a, q) => a + q[0], 0) / P0.length, cy = P0.reduce((a, q) => a + q[1], 0) / P0.length, outside = cx < 0 || cx > v.W || cy < 0 || cy > v.D;
+    if (!(r.fas != null ? r.fas : outside)) return;
+    if (!({ south: cy >= v.D / 2, north: cy <= v.D / 2, east: cx >= v.W / 2, west: cx <= v.W / 2 })[side]) return;
+    const bal = +r.bal || 45, bd = +r.balD || bal, rw = +r.railH || 40, z0 = mmRailBase(v, r), U = (x, y) => map(endV ? y : x), rg = el("g", { "data-rail": 1 }, g);
+    P0.forEach((a, j) => { const c = P0[j + 1]; if (!c || r.rail === false) return; const L = Math.hypot(c[0] - a[0], c[1] - a[1]), st = Math.max(1, Math.ceil(L / 300));
+      for (let q = 0; q < st; q++) { const x0 = a[0] + (c[0] - a[0]) * q / st, y0 = a[1] + (c[1] - a[1]) * q / st, x1 = a[0] + (c[0] - a[0]) * (q + 1) / st, y1 = a[1] + (c[1] - a[1]) * (q + 1) / st, tp = Math.min(mmRailTop(v, r, x0, y0), mmRailTop(v, r, x1, y1)); if (tp - z0 < 60) continue;
+        const u0 = U(x0, y0), u1 = U(x1, y1); el("rect", { x: Math.min(u0, u1), y: -tp, width: Math.abs(u1 - u0) + 1, height: rw, fill: "#cfc8bc", stroke: C.ink, "stroke-width": 3 }, rg); } });
+    mmRailBals(r).forEach(([x, y, ang]) => { const top = mmRailTop(v, r, x, y); if (top - z0 < 30) return; const th = endV ? ang - Math.PI / 2 : ang, w = bal * Math.abs(Math.cos(th)) + bd * Math.abs(Math.sin(th)), u = U(x, y);
+      el("rect", { x: u - w / 2, y: -top, width: w, height: top - z0, fill: "#cfc8bc", stroke: C.ink, "stroke-width": 3 }, rg); });
+  });
+"""
+    cad = cad.replace('postsU.forEach(([u, s, pq]) => {', ELEV_RAIL + 'postsU.forEach(([u, s, pq]) => {', 1)
+    SEC_RAIL = r"""  (v.railings || []).forEach(r => {   // [MM] margas griezumā: pārgrieztie stabiņi melni, tālākie ar kontūru
+    const P0 = r.pts || []; if (P0.length < 2) return;
+    const bal = +r.bal || 45, bd = +r.balD || bal, rh = +r.railH || 40, z0 = mmRailBase(v, r), dist = (x, y) => (s.o === "v" ? x : y) - s.at, U = (x, y) => (s.o === "v" ? y : x), rg = el("g", { "data-rail": 1 }, g);
+    if (r.rail !== false) P0.forEach((a, j) => { const c = P0[j + 1]; if (!c) return; const L = Math.hypot(c[0] - a[0], c[1] - a[1]), st = Math.max(1, Math.ceil(L / 300));
+      for (let q = 0; q < st; q++) { const x0 = a[0] + (c[0] - a[0]) * q / st, y0 = a[1] + (c[1] - a[1]) * q / st, x1 = a[0] + (c[0] - a[0]) * (q + 1) / st, y1 = a[1] + (c[1] - a[1]) * (q + 1) / st;
+        if (dist(x0, y0) * s.look < -1 && dist(x1, y1) * s.look < -1) continue; const tp = Math.min(mmRailTop(v, r, x0, y0), mmRailTop(v, r, x1, y1)); if (tp - z0 < 60) continue;
+        const u0 = U(x0, y0), u1 = U(x1, y1); el("rect", { x: Math.min(u0, u1), y: -tp, width: Math.abs(u1 - u0) + 1, height: rh, fill: "#fff", stroke: C.ink, "stroke-width": 4 }, rg); } });
+    mmRailBals(r).forEach(([x, y, ang]) => { const d = dist(x, y), top = mmRailTop(v, r, x, y); if (top - z0 < 30) return; const cutD = Math.abs(d) <= (s.o === "v" ? Math.abs(Math.cos(ang)) * bd + Math.abs(Math.sin(ang)) * bal : Math.abs(Math.sin(ang)) * bd + Math.abs(Math.cos(ang)) * bal) / 2 + 2;
+      if (!cutD && d * s.look < 0) return; const th = s.o === "v" ? ang - Math.PI / 2 : ang, w = bal * Math.abs(Math.cos(th)) + bd * Math.abs(Math.sin(th)), u = U(x, y);
+      el("rect", { x: u - w / 2, y: -top, width: w, height: top - z0, fill: cutD ? C.ink : "#fff", stroke: C.ink, "stroke-width": 4 }, rg); });
+  });
+"""
+    ar = ar.replace('  // axes under the section\n  const ax = s.o === "v" ? v.axes.y : v.axes.x;', SEC_RAIL + '  // axes under the section\n  const ax = s.o === "v" ? v.axes.y : v.axes.x;', 1)
     # MM labojumi SBE plānam: īsākas asis (axOff), plāns bez izmēriem (noDims), telpa bez zīmes (void)
     for a, b in [('el("line", { x1: x, y1: -3150, x2: x, y2: v.D + 3150, ...dash }, ag);\n      bub(x, -3450, n); bub(x, v.D + 3450, n);',
                   'const AX = axOffs(v, opt); const onW = true; if (onW) { el("line", { x1: x, y1: -AX.n, x2: x, y2: -30, ...dash }, ag); el("line", { x1: x, y1: v.D + 30, x2: x, y2: v.D + AX.s, ...dash }, ag); } else el("line", { x1: x, y1: -AX.n, x2: x, y2: v.D + AX.s, ...dash }, ag);\n      bub(x, -AX.n - 300, n); bub(x, v.D + AX.s + 300, n);'),
@@ -287,6 +328,7 @@ def build(model_path, langs=None):
                  ('lvlMark(g, ...(v.levelAt || [7750, 8250]), lv(0)', 'lvlMark(g, ...(v.levelAt || [7750, 8250]), lv(v.level || 0)'),
                  ('  const dg = el("g", {}, g);', '  const dg = el("g", opt.noDims ? { display: "none" } : {}, g);'),
                  ('    stamp(g, cx, cy, FULL[rm.n] || rm.n, i + 1,', '    if (!rm.void) stamp(g, cx, cy, FULL[rm.n] || rm.n, i + 1,'),
+                 ('  v.rooms.forEach((rm, i) => {\n    const big = rm.r.reduce((a, b) => (b[2] * b[3] > a[2] * a[3] ? b : a));', '  if (v.level) v.rooms.filter(rm => !rm.void).forEach(rm => {   // [MM] mansarda telpas kontūra melna līnija: redzams, kur panelis beidzas\n    const xs = [...new Set(rm.r.flatMap(q => [q[0], q[0] + q[2]]))].sort((a, b) => a - b), ys = [...new Set(rm.r.flatMap(q => [q[1], q[1] + q[3]]))].sort((a, b) => a - b);\n    const ins = (i, j) => i >= 0 && j >= 0 && i < xs.length - 1 && j < ys.length - 1 && rm.r.some(q => xs[i] >= q[0] - .5 && xs[i + 1] <= q[0] + q[2] + .5 && ys[j] >= q[1] - .5 && ys[j + 1] <= q[1] + q[3] + .5);\n    const seg = (x1, y1, x2, y2) => el("line", { x1, y1, x2, y2, stroke: C.ink, "stroke-width": 12, "stroke-linecap": "square" }, g);\n    for (let i = 0; i < xs.length - 1; i++) for (let j = 0; j < ys.length - 1; j++) { if (!ins(i, j)) continue;\n      if (!ins(i, j - 1)) seg(xs[i], ys[j], xs[i + 1], ys[j]);\n      if (!ins(i, j + 1)) seg(xs[i], ys[j + 1], xs[i + 1], ys[j + 1]);\n      if (!ins(i - 1, j)) seg(xs[i], ys[j], xs[i], ys[j + 1]);\n      if (!ins(i + 1, j)) seg(xs[i + 1], ys[j], xs[i + 1], ys[j + 1]); } });\n  (v.railings || []).filter(r => (r.lv || "main") === (v.level ? "loft" : "main")).forEach(r => {   // [MM] margas plānā: redeles bal × balD, sprauga, lenteris railW\n    const bal = +r.bal || 45, bd = +r.balD || bal, P = r.pts || [];\n    if (r.rail !== false) el("polyline", { points: P.map(q => q.join(",")).join(" "), fill: "none", stroke: C.ink, "stroke-opacity": .35, "stroke-width": +r.railW || 60, "stroke-linejoin": "round", "data-rail": 1 }, g);\n    mmRailBals(r).forEach(([x, y, ang]) => el("rect", { x: x - bal / 2, y: y - bd / 2, width: bal, height: bd, fill: "#fff", stroke: C.ink, "stroke-width": 4, transform: `rotate(${ang * 180 / Math.PI} ${x} ${y})` }, g));\n  });\n  v.rooms.forEach((rm, i) => {\n    const big = rm.r.reduce((a, b) => (b[2] * b[3] > a[2] * a[3] ? b : a));'),
                  # stabveida pamati: metāla cokols RAL 9005 no grīdas apakšas līdz 40 mm virs zemes, ēnas sprauga zem tā
                  ('  } else el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "#9b9c98", stroke: C.ink, "stroke-width": 14 }, g);',
                   '  } else if ((window.AR && AR.projekts && AR.projekts.pamati) === "platne") el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: (AR.projekts.cokols_plate_hex || "#9b9c98"), stroke: C.ink, "stroke-width": 14 }, g);\n  else { el("rect", { x: 0, y: 0, width: span, height: ROOF.plinth, fill: "rgba(0,0,0,.25)" }, g); el("rect", { x: -20, y: 0, width: span + 40, height: ROOF.plinth - 40, fill: (AR.projekts.cokols_hex || "#1d1d1d"), stroke: C.ink, "stroke-width": 10 }, g); el("line", { x1: -20, y1: 22, x2: span + 20, y2: 22, stroke: "rgba(255,255,255,.18)", "stroke-width": 8 }, g); }'),

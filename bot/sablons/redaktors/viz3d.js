@@ -141,6 +141,17 @@
       const wood = (c, o) => { const t = texOf(o, 300); return t ? new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide }) : mat(c || "#b98a5c"); };
       (m.posts || []).forEach((q, i) => { const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = q.h && q.h < 99999 ? +q.h : roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col, q)); b.position.set(cx, (top - 300) / 2, cy); b.userData.bk = { k: "post", i }; grp.add(b); });
       ((m.porch && m.porch.posts) || []).forEach(q => { if (!q || q.x == null) return; const w = +q.w || 200, d = +q.d || w, cx = q.x + w / 2, cy = q.y + d / 2, top = roofZ(cx, cy) - 5, b = new THREE.Mesh(new THREE.BoxGeometry(w, top + 300, d), wood(q.col)); b.position.set(cx, (top - 300) / 2, cy); grp.add(b); });
+      // margas: stabiņi (bal × bal, sprauga gap) un lenteris; augšas apgriež jumta plaknes apakša (roofZ)
+      (m.railings || []).forEach(r => {
+        const base = r.z0 != null ? +r.z0 : r.lv === "loft" && m.loft ? +m.loft.level || 0 : 0, bd = +r.balD || +r.bal || 45, rW = +r.railW || 60, rH = +r.railH || 40, hh = r.h != null ? +r.h : 1000, bal = +r.bal || 45, gap = r.gap != null ? +r.gap : 50, P = r.pts || [], RM = wood(r.col || "#d9d4cb", r);
+        const topAt = (x, y) => Math.min(base + hh, roofZ(x, y) - 5);
+        P.forEach((a, j) => { const c = P[j + 1]; if (!c) return; const dx = c[0] - a[0], dy = c[1] - a[1], L = Math.hypot(dx, dy), n = Math.max(1, Math.round(L / (bal + gap))), ang = Math.atan2(dy, dx);
+          for (let i = j ? 1 : 0; i <= n; i++) { const t = i / n, x = a[0] + dx * t, y = a[1] + dy * t, top = topAt(x, y); if (top - base < 30) continue;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(bal, top - base, bd), RM); b.position.set(x, base + (top - base) / 2, y); b.rotation.y = -ang; grp.add(b); }
+          if (r.rail !== false) { const st = Math.max(1, Math.ceil(L / 400)); for (let q = 0; q < st; q++) { const t0 = q / st, t1 = (q + 1) / st, x0 = a[0] + dx * t0, y0 = a[1] + dy * t0, x1 = a[0] + dx * t1, y1 = a[1] + dy * t1, tp = Math.min(topAt(x0, y0), topAt(x1, y1)); if (tp - base < 60) continue;
+            const rb = new THREE.Mesh(new THREE.BoxGeometry(Math.hypot(x1 - x0, y1 - y0) + 4, rH, rW), RM); rb.position.set((x0 + x1) / 2, tp - rH / 2, (y0 + y1) / 2); rb.rotation.y = -Math.atan2(y1 - y0, x1 - x0); grp.add(rb); } }
+        });
+      });
       // terases un lievenis pa kontūru
       const deck = (pl, top, th, col, bk, o) => { if (!pl || pl.length < 3) return; const own = texOf(o, 1), tx = own || stripeTex(600, 4, .45, .12); if (own) col = "#ffffff"; me = new THREE.Mesh(new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(p => new THREE.Vector2(p[0], p[1]))), { depth: th, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: col || "#4a4f55", map: tx, side: THREE.DoubleSide }));
         me.rotation.x = Math.PI / 2; me.position.y = top; me.userData.bk = bk; grp.add(me); };
