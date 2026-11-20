@@ -1385,8 +1385,21 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (!wt) { let i = L.length + 1; while (L.some(w => w.id === "P" + i)) i++; wt = { id: "P" + i, name: "Izbīdītā siena", izb: 1, layers: ((P.piragi_layers || {}).S1 || LAYERS0.S1.layers).map(l => l.slice()) }; L.push(wt); }
     pads.forEach(q => { if (!q.wt && !q.nowt) q.wt = wt.id; });
   }
+  // mansarda tās pašas telpas taisnstūri bez spraugām (≤ 400 mm): sprauga plānā tiktu zīmēta kā starpsiena (piem., pēc paneļa malas pabīdīšanas pie pakāpiena/nišas)
+  function loftHeal(m) {
+    if (!m.loft || !m.loft.rooms) return;
+    m.loft.rooms.forEach(rm => { const R = rm.r || [];
+      for (let it = 0; it < 4; it++) { let ch = false;
+        R.forEach(a => R.forEach(b => { if (a === b) return;
+          const gx = b[0] - (a[0] + a[2]), ox = Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]);
+          if (gx > 1 && gx <= 400 && ox > 50) { a[2] = +(a[2] + gx).toFixed(1); ch = true; }
+          const gy = b[1] - (a[1] + a[3]), oy = Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]);
+          if (gy > 1 && gy <= 400 && oy > 50) { a[3] = +(a[3] + gy).toFixed(1); ch = true; } }));
+        if (!ch) break; } });
+  }
   function commit(m) {
-    stepUnfix(m); pamNorm(m); fdTag(m); try { padTypes(m); } catch (e) { console.error("padTypes", e.message); }
+    stepUnfix(m);
+    try { loftHeal(m); } catch (e) { console.error("loftHeal", e.message); } pamNorm(m); fdTag(m); try { padTypes(m); } catch (e) { console.error("padTypes", e.message); }
     try { const A0 = (m.projekts || {}).asu_piesaiste; if ((A0 === "c24" || A0 === "fasade") && m.axes && m.poly && !(m.projekts || {}).asisMan) snapAxes(m, A0); } catch (e) { console.error("snapAxes", e.message); }   // asis paliek uz izvēlētās malas pēc katras izmaiņas
     const P = m.projekts; if (P && !P.fasade_hex && (P.fasade_tex || P.fasade_texk)) { delete P.fasade_tex; delete P.fasade_texk; }
     undo.push(clone(model)); redo = []; model = m; dirty = true; status("Ir nesaglabāti labojumi."); buttons(); panel(); render(); fasTint();

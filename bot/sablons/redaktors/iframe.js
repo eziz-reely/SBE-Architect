@@ -2694,11 +2694,15 @@
     const I = X ? 0 : 1, S = X ? 2 : 3, O = X ? 1 : 0, OS = X ? 3 : 2, front = h.e === "l" || h.e === "t";
     if (front) { q[I] = +(q[I] + d).toFixed(1); q[S] = +(q[S] - d).toFixed(1); } else q[S] = +(q[S] + d).toFixed(1);
     if (q[S] < MIN) return null;
-    ZR(N).forEach((r, ri) => { if (ri === sel.i) return; r.r.forEach(o => {
+    ZR(N).forEach((r, ri) => { if (ri === sel.i) return; const done = new Set(); r.r.forEach(o => {
       if (Math.min(q[O] + q[OS], o[O] + o[OS]) - Math.max(q[O], o[O]) <= 50) return;
-      if (front) { const g = h.v - (o[I] + o[S]); if (g > -1 && g < 1) { o[S] = +(o[S] + d).toFixed(1); } }
-      else { const g = o[I] - h.v; if (g > -1 && g < 1) { o[I] = +(o[I] + d).toFixed(1); o[S] = +(o[S] - d).toFixed(1); } }
-    }); });
+      if (front) { const g = h.v - (o[I] + o[S]); if (g > -1 && g < 1) { o[S] = +(o[S] + d).toFixed(1); done.add(o); } }
+      else { const g = o[I] - h.v; if (g > -1 && g < 1) { o[I] = +(o[I] + d).toFixed(1); o[S] = +(o[S] - d).toFixed(1); done.add(o); } }
+    });
+      // tās pašas telpas citi taisnstūri, kas atrodas pie tās pašas līnijas (pakāpiens, nišas): seko, lai starp tiem neveidotos sprauga (to zīmē kā sienu)
+      if (done.size) r.r.forEach(o => { if (done.has(o)) return;
+        if (front) { const g = o[I] - h.v; if (g > -1 && g < 1) { o[I] = +(o[I] + d).toFixed(1); o[S] = +(o[S] - d).toFixed(1); } }
+        else { const g = h.v - (o[I] + o[S]); if (g > -1 && g < 1) o[S] = +(o[S] + d).toFixed(1); } }); });
     if (ZR(N).some(r => r.r.some(o => o[2] < 50 || o[3] < 50))) return null;
     if (ZR(N).some((r, ri) => ri !== sel.i && r.r.some(o => o[2] < MIN && o[3] < MIN) && false)) return null;
     return { N, nv, q };
