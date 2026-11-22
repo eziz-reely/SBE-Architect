@@ -1639,7 +1639,8 @@ def to_model(L, H, doors, wins, items, loft, griesti):
     W, D = L.W, L.D
     rooms = L.rooms
     furn = [c for i in sorted(items) for it in items[i] for c in it.cmds]
-    eave = eave_of(H, D)
+    gb = [b['r'] for b in ((getattr(L, 'kontura', None) or {}).get('bloki') or []) if b.get('loma') == 'galvenais']
+    eave = eave_of(H, min(gb[0][2], gb[0][3]) if gb else D)   # L mājai kore pēc galvenā spārna platuma (nevis gabarīta)
     A = poly_area(L.poly) / 1e6 if L.poly else W * D / 1e6
     m = {'id': 'MM-PLAN', 'nosaukums': 'MM plāns', 'platiba_grupa': f"{int(round(A / 5) * 5)}m2",
          'ievade': {'garums': W, 'platums': D, 'augstums': H}, 'W': W, 'D': D,

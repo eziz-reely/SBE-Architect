@@ -8,7 +8,7 @@ Augstums = kores augstums no ±0,000 līdz jumta virsmai.
 Tipoloģija (etalons: 30 m² māja): guļamistaba | WC virs priekšnama | dzīvojamā istaba ar virtuvi.
 Visi izmēri, logi, durvis un mēbeles tiek aprēķināti no garuma un platuma.
 
-Mansards:   --mansards ja|ne   (noklusējums ja; ne = bez mansarda stāva un mansarda logiem)
+Mansards:   --mansards ja|ne   (noklusējums ja, L mājai ne; ne = bez mansarda stāva un mansarda logiem)
 Varianti:   --varianti N       plānotājs (planner.py) uztaisa N atšķirīgus plānojumus (II/L/T, ar mansardu tikai II),
             katrs iziet rules_check ar 0 kļūdām un 0 brīdinājumiem, un katram tiek uztaisīta tā pati rasējumu lapa.
             -> MĀJAS/50m2/MM-50-01-V01/model.json + rasejumi/MM-50-01-V01_LV.html ..., kopsavilkums MM-50-01/varianti.html
@@ -329,7 +329,7 @@ if __name__ == '__main__':
     ap.add_argument('--viz', action='store_true', help='pēc rasējumiem uzreiz uztaisīt Gemini vizualizācijas (3 toņi)')
     ap.add_argument('--faze', default='klients', choices=['klients', 'razosana'])
     ap.add_argument('--slipums', type=float, help='jumta slīpums grādos (noklusējums mm-config roof.pitch, 25)')
-    ap.add_argument('--mansards', default='ja', choices=['ja', 'ne'], help='vai mājai ir mansarda stāvs (noklusējums ja)')
+    ap.add_argument('--mansards', default=None, choices=['ja', 'ne'], help='vai mājai ir mansarda stāvs (noklusējums ja; L mājai ne)')
     ap.add_argument('--varianti', type=int, default=0, help='N > 0: plānotājs uztaisa N plānojuma variantus, katram sava lapa')
     ap.add_argument('--gulamistabas', type=int, help='variantiem: guļamistabu skaits (noklusējums pēc laukuma)')
     ap.add_argument('--vannas', type=int, help='variantiem: vannasistabu skaits (noklusējums pēc laukuma)')
@@ -337,6 +337,8 @@ if __name__ == '__main__':
     ap.add_argument('--L', dest='Lspar', help='L māja no diviem spārniem "garums x platums, garums x platums" (mm, garums pa visu ārmalu), '
                     'piem. 15000x7000,12000x6500; platākais ir galvenais, kore garenvirzienā. Garums/platums tad = L gabarīti; ieslēdz --varianti 4, ja nav dots')
     a = ap.parse_args()
+    if a.mansards is None:   # L māja ir vienstāva (EZIZ), citādi pēc noklusējuma ar mansardu
+        a.mansards = 'ne' if a.Lspar else 'ja'
     L_fix = None
     if a.Lspar:
         import planner as _plL
