@@ -111,6 +111,14 @@ main { flex: 1; display: grid; grid-template-columns: 1fr 300px; min-height: 0; 
 #ribbon input[type=color] { width: 30px; padding: 1px; }
 @media (max-width: 760px) { #ribbon { display: none; } }
 #stage iframe.wait { visibility: hidden; }
+#razView { position: absolute; inset: 0; z-index: 6; display: flex; flex-direction: column; background: var(--desk); }
+#razView[hidden] { display: none; }
+#razView .rzb { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--paper); border-bottom: 1px solid var(--line2); flex: none; }
+#razView .rzb b { font-size: 14px; } #razView .rzi { flex: 1; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#razView .rzb button { height: 30px; padding: 0 12px; border-radius: 3px; border: 1px solid var(--line2); background: var(--field); color: var(--ink); font-weight: 600; cursor: pointer; }
+#razView .rzb button.pri { background: var(--accent); border-color: var(--accent); color: #fff; }
+#razView .rzb button.old { border-color: var(--accent); color: var(--accent); }
+#stage #razView iframe { position: static; flex: 1; width: 100%; height: auto !important; top: auto !important; border: 0; background: var(--desk); }
 #busy { position: absolute; left: 12px; bottom: 12px; font-size: 12px; color: var(--muted); background: var(--paper); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; }
 aside { background: var(--paper); border-left: 1px solid var(--line); overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
   padding-block: 16px; padding-left: 16px; padding-right: max(16px, env(safe-area-inset-right, 0px)); min-width: 0; }
@@ -864,7 +872,7 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
     <span class="expw"><button id="bTb" type="button" aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M14 4v16M14 9.5h7M14 14.5h7"/></svg><span>Rakstlaukums</span></button>
       <div id="tbp" class="pop" hidden role="dialog" aria-label="Rakstlaukums">
         <p class="pcap">Lapas</p>
-        <div class="seg seg2 modeseg" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div>
+        <div class="seg seg2 modeseg" id="tbMode" role="radiogroup" aria-label="Lapas"><button type="button" data-m="skice" role="radio">Skice<small>1 lapa</small></button><button type="button" data-m="ar" role="radio">AR projekts<small>visas lapas</small></button></div><button type="button" id="tbRaz" class="wide" title="Ražošanas lapas redaktorā: 1. lapa skice, karkass, sienas, starpsienas, jumts, detaļas, materiālu tāme" style="margin-top:6px;width:100%">Ražošana · karkass un tāme</button>
         <div id="kmBox" class="arbox">
           <p class="pcap">Skices kompozīcija</p>
           <div class="chk"><label><input type="checkbox" id="kmOn"><span>Automātiska izkārtošana pa lapu</span></label></div>
@@ -902,7 +910,7 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
 <div id="ribbon" role="toolbar" aria-label="Noformējums"></div>
 <main>
   <nav id="rail" aria-label="Rīki"><div id="railT"></div><span class="sp"></span><button id="b3d" type="button" aria-label="3D skats" title="3D skats, references PNG un Gemini prompts"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg></button><button type="button" id="bIso" title="Izolēt skatu: plāns vai fasāde pa visu logu (dubultklikšķis tukšā vietā skatā; Esc atgriež)" aria-label="Izolēt skatu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1.5" stroke-dasharray="2.5 2"/><rect x="7.5" y="8" width="9" height="8"/></svg></button><button type="button" id="bKeys" title="Taustiņi" aria-label="Taustiņi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6.5 10h.01M10 10h.01M14 10h.01M17.5 10h.01M7.5 14h9"/></svg></button></nav>
-  <div id="stage"><div id="propBar" aria-label="Izvēlētā elementa īpašības"><div id="toolOpt" hidden></div><div class="selcard" aria-live="polite"><div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Rīkus izvēlies kreisajā joslā.</p></div></div></div><iframe id="f0" title="Rasējums"></iframe><iframe id="f1" class="wait" title="Rasējums"></iframe><div id="vars" aria-label="Plānojuma varianti"></div><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" stroke-dasharray="2 2"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span>Dzēst palīglīnijas</span></button></div>
+  <div id="stage"><div id="propBar" aria-label="Izvēlētā elementa īpašības"><div id="toolOpt" hidden></div><div class="selcard" aria-live="polite"><div id="panel"><p class="empty">Uzklikšķini uz elementa rasējumā, lai mainītu tā izmērus. Rīkus izvēlies kreisajā joslā.</p></div></div></div><iframe id="f0" title="Rasējums"></iframe><div id="razView" hidden aria-label="Ražošanas lapas"><div class="rzb"><b>Ražošana</b><span id="razInfo" class="rzi">karkasa lapas un materiālu tāme</span><button type="button" id="razUpd" title="Pārbūvē lapas pēc pašreizējā modeļa (arī nesaglabātām izmaiņām)">Atjaunot</button><button type="button" id="razPdf" class="pri" title="Visas ražošanas lapas vienā PDF (A3; kvalitāte kā sadaļā Lapa un eksports)">Lejupielādēt PDF</button><button type="button" id="razTab" title="Atvērt lapas jaunā cilnē (drukāšanai no pārlūka)">Jaunā cilnē</button><button type="button" id="razX" title="Atpakaļ uz rasējumu (Esc)">Aizvērt</button></div><iframe id="fRaz" title="Ražošanas lapas"></iframe></div><iframe id="f1" class="wait" title="Rasējums"></iframe><div id="vars" aria-label="Plānojuma varianti"></div><span id="busy" hidden>Pārzīmē…</span><button type="button" id="gClr" hidden title="Dzēst visas palīglīnijas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4" stroke-dasharray="2 2"/><path d="m9 9 6 6M15 9l-6 6"/></svg><span>Dzēst palīglīnijas</span></button></div>
   <aside id="tray" aria-label="Īpašības un iestatījumi">
     <details class="tr" data-pane="tool" open hidden><summary><span>Rīka opcijas</span></summary><div class="trb">
       <div id="bktBox" class="group" hidden><p class="cap">Materiāls spainim</p><div class="grid" id="bktGrid"></div></div>
@@ -1759,7 +1767,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     $("libOpen").appendChild(b); }
   $("gClr").onclick = () => $("bGuideClr").click();
   $("bTop3d").onclick = () => $("b3d").click();
-  $("bTopRaz").onclick = () => $("bKarkass").click();   // ražošanas režīms (karkass un tāme) augšējā joslā   // 3D skats arī augšējā joslā blakus rakstlaukumam
+  $("bTopRaz").onclick = () => ($("razView").hidden ? $("bKarkass").click() : $("razX").click());   // ražošanas režīms (karkass un tāme) augšējā joslā   // 3D skats arī augšējā joslā blakus rakstlaukumam
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
   { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk", "tv"]], ["Virtuve un vannas istaba", ["kit", "ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]], ["Glabāšana un priekšnams", "fx1"], ["Dzīvojamā, kabinets", "fx2"], ["Tehnika un vannas istaba", "fx3"], ["Apkure", "fx4"]], host = $("libFurn");
     GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
@@ -3659,8 +3667,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const sheetsAll = () => { const doc = FR[live].contentDocument, a = doc ? [...doc.querySelectorAll("svg.a3")] : []; if (!a.length) throw new Error("Rasējums vēl nav gatavs"); return a; };
   const vbOf = sv => { const v = sv.viewBox.baseVal; return [v.width || 297, v.height || 420]; };
   const arSuffix = (sv, i) => arOn(model) ? `_${(sv.dataset.part ? "AR-" + (i + 1) : "lapa" + (i + 1))}` : "";
-  function sheetSvg(sv) {
-      const doc = FR[live].contentDocument; sv = sv || sheetsAll()[0];
+  function sheetSvg(sv, doc0) {   // doc0: cits dokuments (ražošanas lapas), citādi rasējuma rāmis
+      const doc = doc0 || FR[live].contentDocument; sv = sv || sheetsAll()[0];
       const c = sv.cloneNode(true), [vw, vh] = vbOf(sv);
       c.querySelectorAll("g.mm-ov, g.mm-ghost-ed, [data-vadd]").forEach(e => e.remove());
       c.querySelectorAll("g.mm-gd line").forEach(l => { l.setAttribute("stroke-width", "0.3"); l.setAttribute("stroke-opacity", "1"); });   // palīglīnijas eksportā: vienmēr redzamas, fiksēts biezums (ekrāna tālummaiņa tās citādi padara par matadatu)
@@ -3672,9 +3680,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       doc.querySelectorAll("svg").forEach(o => { if (o !== sv) o.querySelectorAll("defs").forEach(d => c.insertBefore(d.cloneNode(true), st.nextSibling)); });   // kopīgie raksti (fasādes dēļi, stikls)
       return new XMLSerializer().serializeToString(c);
   }
-  function sheetPng(dpi, sv) {
+  function sheetPng(dpi, sv, doc0) {
     return new Promise((ok, bad) => {
-      let svg, vw = 297, vh = 420; try { sv = sv || sheetsAll()[0]; [vw, vh] = vbOf(sv); svg = sheetSvg(sv); } catch (e) { return bad(e); }
+      let svg, vw = 297, vh = 420; try { sv = sv || sheetsAll()[0]; [vw, vh] = vbOf(sv); svg = sheetSvg(sv, doc0); } catch (e) { return bad(e); }
       const url = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
       const img = new Image();
       img.onload = () => {
@@ -4119,12 +4127,53 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (!r.ok) throw new Error((await r.text()) || r.status);
     return r.json();
   }
-  $("bKarkass").onclick = async () => {   // karkass un materiālu tāme: ģenerē programma (bot/karkass_lapas.py) no pašreizējā modeļa
-    const w = window.open("", "_blank");
-    try { status("Gatavo karkasa un tāmes lapas…"); const j = await acPost("razosana");
-      status("Karkass un tāme: eksports/" + j.name + " (" + j.lapas + " lapas)" + (j.notes && j.notes.length ? ". Piezīmes: " + j.notes.join("; ") : ""));
-      if (w) w.location = "/file/" + encodeURIComponent((window.MM_LOCAL || {}).key) + "/" + encodeURIComponent(j.name); }
-    catch (e) { if (w) w.close(); status("Karkasa lapas neizdevās: " + ((e && e.message) || e)); }
+  // ---- ražošanas režīms redaktorā: karkasa un tāmes lapas (bot/karkass_lapas.py) no pašreizējā modeļa, PDF eksports ----
+  let razUrl = "", razAt = null;
+  const razOld = () => $("razUpd").classList.toggle("old", !!razAt && razAt !== JSON.stringify(model));
+  async function razBuild() {
+    $("razInfo").textContent = "Gatavo karkasa un tāmes lapas…";
+    try { const j = await acPost("razosana"); razAt = JSON.stringify(model);
+      razUrl = "/file/" + encodeURIComponent((window.MM_LOCAL || {}).key) + "/" + encodeURIComponent(j.name);
+      $("fRaz").src = razUrl + "?t=" + Date.now(); razOld();
+      $("razInfo").textContent = j.lapas + " lapas · eksports/" + j.name + (j.notes && j.notes.length ? " · Piezīmes: " + j.notes.join("; ") : "");
+      $("razInfo").title = $("razInfo").textContent; }
+    catch (e) { $("razInfo").textContent = "Karkasa lapas neizdevās: " + ((e && e.message) || e); }
+  }
+  function razOpen() {
+    if (!(window.MM_LOCAL || {}).key) { status("Ražošanas lapas ir pieejamas programmā „SBE projekti”."); return; }
+    $("razView").hidden = false; $("bTopRaz").setAttribute("aria-pressed", "true");
+    if (!razAt || razAt !== JSON.stringify(model)) razBuild();
+  }
+  function razClose() { $("razView").hidden = true; $("bTopRaz").setAttribute("aria-pressed", "false"); }
+  $("bKarkass").onclick = razOpen; $("tbRaz").onclick = () => { $("bTb").click(); razOpen(); };
+  const razFit = () => { const f = $("fRaz"), d = f.contentDocument; if (!d || !d.body) return; d.body.style.zoom = Math.min(1, Math.max(.2, (f.clientWidth - 40) / 1588)).toFixed(3); };   // lapas pa visu skata platumu (kā AR lapas)
+  $("fRaz").addEventListener("load", razFit); addEventListener("resize", () => { if (!$("razView").hidden) razFit(); });
+  $("razUpd").onclick = razBuild; $("razX").onclick = razClose; $("razTab").onclick = () => { if (razUrl) window.open(razUrl, "_blank"); };
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("razView").hidden && !document.querySelector("dialog[open]")) razClose(); });
+  setInterval(() => { if (!$("razView").hidden) razOld(); }, 1500);
+  $("razPdf").onclick = async () => {
+    if (!dl) return;
+    const doc = $("fRaz").contentDocument, pgs = doc ? [...doc.querySelectorAll(".pg")] : [];
+    if (!pgs.length) { status("Ražošanas lapas vēl nav gatavas."); return; }
+    try {
+      const ims = []; let im = null;
+      for (let k = 0; k < pgs.length; k++) {
+        let sv = pgs[k].querySelector(":scope > svg"), d0 = doc;
+        if (!sv) { const fr = pgs[k].querySelector("iframe"); for (let t = 0; t < 40 && !(fr && fr.contentDocument && fr.contentDocument.querySelector("svg.a3")); t++) await new Promise(r => setTimeout(r, 250));
+          d0 = fr && fr.contentDocument; sv = d0 && d0.querySelector("svg.a3"); }
+        if (!sv) continue;
+        let err; im = null;
+        for (const d of [600, 450, 300, 200, 150].filter(d => d <= +expQ)) {
+          status(`Gatavo ražošanas PDF ${d} dpi, lapa ${k + 1} no ${pgs.length}…`);
+          try { im = await sheetPng(d, sv, d0); break; } catch (e) { err = e; }
+        }
+        if (!im) throw err;
+        ims.push(im);
+      }
+      im = ims.reduce((a, b) => (b.dpi < a.dpi ? b : a));
+      await dl.save({ filename: `${model.id}_razosana_${im.dpi}dpi.pdf`, data: await pdfOf(ims) });
+      status(`Ražošanas PDF saglabāts (${ims.length} lapas, ${im.dpi} dpi).`);
+    } catch (e) { status(e && e.code === "declined" ? "PDF netika saglabāts." : "PDF neizdevās: " + ((e && (e.message || e.code)) || e)); }
   };
   $("bAc").onclick = async () => {
     try { status("Gatavo ArchiCAD skriptu…"); const j = await acPost("archicad");
