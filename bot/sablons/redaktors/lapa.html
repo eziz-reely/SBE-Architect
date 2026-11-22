@@ -895,6 +895,7 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
         <p class="pnote" id="tbNote">PNG, JPG vai SVG. Rakstlaukuma tumšais lauks paliek arī bez logo.</p>
       </div></span>
     <button id="bTop3d" type="button" title="3D skats, references PNG un Gemini prompts" aria-label="3D skats"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/><path d="M3.5 7 12 11.5 20.5 7M12 11.5v10"/></svg><span>3D skats</span></button>
+    <button id="bTopRaz" type="button" title="Ražošanas režīms: karkasa A3 lapas (1. lapa skice, sienas, starpsienas, jumts, detaļas) un materiālu tāme konkrētajam projektam" aria-label="Ražošana"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V9l8-6 8 6v12"/><path d="M8 21V11M12 21V11M16 21V11M4 15h16"/></svg><span>Ražošana</span></button>
     <button id="bSave" class="pri" type="button"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-7H7v7M7 3v4h8"/></svg><span>Saglabāt</span></button>
   </div>
 </header>
@@ -1757,7 +1758,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     b.onclick = () => { if (!((model.projekts || {}).guides || []).length) { status("Palīglīniju nav."); return; } const n = clone(model); n.projekts.guides = []; if (sel && sel.k === "guide") sel = null; commit(n); status("Visas palīglīnijas dzēstas."); };
     $("libOpen").appendChild(b); }
   $("gClr").onclick = () => $("bGuideClr").click();
-  $("bTop3d").onclick = () => $("b3d").click();   // 3D skats arī augšējā joslā blakus rakstlaukumam
+  $("bTop3d").onclick = () => $("b3d").click();
+  $("bTopRaz").onclick = () => $("bKarkass").click();   // ražošanas režīms (karkass un tāme) augšējā joslā   // 3D skats arī augšējā joslā blakus rakstlaukumam
   function startGuide(o) { const b = [...document.querySelectorAll("#libOpen button")].find(x => x.textContent.startsWith(o === "h" ? "Horiz." : "Vert.")); if (b && onBtn !== b) b.click(); }
   { const GR = [["Guļamistaba", ["bed", "bed1", "ns", "wr"]], ["Dzīvojamā", ["sofa", "sofaL", "arm", "tbl", "ci", "ch", "desk", "tv"]], ["Virtuve un vannas istaba", ["kit", "ctr", "bas", "wc", "wck", "sh", "wm"]], ["Kāpnes", ["st", "stL"]], ["Glabāšana un priekšnams", "fx1"], ["Dzīvojamā, kabinets", "fx2"], ["Tehnika un vannas istaba", "fx3"], ["Apkure", "fx4"]], host = $("libFurn");
     GR.forEach(([gn, ics]) => { const h = document.createElement("p"); h.className = "grp"; h.textContent = gn; host.appendChild(h);
@@ -2089,6 +2091,66 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const SPEC_OPEN = new Set();
   // ---- visas konstrukcijas vienā logā: sienas (ārsiena, starpsienas), jumts, grīda; nosaukumi un slāņi; saglabā vienā reizē ----
   const LKIND = { "": "Cits", h: "Apdare", a: "Latojums / sprauga", m: "Membrāna", i: "Izolācija / karkass", o: "OSB / plātne", k: "Ģipškartons", n: "Latojumā (neskaita biezumā)" };
+  // ---- cenu profili tāmei: uzņēmuma profili (uznemums.json), cena par pirkšanas vienību katram šī projekta tāmes materiālam ----
+  async function cenDlg() {
+    const K = (window.MM_LOCAL || {}).key;
+    if (!K) { status("Cenu profili ir pieejami programmā „SBE projekti”."); return; }
+    let J;
+    try { status("Ielādē cenu profilus…"); const r = await fetch("/api/cenas-lasit/" + K, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(model) }); if (!r.ok) throw new Error((await r.text()) || r.status); J = await r.json(); status(""); }
+    catch (e) { status("Cenu profilus neizdevās ielādēt: " + ((e && e.message) || e)); return; }
+    let d = document.getElementById("dCen");
+    if (!d) {
+      d = document.createElement("dialog"); d.id = "dCen"; document.body.appendChild(d);
+      const st = document.createElement("style"); st.textContent = `#dCen{width:min(820px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:hidden;border:1px solid var(--line2);border-radius:4px;padding:0;background:var(--paper);color:var(--ink);box-shadow:0 10px 40px rgba(0,0,0,.3)}#dCen::backdrop{background:rgba(20,22,25,.45)}#dCen form{display:flex;flex-direction:column;max-height:calc(100vh - 42px)}#dCen .hd{padding:16px 18px 8px}#dCen h3{margin:0 0 4px;font-size:16px}#dCen .bar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px}#dCen .bar select{min-width:200px}#dCen .bar button{height:28px;padding:0 10px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--ink);font-size:12.5px;cursor:pointer}#dCen .bd{overflow:auto;padding:0 18px 8px}#dCen table{width:100%;border-collapse:collapse;font-size:12.5px}#dCen th{font:600 11.5px var(--f-ui);color:var(--muted);text-align:left;padding:6px 4px;border-bottom:1px solid var(--line2);position:sticky;top:0;background:var(--paper)}#dCen td{padding:3px 4px;border-bottom:1px solid var(--line)}#dCen td.n{text-align:right;white-space:nowrap;color:var(--muted)}#dCen td.p{text-align:right}#dCen td.s{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}#dCen td input{width:90px;height:26px;padding:0 6px;text-align:right;font-size:12.5px}#dCen tr.miss td input{border-color:var(--accent)}#dCen .tot{font-weight:700;font-size:13px;padding:8px 4px;text-align:right}#dCen input,#dCen select{height:28px;padding:0 6px;font-size:12.5px}#dCen .ft{display:flex;gap:8px;justify-content:flex-end;align-items:center;padding:10px 18px 14px;border-top:1px solid var(--line)}#dCen .ft .note{margin:0 auto 0 0}#dCen .ft button{height:32px;padding:0 16px;border-radius:3px;border:1px solid var(--line2);background:var(--field);color:var(--ink);font-weight:600}#dCen .ft .pri{background:var(--accent);border-color:var(--accent);color:#fff}`;
+      document.head.appendChild(st);
+    }
+    const PR = (J.profili || []).map(x => ({ ...x, cenas: { ...(x.cenas || {}) } }));
+    let act = J.aktivs || "", sel = ((model.projekts || {}).cenu_profils) || act || (PR[0] || {}).id || "";
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    const num = v => { const f = parseFloat(String(v || "").replace(",", ".").replace(/\s/g, "")); return f > 0 ? f : 0; };
+    const eur = v => v.toLocaleString("lv-LV", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const qf = v => (Math.round(v * 100) / 100).toLocaleString("lv-LV");
+    const cur = () => PR.find(x => x.id === sel);
+    const read = () => { const c = cur(); if (!c) return; d.querySelectorAll("tr[data-k]").forEach(r => { const v = num(r.querySelector("input").value); if (v) c.cenas[r.dataset.k] = v; else delete c.cenas[r.dataset.k]; }); };
+    const totals = () => { let t = 0, miss = 0; d.querySelectorAll("tr[data-k]").forEach(r => { const v = num(r.querySelector("input").value), q = +r.dataset.q; r.querySelector(".s").textContent = v ? eur(v * q) : ""; r.classList.toggle("miss", !v); if (v) t += v * q; else miss++; }); const el = d.querySelector(".tot"); if (el) el.textContent = "Šim projektam kopā: " + eur(t) + " €" + (miss ? " (bez cenas: " + miss + ")" : ""); };
+    const draw = () => {
+      const c = cur();
+      d.innerHTML = `<form method="dialog"><div class="hd"><h3>Cenu profili · ${esc(J.uznemums || "uzņēmums")}</h3><p class="note" style="margin:0">Cenas glabājas uzņēmumam un der visiem tā projektiem. Cena ir par pirkšanas vienību (loksne, rullis, lata, tm, m², m³), bez PVN. Sarakstā ir šī projekta tāmes materiāli.</p>
+        <div class="bar"><label for="cenSel">Profils</label><select id="cenSel">${PR.map(x => `<option value="${esc(x.id)}"${x.id === sel ? " selected" : ""}>${esc(x.nosaukums)}${x.id === act ? " (noklusētais)" : ""}</option>`).join("")}${PR.length ? "" : `<option value="">nav profilu</option>`}<option value="nav"${sel === "nav" ? " selected" : ""}>Bez cenām (tukšas ailes)</option></select>
+        <button type="button" data-new>+ Jauns profils</button>${c ? `<button type="button" data-copy>Kopēt</button><button type="button" data-ren>Pārdēvēt</button><button type="button" data-def>Padarīt par noklusēto</button><button type="button" data-del>Dzēst</button>` : ""}</div></div>
+        <div class="bd">${c ? `<table><thead><tr><th>Materiāls</th><th>Izmērs</th><th style="text-align:right">Šim projektam</th><th>Vien.</th><th style="text-align:right">Cena, €</th><th style="text-align:right">Summa, €</th></tr></thead><tbody>` +
+          J.materiali.map(mt => `<tr data-k="${esc(mt.key)}" data-q="${mt.daudzums}"><td>${esc(mt.nosaukums)}</td><td>${esc(mt.izmers)}</td><td class="n">${qf(mt.daudzums)}</td><td>${esc(mt.vieniba)}</td><td class="p"><input inputmode="decimal" value="${c.cenas[mt.key] != null ? String(c.cenas[mt.key]).replace(".", ",") : ""}" aria-label="Cena par ${esc(mt.vieniba)}: ${esc(mt.nosaukums)}"></td><td class="s"></td></tr>`).join("") +
+          `</tbody></table><div class="tot"></div>` : `<p class="note">${sel === "nav" ? "Šim projektam tāme būs bez cenām." : "Uzņēmumam vēl nav cenu profilu. Spied „+ Jauns profils”."}</p>`}</div>
+        <div class="ft"><p class="note">Profils šim projektam tiek saglabāts modelī; tāme (poga „Ražošana”) aizpilda cenas un summas.</p><button type="button" data-x>Atcelt</button><button type="submit" class="pri">Saglabāt</button></div></form>`;
+      totals();
+    };
+    draw();
+    d.oninput = e => { if (e.target.closest("tr[data-k]")) totals(); };
+    d.onchange = e => { if (e.target.id === "cenSel") { read(); sel = e.target.value; draw(); } };
+    d.onclick = e => {
+      const b = e.target.closest("button"); if (!b) return;
+      if (b.dataset.x !== undefined) { d.close(); return; }
+      if (b.dataset.new !== undefined || b.dataset.copy !== undefined) {
+        read(); const nm = prompt("Profila nosaukums", b.dataset.copy !== undefined ? (cur().nosaukums + " (kopija)") : ((J.uznemums || "Cenas") + " " + new Date().getFullYear())); if (!nm || !nm.trim()) return;
+        let i = PR.length + 1; while (PR.some(x => x.id === "p" + i)) i++;
+        PR.push({ id: "p" + i, nosaukums: nm.trim(), cenas: b.dataset.copy !== undefined ? { ...cur().cenas } : {} }); sel = "p" + i; if (!act) act = sel; draw(); return;
+      }
+      const c = cur(); if (!c) return;
+      if (b.dataset.ren !== undefined) { read(); const nm = prompt("Jaunais nosaukums", c.nosaukums); if (nm && nm.trim()) { c.nosaukums = nm.trim(); draw(); } }
+      if (b.dataset.def !== undefined) { read(); act = c.id; draw(); }
+      if (b.dataset.del !== undefined) { if (!confirm("Dzēst profilu „" + c.nosaukums + "”?")) return; PR.splice(PR.indexOf(c), 1); if (act === c.id) act = (PR[0] || {}).id || ""; sel = act || "nav"; draw(); }
+    };
+    d.onsubmit = async e => {
+      e.preventDefault(); read();
+      try { const r = await fetch("/api/cenas/" + K, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ profili: PR, aktivs: act }) }); if (!r.ok) throw new Error((await r.text()) || r.status); const j = await r.json();
+        const ids = (j.profili || []).map(x => x.id); const want = sel === "nav" ? "nav" : (ids.includes(sel) ? sel : "");
+        const n = clone(model); n.projekts = n.projekts || {};
+        if (want && want !== j.aktivs) n.projekts.cenu_profils = want; else delete n.projekts.cenu_profils;
+        d.close(); if (JSON.stringify(n.projekts) !== JSON.stringify(model.projekts || {})) commit(n); status("Cenu profili saglabāti uzņēmumam" + (J.uznemums ? " " + J.uznemums : "") + "."); }
+      catch (err) { status("Cenas neizdevās saglabāt: " + ((err && err.message) || err)); }
+    };
+    d.showModal();
+  }
   function conDlg() {
     let d = document.getElementById("dCon");
     if (!d) {
@@ -2235,8 +2297,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       { // karkasa biezums C24 ārsienai un jumtam: maina pīrāga "i" slāni (siltumizolācijas m³ tāmē un karkasa lapās)
         const cur = k => { const L = ((model.projekts || {}).piragi_layers || {})[k] || (LAYERS0[k] || {}).layers || []; const l = L.find(q => q[2] === "i"); return l ? String(Math.round(+l[1])) : ""; };
         const setC = (k, v) => (n) => { n.projekts = n.projekts || {}; const PLn = n.projekts.piragi_layers = n.projekts.piragi_layers || {}; const L = (PLn[k] || LAYERS0[k].layers).map(q => q.slice()); const l = L.find(q => q[2] === "i"); if (!l) return; l[1] = +v; l[0] = l[0].replace(/45\s*[x×]\s*\d+/, "45x" + v); if (!/45x\d+/.test(l[0])) l[0] = "C24 45x" + v + ", " + l[0]; if (JSON.stringify(L) === JSON.stringify(LAYERS0[k].layers)) delete PLn[k]; else PLn[k] = L; if (!Object.keys(PLn).length) delete n.projekts.piragi_layers; };
-        if (LAYERS0.S1) KF.push(field("Ārsienas karkass C24", cur("S1"), (n, v) => setC("S1", v)(n), { 145: "45×145", 195: "45×195" }));
-        if (LAYERS0.J1) KF.push(field("Jumta spāres C24", cur("J1"), (n, v) => setC("J1", v)(n), { 145: "45×145", 195: "45×195", 220: "45×220", 245: "45×245" }));
+        if (LAYERS0.S1) KF.push(field("Ārsienas karkass C24", cur("S1"), (n, v) => setC("S1", v)(n), { 145: "45×145", 195: "45×195", ...(cur("S1") ? { [cur("S1")]: "45×" + cur("S1") } : {}) }));
+        if (LAYERS0.J1) KF.push(field("Jumta spāres C24", cur("J1"), (n, v) => setC("J1", v)(n), { 145: "45×145", 195: "45×195", 220: "45×220", 245: "45×245", ...(cur("J1") ? { [cur("J1")]: "45×" + cur("J1") } : {}) }));
+        { const cb = document.createElement("button"); cb.type = "button"; cb.className = "add full"; cb.style.cssText = "border-style:solid;font-weight:600"; cb.textContent = "Cenas un cenu profils tāmei…"; cb.title = "Uzņēmuma cenu profili: cena par katru materiālu; tāme aizpilda cenas, summas un KOPĀ"; cb.addEventListener("click", cenDlg); KF.push(cb); }
         KF.push(field("Klienta vārds (karkasa lapām)", (model.projekts || {}).klients || "", (n, v) => { n.projekts = n.projekts || {}; if (String(v).trim()) n.projekts.klients = String(v).trim(); else delete n.projekts.klients; }, "text", "full"));
       }
       const note0 = document.createElement("p"); note0.className = "note full"; note0.textContent = "Pārbaudi slāņus un biezumus (mm). Ja kaut kas nav pareizi vai trūkst, labo laukos: izmaiņas iet uz AR projekta lapu \"Sienu specifikācija\" un model.json."; gs.appendChild(note0);

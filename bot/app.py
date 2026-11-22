@@ -398,6 +398,32 @@ def pick_any(cos, co, val):
     return pick_set(company_spec(cos[co]), val)
 
 
+def company_dir_of(d):
+    """Projekta uzņēmuma mape (kur uznemums.json): pēc iestatījumu uzņēmumiem, citādi projekta vecākmape."""
+    a = os.path.abspath(d).lower()
+    for _, base in companies(load_cfg()).items():
+        if a.startswith(os.path.abspath(base).lower() + os.sep):
+            return base
+    return os.path.dirname(os.path.abspath(d))
+
+
+def price_profiles(cs):
+    """Uzņēmuma cenu profili: ([{id, nosaukums, cenas, atjaunots}], aktīvā id vai '')."""
+    pr = [k for k in (cs.get('cenu_profili') or []) if isinstance(k, dict) and k.get('id')]
+    act = cs.get('cenu_aktivs') if cs.get('cenu_aktivs') in [k['id'] for k in pr] else (pr[0]['id'] if pr else '')
+    return pr, act
+
+
+def pick_prices(d, m):
+    """Cenas tāmei: modelī projekts.cenu_profils (id; "nav" = bez cenām), citādi uzņēmuma aktīvais profils. → (cenas, nosaukums)."""
+    pr, act = price_profiles(company_spec(company_dir_of(d)))
+    want = ((m.get('projekts') or {}).get('cenu_profils') or act)
+    if want == 'nav':
+        return {}, ''
+    k = next((x for x in pr if x['id'] == want), None) or next((x for x in pr if x['id'] == act), None)
+    return (k.get('cenas') or {}, k.get('nosaukums') or '') if k else ({}, '')
+
+
 def archicad_model(d, m):
     """Modelis ArchiCAD skriptam: ārsienas biezums no uzņēmuma pīrāgu komplekta (kā redaktors, S1 bez latojuma "n" kārtām) un pīrāgu priekšvārds (uznemums.json "pirags_prefikss",
     piem. "TB"; noklusēti "MM"). Bez uzņēmuma iestatījumiem modelis paliek kā ir (MM noklusējums 283,5 mm). Jau norādītas projekts.siena_mm / pirags_prefikss netiek pārrakstītas."""
@@ -731,11 +757,38 @@ class H(BaseHTTPRequestHandler):
                     mp = os.path.join(td, 'model.json'); json.dump(b, open(mp, 'w', encoding='utf-8'), ensure_ascii=False)
                     build_model.build(mp, ['LV'])
                     nm = f"{b.get('id', 'projekts')}_karkass_tame.html"; fp = os.path.join(d, 'eksports', nm)
-                    _, n = karkass_lapas.build(mp, fp)
+                    cen, prof = pick_prices(d, b)
+                    _, n = karkass_lapas.build(mp, fp, cen, prof)
                     notes = [w for P in karkass.generate(b)['paneli'] for w in (P.id + ': ' + x for x in P.warn)][:8]
                 except Exception as e:
                     return self.send(500, 'Karkasa lapas neizdevās: ' + str(e), 'text/plain; charset=utf-8')
                 return self.send(200, {'ok': True, 'name': nm, 'lapas': n, 'notes': notes})
+            if p.startswith('/api/cenas-lasit/'):   # cenu profili + šī modeļa tāmes materiāli (body = model.json no redaktora)
+                d = path_for(p[17:]); b = self.body()
+                if not d or not isinstance(b, dict) or 'W' not in b:
+                    return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
+                import karkass, tame
+                cd = company_dir_of(d); pr, act = price_profiles(company_spec(cd))
+                mats = tame.materials(tame.compute(b, karkass.generate(b)))
+                return self.send(200, {'profili': pr, 'aktivs': act, 'materiali': mats, 'uznemums': os.path.basename(cd)})
+            if p.startswith('/api/cenas/'):   # saglabā uzņēmuma cenu profilus: {profili: [{id, nosaukums, cenas}], aktivs}
+                d = path_for(p[11:]); b = self.body()
+                if not d or not isinstance(b, dict):
+                    return self.send(400, 'Nederīgi dati', 'text/plain; charset=utf-8')
+                import tame
+                cd = company_dir_of(d); cs = company_spec(cd); out, used = [], set()
+                for i, k in enumerate((b.get('profili') or [])[:20]):
+                    if not isinstance(k, dict):
+                        continue
+                    pid = re.sub(r'[^a-z0-9_-]', '', str(k.get('id') or '').lower())[:24] or f'p{i + 1}'
+                    while pid in used or pid == 'nav': pid += 'x'
+                    used.add(pid)
+                    out.append({'id': pid, 'nosaukums': str(k.get('nosaukums') or '').strip()[:50] or f'Cenas {i + 1}',
+                                'cenas': tame.clean_prices(k.get('cenas')), 'atjaunots': time.strftime('%Y-%m-%d')})
+                cs['cenu_profili'] = out
+                cs['cenu_aktivs'] = b.get('aktivs') if b.get('aktivs') in used else (out[0]['id'] if out else '')
+                json.dump(cs, open(os.path.join(cd, 'uznemums.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+                return self.send(200, {'ok': True, 'profili': out, 'aktivs': cs['cenu_aktivs']})
             if p.startswith('/api/archicad-claude/'):   # rezerve: skripta rakstīšanu nodod Claude (saglabā modeli, atgriež uzdevuma tekstu)
                 d = path_for(p[21:]); b = self.body()
                 if not d:

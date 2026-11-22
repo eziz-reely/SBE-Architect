@@ -78,7 +78,7 @@ def table_svg(x, y, rows, cols, widths, fs=2.6, rh=3.8, head=True):
             out.append(f'<rect x="{x}" y="{yy}" width="{W}" height="{rh}" fill="#f2f3f5"/>')
         cx = x
         for j, (c, w) in enumerate(zip(r, widths)):
-            num = isinstance(c, (int, float)) or bool(re.fullmatch(r'-?\d+([.,]\d+)?', str(c)))
+            num = isinstance(c, (int, float)) or bool(re.fullmatch(r'-?\d{1,3}( \d{3})*([.,]\d+)?|-?\d+([.,]\d+)?', str(c)))
             tx = cx + w - 1 if num else cx + 1
             anc = ' text-anchor="end"' if num else ''
             out.append(f'<text x="{tx}" y="{yy + rh - 1}"{anc}>{esc(c)}</text>')
@@ -337,7 +337,8 @@ def skice_page(D, mp, m):
           f'srcdoc="{html.escape(src, quote=True)}"></iframe></div>')
 
 
-def build(mp, out=None):
+def build(mp, out=None, cenas=None, profils=''):
+    """cenas: {materiāla atslēga: €} no uzņēmuma cenu profila (tame.mat_key); profils: profila nosaukums tāmes kājenē."""
     m = json.load(open(mp, encoding='utf-8'))
     res = KK.generate(m)
     D = Doc(m)
@@ -349,7 +350,7 @@ def build(mp, out=None):
     partitions_pages(D, [P for P in res['paneli'] if P.kind != 'arsiena'])
     roof_page(D, res, m)
     summary_page(D, res)
-    TM.pages(D, m, res)
+    TM.pages(D, m, res, cenas, profils)
     n = len(D.pages)
     css = ('<style>@page{size:420mm 297mm;margin:0}html,body{margin:0;background:#d9dbdf}body{font-family:Barlow,Arial,sans-serif}'
            '.pg{width:420mm;height:297mm;background:#fff;margin:8mm auto;box-shadow:0 1px 6px rgba(0,0,0,.2);overflow:hidden;position:relative;page-break-after:always;break-after:page}'

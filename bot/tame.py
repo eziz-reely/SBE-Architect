@@ -1,5 +1,6 @@
 """Materiālu tāme pa pīrāgiem konkrētam projektam: daudzums (m², m³, tm), rezerve un pirkšanas daudzums veikala vienībās
-(loksnes, ruļļi, latu gabali). Cenas kolonna paliek tukša (vēlāk MM Homes cenas un automātiska summa).
+(loksnes, ruļļi, latu gabali). Cenas nāk no uzņēmuma cenu profila (uznemums.json "cenu_profili", cena par pirkšanas vienību);
+bez profila cenu kolonnas paliek tukšas aizpildīšanai ar roku.
 
 Pīrāgi = projekta slāņi (mm-config.json + projekts.piragi_layers), laukumi un kokmateriāli no karkass.py.
 Slāņu tips (3. lauks): h apdare, m membrāna, a latojums, i karkass ar siltumizolāciju, o plātne (OSB, durelis), k ģipškartons.
@@ -71,7 +72,7 @@ def section_rows(key, title, layers, A_out, A_in, ctx):
             tm = ctx['vert_tm'] if (key == 'J1' and outside and ('vert' in low or n_out_a == 2) and ctx.get('vert_tm')) else A / (cc / 1000)
             q = tm * (1 + REZ['a'] / 100)
             rows.append((name, f'{b}×{h}, c/c {cc}' if not (key == 'J1' and outside and ('vert' in low or n_out_a == 2)) else f'{b}×{h}, pa spārēm', round(tm, 1), 'tm', REZ['a'],
-                         math.ceil(q / LATA_M), f'gab. {LATA_M:g} m'.replace('.', ',')))
+                         math.ceil(q / LATA_M), 'gab. ' + f'{LATA_M:g} m'.replace('.', ',')))
             continue
         if kind in ('o', 'k') or re.search(r'osb|durel|ģips|gips', low):
             sh = 'gips' if (kind == 'k' or re.search(r'ģips|gips', low)) else ('durel' if 'durel' in low else 'osb')
@@ -87,7 +88,7 @@ def section_rows(key, title, layers, A_out, A_in, ctx):
         if re.search(r'vainag', low):
             b, h = _size(name, t)
             tm = ctx['perim']
-            rows.append((name, f'{b}×{h}', round(tm, 1), 'tm', 5, math.ceil(tm * 1.05 / LATA_M), f'gab. {LATA_M:g} m'.replace('.', ',')))
+            rows.append((name, f'{b}×{h}', round(tm, 1), 'tm', 5, math.ceil(tm * 1.05 / LATA_M), 'gab. ' + f'{LATA_M:g} m'.replace('.', ',')))
             continue
         if re.search(r'lent', low):
             if not ctx['lent_tm'].get(key):
@@ -149,26 +150,98 @@ def compute(m, res):
     return {'sekcijas': out, 'kokmateriali': (tot_tm, tot_m3), 'laukumi': {'arsienas': A_ext, 'starpsienas': A_prt, 'grida': A_floor, 'jumts': A_roof}}
 
 
+def mat_key(r):
+    """Materiāla atslēga cenu profilam (cena par pirkšanas vienību): C24 kokmateriāls pēc šķērsgriezuma (tm), latas pēc profila (gab.),
+    siltumizolācija pēc nosaukuma (m³, neatkarīgi no biezuma), pārējais: nosaukums | izmērs | vienība."""
+    unit = re.sub(r'\s*\(.*\)$', '', r[6])
+    q = re.match(r'C24\s+(\d+)\s*[x×]\s*(\d+)', r[0])
+    if q and r[3] == 'tm' and unit.startswith('tm'):
+        return f'c24 {q.group(1)}x{q.group(2)}|tm'
+    q = re.match(r'(\d+)×(\d+)', r[1])
+    if unit.startswith('gab') and q:
+        return f'lata {q.group(1)}x{q.group(2)}|{unit}'
+    if unit == 'm³':
+        return re.sub(r'\s+', ' ', f'{r[0]}|m³'.lower()).strip()
+    return re.sub(r'\s+', ' ', f'{r[0]}|{r[1]}|{unit}'.lower()).strip()
+
+
+def materials(T):
+    """Unikālie tāmes materiāli (cenu profila rediģēšanai): [{key, nosaukums, izmers, vieniba, daudzums}]."""
+    out = {}
+    for _, _, _, rows in T['sekcijas']:
+        for r in rows:
+            if not r[0]:
+                continue
+            k = mat_key(r)
+            q = r[5] if isinstance(r[5], (int, float)) else 0
+            if k in out:
+                out[k]['daudzums'] += q
+            else:
+                b = k.split('|')[0]
+                if k.startswith('c24 ') and k.endswith('|tm'):
+                    nm, iz = 'C24 kokmateriāls', b[4:].replace('x', '×')
+                elif k.startswith('lata '):
+                    nm, iz = 'Lata / dēlis', b[5:].replace('x', '×')
+                elif k.endswith('|m³'):
+                    nm, iz = r[0], ''
+                else:
+                    nm, iz = r[0], r[1]
+                out[k] = {'key': k, 'nosaukums': nm, 'izmers': iz, 'vieniba': k.split('|')[-1], 'daudzums': q}
+    return list(out.values())
+
+
+def clean_prices(c):
+    """{atslēga: cena} → tikai pozitīvi skaitļi (pieņem arī "12,5")."""
+    out = {}
+    for k, v in (c or {}).items():
+        try:
+            f = float(str(v).replace(',', '.').replace(' ', ''))
+        except ValueError:
+            continue
+        if f > 0:
+            out[str(k)] = f
+    return out
+
+
+def _eur(v):
+    s = f'{v:,.2f}'.replace(',', ' ').replace('.', ',')
+    return s
+
+
 def _fmt(v):
     if isinstance(v, float):
         return f'{v:.2f}'.rstrip('0').rstrip(',.').replace('.', ',') if abs(v) < 100 else f'{v:.1f}'.replace('.', ',')
     return v
 
 
-def pages(D, m, res):
-    """Tāmes lapas karkass_lapas Doc objektā (A3, lasāma tabula ar tukšu cenas kolonnu)."""
+def pages(D, m, res, cenas=None, profils=''):
+    """Tāmes lapas karkass_lapas Doc objektā (A3). cenas: {materiāla atslēga: € par pirkšanas vienību} no cenu profila; bez cenas ailes paliek tukšas."""
     from karkass_lapas import table_svg, PH, PW, INK, MUT, ACC, esc
     T = compute(m, res)
     cols = ('Nr.', 'Materiāls', 'Izmērs / profils', 'Aprēķins', 'Vien.', 'Rez. %', 'Pirkt', 'Pirkšanas vienība', 'Cena / vien., €', 'Summa, €')
     widths = (10, 108, 44, 22, 12, 13, 18, 50, 28, 26)
     blocks = []
     nr = 0
+    cenas = clean_prices(cenas)
+    total, n_bez, sec_tot = 0.0, 0, []
     for key, title, note, rows in T['sekcijas']:
-        body = []
+        body, st = [], 0.0
         for r in rows:
+            pc = sm = ''
             if r[0]:
                 nr += 1
-            body.append((str(nr) if r[0] else '', r[0] or r[1], r[1] if r[0] else '', _fmt(r[2]), r[3], r[4], _fmt(r[5]) if isinstance(r[5], float) else r[5], r[6], '', ''))
+                c = cenas.get(mat_key(r))
+                if c is not None and isinstance(r[5], (int, float)):
+                    v = c * r[5]
+                    st += v
+                    pc, sm = _eur(c), _eur(v)
+                else:
+                    n_bez += 1
+            body.append((str(nr) if r[0] else '', r[0] or r[1], r[1] if r[0] else '', _fmt(r[2]), r[3], r[4], _fmt(r[5]) if isinstance(r[5], float) else r[5], r[6], pc, sm))
+        if cenas:
+            body.append(('', 'Kopā sadaļā', '', '', '', '', '', '', '', _eur(st)))
+        total += st
+        sec_tot.append((title, st))
         blocks.append((title, note, body))
     pages_, cur, y = [], [], 0
     for b in blocks:
@@ -192,8 +265,11 @@ def pages(D, m, res):
             tm, m3 = T['kokmateriali']
             g.append(f'<g font-family="Barlow,Arial"><rect x="14" y="{PH - 46}" width="{PW - 28}" height="20" fill="#f4f7fd" stroke="{ACC}" stroke-width=".4"/>'
                      f'<text x="19" y="{PH - 38}" font-size="4" font-weight="700" fill="{INK}">Kokmateriāli kopā (C24): {tm:.0f} tm · {m3:.2f} m³</text>'.replace(f'{m3:.2f}', f'{m3:.2f}'.replace('.', ','))
-                     + f'<text x="19" y="{PH - 31.5}" font-size="2.8" fill="{MUT}">Daudzumi pēc projekta ģeometrijas; pirkšanas daudzums noapaļots uz augšu (loksnes, ruļļi, latu gabali {str(LATA_M).replace(".", ",")} m). Cenu kolonnas aizpildāmas; summa = pirkt × cena.</text>'
-                     f'<text x="{PW - 19}" y="{PH - 38}" font-size="4" font-weight="700" text-anchor="end" fill="{INK}">KOPĀ: ________ €</text></g>')
+                     + f'<text x="19" y="{PH - 31.5}" font-size="2.8" fill="{MUT}">Daudzumi pēc projekta ģeometrijas; pirkšanas daudzums noapaļots uz augšu (loksnes, ruļļi, latu gabali {str(LATA_M).replace(".", ",")} m). '
+                     + (f'Cenas: profils „{esc(profils)}” (bez PVN, par pirkšanas vienību); summa = pirkt × cena.' + (f' {n_bez} pozīcijām cenas nav.' if n_bez else '') if cenas else 'Cenu kolonnas aizpildāmas; summa = pirkt × cena.') + '</text>'
+                     + (f'<text x="{PW - 19}" y="{PH - 38}" font-size="4" font-weight="700" text-anchor="end" fill="{INK}">KOPĀ: {_eur(total)} €' + (' *' if n_bez else '') + '</text>'
+                        f'<text x="{PW - 19}" y="{PH - 31.5}" font-size="2.8" text-anchor="end" fill="{MUT}">' + esc(' · '.join(f'{t.split(" ")[0]} {_eur(v)}' for t, v in sec_tot)) + '</text>'
+                        if cenas else f'<text x="{PW - 19}" y="{PH - 38}" font-size="4" font-weight="700" text-anchor="end" fill="{INK}">KOPĀ: ________ €</text>') + '</g>')
         D.frame('MATERIĀLU TĀME' + (f' ({pi + 1}/{len(pages_)})' if len(pages_) > 1 else ''), ''.join(g),
                 'pa pīrāgiem (slāņi no ārpuses uz iekšu); daudzums, rezerve un pirkšanas daudzums')
 
