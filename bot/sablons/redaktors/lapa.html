@@ -1052,7 +1052,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (!n.ievade.augstums) return;
     const H0 = Math.ceil(n.ievade.augstums - (plat ? 0 : FLOOR_T));
     n.ievade.augstums_0 = H0; n.ievade.garums = n.W; n.ievade.platums = n.D;
-    n.jumts.eave = Math.round(H0 - ROOF_T / Math.cos(pitch * Math.PI / 180) - n.D / 2 * t);
+    const RL = roofLOn(n) ? roofL(n) : null;   // L mājai kore pēc galvenās daļas platuma
+    n.jumts.eave = Math.round(H0 - ROOF_T / Math.cos(pitch * Math.PI / 180) - (RL ? RL.dm : n.D) / 2 * t);
   }
   const PANEL = BASE.loft && BASE.ceiling ? +(BASE.loft.level - BASE.ceiling).toFixed(1) : 164.5;
   const panelT = m => m.loft && m.loft.level && m.ceiling ? +(m.loft.level - m.ceiling).toFixed(1) : PANEL;   // mansarda paneļa biezums = paneļa augšas atzīme − griesti
