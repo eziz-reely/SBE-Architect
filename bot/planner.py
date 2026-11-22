@@ -397,6 +397,9 @@ def templates_II(din, beds, baths, klase):
                    ('guļamistabas blakus', [['bed#B', 'bath', 'bed_s#C', 'liv#L'], ['bed#B', 'hall', 'bed_s#C', 'liv#L']], True)]
         return [(n, rows, lf, 'lin') for n, rows, lf in T_]
     if din <= 6600:                                  # divas joslas
+        if beds == 0:                                # (L mājai, kad guļamistabas ir otrajā spārnā)
+            T_ += [('studija ar priekšnamu', [wet + ['liv#L'], ['hall', 'liv#L']], False),
+                   ('studija, priekšnams ziemeļos', [['hall'] + wet + ['liv#L'], ['liv#L']], False)]
         if beds == 1:
             T_ += [('privātais bloks galā', [['bed', 'liv#L'], wet + ['hall', 'liv#L']], True),
                    ('privātais bloks galā, guļamistaba dienvidos', [wet + ['liv#L'], ['bed', 'hall', 'liv#L']], True),
@@ -488,11 +491,13 @@ def wing_width(B, klase):
     return min(max(0.62 * B, 4500), 6400)
 
 
-def topo_L(A, B, beds, baths, klase):
-    """L: ziemeļu spārns (garums Wb, platums w) + kāja rietumos (līdz Db). Apbūve = A (kā II).
+def topo_L(A, B, beds, baths, klase, fixed=None):
+    """L: ziemeļu (galvenais) spārns (garums Wb, platums w) + kāja rietumos (līdz Db, platums wl). Apbūve = A (kā II).
+    fixed = (Wb, w, kājas garums aiz galvenā spārna, wl): lietotāja dotie spārnu izmēri, kājas garumu nemeklē.
     Mezgls (stūris): sanmezgls ziemeļos virs priekšnama; kāja: viena telpa ar logiem rietumos un galā."""
-    w = wing_width(B, klase)
-    win = w - 2 * T
+    w = fixed[1] if fixed else wing_width(B, klase)
+    wl = fixed[3] if fixed else w            # kājas (otrā spārna) platums
+    win = wl - 2 * T
     out = []
     if beds < 1 or beds > 3 or baths > 1:
         return out
@@ -506,37 +511,149 @@ def topo_L(A, B, beds, baths, klase):
                   ('L, dzīvojamā kājā', 'liv', [['J#bath', 'bed#B', 'bed_s#C'], ['J#hall', 'hall', 'bed_s#C']])]
     if beds == 3:
         progs += [('L, guļamistaba kājā', 'bed_s', [['J#bath', 'bed#B', 'bed_s#C', 'liv#L'], ['J#hall', 'bed#B', 'bed_s#C', 'liv#L']])]
+    half = (win - t) / 2
+    if fixed and half >= R['bed_min_side'][klase] - 300:   # plats otrais spārns: divas guļamistabas blakus, abas no priekšnama
+        if beds == 2:
+            progs += [('L, divas guļamistabas kājā', ('bed', 'bed_s'), [['J#bath', 'liv#L'], ['J#hall', 'liv#L']])]
+        if beds == 3:
+            progs += [('L, divas guļamistabas kājā', ('bed', 'bed_s'), [['J#bath', 'bed_s#C', 'liv#L'], ['J#hall', 'bed_s#C', 'liv#L']])]
     for pname, legk, rows_k in progs:
-        g = SIZE[klase][legk]
+        two = isinstance(legk, tuple)
+        g = SIZE[klase][legk[0] if two else legk]
+        wr = half if two else win                 # vienas kājas telpas platums
         group = []
         out.append((pname, group))
-        lo_ = max(g[3], g[1] * 1e6 / win)
-        hi_ = (g[2] * 1e6 / win) if legk != 'liv' else (g[2] * 0.8e6 / win)
+        lo_ = max(g[3], g[1] * 1e6 / wr)
+        hi_ = (g[2] * 1e6 / wr) if legk != 'liv' else (g[2] * 0.8e6 / wr)
+        if fixed:   # kājas telpa = visa kāja; dzīvojamā drīkst būt lielāka par bibliotēkas maksimumu
+            leg = fixed[2] - t                    # kājas telpas dziļums (no starpsienas līdz ārsienas iekšpusei)
+            if leg < min(lo_, R['bed_min_side'][klase]) - 1 or (legk != 'liv' and leg * wr / 1e6 > g[2] * 1.3):
+                continue
+            lo_ = hi_ = leg
         leg = lo_
         while leg <= hi_ + 1 and len(group) < 8:
             Db = round((w - T + t + leg + T) / 10) * 10
             Wb = round((A * 1e6 / w - Db + w) / 10) * 10
+            if fixed:
+                Wb, Db = fixed[0], fixed[1] + fixed[2]
             leg += 300
-            if Wb < w + 3000:
+            if Wb < wl + 3000:
                 continue
-            poly = [[0, 0], [Wb, 0], [Wb, w], [w, w], [w, Db], [0, Db]]
-            rec = {'south': [[w, Wb, Db - w]], 'east': [[w, Db, Wb - w]]}
+            poly = [[0, 0], [Wb, 0], [Wb, w], [wl, w], [wl, Db], [0, Db]]
+            rec = {}
             Y0, Y1 = T, w - T
             rows = [(Y0, Y1 - hd - t, [x.replace('J#', '') for x in rows_k[0]]), (Y1 - hd, Y1, [x.replace('J#', '') for x in rows_k[1]])]
-            fixed = {'bath': (T, T + win), 'hall': (T, T + win)}
+            fixcol = {'bath': (T, T + win), 'hall': (T, T + win)} if win <= 4300 else {'hall': (T, T + win)}   # plats spārns: sanmezgls nav visā stūra platumā
             n_ok = 0
-            for score, sol in solve_rows(T, Wb - T, rows, klase, fixed=fixed, top=0)[:200]:
+            for score, sol in solve_rows(T, Wb - T, rows, klase, fixed=fixcol, top=0)[:200]:
                 L = Lay('L', pname, Wb, Db, klase, poly, rec)
-                L.kontura = KT.L_kontura(Wb, w, Db - w, w, 'sw')
+                L.kontura = KT.L_kontura(Wb, w, Db - w, wl, 'sw')
                 if build(L, sol, open_hall=True) is None:
                     continue
-                L.add(legk, [[T, w - T + t, win, Db - T - (w - T + t)]])
+                y0l, hl = w - T + t, Db - T - (w - T + t)
+                if two:
+                    L.add(legk[0], [[T, y0l, half, hl]]); L.add(legk[1], [[T + half + t, y0l, half, hl]])
+                else:
+                    L.add(legk, [[T, y0l, win, hl]])
                 if finish(L, ('hall', 'liv')):
                     group.append(L)
                     n_ok += 1
                     if n_ok >= 2:
                         break
     return out
+
+
+def topo_L_fix(Lfx, beds, baths, klase):
+    """L ar lietotāja dotiem spārniem (galvenā garums Wb, platums w, otrā spārna izvirzījums leg, platums wl).
+    Galvenais spārns tiek plānots kā II māja (tās pašas veidnes pēc iekšējā dziļuma), otrajā spārnā (rietumos, uz dienvidiem)
+    viena vai divas telpas: dzīvojamā, guļamistaba vai divas guļamistabas blakus. Tām jāpieslēdzas galvenā spārna
+    dienvidu rindas telpai (priekšnams, gaitenis vai dzīvojamā), to pārbauda finish()."""
+    Wb, w, leg, wl = Lfx
+    Db = w + leg
+    din, win = w - 2 * T, wl - 2 * T
+    y0l, hl = w - T + t, Db - T - (w - T + t)
+    half = (win - t) / 2
+    legs = [('liv',), ('bed',)]
+    if half >= R['bed_min_side'][klase] - 300 and beds >= 2:
+        legs.append(('bed', 'bed_s'))
+    out = []
+    for lk in legs:
+        nb = sum(1 for k in lk if k.startswith('bed'))
+        if nb > beds or (lk == ('liv',) and False):
+            continue
+        cap = {'liv': 99, 'bed': SIZE[klase]['bed'][2] * 1.3, 'bed_s': SIZE[klase]['bed_s'][2] * 1.3}
+        wr = half if len(lk) == 2 else win
+        if any(wr * hl / 1e6 > cap[k] or (k != 'liv' and wr * hl / 1e6 < SIZE[klase][k][1] * .9) for k in lk):
+            continue
+        for (name, rows_k, lf, typ), east in [(tp, e) for tp in templates_II(din, beds - nb, baths, klase) for e in (False, True)]:
+            # otrais spārns rietumos (zem galvenā spārna rietumu gala) vai austrumos
+            xl = Wb - wl + T if east else T          # otrā spārna iekšējā kreisā mala
+            poly = ([[0, 0], [Wb, 0], [Wb, Db], [Wb - wl, Db], [Wb - wl, w], [0, w]] if east else
+                    [[0, 0], [Wb, 0], [Wb, w], [wl, w], [wl, Db], [0, Db]])
+            pname = 'L, ' + {('liv',): 'dzīvojamā spārnā', ('bed',): 'guļamistaba spārnā', ('bed', 'bed_s'): 'divas guļamistabas spārnā'}[lk] + (' (A)' if east else ' (R)') + ', ' + name
+            group = []
+            out.append((pname, group))
+            if typ == 'lin':
+                hd = min(R['hall_d'], max(R['hall_min'], din - 1700 - t))
+                splits = [[din]] if len(rows_k) == 1 else ([[din - hd - t, hd]] if 'hall' in rows_k[1] else [[hd, din - hd - t]])
+            elif typ == 'dbl':
+                splits = [[dn, din - dn - t] for dn in (3000, 3300, 3600) if din - dn - t >= 1700]
+            else:
+                c = R['corridor'][klase]
+                dn = (din - c - 2 * t) / 2
+                splits = [[dn, c, din - dn - c - 2 * t]]
+            seen = set()
+            for sp in splits:
+                rows, y = [], T
+                for h, its in zip(sp, rows_k):
+                    rows.append((y, y + h, its)); y += h + t
+                for score, sol in solve_rows(T, Wb - T, rows, klase, top=0)[:400]:
+                    L = Lay('L', pname, Wb, Db, klase, poly, {})
+                    L.kontura = KT.L_kontura(Wb, w, leg, wl, 'se' if east else 'sw')
+                    if build(L, sol) is None:
+                        continue
+                    if lk == ('liv',):   # dzīvojamā turpinās spārnā (L veida dzīvojamā): virs spārna jābūt dzīvojamai visā platumā
+                        liv = next((r for r in L.rooms if r.kind == 'liv'), None)
+                        up = liv and next((q for q in liv.rects if abs(q[1] + q[3] - (w - T)) < 1 and q[0] <= xl + 1 and q[0] + q[2] >= xl + win - 1), None)
+                        if not up:
+                            continue
+                        liv.rects.append([xl, w - T, win, hl + t])
+                    elif len(lk) == 2:
+                        L.add(lk[0], [[xl, y0l, half, hl]]); L.add(lk[1], [[xl + half + t, y0l, half, hl]])
+                    else:
+                        L.add(lk[0], [[xl, y0l, win, hl]])
+                    sig = tuple(sorted((r.kind, round(r.rects[0][0] / 300), round(r.rects[0][1] / 300)) for r in L.rooms))
+                    if sig in seen:
+                        continue
+                    seen.add(sig)
+                    if finish(L, ('hall', 'liv')):
+                        group.append(L)
+                        if len(group) >= 4:
+                            break
+                if len(group) >= 4:
+                    break
+    return out
+
+
+def norm_L(a_len, a_w, b_len, b_w):
+    """Platākais spārns ir galvenais (kore garenvirzienā). Ievade: katram spārnam garums pa visu ārmalu
+    (ieskaitot stūri, kur spārni pārklājas) un platums. Piem. 15000x7000 un 12000x6000: L 15 × 12 m.
+    Atgriež (galvenā garums, galvenā platums, otrā spārna izvirzījums aiz galvenā, otrā platums)."""
+    a_len, a_w, b_len, b_w = map(float, (a_len, a_w, b_len, b_w))
+    if b_w > a_w:
+        a_len, a_w, b_len, b_w = b_len, b_w, a_len, a_w
+    if b_len - a_w < 1500 or a_len - b_w < 1500:
+        raise ValueError(f'L spārni par īsu: otrajam spārnam jābūt vismaz 1500 mm garākam par galvenā platumu ({b_len:.0f} ≤ {a_w + 1500:.0f})')
+    return a_len, a_w, b_len - a_w, b_w
+
+
+def parse_L(txt):
+    """'15000x7000,12000x6000' -> (15000, 7000, 12000, 6000)."""
+    import re
+    v = [float(x) for x in re.findall(r'\d+(?:\.\d+)?', txt)]
+    if len(v) != 4:
+        raise ValueError('L spārni: vajag 4 skaitļus, piem. 15000x7000,12000x6000')
+    return tuple(v)
 
 
 def topo_T(A, B, beds, baths, klase):
@@ -660,15 +777,57 @@ def pass_zone(d, depth):
     return [x - depth, y, x, y + w] if s > 0 else [x + th, y, x + th + depth, y + w]
 
 
+def outer_edges(L):
+    """Kontūras malas ar ārējo pusi: [(side, a, b, c)], c = malas līnija (y horizontālai, x vertikālai), a..b pa malu."""
+    P = L.poly or [[0, 0], [L.W, 0], [L.W, L.D], [0, L.D]]
+    out = []
+    for i in range(len(P)):
+        A, B = P[i], P[(i + 1) % len(P)]
+        hz = abs(A[1] - B[1]) < .5
+        c = A[1] if hz else A[0]
+        a, b = sorted((A[0], B[0]) if hz else (A[1], B[1]))
+        mid = (a + b) / 2
+        probe = (mid, c - 5) if hz else (c - 5, mid)
+        neg_out = not KT_inside(P, probe)      # ārpuse ir mazāko koordināšu pusē
+        out.append(((('north' if neg_out else 'south') if hz else ('west' if neg_out else 'east')), a, b, c))
+    return out
+
+
+def KT_inside(P, p):
+    x, y, c = p[0], p[1], False
+    for i in range(len(P)):
+        (x1, y1), (x2, y2) = P[i], P[i - 1]
+        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+            c = not c
+    return c
+
+
 def ext_sides(L, r):
-    """Taisnstūra r malas, kas ir ārsienā uz ierobežojošā taisnstūra (tikai tur var likt logus): [(side, lo, hi)]."""
+    """Taisnstūra r malas, kas ir ārsienā (arī L/T iekšējā stūra fasādes; tikai tur var likt logus): [(side, lo, hi)]."""
     x0, y0, x1, y1 = box(r)
     out = []
-    if abs(y0 - T) < 1: out.append(('north', x0, x1))
-    if abs(y1 - (L.D - T)) < 1: out.append(('south', x0, x1))
-    if abs(x0 - T) < 1: out.append(('west', y0, y1))
-    if abs(x1 - (L.W - T)) < 1: out.append(('east', y0, y1))
-    return out
+    for sd, a, b, c in outer_edges(L):
+        if sd == 'north' and abs(y0 - (c + T)) < 1: lo, hi = max(a, x0), min(b, x1)
+        elif sd == 'south' and abs(y1 - (c - T)) < 1: lo, hi = max(a, x0), min(b, x1)
+        elif sd == 'west' and abs(x0 - (c + T)) < 1: lo, hi = max(a, y0), min(b, y1)
+        elif sd == 'east' and abs(x1 - (c - T)) < 1: lo, hi = max(a, y0), min(b, y1)
+        else:
+            continue
+        if hi - lo > 1:
+            out.append((sd, lo, hi))
+    return sorted(out, key=lambda e: ('north', 'south', 'west', 'east').index(e[0]))   # secība kā agrāk (logu izvēle no tās atkarīga)
+
+
+def wall_face(L, side, u):
+    """Ārsienas joslas sākuma koordināta logam/durvīm (ziemeļi/rietumi: ārējā virsma, dienvidi/austrumi: ārējā virsma - T) pie u."""
+    best = None
+    for sd, a, b, c in outer_edges(L):
+        if sd == side and a - 1 <= u <= b + 1:
+            if best is None or (c < best if side in ('north', 'west') else c > best):
+                best = c
+    if best is None:
+        best = {'north': 0, 'west': 0, 'south': L.D, 'east': L.W}[side]
+    return best if side in ('north', 'west') else best - T
 
 
 def all_ext_sides(L, r):
@@ -706,11 +865,11 @@ def entry_options(L, room):
                 continue
             for d0 in ((lo + hi - w) / 2, lo + 300, hi - 300 - w):
                 if sd in ('south', 'north', 'south_in', 'north_in'):
-                    y = L.D - T if sd == 'south' else 0 if sd == 'north' else (e[3] - T if sd == 'south_in' else e[3])
+                    y = wall_face(L, sd, d0 + w / 2) if sd in ('south', 'north') else (e[3] - T if sd == 'south_in' else e[3])
                     side = 1 if sd.startswith('south') else -1
                     out.append({'x': r1(d0), 'y': r1(y), 'o': 'h', 'hinge': 's', 'side': side, 'w': w, 'th': T, 'entry': True, '_sd': sd})
                 else:
-                    x = L.W - T if sd == 'east' else 0 if sd == 'west' else (e[3] - T if sd == 'east_in' else e[3])
+                    x = wall_face(L, sd, d0 + w / 2) if sd in ('east', 'west') else (e[3] - T if sd == 'east_in' else e[3])
                     side = 1 if sd.startswith('east') else -1
                     out.append({'x': r1(x), 'y': r1(d0), 'o': 'v', 'hinge': 's', 'side': side, 'w': w, 'th': T, 'entry': True, '_sd': sd})
     return out
@@ -736,14 +895,15 @@ def win_zone(w, L):
 
 
 def make_win(L, side, a0, ln, sill, head, kind, **kw):
+    c = r1(wall_face(L, side, a0 + ln / 2)) or 0   # L/T: logs var būt arī iekšējā stūra fasādē
     if side == 'north':
-        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': r1(a0), 'y': 0, 'o': 'h', 'side': 'north'}
+        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': r1(a0), 'y': c, 'o': 'h', 'side': 'north'}
     elif side == 'south':
-        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': r1(a0), 'y': r1(L.D - T), 'o': 'h', 'side': 'south'}
+        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': r1(a0), 'y': c, 'o': 'h', 'side': 'south'}
     elif side == 'west':
-        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': 0, 'y': r1(a0), 'o': 'v', 'out': -1, 'side': 'west'}
+        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': c, 'y': r1(a0), 'o': 'v', 'out': -1, 'side': 'west'}
     else:
-        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': r1(L.W - T), 'y': r1(a0), 'o': 'v', 'out': 1, 'side': 'east'}
+        w = {'len': ln, 'sill': sill, 'head': head, 'kind': kind, 'x': c, 'y': r1(a0), 'o': 'v', 'out': 1, 'side': 'east'}
     w.update(kw)
     return w
 
@@ -848,7 +1008,17 @@ def win_sets(L, room, entry):
                         for where in (('kit', 'lo', 0.3, 'c', 0.7, 'hi') if ln == R['liv_win_fixed'] else ('c', 0.7, 0.3, 'hi', 'lo')):
                             for a2 in place(s2, lo2, hi2, ln, where):
                                 w2 = make_win(L, s2, a2, ln, 0, 2100, 'fixed') if ln == R['liv_win_fixed'] else std_win(L, s2, a2, ln, 900, 2100)
-                                res.append([W1, w2])
+                                ws = [W1, w2]
+                                if L.forma != 'II':   # [MM] liela L/T dzīvojamā: trešais stiklojums citā sienas posmā, ja 1/8 nepietiek
+                                    for x in sides:
+                                        if got + w2['len'] * (2100 - w2['sill']) >= need or x[:2] == g[:2] or x[:2] == o[:2]:
+                                            continue
+                                        g3 = math.floor(min(2400, (x[2] - x[1]) - 2 * (E + 150)) / 100) * 100
+                                        a3 = place(x[0], x[1], x[2], g3, 'c') if g3 >= 1200 else []
+                                        if a3:
+                                            ws.append(std_win(L, x[0], a3[0], g3, 0, 2100))
+                                            break
+                                res.append(ws)
                 elif got >= need:
                     res.append([W1])
     elif k in ('bed', 'bed_s'):
@@ -858,6 +1028,13 @@ def win_sets(L, room, entry):
             for where in ('c', 'lo', 'hi', 0.35, 0.65):
                 for a in place(s, lo, hi, ln, where):
                     res.append([std_win(L, s, a, ln, 900, 2100)])
+        if L.forma != 'II' and ln * 1200 < area / 8 * 1e6:   # [MM] liela L/T guļamistaba: divi logi (otrs citā sienā)
+            for i, (s, lo, hi, _) in enumerate(pref):
+                for s2, lo2, hi2, _ in pref[i + 1:]:
+                    l2 = max(900, min(1800, math.ceil((area / 8 * 1e6 - ln * 1200) / 1200 / 100) * 100))
+                    for a in place(s, lo, hi, ln, 'c'):
+                        for a2 in place(s2, lo2, hi2, l2, 'c'):
+                            res.insert(0, [std_win(L, s, a, ln, 900, 2100), std_win(L, s2, a2, l2, 900, 2100)])
     elif k == 'bath':
         for s, lo, hi, _ in sorted(sides, key=lambda s: 0 if s[0] in ('north', 'south') else 1):
             for where in ('c', 'lo', 'hi', 0.3, 0.7):
@@ -1835,17 +2012,23 @@ def vertejums(m, klase):
 # ======================================================================================
 # 6. GALVENĀ FUNKCIJA
 # ======================================================================================
-def plan(L_mm, B_mm, H, beds=1, baths=1, formas=('II', 'L', 'T'), loft=False, n=4, griesti=2200):
-    """loft: False = bez mansarda, True = ar un bez, 'only' = tikai ar mansardu."""
+def plan(L_mm, B_mm, H, beds=1, baths=1, formas=('II', 'L', 'T'), loft=False, n=4, griesti=2200, L_fix=None):
+    """loft: False = bez mansarda, True = ar un bez, 'only' = tikai ar mansardu.
+    L_fix = (galvenā garums, galvenā platums, otrā spārna garums aiz galvenā, otrā platums): L māja ar dotiem spārniem;
+    tad L_mm, B_mm ir kopējie gabarīti un citas formas netiek veidotas."""
     W, D = float(L_mm), float(B_mm)
     A = W * D / 1e6
+    if L_fix:
+        L_fix = norm_L(*L_fix)
+        formas = ('L',)
+        A = (L_fix[0] * L_fix[1] + L_fix[2] * L_fix[3]) / 1e6
     klase = planlib.klase_of(A)
     din = D - 2 * T
     lays = []
     if 'II' in formas:
         lays += topo_II(W, D, beds, baths, klase)
     if 'L' in formas:
-        lays += topo_L(A, D, beds, baths, klase)
+        lays += topo_L_fix(L_fix, beds, baths, klase) if L_fix else topo_L(A, D, beds, baths, klase)
     if 'T' in formas:
         lays += topo_T(A, D, beds, baths, klase)
     good, rejected = [], []
@@ -1988,18 +2171,27 @@ def write_out(vs, rejected, klase, args, out_dir):
 if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser(description='MM istabu plānotājs')
-    ap.add_argument('garums', type=float); ap.add_argument('platums', type=float); ap.add_argument('augstums', type=float)
-    ap.add_argument('gulamistabas', type=int, nargs='?', default=1); ap.add_argument('vannasistabas', type=int, nargs='?', default=1)
+    ap.add_argument('vertibas', nargs='+', metavar='N', help='garums platums augstums [gulamistabas] [vannasistabas]; ar --L tikai augstums [gul.] [vannas]')
+    ap.add_argument('--L', dest='Lspar', help='L māja no diviem spārniem: "garums x platums, garums x platums" (mm, garums pa visu ārmalu), piem. 15000x7000,12000x6000; platākais ir galvenais')
     ap.add_argument('--forma', default='II,L,T', help='II, L, T (komatiem)')
     ap.add_argument('--loft', action='store_true', help='arī varianti ar mansarda guļvietu (II formai)')
     ap.add_argument('--n', type=int, default=4, help='max variantu skaits katrai formai')
     ap.add_argument('--griesti', type=int, default=2200)
     ap.add_argument('--out', help='izvades mape (noklusējums planner_izvade/...)')
-    a = ap.parse_args()
-    for x in planlib.check_input(a.garums, a.platums, a.augstums):
-        print('! ievade:', x)
+    a = ap.parse_intermixed_args()
+    nv = [float(x) for x in a.vertibas]
+    L_fix = None
+    if a.Lspar:
+        L_fix = parse_L(a.Lspar)
+        g = norm_L(*L_fix)
+        nv = [g[0], g[1] + g[2]] + nv
+    nv += [1, 1][len(nv) - 3:] if len(nv) < 5 else []
+    a.garums, a.platums, a.augstums, a.gulamistabas, a.vannasistabas = nv[0], nv[1], nv[2], int(nv[3]), int(nv[4])
+    if not L_fix:
+        for x in planlib.check_input(a.garums, a.platums, a.augstums):
+            print('! ievade:', x)
     vs, rej, klase = plan(a.garums, a.platums, a.augstums, a.gulamistabas, a.vannasistabas,
-                          [f.strip().upper() for f in a.forma.split(',')], a.loft, a.n, a.griesti)
+                          [f.strip().upper() for f in a.forma.split(',')], a.loft, a.n, a.griesti, L_fix)
     tag = f"{a.garums:.0f}x{a.platums:.0f}x{a.augstums:.0f}_{a.gulamistabas}g{a.vannasistabas}v"
     out = a.out or os.path.join(HERE, 'planner_izvade', tag)
     print(f'klase {klase}; derīgi varianti: {len(vs)}')

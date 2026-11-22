@@ -12,6 +12,9 @@ Mansards:   --mansards ja|ne   (noklusējums ja; ne = bez mansarda stāva un man
 Varianti:   --varianti N       plānotājs (planner.py) uztaisa N atšķirīgus plānojumus (II/L/T, ar mansardu tikai II),
             katrs iziet rules_check ar 0 kļūdām un 0 brīdinājumiem, un katram tiek uztaisīta tā pati rasējumu lapa.
             -> MĀJAS/50m2/MM-50-01-V01/model.json + rasejumi/MM-50-01-V01_LV.html ..., kopsavilkums MM-50-01/varianti.html
+L māja:     --L 15000x7000,12000x6500  divi spārni (garums pa visu ārmalu x platums), platākais = galvenais; plānotājs dod L variantus
+            (otrs spārns rietumu vai austrumu galā), model.json saņem "kontura" (bloki + robi, skat. kontura.py).
+            python generate.py 0 0 4500 --L 15000x7000,12000x6500 --gulamistabas 3 --mansards ne
 Piemērs:    python generate.py 14280 3500 5600 --mansards ne --varianti 4
 """
 import json, math, os, sys
@@ -250,16 +253,19 @@ def auto_telpas(A):
     return beds, (2 if A >= 100 else 1)
 
 
-def variants(L, B, H, n, mansards, projekts, beds=None, baths=None, formas=('II', 'L', 'T'), mid=None):
+def variants(L, B, H, n, mansards, projekts, beds=None, baths=None, formas=('II', 'L', 'T'), mid=None, L_fix=None):
     """Plānotāja varianti -> model.json katram (tas pats formāts kā model()), atgriež ceļus."""
     import planner
     A = L * B / 1e6
+    if L_fix:   # L māja: apbūve = abi spārni (ne gabarītu taisnstūris)
+        g = planner.norm_L(*L_fix)
+        A = (g[0] * g[1] + g[2] * g[3]) / 1e6
     b0, v0 = auto_telpas(A)
     griesti = int((projekts or {}).get('griesti') or 2200)
     tries = [beds] if beds else [b for b in (b0, b0 - 1, b0 + 1) if b >= 1]
     vs = rej = None
     for b in tries:
-        vs, rej, klase = planner.plan(L, B, H, b, baths or v0, formas, 'only' if mansards else False, n, griesti)
+        vs, rej, klase = planner.plan(L, B, H, b, baths or v0, formas, 'only' if mansards else False, n, griesti, L_fix)
         if vs:
             break
     if not vs:
@@ -328,7 +334,16 @@ if __name__ == '__main__':
     ap.add_argument('--gulamistabas', type=int, help='variantiem: guļamistabu skaits (noklusējums pēc laukuma)')
     ap.add_argument('--vannas', type=int, help='variantiem: vannasistabu skaits (noklusējums pēc laukuma)')
     ap.add_argument('--forma', default='II,L,T', help='variantiem: formas II, L, T (komatiem)')
+    ap.add_argument('--L', dest='Lspar', help='L māja no diviem spārniem "garums x platums, garums x platums" (mm, garums pa visu ārmalu), '
+                    'piem. 15000x7000,12000x6500; platākais ir galvenais, kore garenvirzienā. Garums/platums tad = L gabarīti; ieslēdz --varianti 4, ja nav dots')
     a = ap.parse_args()
+    L_fix = None
+    if a.Lspar:
+        import planner as _plL
+        L_fix = _plL.parse_L(a.Lspar)
+        g = _plL.norm_L(*L_fix)
+        a.garums, a.platums = g[0], g[1] + g[2]
+        a.varianti = a.varianti or 4
     if a.slipums:   # jumta slīpums: tas pats globālais PITCH, ko izmanto model() un planner.py
         globals()['PITCH'] = a.slipums
         import planner as _pl
@@ -344,7 +359,7 @@ if __name__ == '__main__':
                             'piezimes': a.piezime or None, 'modela_nosaukums': a.nosaukums, 'tonis': a.tonis, 'pamati': a.pamati,
                             'griesti': a.griesti, 'piragi': a.piragi}.items() if v is not None and (v != [] or k == 'adrese')}
     import planlib   # zināšanu bibliotēka: tikai brīdinājumi, noformējumu nemaina
-    for x in planlib.check_input(a.garums, a.platums, a.augstums):
+    for x in ([] if L_fix else planlib.check_input(a.garums, a.platums, a.augstums)):
         print('BRĪDINĀJUMS:', x)
     # [MM] Mājas (kores) augstums ir no grīdas paneļa APAKŠAS; arhitektūras atzīmes ir no ±0,000 (grīdas pīrāga augšas).
     # Stabveida pamatiem ģeometrijai kore virs ±0,000 = augstums − grīdas pīrāgs (G1); platnei grīdas paneļa nav.
@@ -353,7 +368,7 @@ if __name__ == '__main__':
     H0 = math.ceil(a.augstums - flT)   # 4000 - 275,5 = +3,725 (veselā mm)
     if a.varianti > 0:
         ps = variants(a.garums, a.platums, H0, a.varianti, a.mansards == 'ja', pr, a.gulamistabas, a.vannas,
-                      tuple(f.strip().upper() for f in a.forma.split(',')), a.id)
+                      tuple(f.strip().upper() for f in a.forma.split(',')), a.id, L_fix)
     else:
         p = model(a.garums, a.platums, H0, a.id, pr)
         ps = [bez_mansarda(p) if a.mansards == 'ne' else p]
