@@ -2451,7 +2451,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       { // ieliekums: taisnstūra izgriezums jebkurā malā (lodžija, ieejas niša, U vai L forma); jumts paliek pār visu gabarītu
         const gr = group("Ieliekums", host), RC = REC;
         const row = (lab, key, opts) => gr.appendChild(field(lab, RC[key], (n, v) => { RC[key] = opts ? v : Math.round(+v); throw "async"; }, opts || null));
-        row("Mala", "side", { south: "Dienvidu", north: "Ziemeļu", east: "Austrumu", west: "Rietumu" }); row("Platums gar sienu, mm", "len"); row("Dziļums, mm", "dep"); row("Nobīde no fasādes kreisā stūra, mm", "off"); row("Ieliekumā", "ter", { lv: "Ieejas lievenis ar pakāpienu", 1: "Terase zem jumta", 0: "Tukšs" }); row("Stabi zem jumta", "stabi", { 0: "Nav", 1: "Ir (brīvajā stūrī)" });
+        row("Mala", "side", { south: "Dienvidu", north: "Ziemeļu", east: "Austrumu", west: "Rietumu" }); row("Platums gar sienu, mm", "len"); row("Dziļums, mm", "dep"); row("Novietojums", "pos", { off: "Pēc nobīdes", mid: "Ārsienas vidū (centrēts)" }); if (RC.pos !== "mid") row("Nobīde no fasādes kreisā stūra, mm", "off"); row("Ieliekumā", "ter", { lv: "Ieejas lievenis ar pakāpienu", 1: "Terase zem jumta", 0: "Tukšs" }); row("Stabi zem jumta", "stabi", { 0: "Nav", 1: "Ir (brīvajā stūrī)" });
         const b = document.createElement("button"); b.type = "button"; b.className = "wide"; b.textContent = "Izgriezt robu"; b.onclick = () => addRecess(RC);
         gr.appendChild(b); const nr = document.createElement("p"); nr.className = "note full"; nr.textContent = "Ieejas robs: ārsienā ievilkts padziļinājums (nobīde 0 = stūris, skatoties uz fasādi no ārpuses). Jumts turpinās pāri robam. Lievenis cokola augstumā, pakāpiens ±0,000 pie durvīm; ja ārdurvis bija izgriezumā, tās pārceļas uz roba aizmugures sienu. Telpas tiek apgrieztas. Atsaukt: Ctrl+Z.";  gr.appendChild(nr);
         const K = kOf(model);
@@ -2461,6 +2461,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
           g2.appendChild(field("Platums, mm", rb.plat, set("plat", v => Math.max(600, Math.round(v)))));
           g2.appendChild(field("Dziļums, mm", rb.dzil, set("dzil", v => Math.max(300, Math.round(v)))));
           g2.appendChild(field("Nobīde no kreisā stūra, mm", rb.nob || 0, set("nob", v => Math.max(0, Math.round(v)))));
+          { const cb = document.createElement("button"); cb.type = "button"; cb.textContent = "Centrēt ārsienas vidū"; cb.title = "Nobīde tā, lai robs ir fasādes vidū";
+            cb.onclick = () => { const n = clone(model), K2 = JSON.parse(JSON.stringify(K)), bx = kBox(konturaPoly(K2).full || []), hz = rb.puse === "north" || rb.puse === "south", L = hz ? bx[2] - bx[0] : bx[3] - bx[1];
+              K2.robi[i].nob = Math.max(0, Math.round((L - rb.plat) / 2)); try { robApply(n, K2, `Robs ${i + 1} centrēts fasādē.`); } catch (e) { if (e === "async") return; throw e; } commit(n); };
+            g2.appendChild(cb); }
           g2.appendChild(field("Ieliekumā", rb.ieliekuma || "lievenis", set("ieliekuma", v => v), { lievenis: "Lievenis", terase: "Terase", tukss: "Tukšs" }));
           g2.appendChild(field("Stabi", rb.stabi ? "1" : "0", set("stabi", v => v === "1"), { 0: "Nav", 1: "Ir" }));
           g2.appendChild(field("Pakāpiens", rb.pakapiens === false ? "0" : "1", set("pakapiens", v => v === "1"), { 1: "Ir", 0: "Nav" }));
@@ -2614,7 +2618,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   const MAJA_ORDER = ["Mājas izmēri", "Pamati", "Pamatu plāns", "Stabi", "Vainags", "Komunikāciju pievadi", "Konstrukcijas (pīrāgi)", "Jumts", "Stāvi", "Visi logi", "Krāsas", "Notekas", "Fasādes lapā", "Zonu zīmogi", "Vizualizāciju lapas", "Specifikācijas noformējums"];
   // cilne Māja pa tēmām: viena tēma redzama, pārslēgs augšā; izvēle paliek arī pēc pārzīmēšanas
   const EXT = { side: "south", len: 4000, dep: 3000, off: 0 };
-  const REC = { side: "south", len: 3000, dep: 1500, off: 3000, ter: "lv", stabi: "0" };
+  const REC = { side: "south", len: 3000, dep: 1500, off: 3000, ter: "lv", stabi: "0", pos: "off" };
+  const DREC = { len: 0, dep: 1500, ter: "lv" };   // ieejas robs pie izvēlētajām ārdurvīm
   // ---- mājas kontūra (taisnleņķa): izgriešana pa režģi, fasāžu ieliekumu profils ----
   // kontūra mīnus taisnstūris R=[x0,y0,x1,y1]; atgriež jaunu kontūru vai null, ja māja sadalītos vai pazustu
   function polyCut(poly, R) {
@@ -2686,9 +2691,9 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     return null;
   }
   // ieejas durvis roba aizmugures sienā (ja izgriežot ārdurvis pazuda)
-  function robDoor(n, R, sd, Tw) {
+  function robDoor(n, R, sd, Tw, dw) {
     if ((n.doors || []).some(d => d.entry)) return;
-    const hz = sd === "north" || sd === "south", w = 1000, c = hz ? R[0] + R[2] / 2 - w / 2 : R[1] + R[3] / 2 - w / 2;
+    const hz = sd === "north" || sd === "south", w = dw || 1000, c = hz ? R[0] + R[2] / 2 - w / 2 : R[1] + R[3] / 2 - w / 2;
     const d = hz ? { x: +c.toFixed(1), y: +(sd === "south" ? R[1] - Tw : R[1] + R[3]).toFixed(1), o: "h", hinge: "s", side: sd === "south" ? 1 : -1 } : { x: +(sd === "east" ? R[0] - Tw : R[0] + R[2]).toFixed(1), y: +c.toFixed(1), o: "v", hinge: "s", side: sd === "east" ? 1 : -1 };
     n.doors = (n.doors || []).concat([Object.assign(d, { w, th: Tw, entry: true })]);
   }
@@ -2704,13 +2709,13 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (note) status(note);
   }
   // ieliekums: izgriež taisnstūri no mājas malas (zem tā paša jumta); telpas tiek apgrieztas, ailas izgriezumā noņemtas
-  function addRecess(RC) {
+  function addRecess(RC, dw) {   // dw: ārdurvju platums (robs pie durvīm: durvis paliek roba aizmugures sienā)
     const n = clone(model), W = n.W, D = n.D, ln = Math.round(+RC.len), dp = Math.round(+RC.dep), H = RC.side === "south" || RC.side === "north", span = H ? W : D;
     const Tw = wallTw(n);
     if (ln < 600 || dp < 300) { status("Ieliekums par mazu: garums vismaz 600 mm, dziļums vismaz 300 mm."); return; }
     if (ln >= span - 2 * Tw) { status("Ieliekums nevar aizņemt visu malu. Lai saīsinātu māju, izvēlies ārsienu un ieraksti izmaiņu ar mīnusu."); return; }
     if (dp >= (H ? D : W) - 2 * Tw - 1500) { status("Ieliekums par dziļu šai mājai."); return; }
-    const off = Math.max(0, Math.min(span - ln, Math.round(+RC.off || 0)));   // no fasādes kreisā stūra, skatoties no ārpuses
+    const off = Math.max(0, Math.min(span - ln, RC.pos === "mid" ? Math.round((span - ln) / 2) : Math.round(+RC.off || 0)));   // no fasādes kreisā stūra, skatoties no ārpuses; "mid" = fasādes vidū
     const base = n.poly && n.poly.length > 2 ? n.poly : [[0, 0], [W, 0], [W, D], [0, D]], rb = { puse: RC.side, plat: ln, dzil: dp, nob: off, ieliekuma: RC.ter === "lv" ? "lievenis" : RC.ter === "1" ? "terase" : "tukss", stabi: RC.stabi === "1", pakapiens: RC.ter === "lv" };
     const Rr = robRect(base, rb); if (!Rr) { status("Robs neatrodas uz šīs fasādes."); return; }
     const R = [Rr[0], Rr[1], Rr[0] + Rr[2], Rr[1] + Rr[3]], K0 = kOf(n), np = polyCut(base, R);
@@ -2718,7 +2723,8 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const bx = np.map(q => q[0]), by = np.map(q => q[1]); if (Math.min(...bx) > .5 || Math.min(...by) > .5 || Math.max(...bx) < W - .5 || Math.max(...by) < D - .5) { status("Ieliekums nogrieztu visu mājas malu. Izmanto ārsienas garuma maiņu."); return; }
     const hadEntry = (n.doors || []).some(d => d.entry), res = rectCut(n, R, Tw, np); n.recess = recessOf(n);
     if (K0) { n.kontura = { bloki: K0.bloki, robi: (K0.robi || []).concat([rb]) }; if (!(n.poly && n.poly.length > 4)) delete n.poly; }
-    if (RC.ter === "lv") { if (n.porch && n.porch.rob) delete n.porch; if (!n.porch) n.porch = porchOf(Rr, rb, K0 ? konturaPoly(n.kontura).full : base); if (hadEntry) robDoor(n, Rr, RC.side, Tw); }
+    if (RC.ter === "lv") { if (n.porch && n.porch.rob) delete n.porch; if (!n.porch) n.porch = porchOf(Rr, rb, K0 ? konturaPoly(n.kontura).full : base); if (hadEntry || dw) robDoor(n, Rr, RC.side, Tw, dw); }
+    else if (dw) robDoor(n, Rr, RC.side, Tw, dw);
     if (RC.ter === "1") { n.terraces = (n.terraces || []).concat([{ name: "Terase ieliekumā", poly: [[R[0], R[1]], [R[2], R[1]], [R[2], R[3]], [R[0], R[3]]], th: 300, corners: false, texRot: 0 }]); }
     sel = null; commit(n); status(`Ieliekums ${ln} × ${dp} mm izgriezts` + (res.ow ? `, noņemtas ${res.ow} ailas` : "") + (res.gone ? `, pazudušas ${res.gone} telpas` : "") + ". Pārbaudi telpas un mēbeles ap to.");
   }
@@ -3458,6 +3464,29 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const HG = it.o === "h" ? { s: "Rietumu pusē", e: "Austrumu pusē" } : { s: "Ziemeļu pusē", e: "Dienvidu pusē" };
       void SW; void HG;
       g.append(field("Platums, mm", it.w, (n, v) => { S(n).w = Math.max(600, v); }), field("No stūra, mm", it[key], (n, v) => { S(n)[key] = v; }));
+      { // ārsienas durvis: centrēt ārsienas posmā; ieejas robs ap durvīm (centrēts pret durvīm)
+        const P = model.poly && model.poly.length > 2 ? model.poly : [[0, 0], [model.W, 0], [model.W, model.D], [0, model.D]], th = +it.th || wallTw(model), hz = it.o === "h", k = hz ? 1 : 0;
+        const lo = hz ? it.y : it.x, E = P.map((a, i) => [a, P[(i + 1) % P.length]]).filter(([a, b]) => Math.abs(a[k] - b[k]) < 1);
+        const c = (hz ? it.x : it.y) + it.w / 2, on = (a, b) => Math.min(a[1 - k], b[1 - k]) - 1 < c && Math.max(a[1 - k], b[1 - k]) + 1 > c;
+        const eA = E.find(([a, b]) => Math.abs(a[k] - lo) < 3 && on(a, b)), eB = E.find(([a, b]) => Math.abs(a[k] - (lo + th)) < 3 && on(a, b)), e = eA || eB;
+        if (e) {
+          const sd = hz ? (eA ? "north" : "south") : (eA ? "west" : "east"), e0 = Math.min(e[0][1 - k], e[1][1 - k]), e1 = Math.max(e[0][1 - k], e[1][1 - k]);
+          const cb = document.createElement("button"); cb.type = "button"; cb.className = "wide"; cb.textContent = "Centrēt ārsienas vidū"; cb.title = `Durvju vidus ārsienas posma vidū (${Math.round(e1 - e0)} mm)`;
+          cb.onclick = () => { const n = clone(model); S(n)[key] = Math.round(((e0 + e1) / 2 - it.w / 2) * 10) / 10; commit(n); status("Durvis centrētas ārsienā."); };
+          g.append(cb);
+          const lb = document.createElement("p"); lb.className = "cap full"; lb.textContent = "Ieejas robs pie šīm durvīm"; g.append(lb);
+          if (!DREC.len) DREC.len = Math.max(2400, Math.round(it.w + 1600));
+          const rw = (lab, kk, opts) => g.append(field(lab, DREC[kk], (n, v) => { DREC[kk] = opts ? v : Math.round(+v); throw "async"; }, opts || null));
+          rw("Roba platums, mm", "len"); rw("Roba dziļums, mm", "dep"); rw("Robā", "ter", { lv: "Ieejas lievenis ar pakāpienu", 1: "Terase", 0: "Tukšs" });
+          const rb = document.createElement("button"); rb.type = "button"; rb.className = "wide"; rb.textContent = "Izgriezt robu ap durvīm";
+          rb.title = "Robs centrēts pret durvīm; durvis paliek roba aizmugures sienā";
+          rb.onclick = () => { const bx = kBox(P), L = hz ? bx[2] - bx[0] : bx[3] - bx[1], a0 = hz ? bx[0] : bx[1], ln = DREC.len, st = c - ln / 2 - a0;
+            const off = sd === "north" || sd === "east" ? L - st - ln : st;
+            addRecess({ side: sd, len: ln, dep: DREC.dep, off: Math.round(off), ter: DREC.ter, stabi: "0" }, it.w); };
+          g.append(rb);
+          const nt = document.createElement("p"); nt.className = "note full"; nt.textContent = "Robs tiek izgriezts ārsienā ap durvīm (durvju vidus = roba vidus). Lai robs būtu ārsienas vidū, vispirms spied „Centrēt ārsienas vidū”."; g.append(nt);
+        }
+      }
     } else {
       const wrapped = it[0] === "_rot", base = wrapped ? it[4] : it, B = n => (wrapped ? S(n)[4] : S(n));
       const nm0 = base[0], nm = nm0.replace(/[13]$/, ""), vary = VARY.includes(nm) && nm0 !== "Ln"; h.textContent = FURN[nm] || nm; sub.textContent = where + (wrapped ? ` · pagriezts ${it[1]}°` : "");
