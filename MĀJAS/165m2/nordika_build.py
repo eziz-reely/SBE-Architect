@@ -117,6 +117,6 @@ for i, r in enumerate(rooms):
     if i in STAMPS: m['stampAt'][str(i)] = list(STAMPS[i])
 out = os.path.join(HERE, 'MM-165-01')
 os.makedirs(out, exist_ok=True)
-P.KT.apply(m)
+P.KT.apply(m, True)
 json.dump(m, open(out + '/model.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 for r in rooms: print(r['n'], round(sum(q[2] * q[3] for q in r['r']) / 1e6, 2))

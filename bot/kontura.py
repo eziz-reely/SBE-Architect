@@ -152,8 +152,47 @@ def recess_of(P):
     return out
 
 
-def apply(m):
-    """Ieraksta modelī poly, recess, W, D no m['kontura']. Atgriež kļūdas tekstu vai None."""
+def porch_of(R, rob, P, s=150):
+    """Lievenis robā: grīda cokola augstumā (kā redaktora lievenis), stabi pēc izvēles, pakāpiens ±0,000 pie ārdurvīm.
+    R = roba taisnstūris [x, y, w, h]; rob['stabi']: True = stabi atvērtās malas galos, kur nav sienas (stūra robs); rob['pakapiens']: True (noklusējums) = pakāpiens 2000 × min(1200, dziļums/2) pie aizmugures sienas."""
+    x0, y0, x1, y1 = R[0], R[1], R[0] + R[2], R[1] + R[3]
+    side = rob['puse']
+    bx0, by0, bx1, by1 = bbox(P)
+    poly = [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
+    pc = {'name': rob.get('nosaukums') or 'Lievenis', 'poly': poly, 'posts': [], 'rob': True}
+    hz = side in ('north', 'south')
+    # atvērtā mala (fasādes līnija) un tās gali
+    if hz:
+        f = y1 if side == 'south' else y0
+        ends = [(x0, 'lo'), (x1, 'hi')]
+        free = [e for e in ends if (e[0] <= bx0 + .5 or e[0] >= bx1 - .5)]
+    else:
+        f = x1 if side == 'east' else x0
+        ends = [(y0, 'lo'), (y1, 'hi')]
+        free = [e for e in ends if (e[0] <= by0 + .5 or e[0] >= by1 - .5)]
+    if rob.get('stabi'):
+        for u, k in free:   # vidus robā jumtu nes sienas abās pusēs, stabu nevajag
+            a = u if k == 'lo' else u - s
+            b = f - s if side in ('south', 'east') else f
+            pc['posts'].append([a, b, s] if hz else [b, a, s])
+    if rob.get('pakapiens', True):
+        dz = R[3] if hz else R[2]
+        wd = R[2] if hz else R[3]
+        sw, sd = min(2000, wd), min(1200, max(600, dz / 2))
+        c = (x0 + x1) / 2 if hz else (y0 + y1) / 2
+        a0, a1 = c - sw / 2, c + sw / 2
+        if side == 'south': st = [a0, y0, a1, y0 + sd]
+        elif side == 'north': st = [a0, y1 - sd, a1, y1]
+        elif side == 'west': st = [x1 - sd, a0, x1, a1]
+        else: st = [x0, a0, x0 + sd, a1]
+        pc['step'] = [round(v, 1) for v in st]
+    return pc
+
+
+def apply(m, force=False):
+    """Ieraksta modelī poly, recess, W, D (un lieveni robā) no m['kontura']. Atgriež kļūdas tekstu vai None.
+    force=False (build_model): ja modeļa poly jau ir un atšķiras (redaktorā mainītas sienas), modeli nemaina.
+    force=True: ģeneratori, kas modeli veido no kontūras."""
     K = m.get('kontura')
     if not K:
         return None
@@ -163,12 +202,32 @@ def apply(m):
     x0, y0, x1, y1 = bbox(P)
     if x0 or y0:
         return 'kontūrai jāsākas no 0,0'
+    old = m.get('poly') or ([[0, 0], [m['W'], 0], [m['W'], m['D']], [0, m['D']]] if m.get('W') else None)
+    if old and not force and _norm(old) != _norm(P):
+        return 'kontūra neatbilst plānam (redaktorā mainītas sienas), lieto plāna kontūru'
     m['W'], m['D'] = x1, y1
     m['poly'] = P if len(P) > 4 else None
     if not m['poly']:
         m.pop('poly')
     m['recess'] = recess_of(P)
+    # lievenis pirmajā robā, kam ieliekumā = lievenis (ja modelim nav paša zīmēta lieveņa)
+    robs = K.get('robi', [])
+    for rb, R in zip(robs, cuts):
+        if rb.get('ieliekuma', 'lievenis') == 'lievenis' and (not m.get('porch') or m['porch'].get('rob')):
+            m['porch'] = porch_of(R, rb, P_full(K))
+            break
     return None
+
+
+def _norm(P):
+    """Kontūra kā virsotņu kopa (secība un sākums neietekmē salīdzināšanu)."""
+    return sorted((round(p[0]), round(p[1])) for p in P)
+
+
+def P_full(K):
+    """Kontūra bez robiem (jumta kontūrai un stūru noteikšanai)."""
+    xs, ys, C = _grid([b['r'] for b in K.get('bloki', [])], [])
+    return _trace(xs, ys, C)
 
 
 def L_kontura(A_len, A_w, B_len, B_w, sparns='sw', robi=()):
@@ -215,6 +274,12 @@ def _selftest():
     # 3 bloki (T/izvirzījumi) — arhitektūra atvērta
     P, _ = poly_of({'bloki': [{'r': [0, 0, 12000, 6000]}, {'r': [4000, 6000, 4000, 3000]}, {'r': [0, -2000, 3000, 2000]}]})
     eq('3 bloki', len(P), 10)
+    # lievenis robā: stabi tikai brīvajā stūrī (stūra robs), pakāpiens pie aizmugures sienas
+    m = {'W': 10000, 'D': 6000, 'kontura': {'bloki': [{'r': [0, 0, 10000, 6000]}], 'robi': [{'puse': 'south', 'plat': 3000, 'dzil': 1500, 'nob': 0, 'stabi': True}]}}
+    eq('novecojusi kontūra', apply(dict(m)) is not None, True)
+    apply(m, True)
+    eq('lievenis stabi', m['porch']['posts'], [[0, 5850.0, 150]])
+    eq('lievenis pakāpiens', m['porch']['step'], [500.0, 4500.0, 2500.0, 5250.0])
     print('OK' if ok else 'KĻŪDAS')
     return ok
 
