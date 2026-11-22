@@ -28,5 +28,12 @@ Modeļa atslēgas, ko ģenerators lasa: `poly` (kontūra), `rooms` (r[:4]; 5. el
 Kad dzinējs jumtu neveido, skripta žurnālā (`<id>_archicad_log.txt`) ir `TAPIR KĻŪDA CreateRoofs: ...`; skripts norij Tapir kļūdas tikai `try_cmd` līmenī, bet žurnāls tās izdrukā.
 Vecs ar roku rakstīts projekts bez `model.json`: mape ar `lapa.html` (+ `info.json`) arhīvā ir "ārēja lapa" (`/lapa/<key>`).
 
+## Kontūra, L māja un L jumts
+`bot/kontura.py`: `model.kontura = {bloki: [{r, loma}], robi: [{puse, plat, dzil, nob, ieliekuma, stabi}]}` → `poly`, `recess`, lievenis (`apply`). `nob` mēra no fasādes kreisā stūra, skatoties no ārpuses. L plānojumi: `planner.py --L` / `generate.py --L 15000x7000,12000x6500` (L mājai pēc noklusējuma bez mansarda, dzega pēc galvenā spārna platuma).
+L jumts: `bot/sablons/mm-roofl.js` (`roofL`, `roofLGrid`, `roofPolyOf`, `roofLOn`) kopīgs redaktoram (`/*@@ROOFL@@*/`) un A3 lapām (build_model ieliek skriptu, kas aizpilda `AR.projekts.roofL`, ja nav redaktora). Jumts iet pāri robiem (bloku kontūra), auto ieslēdzas divu bloku kontūrai (`jumts.L = false` izslēdz). `jumts.kore_kopiga` = spārna kore galvenās augstumā; `jumts.pitch_sparns` = spārna slīpums. Python kopija (z, plaknes, spāres): `karkass.roof_geom`.
+
+## Karkass un materiālu tāme
+`bot/karkass.py` (model.json → paneļi pa kontūru: stūri, iekšējie stūri, ailas, pārsedzes, starpsienu pieslēgumi, frontoni pēc jumta; spāres), `bot/karkass_lapas.py` (A3 lapas: 1. skice, karkasa plāns, katra siena ar detaļām un kvadratūru, starpsienas pa 4, jumts, kopsavilkums), `bot/tame.py` (tāme pa pīrāgiem: slāņu tipi h/m/a/i/o/k, daudzums, rezerve, pirkšanas vienības, tukša cenas kolonna). Karkasa biezums un atkāpe no `projekts.piragi_layers` (S1 "i" slānis; redaktorā "Ārsienas karkass C24"). Klienta vārds `projekts.klients`. Redaktora poga "Karkass un tāme (A3)" → `/api/razosana/<key>` → `eksports/<id>_karkass_tame.html`.
+
 ## Noteikumi un zināšanas
 Mēbeļu un logu noteikumi: `bot/zinasanas_mebeles_logi.md` (avoti [MM], [MyCabin], [prakse]). Skaitļi un slēdži `R` vārdnīcā `planner.py`; sliekšņi augšā `rules_check.py`. Jauns noteikums: pievieno `rules_check.py`, ja pārbaudāms, un ieraksti zināšanu failā ar avotu.

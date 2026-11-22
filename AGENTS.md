@@ -10,6 +10,7 @@ MM Homes modeļu bots. No mājas gabarītiem (garums, platums, kores augstums) u
 - `bot/redaktors.py` + `bot/sablons/redaktors/` (`lapa.html` UI, `iframe.js` zīmēšanas loģika, `viz3d.js` 3D): rasējuma redaktors, viena HTML lapa.
 - `bot/sablons/sbe/plani/cad.js` (zīmēšana, mēbeļu simboli), `ar.js` (AR lapas), `bot/sablons/mm-*.js|json|mjs`: lapas šablons un MM konfigurācija.
 - `bot/app.py` (serveris), `bot/app_saisne.py` (darbvirsmas saīsne), `bot/arhivs.py` + `bot/sablons/arhivs/app.html` (arhīvs).
+- `bot/kontura.py` (kontūra no blokiem un robiem), `bot/karkass.py` + `bot/karkass_lapas.py` + `bot/tame.py` (karkasa A3 lapas un materiālu tāme), `bot/sablons/mm-roofl.js` (L jumts).
 - `bot/viz.py`, `bot/ref.py`: Gemini vizualizācijas un references. `bot/skp.py`, `bot/sketchup/`: SketchUp eksports. `bot/ingetrazo/`: IngeTrazo spraudnis.
 - `MĀJAS/<m2>/<id>/`: gatavie modeļi (`model.json`, `rasejumi/`, `viz/`). `PROJEKTI/` ir klientu dati un ir ignorēts git.
 - `skills/`, `.claude-plugin/`: Claude plugin komandas `/sbe-arhitekts`, `/editbot`. Citi aģenti tās nelieto.

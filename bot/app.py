@@ -721,6 +721,21 @@ class H(BaseHTTPRequestHandler):
                     nm = f"{stem}_{time.strftime('%Y-%m-%d_%H%M')}{ext}"; fp = os.path.join(ed, nm)
                 open(fp, 'w', encoding='utf-8', newline='\n').write(txt)
                 return self.send(200, {'ok': True, 'name': nm, 'path': fp, 'notes': notes})
+            if p.startswith('/api/razosana/'):   # karkass un materiālu tāme (A3): body = model.json no redaktora; 1. lapa = šī modeļa skice
+                d = path_for(p[14:]); b = self.body()
+                if not d or not isinstance(b, dict) or 'W' not in b:
+                    return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
+                try:
+                    import build_model, karkass, karkass_lapas
+                    td = os.path.join(d, 'eksports', '_razosana'); os.makedirs(td, exist_ok=True)
+                    mp = os.path.join(td, 'model.json'); json.dump(b, open(mp, 'w', encoding='utf-8'), ensure_ascii=False)
+                    build_model.build(mp, ['LV'])
+                    nm = f"{b.get('id', 'projekts')}_karkass_tame.html"; fp = os.path.join(d, 'eksports', nm)
+                    _, n = karkass_lapas.build(mp, fp)
+                    notes = [w for P in karkass.generate(b)['paneli'] for w in (P.id + ': ' + x for x in P.warn)][:8]
+                except Exception as e:
+                    return self.send(500, 'Karkasa lapas neizdevās: ' + str(e), 'text/plain; charset=utf-8')
+                return self.send(200, {'ok': True, 'name': nm, 'lapas': n, 'notes': notes})
             if p.startswith('/api/archicad-claude/'):   # rezerve: skripta rakstīšanu nodod Claude (saglabā modeli, atgriež uzdevuma tekstu)
                 d = path_for(p[21:]); b = self.body()
                 if not d:

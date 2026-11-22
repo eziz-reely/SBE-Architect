@@ -71,7 +71,7 @@ function roofL(m) {
   if (a > 0) { eaves.push(E(-o0, -oN - 60, a - oNw, -oN - 60, h(-oN), sd.wg)); eaves.push(E(a - oNw - 60, -oN, a - oNw - 60, -dw - oG, h(-oN), sd.u0)); } else eaves.push(E(a - oNw - 60, -oN, a - oNw - 60, -dw - oG, h(-oN), sd.u0));
   if (b < U) { eaves.push(E(b + oNw, -oN - 60, U + o1, -oN - 60, h(-oN), sd.wg)); eaves.push(E(b + oNw + 60, -oN, b + oNw + 60, -dw - oG, h(-oN), sd.u1)); } else eaves.push(E(b + oNw + 60, -oN, b + oNw + 60, -dw - oG, h(-oN), sd.u1));
   const deg = t => Math.round(Math.atan(t) * 1800 / Math.PI) / 10;
-  return { z, slopes, eaves, ridge: Math.max(hr, hg), A, poly, kore: { galvena: Math.round(hr), sparns: Math.round(hg) }, slipums: { galvena: deg(tan), sparns: deg(tanW) } };
+  return { z, slopes, eaves, ridge: Math.max(hr, hg), A, poly, dm, kore: { galvena: Math.round(hr), sparns: Math.round(hg) }, slipums: { galvena: deg(tan), sparns: deg(tanW) } };
 }
 
 // Jumta plaknes un augstumu režģis (200 mm; punkti uz plaknes malas arī skaitās plaknē) fasādēm, jumta plānam un 3D: AR.projekts.roofL = { slopes, grid, kore, slipums }.

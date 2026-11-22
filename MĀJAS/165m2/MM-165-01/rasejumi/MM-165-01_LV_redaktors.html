@@ -924,6 +924,7 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
       <div id="lapaSets"></div>
       <p class="cap">Komplekti</p>
       <button type="button" id="bRazos" title="Ražošanas pakete: izvēlies lapas un izveido komplektu">Ražošanas komplekts</button>
+      <button type="button" id="bKarkass" title="A3 ražošanas lapas: 1. lapa skice, karkasa plāns, katra siena ar detaļām un kvadratūru, starpsienas, jumts, detaļu kopsavilkums un materiālu tāme">Karkass un tāme (A3)</button>
       <p class="cap">Eksports</p>
       <button id="bExp" type="button" hidden aria-haspopup="true" aria-expanded="false"><svg class="bi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg><span>Eksportēt</span></button>
       <div id="exp" class="pop" hidden role="dialog" aria-label="Eksports">
@@ -2236,6 +2237,14 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const gs = group("Konstrukcijas (pīrāgi)", host), PLs = (model.projekts || {}).piragi_layers || {};
       const Tw = Math.min(...(model.rooms || []).flatMap(r => r.r.map(q => q[0]))), EXP = { S1: [Tw, "ārsienas biezums plānā"], S2: [195, "starpsienas biezums plānā"] };
       { const ob = document.createElement("button"); ob.type = "button"; ob.className = "add full"; ob.style.cssText = "border-style:solid;font-weight:600"; ob.textContent = "Rediģēt visas konstrukcijas vienā logā…"; ob.title = "Grīda, sienas un jumts kopā; var mainīt slāņus, biezumus un nosaukumus. Izmaiņas iet uz AR lapu Sienu specifikācija un model.json."; ob.addEventListener("click", conDlg); gs.appendChild(ob); }
+      const KF = [];   // karkasa un tāmes lauki (pievieno saraksta beigās)
+      { // karkasa biezums C24 ārsienai un jumtam: maina pīrāga "i" slāni (siltumizolācijas m³ tāmē un karkasa lapās)
+        const cur = k => { const L = ((model.projekts || {}).piragi_layers || {})[k] || (LAYERS0[k] || {}).layers || []; const l = L.find(q => q[2] === "i"); return l ? String(Math.round(+l[1])) : ""; };
+        const setC = (k, v) => (n) => { n.projekts = n.projekts || {}; const PLn = n.projekts.piragi_layers = n.projekts.piragi_layers || {}; const L = (PLn[k] || LAYERS0[k].layers).map(q => q.slice()); const l = L.find(q => q[2] === "i"); if (!l) return; l[1] = +v; l[0] = l[0].replace(/45\s*[x×]\s*\d+/, "45x" + v); if (!/45x\d+/.test(l[0])) l[0] = "C24 45x" + v + ", " + l[0]; if (JSON.stringify(L) === JSON.stringify(LAYERS0[k].layers)) delete PLn[k]; else PLn[k] = L; if (!Object.keys(PLn).length) delete n.projekts.piragi_layers; };
+        if (LAYERS0.S1) KF.push(field("Ārsienas karkass C24", cur("S1"), (n, v) => setC("S1", v)(n), { 145: "45×145", 195: "45×195" }));
+        if (LAYERS0.J1) KF.push(field("Jumta spāres C24", cur("J1"), (n, v) => setC("J1", v)(n), { 145: "45×145", 195: "45×195", 220: "45×220", 245: "45×245" }));
+        KF.push(field("Klienta vārds (karkasa lapām)", (model.projekts || {}).klients || "", (n, v) => { n.projekts = n.projekts || {}; if (String(v).trim()) n.projekts.klients = String(v).trim(); else delete n.projekts.klients; }, "text", "full"));
+      }
       const note0 = document.createElement("p"); note0.className = "note full"; note0.textContent = "Pārbaudi slāņus un biezumus (mm). Ja kaut kas nav pareizi vai trūkst, labo laukos: izmaiņas iet uz AR projekta lapu \"Sienu specifikācija\" un model.json."; gs.appendChild(note0);
       const WT = (model.projekts || {}).wall_types || [];   // papildu starpsienu veidi: [{id, name, layers}]
       const PNm = (model.projekts || {}).piragi_names || {};
@@ -2314,6 +2323,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         gs.textContent = "";
         gs.append(ob, lab("Grīda")); if (SPECX.G1) gs.append(SPECX.G1);
         gs.append(lab("Sienas"), ...walls, addWt, lab("Jumts")); if (SPECX.J1) gs.append(SPECX.J1);
+        if (KF.length) gs.append(lab("Karkass un tāme"), ...KF);
         if (SPECX.KW) gs.append(lab("Specifikācijas noformējums"), SPECX.KW);
         SPECX.G1 = SPECX.J1 = SPECX.KW = null;
       }
@@ -4110,6 +4120,13 @@ function roofLGrid(m) {
     if (!r.ok) throw new Error((await r.text()) || r.status);
     return r.json();
   }
+  $("bKarkass").onclick = async () => {   // karkass un materiālu tāme: ģenerē programma (bot/karkass_lapas.py) no pašreizējā modeļa
+    const w = window.open("", "_blank");
+    try { status("Gatavo karkasa un tāmes lapas…"); const j = await acPost("razosana");
+      status("Karkass un tāme: eksports/" + j.name + " (" + j.lapas + " lapas)" + (j.notes && j.notes.length ? ". Piezīmes: " + j.notes.join("; ") : ""));
+      if (w) w.location = "/file/" + encodeURIComponent((window.MM_LOCAL || {}).key) + "/" + encodeURIComponent(j.name); }
+    catch (e) { if (w) w.close(); status("Karkasa lapas neizdevās: " + ((e && e.message) || e)); }
+  };
   $("bAc").onclick = async () => {
     try { status("Gatavo ArchiCAD skriptu…"); const j = await acPost("archicad");
       status("ArchiCAD skripts: eksports/" + j.name + ". Atver SBE_skice.tpl un Tapir, Run script." + (j.notes && j.notes.length ? " Piezīmes: " + j.notes.join("; ") : "")); }
