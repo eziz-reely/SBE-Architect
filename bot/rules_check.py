@@ -79,6 +79,39 @@ def room_of(m, x, y):
     return None, None
 
 
+def poly_edge(P, hz, c, u, T):
+    """Kontūras mala pie loga: horizontāla (hz) vai vertikāla, uz līnijas c vai c + T, kas satur u.
+    Atgriež (sākums, beigas, puse) vai None. Puse pēc ārējās normāles (kontūra taisnleņķa)."""
+    n = len(P)
+    for i in range(n):
+        A, B = P[i], P[(i + 1) % n]
+        k = 1 if hz else 0                     # koordināta pāri malai
+        if abs(A[k] - B[k]) > 0.5:
+            continue
+        for face in (c, c + T):
+            if abs(A[k] - face) > 2:
+                continue
+            a, b = sorted((A[1 - k], B[1 - k]))
+            if not (a - 1 <= u <= b + 1):
+                continue
+            # punkts tieši ārpus malas: ja tas ir kontūrā, tad ārpuse ir otrā pusē
+            out = -1 if face == c else 1
+            probe = [u, face + out * 5] if hz else [face + out * 5, u]
+            if inside_poly(P, probe):
+                out = -out
+            return a, b, ('north' if out < 0 else 'south') if hz else ('west' if out < 0 else 'east')
+    return None
+
+
+def inside_poly(P, p):
+    x, y, c = p[0], p[1], False
+    for i in range(len(P)):
+        (x1, y1), (x2, y2) = P[i], P[i - 1]
+        if (y1 > y) != (y2 > y) and x < (x2 - x1) * (y - y1) / (y2 - y1) + x1:
+            c = not c
+    return c
+
+
 def check(m, verbose=False):
     R = Report()
     W, D = m['W'], m['D']
@@ -204,21 +237,23 @@ def check(m, verbose=False):
     # ---------- 6. logi ----------
     wins = m['windows']
     T = min(r['r'][0][0] for r in m['rooms'])
+    PL = m.get('poly') or [[0, 0], [W, 0], [W, D], [0, D]]
     for w in wins:
-        if w['o'] == 'h':
-            a0, a1 = w['x'], w['x'] + w['len']
-            wall = 'north' if w['y'] == 0 else 'south'
-        else:
-            a0, a1 = w['y'], w['y'] + w['len']
-            wall = 'west' if w['x'] == 0 else 'east'
+        hz = w['o'] == 'h'
+        a0, a1 = (w['x'], w['x'] + w['len']) if hz else (w['y'], w['y'] + w['len'])
+        c = w['y'] if hz else w['x']          # sienas josla [c, c + T] (logs stāv ārsienas joslā)
         cx = (a0 + a1) / 2
-        # telpa, kuras ārsienā logs atrodas
+        # kontūras mala, kurā ir logs (arī L/T formas ieejošās malas): ārējā virsma c (Z/R) vai c + T (D/A)
+        edge = poly_edge(PL, hz, c, cx, T)
+        wall = w.get('side') or (edge[2] if edge else ('north' if hz and c < D / 2 else 'south' if hz else 'west' if c < W / 2 else 'east'))
+        e0, e1 = (edge[0], edge[1]) if edge else (0, W if hz else D)
+        # telpa, kuras ārsienā logs atrodas: telpas mala pieskaras sienas joslai no iekšpuses
         host = None
         for r in m['rooms']:
             for q in r['r']:
-                touch = ((wall == 'north' and abs(q[1] - T) < 2) or (wall == 'south' and abs(q[1] + q[3] - (D - T)) < 2) or
-                         (wall == 'west' and abs(q[0] - T) < 2) or (wall == 'east' and abs(q[0] + q[2] - (W - T)) < 2))
-                lo, hi = (q[0], q[0] + q[2]) if wall in ('north', 'south') else (q[1], q[1] + q[3])
+                n0, n1 = (q[1], q[1] + q[3]) if hz else (q[0], q[0] + q[2])
+                touch = abs(n0 - (c + T)) < 2 or abs(n1 - c) < 2
+                lo, hi = (q[0], q[0] + q[2]) if hz else (q[1], q[1] + q[3])
                 if touch and lo - 1 <= cx <= hi + 1:
                     host = (r, lo, hi)
         w['_host'] = host
@@ -234,14 +269,15 @@ def check(m, verbose=False):
                 R.add('KĻŪDA', 'logs-starpsiena', f"logs {wall} {round(a0)} ({r['n']}) iesniedzas {-v:.0f} mm aiz starpsienas ({side} puse).", 'ģeometrija')
             elif v < WIN_PART_MIN:
                 # ja telpa beidzas pie ārsienas stūra, tas ir stūris, ne starpsiena
-                corner = (lo <= T + 2) if side == 'kreisā' else (hi >= (W if wall in ('north', 'south') else D) - T - 2)
+                corner = (lo <= e0 + T + 2) if side == 'kreisā' else (hi >= e1 - T - 2)
                 R.add('BRĪD.', 'logs-starpsiena' if not corner else 'logs-stūris', f"logs {wall} {round(a0)} ({r['n']}) {v:.0f} mm no {'stūra' if corner else 'starpsienas'} ({side} puse, ≥ {WIN_PART_MIN}).", '[prakse]')
         # ārdurvis tajā pašā sienā
         for d in m['doors']:
             if not d.get('entry'):
                 continue
-            if wall == 'south' and d['o'] == 'h':
-                g = max(a0 - (d['x'] + d['w']), d['x'] - a1)
+            if d['o'] == w['o'] and abs((d['y'] if hz else d['x']) - c) <= T + 2:   # ārdurvis tajā pašā ārsienā
+                p0 = d['x'] if hz else d['y']
+                g = max(a0 - (p0 + d['w']), p0 - a1)
                 meas.append(f"logs {wall} {round(a0)} — ārdurvis: {g:.0f} mm")
                 if g < WIN_DOOR_MIN:
                     R.add('BRĪD.', 'logs-durvis', f'logs {wall} {round(a0)} tikai {g:.0f} mm no ārdurvīm (≥ {WIN_DOOR_MIN}).', '[prakse]')
