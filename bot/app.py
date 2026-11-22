@@ -443,6 +443,15 @@ def new_project(b):
     if b.get('veids') == 'pamati':   # izmēri nav obligāti: tad redaktorā kontūras zīmē ar peli
         z = not (b.get('garums') and b.get('platums'))
         return new_pamati(b, cos[co], float(b.get('garums') or 6000), float(b.get('platums') or 4000), z)
+    Lsp = None
+    if b.get('forma') == 'L':   # L māja: divi spārni (garums pa visu ārmalu x platums), platākais = galvenais
+        import planner
+        try:
+            Lsp = planner.norm_L(float(b['l1_garums']), float(b['l1_platums']), float(b['l2_garums']), float(b['l2_platums']))
+        except (KeyError, TypeError, ValueError) as e:
+            raise ValueError('L mājai jāievada abu spārnu garums un platums. ' + (str(e) if isinstance(e, ValueError) else ''))
+        b['garums'], b['platums'] = Lsp[0], Lsp[1]   # kore un robežas pēc galvenā spārna
+        b['mansards'] = 'ne'
     L, B = float(b['garums']), float(b['platums'])
     pitch = float(b.get('slipums') or 0) or None
     if pitch is not None and not 5 <= pitch <= 60:
@@ -461,10 +470,13 @@ def new_project(b):
         raise ValueError('Izmēri ārpus robežām (garums 3–40 m, platums 2,5–15 m, kore 2,5–12 m).')
     p1 = sum(l[1] for l in (pick_any(cos, co, b.get('komplekts')).get('piragi_layers') or {}).get('P1', []) if (len(l) < 3 or l[2] != 'n'))
     args = [sys.executable, os.path.join(HERE, 'generate.py'), str(L), str(B), str(H), '--valodas', 'LV']
+    if Lsp:
+        args += ['--L', '{:g}x{:g},{:g}x{:g}'.format(*(float(b[k]) for k in ('l1_garums', 'l1_platums', 'l2_garums', 'l2_platums'))), '--varianti', '4']
+        if str(b.get('gulamistabas') or '').isdigit(): args += ['--gulamistabas', str(b['gulamistabas'])]
     if pitch: args += ['--slipums', f'{pitch:g}']
     pid = safe_name(b.get('id'))
     if not pid:   # nākamais brīvais MM-<m²>-NN visā arhīvā (generate.py pats skatās tikai repo MĀJAS mapi)
-        g = int(round(L * B / 1e6 / 5.0) * 5); used = {x['id'] for x in scan()}; n = 1
+        g = int(round((L * B + (Lsp[2] * Lsp[3] if Lsp else 0)) / 1e6 / 5.0) * 5); used = {x['id'] for x in scan()}; n = 1
         while any(u == f'MM-{g}-{n:02d}' or u.startswith(f'MM-{g}-{n:02d}-') for u in used) or os.path.exists(os.path.join(os.path.dirname(HERE), 'MĀJAS', f'{g}m2', f'MM-{g}-{n:02d}')):
             n += 1
         pid = f'MM-{g}-{n:02d}'
@@ -481,6 +493,16 @@ def new_project(b):
         raise ValueError('Modeli neizdevās uzģenerēt: ' + (r.stderr.strip().splitlines() or ['?'])[-1])
     src = os.path.dirname(mps[0])
     dest = os.path.join(cos[co], os.path.basename(src))
+    for mp_ in mps[1:]:   # L varianti V02..: arī uz uzņēmuma mapi (redaktors atver V01)
+        s2 = os.path.dirname(mp_); d2 = os.path.join(cos[co], os.path.basename(s2))
+        if os.path.abspath(s2) != os.path.abspath(d2) and not os.path.exists(d2):
+            shutil.move(s2, d2)
+            j2 = json.load(open(os.path.join(d2, 'model.json'), encoding='utf-8')); j2.setdefault('projekts', {})['uznemums'] = co
+            json.dump(j2, open(os.path.join(d2, 'model.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+    if mps[1:]:   # kopsavilkuma mape <id>/varianti.html: arī līdzi
+        vs_ = os.path.join(os.path.dirname(src), os.path.basename(src).rsplit('-V', 1)[0])
+        if os.path.isdir(vs_) and not os.path.exists(os.path.join(cos[co], os.path.basename(vs_))):
+            shutil.move(vs_, os.path.join(cos[co], os.path.basename(vs_)))
     if os.path.abspath(src) != os.path.abspath(dest):
         n = 2
         while os.path.exists(dest):

@@ -211,7 +211,20 @@ label.chk input { width: auto; }
     <label>Uzņēmums<select id="nCo" required></select></label>
     <div class="sset"><label>Pīrāgu komplekts<select id="nSet"></select></label><button class="sec" type="button" id="nSetOpen" title="Atvērt pīrāgu lapu: skatīt un labot slāņus">Pīrāgu lapa</button></div>
     <label>Projekta veids<select id="nKind"><option value="maja">Māja: plānojums, fasādes, A3 lapa</option><option value="pamati">Tikai stabu plāns (pamati pa kontūru)</option><option value="claude">Māja ar Claude: izmēri vai plānojums vēl nav zināmi</option></select></label>
-    <div class="g2">
+    <div class="g2 h-only">
+      <label>Forma<select id="nForm"><option value="II">Taisnstūris</option><option value="L">L māja (divi spārni)</option></select></label>
+      <label class="lf" hidden>Guļamistabas<select id="nBeds"><option value="">automātiski</option><option>1</option><option>2</option><option>3</option></select></label>
+    </div>
+    <div class="g2 two lf" hidden>
+      <label>1. spārns: garums, mm<input id="nL1" type="number" inputmode="numeric" min="3000" max="40000" step="10" placeholder="15000"></label>
+      <label>1. spārns: platums, mm<input id="nB1" type="number" inputmode="numeric" min="2500" max="15000" step="10" placeholder="7000"></label>
+    </div>
+    <div class="g2 two lf" hidden>
+      <label>2. spārns: garums, mm<input id="nL2" type="number" inputmode="numeric" min="3000" max="40000" step="10" placeholder="12000"></label>
+      <label>2. spārns: platums, mm<input id="nB2" type="number" inputmode="numeric" min="2500" max="15000" step="10" placeholder="6500"></label>
+    </div>
+    <p class="note lf" hidden>Garums pa visu ārmalu (ar stūri). Platākais spārns ir galvenais (kore garenvirzienā). Bots uztaisa līdz 4 plānojuma variantiem, redaktorā atveras 1. variants.</p>
+    <div class="g2 rect">
       <label>Garums, mm<input id="nL" type="number" inputmode="numeric" min="3000" max="40000" step="10" required placeholder="8570"></label>
       <label>Platums, mm<input id="nB" type="number" inputmode="numeric" min="2500" max="15000" step="10" required placeholder="3500"></label>
       <label class="h-only">Jumta slīpums, °<input id="nP" type="number" inputmode="decimal" min="5" max="60" step="0.5" value="25"></label>
@@ -569,6 +582,10 @@ const kindSync = () => { const p = $("nKind").value === "pamati"; document.query
   const cl = $("nKind").value === "claude"; $("nL").required = $("nB").required = !p && !cl; $("nOk").textContent = cl ? "Veidot ar Claude" : "Izveidot"; $("nClaude").hidden = cl; $("nL").placeholder = p ? "nav jāievada" : "8570"; $("nB").placeholder = p ? "nav jāievada" : "3500";
   $("nName").placeholder = p ? "piem. Lejasbirzes" : "piem. Freya"; $("nId").placeholder = p ? "automātiski STABI-nn" : "automātiski MM-xx-nn"; };
 $("nKind").addEventListener("change", kindSync);
+const formSync = () => { const L = $("nForm").value === "L" && $("nKind").value === "maja"; document.querySelectorAll("#dNew .lf").forEach(e => e.hidden = !L);
+  document.querySelectorAll("#dNew .rect input").forEach(e => { e.closest("label").hidden = L && (e.id === "nL" || e.id === "nB"); }); $("nL").required = $("nB").required = !L && $("nKind").value === "maja";
+  ["nL1", "nB1", "nL2", "nB2"].forEach(id => $(id).required = L); if (L) $("nLoft").value = "ne"; };
+$("nForm").addEventListener("change", formSync); $("nKind").addEventListener("change", formSync);
 const roofSync = () => { const v = $("nRoof").value, mono = v !== "divslipju"; document.querySelectorAll("#dNew .rm").forEach(e => e.hidden = !mono || ($("nKind").value === "pamati") || (e.classList.contains("rp") && v !== "parapets"));
   if (mono) { if (!$("nRHi").value || $("nRHi").dataset.auto) { $("nRHi").value = (+$("nRLo").value || 2600) + (v === "parapets" ? 700 : 900); $("nRHi").dataset.auto = 1; } $("nLoft").value = "ne"; } };
 $("nRoof").addEventListener("change", () => { $("nRHi").value = ""; roofSync(); }); $("nRHi").addEventListener("input", () => { delete $("nRHi").dataset.auto; });
@@ -596,7 +613,8 @@ $("fNew").addEventListener("submit", async e => {
     const r = await api("/api/new", { company: $("nCo").value, komplekts: $("nSet").value, garums: +$("nL").value, platums: +$("nB").value, augstums: $("nH").value ? +$("nH").value : "", slipums: +$("nP").value || "", dzega: +$("nE").value || "",
       nosaukums: $("nName").value, id: $("nId").value, mansards: $("nLoft").value, pamati: $("nFnd").value, tonis: $("nTone").value,
       jumta_forma: $("nRoof").value, krit: $("nFall").value, h_zema: +$("nRLo").value || "", h_augsta: +$("nRHi").value || "", dz: $("nRDz").value === "" ? "" : +$("nRDz").value,
-      veids: $("nKind").value, diametrs: +$("nPd").value || 120, uzlaide: +$("nPu").value || 0, vainags_b: +$("nPv").value || 145 });
+      veids: $("nKind").value, diametrs: +$("nPd").value || 120, uzlaide: +$("nPu").value || 0, vainags_b: +$("nPv").value || 145,
+      forma: $("nForm").value, l1_garums: +$("nL1").value || "", l1_platums: +$("nB1").value || "", l2_garums: +$("nL2").value || "", l2_platums: +$("nB2").value || "", gulamistabas: $("nBeds").value });
     location.href = "/edit/" + r.key;
   } catch (er) { $("nErr").textContent = er.message; $("nErr").hidden = false; b.disabled = false; b.textContent = "Izveidot"; }
 });
