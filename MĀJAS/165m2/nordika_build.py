@@ -101,8 +101,7 @@ terrace = {'name': 'Terase', 'poly': [[6819, 8619], [16054, 8619], [16054, 11319
 lievenis = {'name': 'Lievenis', 'poly': [[5113, -1210], [7872, -1210], [7872, 0], [5113, 0]], 'posts': [[5113, -1210, 150], [7722, -1210, 150]]}
 m = {'id': 'MM-165-01', 'nosaukums': 'MM 165-01', 'platiba_grupa': '165m2',
  'ievade': {'garums': W, 'platums': D, 'augstums': H, 'augstums_0': H}, 'W': W, 'D': D,
- 'poly': [[0, 0], [W, 0], [W, DB], [WW, DB], [WW, D], [0, D]],
- 'recess': {'south': [[WW, W, 3720]], 'east': [[DB, D, W - WW]]},
+ 'kontura': P.KT.L_kontura(W, DB, D - DB, WW, 'sw'),
  'jumts': {'forma': 'divslipju', 'pitch': PITCH, 'ov': 0, 'eave': eave},
  'rooms': rooms, 'doors': doors, 'openings': openings, 'windows': windows, 'furniture': F,
  'porch': lievenis, 'terraces': [terrace],
@@ -118,5 +117,6 @@ for i, r in enumerate(rooms):
     if i in STAMPS: m['stampAt'][str(i)] = list(STAMPS[i])
 out = os.path.join(HERE, 'MM-165-01')
 os.makedirs(out, exist_ok=True)
+P.KT.apply(m)
 json.dump(m, open(out + '/model.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
 for r in rooms: print(r['n'], round(sum(q[2] * q[3] for q in r['r']) / 1e6, 2))

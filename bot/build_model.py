@@ -179,6 +179,11 @@ def _mm_extra(cad):
 
 def build(model_path, langs=None):
     m = json.load(open(model_path, encoding='utf-8'))
+    if m.get('kontura'):   # kontūra no blokiem un robiem → poly, recess (fasāžu ieliekumi)
+        import kontura
+        err = kontura.apply(m)
+        if err:
+            print('BRĪDINĀJUMS: kontūra:', err)
     cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
     j = m.get('jumts', {})
     cfg['roof'].update({k: j[k] for k in ('pitch', 'ov', 'eave') if k in j})

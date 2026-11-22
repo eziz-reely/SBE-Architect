@@ -20,6 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import planlib        # noqa: E402
 import rules_check    # noqa: E402
+import kontura as KT  # noqa: E402
 
 CFG = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
 T = sum(l[1] for l in CFG['layers']['S1']['layers'])          # ārsiena 283,5
@@ -526,6 +527,7 @@ def topo_L(A, B, beds, baths, klase):
             n_ok = 0
             for score, sol in solve_rows(T, Wb - T, rows, klase, fixed=fixed, top=0)[:200]:
                 L = Lay('L', pname, Wb, Db, klase, poly, rec)
+                L.kontura = KT.L_kontura(Wb, w, Db - w, w, 'sw')
                 if build(L, sol, open_hall=True) is None:
                     continue
                 L.add(legk, [[T, w - T + t, win, Db - T - (w - T + t)]])
@@ -581,6 +583,7 @@ def topo_T(A, B, beds, baths, klase):
                 fixed = {x[2:]: jx for rk in rows_k for x in rk if x.startswith('J#')}
                 for score, sol in solve_rows(T, Wt - T, rows, klase, fixed=fixed, top=0)[:200]:
                     L = Lay('T', pname, Wt, Dt, klase, poly, rec)
+                    L.kontura = {'bloki': [{'r': [0, 0, Wt, w], 'loma': 'galvenais'}, {'r': [s0, w, s1 - s0, Dt - w], 'loma': 'sparns'}], 'robi': []}
                     if build(L, sol) is None:
                         continue
                     if stemk == 'liv':
@@ -1468,7 +1471,9 @@ def to_model(L, H, doors, wins, items, loft, griesti):
          'doors': doors, 'windows': wins, 'furniture': furn}
     if L.poly:
         m['poly'] = L.poly
-        m['recess'] = L.recess
+        m['recess'] = KT.recess_of(L.poly)   # fasādes u no kreisās malas (ziemeļu un austrumu fasāde apgriezta)
+        if getattr(L, 'kontura', None):
+            m['kontura'] = L.kontura
         xs = sorted({p[0] for p in L.poly})
         ys = sorted({p[1] for p in L.poly})
         m['axes'] = {'x': [[x, str(i + 1)] for i, x in enumerate(xs)], 'y': [[y, chr(65 + i)] for i, y in enumerate(ys)]}
