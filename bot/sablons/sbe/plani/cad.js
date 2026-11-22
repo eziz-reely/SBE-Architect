@@ -663,14 +663,20 @@ function roofLProfile(v, side) {
   const hz = side === "north" || side === "south", span = hz ? v.W : v.D, ov = ROOF.ov, th = ROOF.th / Math.cos(ROOF.pitch * Math.PI / 180), wall = [], top = [];
   const at = (i, j) => (i < 0 || j < 0 || i >= G.nx || j >= G.ny) ? null : G.z[j][i];
   const toward = side === "south" || side === "east" ? -1 : 1;   // solis no fasādes uz mājas iekšpusi
-  for (let u = 0; u <= span + 1; u += Math.min(200, span / 2 || 200)) {
-    const uu = Math.min(u, span), c = side === "south" ? uu : side === "north" ? v.W - uu : side === "east" ? v.D - uu : uu;
-    const ci = Math.max(0, Math.min((hz ? G.nx : G.ny) - 1, Math.round((c - (hz ? G.x0 : G.y0)) / G.d))), n = hz ? G.ny : G.nx, cell = k => hz ? at(ci, k) : at(k, ci), start = toward < 0 ? n - 1 : 0;
+  const stp = Math.min(200, span / 2 || 200), US = []; for (let u = 0; u < span - 1; u += stp) US.push(u); US.push(span);   // pēdējais punkts tieši stūrī (citādi siena beidzas slīpi)
+  const cOf = uu => side === "south" ? uu : side === "north" ? v.W - uu : side === "east" ? v.D - uu : uu, n = hz ? G.ny : G.nx, start = toward < 0 ? n - 1 : 0;
+  const col = c => {   // režģa kolonna pie fasādes punkta: pirmā jumta šūna no fasādes (dzega), siena aiz pārkares, augstākais punkts
+    const ci = Math.max(0, Math.min((hz ? G.nx : G.ny) - 1, Math.round((c - (hz ? G.x0 : G.y0)) / G.d))), cell = k => hz ? at(ci, k) : at(k, ci);
     let ke = -1, ze = null, zm = -1e9;
     for (let k = start, s = 0; s < n; s++, k += toward) { const q = cell(k); if (q != null) { if (ke < 0) { ke = k; ze = q; } zm = Math.max(zm, q); } }
-    if (ke < 0) { wall.push([uu, ROOF.eave]); top.push([uu, ROOF.eave + th]); continue; }
-    const kin = ke + toward * Math.round(Math.max(0, ov) / G.d), zw = cell(Math.max(0, Math.min(n - 1, kin)));
-    wall.push([uu, zw != null ? zw : ze]); top.push([uu, zm + th]);
+    if (ke < 0) return null;
+    const zw = cell(Math.max(0, Math.min(n - 1, ke + toward * Math.round(Math.max(0, ov) / G.d))));
+    return { zw: zw != null ? zw : ze, zm };
+  };
+  for (const uu of US) {
+    const a = col(cOf(uu)), b = col(cOf(Math.max(100, Math.min(span - 100, uu))));   // b: 100 mm iekšpusē, jo stūris var nesakrist ar režģi
+    if (!a && !b) { wall.push([uu, ROOF.eave]); top.push([uu, ROOF.eave + th]); continue; }
+    wall.push([uu, (a || b).zw]); top.push([uu, Math.max(a ? a.zm : -1e9, b ? b.zm : -1e9) + th]);
   }
   return { wall, top, eE: Math.min(...wall.map(q => q[1])), maxTop: Math.max(...top.map(q => q[1])), th };
 }

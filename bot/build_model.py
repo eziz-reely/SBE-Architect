@@ -852,10 +852,17 @@ addEventListener('dblclick',function(e){if(window.MM_ED)return;reset()})})()</sc
     out_dir = os.path.join(os.path.dirname(os.path.abspath(model_path)), 'rasejumi')
     os.makedirs(out_dir, exist_ok=True)
     outs = []
+    # [MM] L formas jumts (divi divslīpju jumti ar ieleju): plaknes un augstumu režģi rēķina lapā ar to pašu kodu kā redaktors (sablons/mm-roofl.js);
+    # redaktors (MM_EDITOR) ieliek savu, tāpēc šeit tikai, ja tā nav
+    _rm = {k: m.get(k) for k in ('W', 'D', 'poly', 'kontura', 'jumts')}
+    _rm['jumts'] = dict(m.get('jumts') or {}, **{k: cfg['roof'][k] for k in ('pitch', 'ov', 'eave')})
+    _rm['projekts'] = {'ov_side': pr.get('ov_side')}
+    roofl = ('<script>' + open(os.path.join(HERE, 'sablons', 'mm-roofl.js'), encoding='utf-8').read()
+             + f'\nif (!window.MM_EDITOR && window.AR && AR.projekts) AR.projekts.roofL = roofLGrid({js(_rm)});</script>')
     for lang in (langs or ['LV', 'EN']):
         pre = f"window.PRINT_MODE=true;window.PRINT_REV={REV};window.MODEL_SHEET=true;window.MM_LANG='{lang.lower()}';window.MM_LOGO={js(logo)};window.AR={js(cfg)};"
         page = (f'<!doctype html><html lang="{lang.lower()}"><head><meta charset="utf-8"><title>{m["nosaukums"]}</title>{font}</head>'
-                f'<body><script>{pre}</script>{h}{css}</body></html>')
+                f'<body><script>{pre}</script>{roofl}{h}{css}</body></html>')
         p = os.path.join(out_dir, f"{m['id']}_{lang}.html")
         open(p, 'w', encoding='utf-8').write(page)
         outs.append(p)

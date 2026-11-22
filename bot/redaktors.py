@@ -57,6 +57,7 @@ def main():
     three = open(os.path.join(d, 'three.min.js'), encoding='utf-8').read().replace('</script', '<\\/script')
     razos = open(os.path.join(d, 'razosana.js'), encoding='utf-8').read()
     page = page.replace('/*@@RAZOSANA@@*/', razos)
+    page = page.replace('/*@@ROOFL@@*/', open(os.path.join(HERE, 'sablons', 'mm-roofl.js'), encoding='utf-8').read())   # L jumts: kopīgs ar modeļa lapām
     page = page.replace('/*@@VIZ3D@@*/', viz3d).replace('__MM_THREE__', three)
     for k, v in {'__MM_TONES__': jsstr(tones), '__MM_LAYERS__': jsstr(cfg['layers']), '__MM_TEMPLATE__': jsstr(tpl), '__MM_MODEL__': jsstr(m), '__MM_FRAME_JS__': jsstr(checker() + '\n' + frame),
                  '__MM_NAME__': (m.get('projekts') or {}).get('modela_nosaukums') or m['nosaukums'], '__MM_ID__': m['id']}.items():
