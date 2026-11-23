@@ -27,7 +27,7 @@ Vajag Python 3 un pārlūku. Windows PowerShell vispirms: `$env:PYTHONIOENCODING
 
 ## Valoda un UI
 - Viss lietotāja redzamais teksts, komentāri un commit ziņas latviski (LV; EN tikai A3 lapas EN versijā).
-- Redaktora palete: neitrāls grafīts + zils akcents #2266d8. Ikonas: viena kopa `IC` + `icon()` lapa.html (24×24, līnija 1.6, bez pildījuma). Nelieto brūnu/zeltu.
+- Redaktora palete: neitrāls grafīts + zils akcents #2266d8. Ikonas: viena kopa `IC` + `icon()` lapa.html (24×24, līnija 1.6, bez pildījuma; rīku joslās `#rail`, `#toolOpt` smalka līnija 1.1). Nelieto brūnu/zeltu.
 - Lapas noformējumu, rakstlaukumu, krāsas un `sablons/sbe` šablonu nemaini, ja uzdevums to neprasa. MM labojumi tiek ielikti būvējot (`build_model.py`), ne šablonā.
 - Plānā katram logam ir smalka (5) ailas līnija arī sienas iekšpusē (`cad.js`, `v.windows.forEach`). Pēc zīmēšanas izmaiņām pārbaudi, ka tā saglabājas.
 - Kores augstums tiek rēķināts no grīdas paneļa apakšas; atzīmes no ±0,000 (`augstums_0` model.json).
