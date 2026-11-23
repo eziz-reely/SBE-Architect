@@ -1173,12 +1173,17 @@
       if (z === "l" || z === "t") { const a = Math.max(T, Math.min(o[key] + len - mn, o[key] + q)); o[lk] = +(o[key] + len - a).toFixed(1); o[key] = a; }
       else if (z === "r" || z === "b") o[lk] = Math.max(mn, Math.min(lim - T - o[key], len + q));
       else {
-        if (it.k === "win" && it.lv !== "loft" && !(o.parts && o.parts.length)) {   // [WM] logs pāriet uz citu ārsienu (vertikāla ↔ horizontāla), ja pele aiziet līdz tai (kā ArchiCAD)
-          const H = o.o === "h", c0 = H ? [o.x + len / 2, o.y + T / 2] : [o.x + T / 2, o.y + len / 2], pp = [c0[0] + dx, c0[1] + dy];
+        const DR = it.k === "door", th0 = DR ? (+o.th || T) : T, H0 = o.o === "h", cw = H0 ? [o.x + len / 2, o.y + th0 / 2] : [o.x + th0 / 2, o.y + len / 2], wOn = DR ? wallAt(it.lv, cw) : null;
+        if (it.lv !== "loft" && (DR ? !!(wOn && wOn.ext && wOn.free == null) : !(o.parts && o.parts.length))) {   // [WM] logs / ārdurvis pāriet uz citu ārsienu (vertikāla ↔ horizontāla), ja pele aiziet līdz tai (kā ArchiCAD)
+          const H = H0, c0 = cw, pp = [c0[0] + dx, c0[1] + dy];
           if ((H ? Math.abs(dy) : Math.abs(dx)) > 400) {
             const w2 = wallAt(it.lv, pp);
             if (w2 && w2.ext && w2.free == null && (w2.axis !== (H ? "y" : "x") || Math.abs(Math.max(0, w2.lo) - (H ? o.y : o.x)) > 1)) {
               const V2 = w2.axis === "x", lim2 = V2 ? M.D : M.W, a = Math.max(T, Math.min(lim2 - T - len, r10((V2 ? pp[1] : pp[0]) - len / 2))), sd = sideOfWall(w2);
+              if (DR) {   // ārdurvis: biezums pēc jaunās sienas, vēršanās uz iekšu kā jaunām ārdurvīm
+                o.o = V2 ? "v" : "h"; if (V2) { o.x = +Math.max(0, w2.lo).toFixed(1); o.y = a; } else { o.y = +Math.max(0, w2.lo).toFixed(1); o.x = a; }
+                o.th = +(w2.hi - Math.max(0, w2.lo)).toFixed(1); o.side = sd === "south" || sd === "east" ? 1 : -1; d.snapLine = null; return N;
+              }
               if (V2) { o.o = "v"; o.x = +Math.max(0, w2.lo).toFixed(1); o.y = a; o.out = sd === "west" ? -1 : 1; }
               else { o.o = "h"; o.y = +Math.max(0, w2.lo).toFixed(1); o.x = a; delete o.out; }
               o.side = sd; d.snapLine = null;
