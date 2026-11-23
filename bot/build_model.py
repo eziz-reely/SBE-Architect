@@ -442,9 +442,9 @@ function mmRailTop(v, r, x, y) { return Math.min(mmRailBase(v, r) + (r.h != null
          "  (v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));\n  (v.posts || []).forEach(q => { el(\"rect\", { x: q.x, y: q.y, width: q.w, height: q.d, fill: \"#fff\", stroke: C.ink, \"stroke-width\": 12 }, g); el(\"path\", { d: `M ${q.x} ${q.y} L ${q.x + q.w} ${q.y + q.d} M ${q.x + q.w} ${q.y} L ${q.x} ${q.y + q.d}`, stroke: C.ink, \"stroke-width\": 6 }, g); });   // [MM] brīvie stabi"),
         ("  // openings\n  const reveal =",
          "  (v.posts || []).forEach(q => { if (!postVisible(v, side, q)) return; const a = endV ? q.y : q.x, l = endV ? q.d : q.w; postsU.push([Math.min(map(a), map(a + l)), l, q]); });   // [MM] brīvie stabi fasādēs\n  // openings\n  const reveal ="),
-        # [MM] loga ailai nav izvirzītu līniju: palodzes līnija beidzas ar ailas malu; iekšpusē smalka (5) ailas līnija paliek (AGENTS.md)
-        ('line(w.x - 40, oy, w.x + L + 40, oy, 10); line(w.x, iy, w.x + L, iy, 5); }', 'line(w.x, oy, w.x + L, oy, 10); line(w.x, iy, w.x + L, iy, 5); }'),
-        ('line(ox, w.y - 40, ox, w.y + L + 40, 10); line(ix, w.y, ix, w.y + L, 5); }', 'line(ox, w.y, ox, w.y + L, 10); line(ix, w.y, ix, w.y + L, 5); }'),
+        # [MM] loga ailai nav izvirzītu līniju: palodzes līnija beidzas ar ailas malu; iekšpusē smalka (5) ailas līnija paliek (AGENTS.md), vienā līmenī ar redzamās telpas kontūras iekšējo malu (kontūra sākas 8 mm sienā, cad.js), tāpēc nobīde 8 + 2,5
+        ('line(w.x - 40, oy, w.x + L + 40, oy, 10); line(w.x, iy, w.x + L, iy, 5); }', 'line(w.x, oy, w.x + L, oy, 10); { const q = iy + (so ? -10.5 : 10.5); line(w.x, q, w.x + L, q, 5); } }'),
+        ('line(ox, w.y - 40, ox, w.y + L + 40, 10); line(ix, w.y, ix, w.y + L, 5); }', 'line(ox, w.y, ox, w.y + L, 10); { const q = ix + (so ? -10.5 : 10.5); line(q, w.y, q, w.y + L, 5); } }'),
         # [MM] loga dziļums = faktiskais sienas biezums (ārsienas slāņu summa), lai rāmja līnijas neiziet telpā
         ('  v.windows.forEach(w => {\n    const th = T, L = w.len;', '  v.windows.forEach(w => {\n    const th = window.__TGEO || T, L = w.len;'),
         # [MM] ja apakšā ir aploda, palodze paliek ailas apakšā
