@@ -1910,6 +1910,7 @@
     if (place && ((place.t === "zone" && place.poly) || place.t === "hpoly")) { zonePreview(e.clientX, e.clientY); return; }
     if (place && place.t === "decor") { decPreview(e.clientX, e.clientY); return; }
     if (place && place.t === "section") { place.lx = e.clientX; place.ly = e.clientY; secPreview(e.clientX, e.clientY); return; }
+    if (place && (place.t === "win" || place.t === "gwin" || place.t === "door")) { winPreview(e.clientX, e.clientY); hover(null); return; }
     if (place && place.t === "guide") { document.body.style.cursor = GDC; drawGuides(guideNow(place, e.clientX, e.clientY, e.shiftKey)); return; }
     if (drag && drag.secd) {
       const m0 = drag.g.getScreenCTM(), sv = drag.g.ownerSVGElement, q0 = sv.createSVGPoint(); q0.x = e.clientX; q0.y = e.clientY; const a = (() => { const r = q0.matrixTransform(m0.inverse()); return [r.x, r.y]; })(), V = drag.o === "v", at = Math.round(a[V ? 0 : 1] / 10) * 10; drag.at = at;
@@ -2234,6 +2235,7 @@
     if (m && "mmMove" in m) { moveMode = !!m.mmMove; document.body.style.cursor = moveMode ? MVC : ""; return; }
     if (!m || !("mmPlace" in m)) return;
     document.querySelectorAll(".fdc").forEach(x => x.remove());
+    document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());   // iepriekšējā rīka priekšskatījums
     place = m.mmPlace; document.body.style.cursor = place ? "crosshair" : ""; drawGuides();
   });
   const sideOfWall = w => (w.axis === "x" ? (w.lo <= 0 ? "west" : "east") : (w.lo <= 0 ? "north" : "south"));
@@ -2836,6 +2838,41 @@
       b.addEventListener("pointerdown", e => e.stopPropagation()); b.onclick = f; box.appendChild(b);
     });
     document.documentElement.appendChild(box);
+  }
+  // [GH] logu / durvju rīks: pelēks elementa priekšskatījums zem peles (kā ArchiCAD), lai redz, kur tas tiks ielikts
+  function winPreview(cx, cy) {
+    document.querySelectorAll("g.mm-ov .gh").forEach(e => e.remove());
+    const P = place, bl = blocks().find(b => { const r = b.g.getBoundingClientRect(); return cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom; });
+    if (!bl) { document.body.style.cursor = ""; return; }
+    const p = toLocal(bl.g, cx, cy), o = overlay(bl.g), k = ek(bl), g = mk(o, "g", { class: "gh" });
+    const GF = { fill: "#8b9198", "fill-opacity": .42, stroke: "#5b6168", "stroke-width": 1 / k }, LN = { fill: "none", stroke: "#5b6168", "stroke-width": 1 / k };
+    const no = t => { document.body.style.cursor = "not-allowed"; label(g, p[0] + 3 / k, p[1] - 3 / k, t, k); };
+    if (bl.type === "plan") {
+      if (outPlan(p)) { document.body.style.cursor = ""; return; }
+      const w = wallAt(bl.lv, p);
+      if (!w) return no(P.t === "door" ? "Durvis: novieto uz sienas" : "Logs: novieto uz ārsienas");
+      if (P.t !== "door" && !w.ext) return no("Logu var ielikt tikai ārsienā");
+      const X = w.axis === "x", len = P.t === "door" ? (w.ext ? 1000 : 800) : 1000, a0 = (X ? p[1] : p[0]) - len / 2, th = w.hi - w.lo;
+      document.body.style.cursor = "copy";
+      if (X) mk(g, "rect", Object.assign({ x: w.lo, y: a0, width: th, height: len }, GF)); else mk(g, "rect", Object.assign({ x: a0, y: w.lo, width: len, height: th }, GF));
+      if (P.t === "door") {   // vērtnes līnija un vēršanās loks mājas iekšpusē
+        const inPos = X ? (w.lo < M.W / 2) : (w.lo < M.D / 2), f = inPos ? w.hi : w.lo, d = inPos ? 1 : -1;
+        const A = X ? [f, a0] : [a0, f], B = X ? [f + d * len, a0] : [a0, f + d * len], C = X ? [f, a0 + len] : [a0 + len, f];
+        mk(g, "path", Object.assign({ d: `M${A[0]},${A[1]} L${B[0]},${B[1]} A${len},${len} 0 0 ${(X ? d > 0 : d < 0) ? 0 : 1} ${C[0]},${C[1]}` }, LN));
+      } else mk(g, "path", Object.assign({ d: X ? `M${w.lo + th / 2},${a0} v${len}` : `M${a0},${w.lo + th / 2} h${len}` }, LN));
+      label(g, (X ? w.hi : a0 + len) + 4 / k, (X ? a0 : w.lo) - 4 / k, (P.t === "door" ? "Durvis " : P.t === "gwin" ? "Slīpais logs " : "Logs ") + len + (w.ext ? " · ārsienā" : " · starpsienā"), k);
+      return;
+    }
+    if (P.t === "door") return no("Durvis ieliec plānā");
+    const eave = (M.jumts && M.jumts.eave) || 2600, z = -p[1], gable = bl.side === "east" || bl.side === "west";
+    if (z < -300) { document.body.style.cursor = ""; return; }
+    let z0, z1;
+    if (gable && (z > eave - 150 || P.t === "gwin")) { z0 = Math.max(eave - 400, z); z1 = z0 + (P.t === "gwin" ? 800 : 550); }
+    else { const GH = +((M.projekts || {}).logu_augsa) || 2100; z0 = z > 0 && z < 2000 ? Math.max(0, Math.round(z - 600)) : 900; z1 = z > 0 && z < 2000 && z0 > 0 ? z0 + 1200 : GH; }
+    document.body.style.cursor = "copy";
+    mk(g, "rect", Object.assign({ x: p[0] - 500, y: -z1, width: 1000, height: z1 - z0 }, GF));
+    mk(g, "path", Object.assign({ d: `M${p[0] - 500},${-z0} L${p[0]},${-z1} L${p[0] + 500},${-z0}` }, LN));   // vēršanās zīme
+    label(g, p[0] + 520, -z1 - 40, (P.t === "gwin" ? "Slīpais logs" : "Logs") + " 1000 × " + Math.round(z1 - z0), k);
   }
   function postPreview(cx, cy) {
     const bl = terBlock(); if (!bl) return;
