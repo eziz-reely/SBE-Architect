@@ -1173,6 +1173,19 @@
       if (z === "l" || z === "t") { const a = Math.max(T, Math.min(o[key] + len - mn, o[key] + q)); o[lk] = +(o[key] + len - a).toFixed(1); o[key] = a; }
       else if (z === "r" || z === "b") o[lk] = Math.max(mn, Math.min(lim - T - o[key], len + q));
       else {
+        if (it.k === "win" && it.lv !== "loft" && !(o.parts && o.parts.length)) {   // [WM] logs pāriet uz citu ārsienu (vertikāla ↔ horizontāla), ja pele aiziet līdz tai (kā ArchiCAD)
+          const H = o.o === "h", c0 = H ? [o.x + len / 2, o.y + T / 2] : [o.x + T / 2, o.y + len / 2], pp = [c0[0] + dx, c0[1] + dy];
+          if ((H ? Math.abs(dy) : Math.abs(dx)) > 400) {
+            const w2 = wallAt(it.lv, pp);
+            if (w2 && w2.ext && w2.free == null && (w2.axis !== (H ? "y" : "x") || Math.abs(Math.max(0, w2.lo) - (H ? o.y : o.x)) > 1)) {
+              const V2 = w2.axis === "x", lim2 = V2 ? M.D : M.W, a = Math.max(T, Math.min(lim2 - T - len, r10((V2 ? pp[1] : pp[0]) - len / 2))), sd = sideOfWall(w2);
+              if (V2) { o.o = "v"; o.x = +Math.max(0, w2.lo).toFixed(1); o.y = a; o.out = sd === "west" ? -1 : 1; }
+              else { o.o = "h"; o.y = +Math.max(0, w2.lo).toFixed(1); o.x = a; delete o.out; }
+              o.side = sd; d.snapLine = null;
+              return N;
+            }
+          }
+        }
         let v = o[key] + q; v = Math.max(T, Math.min(lim - T - len, v));
         d.snapLine = null;
         if (!d.alt && !d.nudge) {   // logs / durvis pielīp telpas sienas vidum (ar Alt neliek)
