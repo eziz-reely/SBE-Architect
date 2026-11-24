@@ -123,8 +123,10 @@ def _mm_extra(cad):
         # stabs fasādē: augstums q.h (mm virs ±0,000); virs jumta pārkares apakšas tiek nogriezts pa pārkari (gala fasādē pa slīpumu)
         ('    el("rect", { x: u, y: -eEdge, width: s, height: eEdge + fT, fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 4 }, g);',
          '    const RLp = (typeof LAYERS === "function" && LAYERS("J1") && LAYERS("J1").layers) || [], kip = RLp.findIndex(l => l[2] === "i"), tPQ = ((kip >= 0 ? RLp.slice(0, kip + 1).reduce((s_, l) => s_ + l[1], 0) : ROOF.th) + 20) / Math.cos(ROOF.pitch * Math.PI / 180), pzc = uu => (gable ? eEdge + (Math.min(uu, span - uu) + (uu < span / 2 ? OVL : OVR)) * tan : eEdge + thV - tPQ) + (gable ? thV - tPQ : 0), ph = pq && +pq.h > 0 ? +pq.h : 0, pzL = ph && ph < pzc(u) ? ph : pzc(u) + 12, pzR = ph && ph < pzc(u + s) ? ph : pzc(u + s) + 12, pzm = Math.min(pzL, pzR);\n'
+         '    const pbF = tt => (tt.up ? -(ROOF.plinth - 40 - tt.up - (tt.th || 120)) : tt.th ? -Math.max(-300, ROOF.plinth - 40 - tt.th) : -fT), inPz = (p, Q) => { let c = false; for (let i = 0, j = Q.length - 1; i < Q.length; j = i++) { const A = Q[i], B = Q[j]; if ((A[1] > p[1]) !== (B[1] > p[1]) && p[0] < (B[0] - A[0]) * (p[1] - A[1]) / (B[1] - A[1]) + A[0]) c = !c; } return c; },\n'
+         '      pcz = pq && pq.__pc ? null : pq && pq.x != null ? [pq.x + (pq.w || 0) / 2, pq.y + (pq.d || 0) / 2] : null, pTs = pcz ? (v.terraces || []).filter(t_ => t_.poly && t_.poly.length > 2 && inPz(pcz, t_.poly)) : [], pbh = pq && pq.__pc ? pbF(pq.__pc) : pTs.length ? Math.max(...pTs.map(pbF)) : -fT;   // [MM] stabs stāv uz terases augšas: terasi paceļot, stabs īsinās (augša nemainās)\n'
          '    if (window.__FDF && window.__FDF[side]) window.__FDF[side].pz = [gable ? 1 : 0, OVL, OVR, tan]; window.__FDF[side].fb = ROOF.plinth - 40;\n'
-         '    el("polygon", { points: [P(u, -fT), P(u + s, -fT), P(u + s, pzR)].concat(ph && (pzc(u) - ph) * (pzc(u + s) - ph) < 0 ? [P(u + (pzc(u) - ph) / (pzc(u) - pzc(u + s)) * s, ph)] : [], [P(u, pzL)]).join(" "), fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 4 }, g);'),
+         '    el("polygon", { points: [P(u, pbh), P(u + s, pbh), P(u + s, pzR)].concat(ph && (pzc(u) - ph) * (pzc(u + s) - ph) < 0 ? [P(u + (pzc(u) - ph) / (pzc(u) - pzc(u + s)) * s, ph)] : [], [P(u, pzL)]).join(" "), fill: pq && pq.tex ? `url(#${terPat(g, pq, 0, 0)})` : (pq && pq.col) || (window.AR && AR.projekts && AR.projekts.tonis_sw) || "#c68a58", stroke: C.ink, "stroke-width": 4 }, g);'),
         ('el("line", { x1: u + k * 50, y1: -eEdge + 15, x2: u + k * 50, y2: fT - 15, stroke: "#5a3a1e", "stroke-width": 6 }, g);',
          'void 0;'),   # [MM] stabam fasādē nav vektora līniju: tikai tekstūra vai krāsa
         # fasādes tonis tikai vienai pusei (krāsas spainis): projekts.fasade_side[side]
@@ -286,6 +288,7 @@ def build(model_path, langs=None):
         pass
     # [MM] stabu materiāls fasādēs: krāsa vai tekstūra (q.col / q.tex), citādi lamellu koks
     cad = cad.replace('postsU.forEach(([u, s]) => {', 'postsU.forEach(([u, s, pq]) => {', 1)
+    cad = cad.replace('postsU.push([Math.min(map(a), map(a + s)), s]);', 'postsU.push([Math.min(map(a), map(a + s)), s, { __pc: pc }]);', 1)   # [MM] terases stūra statņi fasādē zina savu terasi
     # [MM] margas: kopīgie parametri (plāns, fasāde, griezums): redeles bal × balD, sprauga gap, lenteris railW × railH, apakšas atzīme z0
     RAIL_JS = r"""// [MM] margas: parametri un redeļu punkti
 function mmRailBase(v, r) { return r.z0 != null ? +r.z0 : r.lv === "loft" ? (v.loftLevel || v.level || ((v.ceiling || 2200) + 164.5)) : 0; }
