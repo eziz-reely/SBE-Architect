@@ -23,10 +23,26 @@ CC, CLEAR_MAX = 600.0, 555.0
 HDR_BOT = 2130.0         # pārsedzes apakša (durvīm un logiem, kuru augša tuvu)
 SPARE_CC = 600.0
 
+# Iestatījumi no modeļa (projekts.karkass_iest); generate() tos ielasa. Augšgulsnis vienmēr viens.
+NB, NT = 2, 1                 # apakšgulšņu skaits (1 vai 2), augšgulšņu skaits
+UZL_W, UZL_H = 0.0, 0.0       # ailas uzlaide platumā un augstumā (kopā, mm)
+LOGU_DUBULTI = True           # loga ailas malās divi vertikāli statņi (balsts + pilnais) vai tikai viens pilnais
+PASTIPR = True                # loga pārsedze un palodze dubultas (pastiprinātas) vai vienkāršas
+
+
+def apply_settings(m):
+    global NB, UZL_W, UZL_H, LOGU_DUBULTI, PASTIPR
+    s = (m.get('projekts') or {}).get('karkass_iest') or {}
+    NB = 1 if int(s.get('apaksgulsni', 2) or 2) == 1 else 2
+    UZL_W = max(0.0, min(100.0, float(s.get('uzlaide_w') or 0)))
+    UZL_H = max(0.0, min(100.0, float(s.get('uzlaide_h') or 0)))
+    LOGU_DUBULTI = bool(s.get('logu_dubulti', True))
+    PASTIPR = bool(s.get('logu_pastiprinajums', True))
+
 PIE = [
     "Karkasa ārmala = fasādes ārmala mīnus slāņi ārpus karkasa (pīrāgs S-04). Ārsienas karkass C24 45×{D:.0f}, statņi c/c 600 (tīrā atstarpe ≤ 555).",
     "Stūri: garenvirziena (garāko) sienu paneļi iet cauri līdz ārmalai, šķērssienas pieiet pie to iekšējās šķautnes; iekšējā stūrī caurejošais panelis ir garāks par karkasa biezumu.",
-    "Ārsienu augšmala seko jumta apakšai fasādes līnijā (frontonos slīpi). Divi augšgulšņi un divi apakšgulšņi.",
+    "Ārsienu augšmala seko jumta apakšai fasādes līnijā (frontonos slīpi). Augšgulsnis viens; apakšgulšņi {NB} (iestatījums).",
     "Aila = loga vai durvju izmērs no projekta; ja ailas augša tuvāk par 150 mm no 2130, pārsedzes apakša = 2130. Pārsedze 45 plakaniski + 45×{D:.0f} uz šķautnes.",
     "Starpsienas no plāna (karkass = sienas biezums mīnus apšuvums), augstums = griesti; gali līdz ārsienas karkasa iekšmalai.",
     "Spāres C24 45×{DJ:.0f} c/c 600 pa jumta plaknēm ar pārkari; L jumtam ielejas spāres saīsinātas pēc ielejas līnijas.",
@@ -254,6 +270,9 @@ def _fill(a, b, mk):
 def build_panel(P, opens, junctions, rot_ends):
     """Detaļas panelim P. opens: [{u0,u1,sill,head,tips}]; junctions: starpsienu asis u; rot_ends: (sākumā, beigās) pagriezts statnis stūrim."""
     L, D = P.L, P.D
+    if UZL_W or UZL_H:   # ailu uzlaide (durvīm tikai platumā un augšā)
+        opens = [dict(o, u0=o['u0'] - UZL_W / 2, u1=o['u1'] + UZL_W / 2, head=o['head'] + UZL_H / 2,
+                      sill=(o['sill'] - UZL_H / 2 if o['sill'] > 0 else 0)) for o in opens]
     sl = lambda u: math.sqrt(1 + P.slope_at(u) ** 2)
     # apakšgulšņi (pārtraukti durvju ailās)
     cuts = sorted((o['u0'], o['u1']) for o in opens if o['sill'] <= 0)
@@ -264,26 +283,26 @@ def build_panel(P, opens, junctions, rot_ends):
         cur = max(cur, c1)
     if cur < L:
         segs.append((cur, L))
-    for i in range(2):
+    for i in range(NB):
         for s0, s1 in segs:
             P.add('HOR.STATNIS', 'bottom_plate', s0, s1, i * B, (i + 1) * B)
     # augšgulšņi pa augšmalas posmiem
     for (u0, z0), (u1, z1) in zip(P.top, P.top[1:]):
         k = (z1 - z0) / ((u1 - u0) or 1)
-        for i in range(2):
+        for i in range(NT):
             dz = (i + 1) * B * math.sqrt(1 + k * k)
             if abs(k) < 1e-4:
                 P.add('HOR.STATNIS', 'top_plate', u0, u1, z0 - dz, z0 - dz + B)
             else:
                 P.add('SLIPAIS', 'top_plate', u0, u1, min(z0, z1) - dz, max(z0, z1) - dz + B, length=math.hypot(u1 - u0, z1 - z0), cut='slīps griezums gar jumtu')
-    zb = 2 * B
+    zb = NB * B
 
     def stud(u0, role, w=B, z0=None, z1=None, depth=None):
         u1 = u0 + w
         a = zb if z0 is None else z0
         if z1 is None:
             t0, t1 = P.top_at(u0), P.top_at(u1)
-            pl = 2 * B * max(sl(u0), sl(u1))
+            pl = NT * B * max(sl(u0), sl(u1))
             lo, hi = min(t0, t1) - pl, max(t0, t1) - pl
             if hi - lo > 2:
                 return P.add('VERT.SLIPAIS', role, u0, u1, a, hi, length=hi - a, w=depth, cut='slīps augšgals')
@@ -293,14 +312,16 @@ def build_panel(P, opens, junctions, rot_ends):
     fixed = []
     stud(0, 'stud')
     fixed.append((0, B))
-    if rot_ends[0]:
+    if rot_ends[0]:   # kaste: 3 detaļas (statnis, pagriezts statnis, statnis), saskrūvējamas un piesledzamas frontonam
         stud(B, 'junction_rot', w=D)
-        fixed[-1] = (0, B + D)
+        stud(B + D, 'stud')
+        fixed[-1] = (0, 2 * B + D)
     stud(L - B, 'stud')
     fixed.append((L - B, L))
     if rot_ends[1]:
         stud(L - B - D, 'junction_rot', w=D)
-        fixed[-1] = (L - B - D, L)
+        stud(L - 2 * B - D, 'stud')
+        fixed[-1] = (L - 2 * B - D, L)
     end_l, end_r = fixed[0][1], fixed[1][0]
     for c in sorted(junctions):
         u0 = c - D / 2
@@ -317,24 +338,42 @@ def build_panel(P, opens, junctions, rot_ends):
     ops = sorted(opens, key=lambda o: o['u0'])
     for i, o in enumerate(ops):
         a0, a1, hb = o['u0'], o['u1'], o['head']
-        room = min(P.top_at(a0 - B), P.top_at(a1 + B)) - 2 * B * max(sl(a0), sl(a1))
-        if hb + B + D > room + 1:
-            P.warn.append(f"aila {o['u1'] - o['u0']:.0f}×{hb - o['sill']:.0f}: pārsedze {B + D:.0f} mm neietilpst zem augšgulšņiem ({room:.0f}); vajag citu pārsedzi vai zemāku ailu")
+        room = min(P.top_at(a0 - B), P.top_at(a1 + B)) - NT * B * max(sl(a0), sl(a1))
+        hdr_h = B + D                      # augšējais gulsnis (45) + pārsedze (45×D)
+        if hb + hdr_h > room + 1:
+            P.warn.append(f"aila {o['u1'] - o['u0']:.0f}×{hb - o['sill']:.0f}: pārsedze {hdr_h:.0f} mm neietilpst zem augšgulšņiem ({room:.0f}); vajag citu pārsedzi vai zemāku ailu")
         share_l = i > 0 and a0 - ops[i - 1]['u1'] <= 180
         share_r = i + 1 < len(ops) and ops[i + 1]['u0'] - a1 <= 180
-        for side, lo, shared in (('l', a0 - B, share_l), ('r', a1, share_r)):
-            stud(lo, 'jack', z0=zb, z1=hb)
-            if not shared:
-                stud(lo - B if side == 'l' else a1 + B, 'king')
-        fixed.append((a0 - B - (0 if share_l else B), a1 + B + (0 if share_r else B)))
-        P.add('PĀRSEDZE', 'header', a0 - B, a1 + B, hb, hb + B, w=D)
-        P.add('PĀRSEDZE', 'header', a0 - B, a1 + B, hb + B, hb + B + D, w=D)
-        top_hdr = hb + B + D
-        if a1 - a0 + 2 * B > CLEAR_MAX:
-            _fill(a0 - B, a1 + B, lambda u, t=top_hdr: stud(u, 'cripple', z0=t) if P.top_at(u) - t > 2 * B + 60 else None)
-        if o['sill'] > 0:
-            P.add('HOR.STATNIS', 'sill', a0, a1, o['sill'] - B, o['sill'])
-            _fill(a0, a1, lambda u, o=o: stud(u, 'cripple', z0=zb, z1=o['sill'] - B))
+        r = B if PASTIPR else 0            # pastiprinājuma statņi (3 posmos) blakus pilnajam statnim
+        hl, hr = a0 - r, a1 + r            # horizontālās daļas piesledzas pilnajam statnim
+        top_hdr = hb + hdr_h
+        sillz = o['sill']
+        for side, edge, shared in (('l', a0, share_l), ('r', a1, share_r)):
+            kx = edge - r - B if side == 'l' else edge + r        # pilnais statnis
+            stud(kx, 'king')
+            if LOGU_DUBULTI and not shared:
+                stud(kx - B if side == 'l' else kx + B, 'king')
+            if PASTIPR:
+                rx = edge - B if side == 'l' else edge
+                segs_ = [(zb, sillz - B)] if sillz > 0 else []
+                segs_.append((max(sillz, zb), hb))
+                segs_.append((top_hdr, None))
+                for z0_, z1_ in segs_:
+                    if z1_ is None:
+                        if P.top_at(rx) - z0_ > NT * B + 60:
+                            stud(rx, 'jack', z0=z0_)
+                    elif z1_ - z0_ > 20:
+                        stud(rx, 'jack', z0=z0_, z1=z1_)
+        lo_f = (a0 - r - B) - (B if LOGU_DUBULTI and not share_l else 0)
+        hi_f = (a1 + r + B) + (B if LOGU_DUBULTI and not share_r else 0)
+        fixed.append((lo_f, hi_f))
+        P.add('HOR.STATNIS', 'opening_plate', hl, hr, hb, hb + B, w=D)               # augšējais horizontālais gulsnis
+        P.add('PĀRSEDZE', 'header', hl, hr, hb + B, hb + B + D, w=D)                   # pārsedze tādā pašā garumā
+        if a1 - a0 + 2 * r > CLEAR_MAX:
+            _fill(hl, hr, lambda u, t=top_hdr: stud(u, 'cripple', z0=t) if P.top_at(u) - t > NT * B + 60 else None)
+        if sillz > 0:
+            P.add('HOR.STATNIS', 'sill', hl, hr, sillz - B, sillz)                     # palodzes horizontālais gulsnis
+            _fill(hl, hr, lambda u, z=sillz: stud(u, 'cripple', z0=zb, z1=z - B))
     merged = []
     for a, b in sorted(fixed):
         if merged and a <= merged[-1][1] + 1e-6:
@@ -356,6 +395,7 @@ def build_panel(P, opens, junctions, rot_ends):
 
 def generate(m):
     """model.json -> {'paneli': [Panel], 'jumts': roof_geom, 'D': ..., 'piezimes': [...]}"""
+    apply_settings(m)
     LY = layers_of(m)
     D, off = frame_of(LY['S1']['layers'])
     DJ, _ = frame_of(LY['J1']['layers'], 195.0)
@@ -503,7 +543,7 @@ def generate(m):
         build_panel(P, ops, [], (False, False))
         P.axis = (hz, fixed_c, lo, hi)
         panels.append(P)
-    pie = [s.format(D=D, DJ=DJ) for s in PIE]
+    pie = [s.format(D=D, DJ=DJ, NB=NB) for s in PIE]
     return {'id': m.get('id'), 'paneli': panels, 'jumts': roof, 'D': D, 'DJ': DJ, 'off': off, 'piezimes': pie + warn, 'slani': LY}
 
 
