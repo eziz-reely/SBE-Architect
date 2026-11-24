@@ -30,8 +30,13 @@ LOGU_DUBULTI = True           # loga ailas malās divi vertikāli statņi (balst
 PASTIPR = True                # loga pārsedze un palodze dubultas (pastiprinātas) vai vienkāršas
 
 
+SP = 30.0                     # palodzes profils (projekts.palodzes_prof: on, h); specifikācijā tas ir logam klāt, aila no ±0 paliek tāda pati
+
+
 def apply_settings(m):
-    global NB, UZL_W, UZL_H, LOGU_DUBULTI, PASTIPR
+    global NB, UZL_W, UZL_H, LOGU_DUBULTI, PASTIPR, SP
+    sp = (m.get('projekts') or {}).get('palodzes_prof') or {}
+    SP = 0.0 if sp.get('on') is False else (float(sp.get('h')) if float(sp.get('h') or 0) > 0 else 30.0)
     s = (m.get('projekts') or {}).get('karkass_iest') or {}
     NB = 1 if int(s.get('apaksgulsni', 2) or 2) == 1 else 2
     UZL_W = max(0.0, min(100.0, float(s.get('uzlaide_w') or 0)))
@@ -271,7 +276,7 @@ def build_panel(P, opens, junctions, rot_ends):
     """Detaļas panelim P. opens: [{u0,u1,sill,head,tips}]; junctions: starpsienu asis u; rot_ends: (sākumā, beigās) pagriezts statnis stūrim."""
     L, D = P.L, P.D
     if UZL_W or UZL_H:   # ailu uzlaide (durvīm tikai platumā un augšā)
-        opens = [dict(o, u0=o['u0'] - UZL_W / 2, u1=o['u1'] + UZL_W / 2, head=o['head'] + UZL_H / 2,
+        opens = [dict(o, u0=o['u0'] - UZL_W / 2, u1=o['u1'] + UZL_W / 2, head=o['head'] + (0 if o.get('fix') else UZL_H / 2),
                       sill=(o['sill'] - UZL_H / 2 if o['sill'] > 0 else 0)) for o in opens]
     sl = lambda u: math.sqrt(1 + P.slope_at(u) ** 2)
     # apakšgulšņi (pārtraukti durvju ailās)
@@ -389,7 +394,7 @@ def build_panel(P, opens, junctions, rot_ends):
     for (p0, p1), (q0, q1) in zip(vs, vs[1:]):
         if q0 - p1 > 100 and not any(o['u0'] - B < (p1 + q0) / 2 < o['u1'] + B for o in opens):
             P.add('HOR.STATNIS', 'nogging', p1, q0, 1200, 1200 + B)
-    P.opens = [{'u0': _r(o['u0']), 'u1': _r(o['u1']), 'sill': o['sill'], 'head': o['head'], 'tips': o['tips']} for o in opens]
+    P.opens = [{'u0': _r(o['u0']), 'u1': _r(o['u1']), 'sill': o['sill'], 'head': o['head'], 'tips': o['tips'], 'wh': o.get('wh'), 'sp': o.get('sp', 0)} for o in opens]
     return P
 
 
@@ -489,7 +494,7 @@ def generate(m):
                 if o['tips'] == 'durvis' or head > HDR_BOT or abs(head - HDR_BOT) <= 150:
                     head = HDR_BOT if head <= HDR_BOT + 150 else head
                 ops.append({'u0': cu - o['platums'] / 2, 'u1': cu + o['platums'] / 2, 'sill': 0 if o['tips'] == 'durvis' else o['palodze'], 'head': head,
-                            'tips': o['tips']})
+                            'tips': o['tips'], 'fix': head == HDR_BOT, 'wh': float(o.get('augstums') or 2070), 'sp': SP})
         junc = []
         for p in part:
             for pt in (p['a'], p['b']):
@@ -539,7 +544,8 @@ def generate(m):
             c_ = (p['a'][0] + wd[0] / wl_ * o['poz']) if hz else (p['a'][1] + wd[1] / wl_ * o['poz'])
             cu = c_ - lo
             ops.append({'u0': cu - o['platums'] / 2, 'u1': cu + o['platums'] / 2, 'sill': 0 if o['tips'] == 'durvis' else o['palodze'],
-                        'head': HDR_BOT if o['tips'] == 'durvis' else o['palodze'] + o['augstums'], 'tips': o['tips']})
+                        'head': HDR_BOT if o['tips'] == 'durvis' else o['palodze'] + o['augstums'], 'tips': o['tips'],
+                        'fix': o['tips'] == 'durvis', 'wh': float(o.get('augstums') or 2070), 'sp': SP})
         build_panel(P, ops, [], (False, False))
         P.axis = (hz, fixed_c, lo, hi)
         panels.append(P)
