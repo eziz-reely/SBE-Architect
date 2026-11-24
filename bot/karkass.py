@@ -327,8 +327,8 @@ def build_panel(P, opens, junctions, rot_ends):
             if not shared:
                 stud(lo - B if side == 'l' else a1 + B, 'king')
         fixed.append((a0 - B - (0 if share_l else B), a1 + B + (0 if share_r else B)))
-        P.add('PARSEDZE', 'header', a0 - B, a1 + B, hb, hb + B, w=D)
-        P.add('PARSEDZE', 'header', a0 - B, a1 + B, hb + B, hb + B + D, w=D)
+        P.add('PĀRSEDZE', 'header', a0 - B, a1 + B, hb, hb + B, w=D)
+        P.add('PĀRSEDZE', 'header', a0 - B, a1 + B, hb + B, hb + B + D, w=D)
         top_hdr = hb + B + D
         if a1 - a0 + 2 * B > CLEAR_MAX:
             _fill(a0 - B, a1 + B, lambda u, t=top_hdr: stud(u, 'cripple', z0=t) if P.top_at(u) - t > 2 * B + 60 else None)

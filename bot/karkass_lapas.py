@@ -24,6 +24,7 @@ INK, ACC, MUT = '#1f2328', '#2266d8', '#6b7280'
 COL = {'bottom_plate': '#b9a27a', 'top_plate': '#b9a27a', 'stud': '#e8d6ae', 'junction': '#e8d6ae', 'junction_rot': '#d9c08e', 'king': '#e8d6ae',
        'jack': '#dcc596', 'cripple': '#efe2c4', 'header': '#c49a5a', 'sill': '#c9b083', 'nogging': '#d8c7a2'}
 SCALES = [20, 25, 50, 75, 100, 150, 200]
+FONT = 'Barlow,Arial,sans-serif'
 esc = lambda s: html.escape(str(s))
 f0 = lambda v: f'{v:.0f}'
 fm2 = lambda v: f'{v:.1f}'.replace('.', ',')
@@ -61,21 +62,22 @@ class Doc:
         self.pages.append(f'<section class="pg">{inner}</section>')
 
 
-def table_svg(x, y, rows, cols, widths, fs=2.6, rh=3.8, head=True):
+def table_svg(x, y, rows, cols, widths, fs=2.6, rh=3.8, head=True, hdr_right=()):
     """Tabula SVG: rows = saraksts ar šūnām; cols = virsraksti."""
-    out = [f'<g font-family="Barlow,Arial,sans-serif" font-size="{fs}" fill="{INK}">']
+    out = [f'<g font-family="{FONT}" font-size="{fs}" fill="{INK}">']
     W = sum(widths)
     yy = y
     if head:
-        out.append(f'<rect x="{x}" y="{yy}" width="{W}" height="{rh + .6}" fill="{INK}"/>')
+        out.append(f'<rect x="{x}" y="{yy}" width="{W}" height="{rh + .6}" fill="#e6e7ee"/>')
         cx = x
-        for c, w in zip(cols, widths):
-            out.append(f'<text x="{cx + 1}" y="{yy + rh - .9}" fill="#fff" font-weight="600">{esc(c)}</text>')
+        for j, (c, w) in enumerate(zip(cols, widths)):
+            hr = j in hdr_right
+            out.append(f'<text x="{cx + w - 1 if hr else cx + 1}" y="{yy + rh - .9}" font-weight="700"{" text-anchor=\"end\"" if hr else ""}>{esc(c)}</text>')
             cx += w
         yy += rh + .6
     for i, r in enumerate(rows):
         if i % 2:
-            out.append(f'<rect x="{x}" y="{yy}" width="{W}" height="{rh}" fill="#f2f3f5"/>')
+            out.append(f'<rect x="{x}" y="{yy}" width="{W}" height="{rh}" fill="#f3f2f7"/>')
         cx = x
         for j, (c, w) in enumerate(zip(r, widths)):
             num = isinstance(c, (int, float)) or bool(re.fullmatch(r'-?\d{1,3}( \d{3})*([.,]\d+)?|-?\d+([.,]\d+)?', str(c)))
@@ -88,69 +90,90 @@ def table_svg(x, y, rows, cols, widths, fs=2.6, rh=3.8, head=True):
     return ''.join(out), yy
 
 
+WOOD, LINE_C = '#ffdf8c', '#1a1a1a'
+
+
+def _dash(x1, y1, x2, y2, w=.15):
+    return f'<line x1="{x1:.2f}" y1="{y1:.2f}" x2="{x2:.2f}" y2="{y2:.2f}" stroke="{LINE_C}" stroke-width="{w}" stroke-dasharray="1.3 .8"/>'
+
+
+def _tick(x, y, horiz=True):
+    d = .9
+    return (f'<line x1="{x - d:.2f}" y1="{y:.2f}" x2="{x + d:.2f}" y2="{y:.2f}" stroke="{LINE_C}" stroke-width=".18"/>' if not horiz else
+            f'<line x1="{x:.2f}" y1="{y - d:.2f}" x2="{x:.2f}" y2="{y + d:.2f}" stroke="{LINE_C}" stroke-width=".18"/>')
+
+
 def panel_svg(P, x0, y0, bw, bh, chain=True):
-    """Paneļa skats no ārpuses mērogā, kas ietilpst lodziņā bw×bh (mm uz lapas). Atgriež (svg, mērogs, apakšas y)."""
+    """Paneļa skats no ārpuses (Čarnikavas noformējums: dzeltens koks, melnas līnijas, raustītas izmēru ķēdes).
+    Mērogs tiek rēķināts tā, lai panelis ar izmēriem ietilptu lodziņā bw×bh (mm uz lapas) pēc iespējas lielāks.
+    Atgriež (svg, mērogs 1:s, apakšas y)."""
     Ht = max(z for _, z in P.top)
-    s = scale_for(P.L + 1200, Ht + 900, bw, bh)
-    k = 1 / s
-    ox = x0 + (bw - P.L * k) / 2
-    oy = y0 + 9 + Ht * k                      # grīdas līnija uz lapas
+    mt, mb, mr, ml = 9.0, (24.0 if chain else 6.0), 16.0, 4.0
+    k = min((bw - mr - ml) / P.L, (bh - mt - mb) / Ht)
+    s = 1 / k
+    ox = x0 + ml + (bw - mr - ml - P.L * k) / 2
+    oy = y0 + mt + Ht * k
     X = lambda u: ox + u * k
     Y = lambda z: oy - z * k
-    g = ['<g font-family="Barlow,Arial,sans-serif">']
-    # paneļa kontūra
-    pts = [(0, 0)] + list(P.top) + [(P.L, 0)]
-    g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pts)}" fill="#fbfaf7" stroke="{INK}" stroke-width=".35"/>')
+    fs, fc = 3.0, 2.4
+    g = [f'<g font-family="{FONT}">']
     for q in sorted(P.m, key=lambda q: 0 if q['loma'] in ('bottom_plate', 'top_plate') else 1):
-        c = COL.get(q['loma'], '#ddd')
         if q['nos'] == 'SLIPAIS':
             continue
         if q['nos'] == 'VERT.SLIPAIS':
             u0, u1 = q['u0'], q['u1']
             pl = 2 * KK.B * math.sqrt(1 + P.slope_at((u0 + u1) / 2) ** 2)
             pp = [(u0, q['z0']), (u1, q['z0']), (u1, P.top_at(u1) - pl), (u0, P.top_at(u0) - pl)]
-            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{c}" stroke="#7a6440" stroke-width=".15"/>')
+            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".15"/>')
             continue
-        g.append(f'<rect x="{X(q["u0"]):.2f}" y="{Y(q["z1"]):.2f}" width="{max((q["u1"] - q["u0"]) * k, .15):.2f}" height="{max((q["z1"] - q["z0"]) * k, .15):.2f}" fill="{c}" stroke="#7a6440" stroke-width=".15"/>')
-    # slīpie augšgulšņi kā josla zem jumta līnijas
+        g.append(f'<rect x="{X(q["u0"]):.2f}" y="{Y(q["z1"]):.2f}" width="{max((q["u1"] - q["u0"]) * k, .15):.2f}" height="{max((q["z1"] - q["z0"]) * k, .15):.2f}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".15"/>')
     for (u0, z0), (u1, z1) in zip(P.top, P.top[1:]):
         if abs(z1 - z0) > 1:
             kk = math.sqrt(1 + ((z1 - z0) / (u1 - u0)) ** 2)
             pp = [(u0, z0), (u1, z1), (u1, z1 - 2 * KK.B * kk), (u0, z0 - 2 * KK.B * kk)]
-            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{COL["top_plate"]}" stroke="#7a6440" stroke-width=".15"/>')
-    # ailas
+            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".15"/>')
+    # ailu izmēri iekšā ailā: platums pie apakšas, augstums rotēts, parapets
     for o in P.opens:
-        g.append(f'<rect x="{X(o["u0"]):.2f}" y="{Y(o["head"]):.2f}" width="{(o["u1"] - o["u0"]) * k:.2f}" height="{(o["head"] - o["sill"]) * k:.2f}" fill="#eaf1fc" stroke="{ACC}" stroke-width=".3" stroke-dasharray="1 .6"/>')
-        cx, cy = X((o['u0'] + o['u1']) / 2), Y((o['head'] + o['sill']) / 2)
-        g.append(f'<text x="{cx:.2f}" y="{cy:.2f}" font-size="2.3" text-anchor="middle" fill="{ACC}" font-weight="600">{f0(o["u1"] - o["u0"])}×{f0(o["head"] - o["sill"])}</text>')
+        w_, h_ = o['u1'] - o['u0'], o['head'] - o['sill']
+        yb = Y(o['sill']) - 1.4
+        g.append(_dash(X(o['u0']), yb, X(o['u1']), yb) + _tick(X(o['u0']), yb) + _tick(X(o['u1']), yb))
+        g.append(f'<text x="{(X(o["u0"]) + X(o["u1"])) / 2:.2f}" y="{yb - 1:.2f}" font-size="{fs}" text-anchor="middle">{f0(w_)}</text>')
+        xv = X(o['u1']) - 1.6
+        g.append(_dash(xv, Y(o['sill']), xv, Y(o['head'])) + _tick(xv, Y(o['sill']), False) + _tick(xv, Y(o['head']), False))
+        g.append(f'<text transform="translate({xv - 1:.2f} {(Y(o["sill"]) + Y(o["head"])) / 2:.2f}) rotate(-90)" font-size="{fs}" text-anchor="middle">{f0(h_)}</text>')
         if o['sill'] > 0:
-            g.append(f'<text x="{cx:.2f}" y="{cy + 2.8:.2f}" font-size="1.9" text-anchor="middle" fill="{ACC}">parapets {f0(o["sill"])}</text>')
-    # izmēri: kopgarums augšā, augstums labajā pusē, statņu ordinātas apakšā
-    yt = Y(Ht) - 4
-    g.append(f'<line x1="{X(0):.2f}" y1="{yt:.2f}" x2="{X(P.L):.2f}" y2="{yt:.2f}" stroke="{INK}" stroke-width=".2"/>'
-             f'<line x1="{X(0):.2f}" y1="{yt - 1:.2f}" x2="{X(0):.2f}" y2="{yt + 1:.2f}" stroke="{INK}" stroke-width=".2"/><line x1="{X(P.L):.2f}" y1="{yt - 1:.2f}" x2="{X(P.L):.2f}" y2="{yt + 1:.2f}" stroke="{INK}" stroke-width=".2"/>'
-             f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yt - .8:.2f}" font-size="2.8" text-anchor="middle" font-weight="600">{f0(P.L)}</text>')
-    xr = X(P.L) + 4
+            xs = X(o['u0']) + 1.6
+            g.append(_dash(xs, Y(0), xs, Y(o['sill'])) + _tick(xs, Y(0), False) + _tick(xs, Y(o['sill']), False))
+            g.append(f'<text transform="translate({xs - 1:.2f} {(Y(0) + Y(o["sill"])) / 2:.2f}) rotate(-90)" font-size="{fs}" text-anchor="middle">{f0(o["sill"])}</text>')
+    # kopgarums augšā
+    yt = Y(Ht) - 4.5
+    g.append(_dash(X(0), yt, X(P.L), yt) + _tick(X(0), yt) + _tick(X(P.L), yt))
+    g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yt - 1:.2f}" font-size="{fs + .4}" text-anchor="middle">{f0(P.L)}</text>')
+    # augstumi labajā pusē (raustīti paplašinājumi)
     hs = sorted({round(P.top[0][1]), round(Ht), round(P.top[-1][1])})
     for i, h in enumerate(hs):
-        xx = xr + i * 4
-        g.append(f'<line x1="{xx:.2f}" y1="{Y(0):.2f}" x2="{xx:.2f}" y2="{Y(h):.2f}" stroke="{INK}" stroke-width=".2"/>'
-                 f'<text transform="translate({xx - .6:.2f} {(Y(0) + Y(h)) / 2:.2f}) rotate(-90)" font-size="2.3" text-anchor="middle">{h}</text>')
+        xx = X(P.L) + 5 + i * 5.5
+        g.append(_dash(X(P.L) + 1, Y(h), xx + 1.2, Y(h)) + _dash(xx, Y(0), xx, Y(h)) + _tick(xx, Y(0), False) + _tick(xx, Y(h), False))
+        g.append(f'<text transform="translate({xx + 3.4:.2f} {(Y(0) + Y(h)) / 2:.2f}) rotate(-90)" font-size="{fs}" text-anchor="middle">{h}</text>')
     if chain:
-        us = sorted({round(q['u0']) for q in P.m if q['nos'].startswith('VERT')})
-        yb = Y(0) + 2
-        g.append(f'<line x1="{X(0):.2f}" y1="{yb:.2f}" x2="{X(P.L):.2f}" y2="{yb:.2f}" stroke="{INK}" stroke-width=".15"/>')
+        us = sorted({round(q['u0']) for q in P.m if q['nos'].startswith('VERT')} | {round(o['u0']) for o in P.opens} | {round(o['u1']) for o in P.opens})
+        yb = Y(0) + 10
+        g.append(_dash(X(0), yb, X(P.L), yb))
         last = -9
-        for u in us:
+        for u in [0] + us:
             xx = X(u)
-            g.append(f'<line x1="{xx:.2f}" y1="{yb - .8:.2f}" x2="{xx:.2f}" y2="{yb + .8:.2f}" stroke="{INK}" stroke-width=".15"/>')
-            if xx - last >= 1.9:
-                g.append(f'<text transform="translate({xx + .7:.2f} {yb + 1.4:.2f}) rotate(90)" font-size="1.7">{u}</text>')
-                last = xx
-        bottom = yb + 9
+            if xx - last < 2.9 and last > -9:
+                continue
+            g.append(_dash(xx, Y(0), xx, yb + 1) + _tick(xx, yb))
+            g.append(f'<text transform="translate({xx + .9:.2f} {yb + 1.6:.2f}) rotate(90)" font-size="{fc}">{u}</text>')
+            last = xx
+        yb2 = yb + 11
+        g.append(_dash(X(0), yb2, X(P.L), yb2) + _tick(X(0), yb2) + _tick(X(P.L), yb2) + _dash(X(P.L), Y(0), X(P.L), yb2 + 1))
+        g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yb2 + 3.6:.2f}" font-size="{fs + .4}" text-anchor="middle">{f0(P.L)}</text>')
+        bottom = yb2 + 5
     else:
         bottom = Y(0) + 2
-    g.append(f'<text x="{x0 + bw:.2f}" y="{y0 + 3:.2f}" font-size="2.6" text-anchor="end" fill="{MUT}">M 1:{s}</text></g>')
+    g.append(f'<text x="{x0 + bw:.2f}" y="{y0 + 3:.2f}" font-size="2.4" text-anchor="end" fill="{MUT}">M ≈ 1:{round(s)}</text></g>')
     return ''.join(g), s, bottom
 
 
@@ -162,12 +185,15 @@ def wall_page(D, P):
     g, nn = P.area()
     rows = parts_rows(P)
     nrow = (len(rows) + 1) // 2
-    tab_h = 4.6 + 3.9 * nrow
+    tab_h = max(4.6 + 3.9 * nrow, 20)
     svg, s, yb = panel_svg(P, 14, 26, 392, PH - 26 - 26 - tab_h - 6)
-    cols, w = ('Detaļa', 'Šķērsgr.', 'Garums, mm', 'Gab.'), (34, 18, 20, 11)
+    cols, w = ('Detaļa', 'Šķērsgr.', 'Garums, mm', 'Gab.'), (34, 18, 24, 12)
     ty = min(yb + 4, PH - 24 - tab_h)
-    t1, e1 = table_svg(14, ty, rows[:nrow], cols, w, fs=2.8, rh=3.9)
-    t2 = table_svg(14 + sum(w) + 8, ty, rows[nrow:], cols, w, fs=2.8, rh=3.9)[0] if nrow < len(rows) else ''
+    t1, e1 = table_svg(14, ty, rows[:nrow], cols, w, fs=2.8, rh=3.9, hdr_right=(2, 3))
+    t2 = table_svg(14 + sum(w) + 8, ty, rows[nrow:], cols, w, fs=2.8, rh=3.9, hdr_right=(2, 3))[0] if nrow < len(rows) else ''
+    off = 0
+    svg = f'<g transform="translate(0 {off:.2f})">{svg}{t1}{t2}</g>'
+    t1 = t2 = ''
     kv = (f'<g font-family="Barlow,Arial,sans-serif"><rect x="{PW - 112}" y="{PH - 44}" width="98" height="18" fill="#fff" stroke="{INK}" stroke-width=".4"/>'
           f'<text x="{PW - 108}" y="{PH - 37}" font-size="4.2" font-weight="700">KVADRATŪRA: {fm2(g)} m²</text>'
           f'<text x="{PW - 108}" y="{PH - 31}" font-size="2.8" fill="{MUT}">bez ailām {fm2(nn)} m² · C24 45×{P.D:.0f} · {len(P.m)} detaļas</text></g>')
@@ -337,6 +363,10 @@ def skice_page(D, mp, m):
           f'srcdoc="{html.escape(src, quote=True)}"></iframe></div>')
 
 
+FONTI = {'Barlow': 'Barlow,Arial,sans-serif', 'Verdana': 'Verdana,Arial,sans-serif', 'Arial': 'Arial,Helvetica,sans-serif',
+         'Sora': 'Sora,Arial,sans-serif', 'Georgia': 'Georgia,serif'}   # ražošanas lapu fonts (model.json projekts.razosanas_fonts)
+
+
 def build(mp, out=None, cenas=None, profils=''):
     """cenas: {materiāla atslēga: €} no uzņēmuma cenu profila (tame.mat_key); profils: profila nosaukums tāmes kājenē."""
     m = json.load(open(mp, encoding='utf-8'))
@@ -358,6 +388,11 @@ def build(mp, out=None, cenas=None, profils=''):
            '@media print{html,body{background:none}.pg{margin:0;box-shadow:none}}</style>')
     doc = (f'<!doctype html><html lang="lv"><head><meta charset="utf-8"><title>{esc(D.model)} ražošana</title>{css}</head><body>'
            + ''.join(p.replace('@@N@@', str(n)) for p in D.pages) + '</body></html>')
+    fn = (m.get('projekts') or {}).get('razosanas_fonts')
+    fn = fn if fn in FONTI else 'Barlow'
+    doc = re.sub(r'Barlow,\s*Arial(,\s*sans-serif)?', FONTI[fn], doc)
+    if fn in ('Barlow', 'Sora'):
+        doc = doc.replace('</head>', f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family={fn}:wght@400;500;600;700&display=swap"></head>', 1)
     out = out or os.path.join(os.path.dirname(os.path.abspath(mp)), 'rasejumi', f"{m['id']}_razosana.html")
     os.makedirs(os.path.dirname(out), exist_ok=True)
     open(out, 'w', encoding='utf-8').write(doc)
