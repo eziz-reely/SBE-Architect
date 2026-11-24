@@ -1890,6 +1890,26 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     commit(N);
   }
   const axOff = snap => { if (snap === "fasade" || snap === "brivi") return 0; const S1 = (((model.projekts || {}).piragi_layers || {}).S1 || LAYERS0.S1.layers) || []; let c = 0; for (const l of S1) { if (/^C24/.test(l[0])) break; c += +l[1] || 0; } return c; };
+  // ---- logu rīka josla: visas mājas logu iestatījumi (tie paši, kas sadaļā Materiāli) ----
+  function winGlobal(box) {
+    const P = model.projekts || {}, wt = winTone(P), opts = {}, SPq = P.palodzes_prof || {};
+    Object.entries(RAL).forEach(([k, v]) => { opts[k] = k + " · " + v[0]; });
+    if (!opts[wt]) opts[wt] = wt;
+    const withTone = Object.assign({ tonis: "Fasādes tonī" }, opts);
+    const sep = document.createElement("span"); sep.className = "ta"; sep.style.cssText = "margin-left:8px;padding-left:10px;border-left:1px solid var(--line2);font-weight:600;color:var(--ink);white-space:nowrap"; sep.textContent = "Visas mājas logi"; box.appendChild(sep);
+    const sel = (lab, list, cur, fn, tt) => {
+      const l = document.createElement("div"); l.className = "ta"; l.style.cssText = "display:flex;flex-direction:row;align-items:center;gap:5px;margin:0 0 0 4px;white-space:nowrap"; l.title = tt || lab; { const sp = document.createElement("span"); sp.textContent = lab; l.appendChild(sp); }
+      const e = document.createElement("select"); e.style.cssText = "height:30px;max-width:150px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--ink)";
+      Object.entries(list).forEach(([k, v]) => { const o = document.createElement("option"); o.value = k; o.textContent = v; e.appendChild(o); }); e.value = cur;
+      e.onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; fn(n, e.value); commit(n); }; l.appendChild(e); box.appendChild(l);
+    };
+    sel("Rāmji", opts, wt, (n, v) => { n.projekts.logu_tonis = v; n.projekts.logu_hex = RAL[v] ? RAL[v][1] : n.projekts.logu_hex; }, "Logu un durvju rāmju tonis visai mājai");
+    sel("Aplodas", withTone, P.aplodas || wt, (n, v) => { if (v === winTone(n.projekts)) delete n.projekts.aplodas; else n.projekts.aplodas = v; }, "Logu aplodu tonis visai mājai");
+    sel("Palodzes", withTone, P.palodzes || P.aplodas || wt, (n, v) => { if (v === (n.projekts.aplodas || winTone(n.projekts))) delete n.projekts.palodzes; else n.projekts.palodzes = v; }, "Palodžu tonis visai mājai");
+    sel("Palodze no apakšas", { ir: "Ir", nav: "Nav" }, SPq.on === false ? "nav" : "ir", (n, v) => {
+      const q = Object.assign({}, n.projekts.palodzes_prof); if (v === "nav") q.on = false; else delete q.on;
+      if (Object.keys(q).length) n.projekts.palodzes_prof = q; else delete n.projekts.palodzes_prof; }, "Palodzes profils zem logiem visai mājai (arī sadaļā Materiāli)");
+  }
   function toolOpt() {
     const box = $("toolOpt"); if (!box) return;
     { const cur = onBtn ? OPENB.indexOf(onBtn) : -1, g = cur >= 0 ? grpOf(cur) : null;
@@ -1902,6 +1922,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         const nm = document.createElement("span"); nm.className = "ta"; nm.style.fontWeight = "600"; nm.style.color = "var(--ink)"; nm.textContent = g.ml[g.m.indexOf(cur)]; box.appendChild(nm);
         const hs = document.createElement("span"); hs.className = "ta"; hs.textContent = OPEN[cur].s; hs.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1"; box.appendChild(hs);
         if (g.id === "guide") { const c = document.createElement("button"); c.type = "button"; c.style.cssText = "width:auto;padding:0 10px"; c.textContent = "Dzēst visas palīglīnijas"; c.onclick = () => $("bGuideClr").click(); box.appendChild(c); }
+        if (g.id === "win") winGlobal(box);
         return;
       } }
     if (placing && placing.t === "section") {   // griezums: virziens un simbols augšējā joslā
