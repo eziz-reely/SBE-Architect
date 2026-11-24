@@ -19,6 +19,7 @@ PORT = int(os.environ.get("SBE_PORT") or 8737)
 CFG_PATH = os.path.join(os.path.expanduser('~'), '.sbe-arhivs.json')
 SKIP = {'eksports', 'rasejumi', 'viz', 'miniaturas', 'varianti', '3d', 'node_modules', '.git', 'ref', '_dzestie', '_claude_uzdevumi'}
 LOCK = threading.Lock()
+MOD_T = {}; _MOD_START = time.time()   # moduļu pārlādes laiki (ražošana)
 KEYS = {}   # atslēga -> projekta mape
 
 
@@ -752,6 +753,12 @@ class H(BaseHTTPRequestHandler):
                 if not d or not isinstance(b, dict) or 'W' not in b:
                     return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
                 try:
+                    import build_model, karkass, karkass_lapas, tame, importlib
+                    for _mod in (karkass, tame, karkass_lapas, build_model):   # pēc git pull nav jārestartē programma: mainītos moduļus pārlādē
+                        _f = getattr(_mod, '__file__', None)
+                        if _f and os.path.getmtime(_f) > MOD_T.get(_mod.__name__, _MOD_START):
+                            importlib.reload(_mod)
+                        MOD_T[_mod.__name__] = time.time()
                     import build_model, karkass, karkass_lapas
                     td = os.path.join(d, 'eksports', '_razosana'); os.makedirs(td, exist_ok=True)
                     mp = os.path.join(td, 'model.json'); json.dump(b, open(mp, 'w', encoding='utf-8'), ensure_ascii=False)

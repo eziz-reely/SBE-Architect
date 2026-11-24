@@ -112,7 +112,7 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
     Mērogs tiek rēķināts tā, lai panelis ar izmēriem ietilptu lodziņā bw×bh (mm uz lapas) pēc iespējas lielāks.
     Atgriež (svg, mērogs 1:s, apakšas y)."""
     Ht = max(z for _, z in P.top)
-    mt, mb, mr, ml = 10.0, (31.0 if chain else 6.0), 20.0, 4.0
+    mt, mb, mr, ml = 10.0, (46.0 if chain else 6.0), 20.0, 4.0
     k = min((bw - mr - ml) / P.L, (bh - mt - mb) / Ht)
     s = 1 / k
     ox = x0 + ml + (bw - mr - ml - P.L * k) / 2
@@ -184,7 +184,19 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
         for u0_, u1_ in zip(us, us[1:]):    # posma garums rakstīts posma VIDŪ (rotēts), ja ir vieta
             if (u1_ - u0_) * k >= fc * 1.0:
                 g.append(f'<text transform="translate({X((u0_ + u1_) / 2) + fc * .36:.2f} {yb + 1.8:.2f}) rotate(90)" font-size="{fc}">{u1_ - u0_}</text>')
-        yb2 = yb + 13
+        # ailu posmu ķēde: sienas posmi un ailas pa vidu, teksts posma vidū
+        ya = yb + 14
+        oc = sorted({0, round(P.L)} | {round(o['u0']) for o in P.opens} | {round(o['u1']) for o in P.opens})
+        g.append(_dash(X(0), ya, X(P.L), ya))
+        for u in oc:
+            g.append(_dash(X(u), yb, X(u), ya + 1) + _tick(X(u), ya))
+        for u0_, u1_ in zip(oc, oc[1:]):
+            xm = X((u0_ + u1_) / 2)
+            if (u1_ - u0_) * k >= fc * 4.2:
+                g.append(f'<text x="{xm:.2f}" y="{ya - 0.9:.2f}" font-size="{fc}" text-anchor="middle">{u1_ - u0_}</text>')
+            elif (u1_ - u0_) * k >= fc * 1.0:
+                g.append(f'<text transform="translate({xm + fc * .36:.2f} {ya + 1.8:.2f}) rotate(90)" font-size="{fc}">{u1_ - u0_}</text>')
+        yb2 = ya + 10
         g.append(_dash(X(0), yb2, X(P.L), yb2) + _tick(X(0), yb2) + _tick(X(P.L), yb2) + _dash(X(P.L), Y(0), X(P.L), yb2 + 1))
         g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yb2 + 3.6:.2f}" font-size="{fs + .4}" text-anchor="middle">{f0(P.L)}</text>')
         bottom = yb2 + 5
