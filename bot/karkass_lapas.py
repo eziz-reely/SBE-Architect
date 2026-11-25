@@ -94,6 +94,7 @@ def table_svg(x, y, rows, cols, widths, fs=2.6, rh=3.8, head=True, hdr_right=())
     return ''.join(out), yy
 
 
+WALL_PAL = ['#feffaf', '#ffdf8c', '#feb372', '#c4daff', '#d3efc2', '#f6cfe6', '#e1d6f6', '#cdeee8']   # katrai ārsienai savs tonis plānā (Čarnikavas A, B, C, D)
 WOOD, LINE_C = '#ffdf8c', '#000000'     # Čarnikavas PDF: visas līnijas melnas, kontūras 0,05 mm
 
 
@@ -295,7 +296,8 @@ def plan_page(D, res, m):
                 nx, ny = -nx, -ny
             ex_, ey_ = -nx, -ny            # uz āru
             pts = [(ox_, oy_), (ox_ + dx * P.L, oy_ + dy * P.L), (ox_ + dx * P.L + nx * P.D, oy_ + dy * P.L + ny * P.D), (ox_ + nx * P.D, oy_ + ny * P.D)]
-            g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in pts)}" fill="#feffaf" stroke="{LINE_C}" stroke-width=".06"/>')
+            wc_ = WALL_PAL[sorted(q.id for q in res['paneli'] if q.kind == 'arsiena').index(P.id) % len(WALL_PAL)]
+            g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in pts)}" fill="{wc_}" stroke="{LINE_C}" stroke-width=".06"/>')
             for q in P.m:      # statņu šķērsgriezumi (griezums 1,3 m augstumā): pelēki, kā Čarnikavas plānā
                 if q['nos'].startswith('VERT') and q['loma'] != 'cripple' and q['z0'] <= 1300 <= q['z1']:
                     o0, o1 = (P.D - q['b'], P.D) if q['loma'] == 'junction_rot' else (0.0, P.D)
@@ -327,7 +329,7 @@ def plan_page(D, res, m):
                     rot = f' transform="rotate(-90 {X(m_[0]):.2f} {Y(m_[1]):.2f})"' if vert else ''
                     g.append(f'<text x="{X(m_[0]):.2f}" y="{Y(m_[1]):.2f}"{rot} font-size="4.99" text-anchor="middle" dominant-baseline="central" fill="{INK}">{f0(u1_ - u0_)}</text>')
             lx, ly = cx + ex_ * 2450, cy + ey_ * 2450
-            g.append(f'<text x="{X(lx):.2f}" y="{Y(ly):.2f}" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".35" paint-order="stroke">{P.id}</text>')
+            g.append(f'<text x="{X(lx):.2f}" y="{Y(ly):.2f}" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="{wc_}" stroke="{LINE_C}" stroke-width=".35" paint-order="stroke">{P.id}</text>')
         else:
             hz, c, lo, hi = P.axis
             if hz:
