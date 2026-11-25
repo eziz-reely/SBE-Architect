@@ -2186,13 +2186,12 @@
       if (e.key === "Tab" && !e.ctrlKey) { e.preventDefault(); const w = terWalls(place.cur); place.axSw = place.axSw === undefined ? (w.ax === 0 ? 1 : 0) : (place.axSw === 0 ? 1 : 0); terFirstHint(); terPreview(place.lx, place.ly, false); return; }
       if (e.key === "Enter" && (place.buf || place.fix)) { e.preventDefault(); terFirstEnter(); return; }
     }
-    if (place && place.t === "terrace" && !place.rect && (place.pts || []).length && place.cur && e.key === "Tab" && !e.ctrlKey) { e.preventDefault(); place.buf = place.buf || ""; post({ t: "hint", text: "Garums: " + (place.buf || "…") + " mm, virziens uz peli. Ieraksti skaitli un Enter (vai klikšķis) apstiprina; tad velc tālāk." }); return; }
-    if (place && place.t === "terrace" && !place.rect && (place.pts || []).length && place.cur && /^[0-9]$/.test(e.key) && !e.ctrlKey) { e.preventDefault(); place.buf = (place.buf || "") + e.key; post({ t: "hint", text: "Garums: " + place.buf + " mm, virziens uz peli. Enter apstiprina." }); terPreview(place.lx, place.ly, false); return; }
+    if (place && place.t === "terrace" && !place.rect && (place.pts || []).length && place.cur && e.key === "Tab" && !e.ctrlKey) { e.preventDefault(); place.tm = place.tm === "len" ? "wall" : "len"; place.buf = place.buf || ""; terTyHint(); terPreview(place.lx, place.ly, false); return; }
+    if (place && place.t === "terrace" && !place.rect && (place.pts || []).length && place.cur && /^[0-9]$/.test(e.key) && !e.ctrlKey) { e.preventDefault(); place.tm = place.tm || "len"; place.buf = (place.buf || "") + e.key; terTyHint(); terPreview(place.lx, place.ly, false); return; }
     if (place && place.t === "terrace" && place.buf && e.key === "Backspace") { e.preventDefault(); place.buf = place.buf.slice(0, -1); terPreview(place.lx, place.ly, false); return; }
     if (place && place.t === "terrace" && place.buf && e.key === "Enter") {   // ierakstīts garums: nākamais punkts no pēdējā uz peles pusi (pa x vai y)
       e.preventDefault(); const a = place.pts[place.pts.length - 1], q = place.cur, v = +place.buf; place.buf = "";
-      const hz = Math.abs(q[0] - a[0]) >= Math.abs(q[1] - a[1]), sg = (hz ? q[0] - a[0] : q[1] - a[1]) >= 0 ? 1 : -1;
-      place.pts.push(hz ? [a[0] + sg * v, a[1]] : [a[0], a[1] + sg * v]); terPreview(place.lx, place.ly, false); return;
+      place.pts.push(terTypedPt(a, q, v)); place.tm = undefined; post({ t: "hint", text: "" }); terPreview(place.lx, place.ly, false); return;
     }
     if (place && place.t === "terrace" && e.key === "Enter") { e.preventDefault(); terFinish(); return; }
     if (place && place.t === "rail" && e.key === "Enter") { e.preventDefault(); railFinish(); return; }
@@ -2812,7 +2811,7 @@
       const act = !pts.length ? terWalls(q).ax : -1;   // pirmajam stūrim: ass, kurai attiecas ierakstāmais attālums (Tab maina)
       [bx, by].forEach((w, wi) => { if (w && w.d > 20) { const on = wi === act; mk(g, "line", { x1: w.from[0], y1: w.from[1], x2: w.to[0], y2: w.to[1], stroke: ACC, "stroke-width": (on ? 1.2 : 0.5) / k, "pointer-events": "none" }); label(g, (w.from[0] + w.to[0]) / 2, (w.from[1] + w.to[1]) / 2 - 3 / k, (on ? "▶ " : "") + (on && place.buf ? place.buf + " mm (Enter)" : `${Math.round(w.d)} mm`) + " no ārsienas" + (on ? "  · Tab maina" : ""), k); } }); }
     const last = pts[pts.length - 1]; place.cur = q;
-    label(g, q[0] + 3 / k, q[1] + (last ? -3 : 14) / k, place.buf && last ? `⌨ ${place.buf} mm (Enter)` : !last ? "Terase: uzklikšķini pirmo stūri vai ieraksti attālumu" : `${Math.round(Math.hypot(q[0] - last[0], q[1] - last[1]))} mm` + (pts.length > 2 ? "  · dubultklikšķis vai Enter noslēdz" : ""), k);
+    label(g, q[0] + 3 / k, q[1] + (last ? 12 : 14) / k, place.buf && last ? `⌨ ${place.tm === "wall" ? "no ārsienas " : ""}${place.buf} mm (Enter)` : !last ? "Terase: uzklikšķini pirmo stūri vai ieraksti attālumu" : `${Math.round(Math.hypot(q[0] - last[0], q[1] - last[1]))} mm` + (pts.length > 2 ? "  · dubultklikšķis vai Enter noslēdz" : ""), k);
   }
   // ---- griezuma rīks: horizontāls vai vertikāls griezums plānā (Tab / V / H maina virzienu) ----
   function secAt(cx, cy) {
@@ -2846,6 +2845,13 @@
       if (Math.abs(a[1] - b[1]) < 2 && Math.abs(a[0] - b[0]) >= 2) { const d = Math.abs(q[1] - a[1]); if (!by || d < by.d) by = { d, c: a[1] }; } });
     const auto = bx && (!by || bx.d <= by.d) ? 0 : 1, ax = place.axSw !== undefined && (place.axSw === 0 ? bx : by) ? place.axSw : auto;
     return { bx, by, ax, w: ax === 0 ? bx : by };
+  }
+  // ierakstīts izmērs nākamajam punktam: Tab pārslēdz "garums no pēdējā punkta" ↔ "attālums no ārsienas" (virziens pēc peles)
+  function terTyHint() { post({ t: "hint", text: (place.tm === "wall" ? "Attālums no ārsienas: " : "Garums no pēdējā punkta: ") + (place.buf || "…") + " mm, virziens uz peli. Enter vai klikšķis apstiprina, Tab pārslēdz garums/no ārsienas." }); }
+  function terTypedPt(a, q, v) {
+    const hz = Math.abs(q[0] - a[0]) >= Math.abs(q[1] - a[1]);
+    if (place.tm === "wall") { const W = terWalls(q), w = hz ? W.bx : W.by; if (w) { const sg = (hz ? q[0] : q[1]) >= w.c ? 1 : -1, val = w.c + sg * v; return hz ? [val, a[1]] : [a[0], val]; } }
+    const sg = (hz ? q[0] - a[0] : q[1] - a[1]) >= 0 ? 1 : -1; return hz ? [a[0] + sg * v, a[1]] : [a[0], a[1] + sg * v];
   }
   function terFirstHint() {
     const w = terWalls(place.cur), nm = w.ax === 0 ? "x" : "y";
@@ -2985,9 +2991,8 @@
     }
     if (pts.length > 2 && Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1]) < 250) { terFinish(); return true; }
     if (pts.length && place.buf && +place.buf > 0) {   // ierakstīts garums + klikšķis: punkts no pēdējā uz peles pusi (kā Enter)
-      const a0 = pts[pts.length - 1], v = +place.buf; place.buf = "";
-      const hz = Math.abs(p[0] - a0[0]) >= Math.abs(p[1] - a0[1]), sg = (hz ? p[0] - a0[0] : p[1] - a0[1]) >= 0 ? 1 : -1;
-      pts.push(hz ? [a0[0] + sg * v, a0[1]] : [a0[0], a0[1] + sg * v]); terPreview(e.clientX, e.clientY, e.shiftKey); return true;
+      const a0 = pts[pts.length - 1], v = +place.buf; place.buf = ""; place.cur = p;
+      pts.push(terTypedPt(a0, p, v)); place.tm = undefined; terPreview(e.clientX, e.clientY, e.shiftKey); return true;
     }
     if (!pts.length || Math.hypot(p[0] - pts[pts.length - 1][0], p[1] - pts[pts.length - 1][1]) > 50) pts.push(p);
     terPreview(e.clientX, e.clientY, e.shiftKey); return true;
