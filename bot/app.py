@@ -119,7 +119,7 @@ IMG = ('.png', '.jpg', '.jpeg', '.webp')
 TONES = ('peleks', 'sarkans', 'koks', 'zals', 'balts')
 
 
-THUMB_MIN = 1795607400   # miniatūras, kas vecākas par šo laiku, tiek pārzīmētas (2026-11-25: fasādes tekstūras)
+THUMB_VER = 3   # miniatūru zīmēšanas versija: palielini, ja jāpārzīmē visas (3 = fasādes tekstūras, 2026-11-25); versija tiek ierakstīta miniaturas/ver.txt
 
 def media(dp, key, mtime):
     """Projekta bildes kartītei: miniatūras (plāns, fasāde), bota vizualizācijas pa toņiem (viz/V<n>_<tonis>.png) un paša ieliktās bildes."""
@@ -129,8 +129,11 @@ def media(dp, key, mtime):
         rel = os.path.join('miniaturas', n + '.png')
         if os.path.exists(os.path.join(dp, rel)):
             th[n] = url(rel)
-    mtime = max(mtime, THUMB_MIN)   # vecās miniatūras (bez fasādes tekstūrām) pārzīmējas vienreiz
-    fresh = bool(th) and all(os.path.getmtime(os.path.join(dp, 'miniaturas', n + '.png')) >= mtime for n in ('plans', 'fasade') if n in th) and len(th) == 2
+    try:
+        ver_ok = open(os.path.join(dp, 'miniaturas', 'ver.txt'), encoding='utf-8').read().strip() == str(THUMB_VER)
+    except OSError:
+        ver_ok = False   # vecās miniatūras (citas versijas) pārzīmējas vienreiz
+    fresh = ver_ok and bool(th) and all(os.path.getmtime(os.path.join(dp, 'miniaturas', n + '.png')) >= mtime for n in ('plans', 'fasade') if n in th) and len(th) == 2
     bot, own = {}, []
     vd = os.path.join(dp, 'viz')
     if os.path.isdir(vd):
@@ -824,6 +827,8 @@ class H(BaseHTTPRequestHandler):
                         return self.send(400, 'Nederīgs nosaukums', 'text/plain; charset=utf-8')
                     od = os.path.join(d, 'miniaturas'); os.makedirs(od, exist_ok=True)
                     open(os.path.join(od, nm + '.png'), 'wb').write(data)
+                    if nm == 'fasade':   # pēdējā no divām: miniatūras gatavas šajā versijā
+                        open(os.path.join(od, 'ver.txt'), 'w', encoding='utf-8').write(str(THUMB_VER))
                     return self.send(200, {'ok': True})
                 nm = safe_name(nm) or 'bilde.jpg'; stem, ext = os.path.splitext(nm)
                 if ext.lower() not in IMG:

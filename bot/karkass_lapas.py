@@ -658,7 +658,9 @@ def build(mp, out=None, cenas=None, profils=''):
     css = ('<style>@page{size:420mm 297mm;margin:0}html,body{margin:0;background:#d9dbdf}body{font-family:Barlow,Arial,sans-serif}'
            '.pg{width:420mm;height:297mm;background:#fff;margin:8mm auto;box-shadow:0 1px 6px rgba(0,0,0,.2);overflow:hidden;position:relative;page-break-after:always;break-after:page}'
            '.pg>svg{width:420mm;height:297mm;display:block}.sk{width:420mm;height:297mm;overflow:hidden}.sk iframe{border:0;display:block}'
-           '@media print{html,body{background:none}.pg{margin:0;box-shadow:none}}</style>')
+           '@media print{html,body{background:none;zoom:1!important}.pg{margin:0;box-shadow:none}}</style>'
+           '<script>(function(){var z=1;addEventListener("wheel",function(e){if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();'   # Ctrl + ritenis: tuvināšana pa peles vietu, cik tuvu vajag
+           'var n=Math.min(Math.max(z*Math.exp(-e.deltaY*.01),.15),60),k=n/z,px=e.clientX+scrollX,py=e.clientY+scrollY;document.body.style.zoom=n;z=n;scrollTo(px*k-e.clientX,py*k-e.clientY)},{passive:false})})()</script>')
     doc = (f'<!doctype html><html lang="lv"><head><meta charset="utf-8"><title>{esc(D.model)} ražošana</title>{css}</head><body>'
            + ''.join(p.replace('@@N@@', str(n)) for p in D.pages) + '</body></html>')
     fn = (m.get('projekts') or {}).get('razosanas_fonts')

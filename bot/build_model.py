@@ -846,7 +846,7 @@ var w=(R-L)/s,h=(B-T)/s,ox=es.length>1?(L-x)/s:0,oy=es.length>1?(T-y)/s:0;
 fit=Math.min(innerWidth/w,innerHeight/h);if(window.MMZ_INIT){var v=MMZ_INIT;MMZ_INIT=null;s=v.s;x=v.x;y=v.y;ap();return}s=fit;x=(innerWidth-w*s)/2-ox*s;y=(innerHeight-h*s)/2-oy*s;ap()}
 window.MMZ.reset=function(){MMZ_INIT=null;reset()};
 addEventListener('load',function(){setTimeout(reset,50)});addEventListener('resize',function(){if(!window.MM_ED)reset()});
-addEventListener('wheel',function(e){e.preventDefault();var k=Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),n=Math.min(Math.max(s*k,fit*.5),fit*12);k=n/s;
+addEventListener('wheel',function(e){e.preventDefault();var k=Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),n=Math.min(Math.max(s*k,fit*.5),fit*150);k=n/s;
 x=e.clientX-(e.clientX-x)*k;y=e.clientY-(e.clientY-y)*k;s=n;ap()},{passive:false});
 var P={},pc=null;   /* [MM] telefons: divu pirkstu tuvināšana un bīdīšana */
 function two(){var k=Object.keys(P);return k.length>=2?[P[k[0]],P[k[1]]]:null}
@@ -854,7 +854,7 @@ function mid(t){return{x:(t[0][0]+t[1][0])/2,y:(t[0][1]+t[1][1])/2,r:Math.hypot(
 addEventListener('pointerdown',function(e){P[e.pointerId]=[e.clientX,e.clientY];var t=two();if(t){d=null;b.classList.remove('mmdrag');if(window.MMZ_CANCEL)MMZ_CANCEL();pc=mid(t);return}
 if(window.MMZ_HOOK&&MMZ_HOOK(e))return;d=[e.clientX-x,e.clientY-y];b.classList.add('mmdrag')});
 addEventListener('pointermove',function(e){if(P[e.pointerId])P[e.pointerId]=[e.clientX,e.clientY];var t=two();
-if(t&&pc){var m=mid(t),n=Math.min(Math.max(s*m.r/pc.r,fit*.5),fit*12),k=n/s;x=m.x-(pc.x-x)*k;y=m.y-(pc.y-y)*k;s=n;pc=m;ap();return}
+if(t&&pc){var m=mid(t),n=Math.min(Math.max(s*m.r/pc.r,fit*.5),fit*150),k=n/s;x=m.x-(pc.x-x)*k;y=m.y-(pc.y-y)*k;s=n;pc=m;ap();return}
 if(d){x=e.clientX-d[0];y=e.clientY-d[1];ap()}});
 function up(e){delete P[e.pointerId];if(Object.keys(P).length<2)pc=null;d=null;b.classList.remove('mmdrag')}
 addEventListener('pointerup',up);addEventListener('pointercancel',up);
