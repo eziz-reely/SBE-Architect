@@ -119,7 +119,7 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
     oy = y0 + mt + Ht * k
     X = lambda u: ox + u * k
     Y = lambda z: oy - z * k
-    fs, fc = 4.0, 3.2
+    fs, fc = 5.0, 3.2          # Čarnikavas PDF (A3 normēts): galvenie izmēri 4,99 mm, ķēdes koordinātes 3,17 mm
     g = [f'<g font-family="{FONT}">']
     for q in sorted(P.m, key=lambda q: 0 if q['loma'] in ('bottom_plate', 'top_plate') else 1):
         if q['nos'] == 'SLIPAIS':
@@ -161,14 +161,15 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
     vs = sorted((q['u0'], q['u1']) for q in P.m if q['nos'].startswith('VERT') and q['z0'] <= KK.NB * KK.B + 1 and q['z1'] > 1400)
     for (p0, p1), (q0, q1) in zip(vs, vs[1:]):
         gp = q0 - p1
-        if gp < 100 or gp * k < fc * 1.9 or any(o['u0'] - KK.B < (p1 + q0) / 2 < o['u1'] + KK.B for o in P.opens):
+        gf = min(fs, max(fc, gp * k / 2.4))      # tīrās atstarpes teksts līdz 5 mm (Čarnikavā 4,99), mazākam laukumam mazāks
+        if gp < 100 or gp * k < fc * 2.4 or any(o['u0'] - KK.B < (p1 + q0) / 2 < o['u1'] + KK.B for o in P.opens):
             continue
         g.append(_dash(X(p1), zg, X(q0), zg) + _tick(X(p1), zg) + _tick(X(q0), zg))
-        g.append(f'<text x="{(X(p1) + X(q0)) / 2:.2f}" y="{zg - 1:.2f}" font-size="{fc}" text-anchor="middle">{f0(gp)}</text>')
+        g.append(f'<text x="{(X(p1) + X(q0)) / 2:.2f}" y="{zg - 1:.2f}" font-size="{gf:.2f}" text-anchor="middle">{f0(gp)}</text>')
     # kopgarums augšā
     yt = Y(Ht) - 4.5
     g.append(_dash(X(0), yt, X(P.L), yt) + _tick(X(0), yt) + _tick(X(P.L), yt))
-    g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yt - 1:.2f}" font-size="{fs + .4}" text-anchor="middle">{f0(P.L)}</text>')
+    g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yt - 1:.2f}" font-size="{fs}" text-anchor="middle">{f0(P.L)}</text>')
     # augstumi labajā pusē (raustīti paplašinājumi)
     hs = sorted({round(P.top[0][1]), round(Ht), round(P.top[-1][1])})
     for i, h in enumerate(hs):
@@ -176,14 +177,15 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
         g.append(_dash(X(P.L) + 1, Y(h), xx + 1.2, Y(h)) + _dash(xx, Y(0), xx, Y(h)) + _tick(xx, Y(0), False) + _tick(xx, Y(h), False))
         g.append(f'<text transform="translate({xx + 3.4:.2f} {(Y(0) + Y(h)) / 2:.2f}) rotate(-90)" font-size="{fs}" text-anchor="middle">{h}</text>')
     if chain:
-        us = sorted({0, round(P.L)} | {round(q['u0']) for q in P.m if q['nos'].startswith('VERT')} | {round(o['u0']) for o in P.opens} | {round(o['u1']) for o in P.opens})
+        us = sorted({round(q['u0']) for q in P.m if q['nos'].startswith('VERT') and q['z0'] <= KK.NB * KK.B + 1 and q['z1'] > 1400 and q['u0'] > 1})   # statņu pozīcijas no 0 punkta (kā Čarnikavā)
         yb = Y(0) + 10
         g.append(_dash(X(0), yb, X(P.L), yb))
+        lastx = -1e9
         for u in us:
             g.append(_dash(X(u), Y(0), X(u), yb + 1) + _tick(X(u), yb))
-        for u0_, u1_ in zip(us, us[1:]):    # posma garums rakstīts posma VIDŪ (rotēts), ja ir vieta
-            if (u1_ - u0_) * k >= fc * 1.0:
-                g.append(f'<text transform="translate({X((u0_ + u1_) / 2) + fc * .36:.2f} {yb + 1.8:.2f}) rotate(90)" font-size="{fc}">{u1_ - u0_}</text>')
+            if X(u) - lastx >= fc * 1.15:      # koordināta rakstīta rotēti pie atzīmes; blīvos mezglos izlaiž
+                g.append(f'<text transform="translate({X(u) + fc * .36:.2f} {yb + 1.8:.2f}) rotate(90)" font-size="{fc}">{u}</text>')
+                lastx = X(u)
         # ailu posmu ķēde: sienas posmi un ailas pa vidu, teksts posma vidū
         ya = yb + 14
         oc = sorted({0, round(P.L)} | {round(o['u0']) for o in P.opens} | {round(o['u1']) for o in P.opens})
@@ -192,13 +194,13 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
             g.append(_dash(X(u), yb, X(u), ya + 1) + _tick(X(u), ya))
         for u0_, u1_ in zip(oc, oc[1:]):
             xm = X((u0_ + u1_) / 2)
-            if (u1_ - u0_) * k >= fc * 4.2:
-                g.append(f'<text x="{xm:.2f}" y="{ya - 0.9:.2f}" font-size="{fc}" text-anchor="middle">{u1_ - u0_}</text>')
+            if (u1_ - u0_) * k >= fs * 3.4:
+                g.append(f'<text x="{xm:.2f}" y="{ya - 0.9:.2f}" font-size="{fs}" text-anchor="middle">{u1_ - u0_}</text>')
             elif (u1_ - u0_) * k >= fc * 1.0:
                 g.append(f'<text transform="translate({xm + fc * .36:.2f} {ya + 1.8:.2f}) rotate(90)" font-size="{fc}">{u1_ - u0_}</text>')
         yb2 = ya + 10
         g.append(_dash(X(0), yb2, X(P.L), yb2) + _tick(X(0), yb2) + _tick(X(P.L), yb2) + _dash(X(P.L), Y(0), X(P.L), yb2 + 1))
-        g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yb2 + 3.6:.2f}" font-size="{fs + .4}" text-anchor="middle">{f0(P.L)}</text>')
+        g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yb2 + 3.6:.2f}" font-size="{fs}" text-anchor="middle">{f0(P.L)}</text>')
         bottom = yb2 + 5
     else:
         bottom = Y(0) + 2
@@ -278,11 +280,17 @@ def plan_page(D, res, m):
                 nx, ny = -nx, -ny
             ex_, ey_ = -nx, -ny            # uz āru
             pts = [(ox_, oy_), (ox_ + dx * P.L, oy_ + dy * P.L), (ox_ + dx * P.L + nx * P.D, oy_ + dy * P.L + ny * P.D), (ox_ + nx * P.D, oy_ + ny * P.D)]
-            g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in pts)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".3"/>')
+            g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in pts)}" fill="#feffaf" stroke="{LINE_C}" stroke-width=".18"/>')
+            for q in P.m:      # statņu šķērsgriezumi (griezums 1,3 m augstumā): pelēki, kā Čarnikavas plānā
+                if q['nos'].startswith('VERT') and q['loma'] != 'cripple' and q['z0'] <= 1300 <= q['z1']:
+                    o0, o1 = (P.D - q['b'], P.D) if q['loma'] == 'junction_rot' else (0.0, P.D)
+                    c4 = [(ox_ + dx * q['u0'] + nx * o0, oy_ + dy * q['u0'] + ny * o0), (ox_ + dx * q['u1'] + nx * o0, oy_ + dy * q['u1'] + ny * o0),
+                          (ox_ + dx * q['u1'] + nx * o1, oy_ + dy * q['u1'] + ny * o1), (ox_ + dx * q['u0'] + nx * o1, oy_ + dy * q['u0'] + ny * o1)]
+                    g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in c4)}" fill="#d6d6d6" stroke="#6a6a6a" stroke-width=".08"/>')
             for o in P.opens:      # ailas: logi gaiši zilā, durvis baltas
                 q = [(ox_ + dx * o['u0'], oy_ + dy * o['u0']), (ox_ + dx * o['u1'], oy_ + dy * o['u1'])]
                 q += [(q[1][0] + nx * P.D, q[1][1] + ny * P.D), (q[0][0] + nx * P.D, q[0][1] + ny * P.D)]
-                g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in q)}" fill="{"#ffffff" if o["tips"] == "durvis" else "#bcd4f4"}" stroke="{LINE_C}" stroke-width=".2"/>')
+                g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in q)}" fill="{"#ffffff" if o["tips"] == "durvis" else "#c3d9fe"}" stroke="{LINE_C}" stroke-width=".2"/>')
             vert = abs(dy) > .5
             pt = lambda u, off: (ox_ + dx * u + ex_ * off, oy_ + dy * u + ey_ * off)
             cuts = sorted({0.0, float(P.L)} | {float(o['u0']) for o in P.opens} | {float(o['u1']) for o in P.opens})
@@ -298,11 +306,11 @@ def plan_page(D, res, m):
                     tk = pt(u, dd)
                     g.append(f'<line x1="{X(tk[0]) - .9:.2f}" y1="{Y(tk[1]) - .9:.2f}" x2="{X(tk[0]) + .9:.2f}" y2="{Y(tk[1]) + .9:.2f}" stroke="{LINE_C}" stroke-width=".25"/>')
                 for u0_, u1_ in zip(cl, cl[1:]):
-                    if (u1_ - u0_) * k < 7.5:
+                    if (u1_ - u0_) * k < 11:
                         continue
                     m_ = pt((u0_ + u1_) / 2, dd + 170)
                     rot = f' transform="rotate(-90 {X(m_[0]):.2f} {Y(m_[1]):.2f})"' if vert else ''
-                    g.append(f'<text x="{X(m_[0]):.2f}" y="{Y(m_[1]):.2f}"{rot} font-size="3.2" text-anchor="middle" dominant-baseline="central" fill="{INK}">{f0(u1_ - u0_)}</text>')
+                    g.append(f'<text x="{X(m_[0]):.2f}" y="{Y(m_[1]):.2f}"{rot} font-size="4.99" text-anchor="middle" dominant-baseline="central" fill="{INK}">{f0(u1_ - u0_)}</text>')
             lx, ly = cx + ex_ * 2450, cy + ey_ * 2450
             g.append(f'<text x="{X(lx):.2f}" y="{Y(ly):.2f}" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".35" paint-order="stroke">{P.id}</text>')
         else:
@@ -311,7 +319,12 @@ def plan_page(D, res, m):
                 r = (X(lo), Y(c - P.D / 2), (hi - lo) * k, P.D * k)
             else:
                 r = (X(c - P.D / 2), Y(lo), P.D * k, (hi - lo) * k)
-            g.append(f'<rect x="{r[0]:.2f}" y="{r[1]:.2f}" width="{r[2]:.2f}" height="{r[3]:.2f}" fill="#ffb577" stroke="{LINE_C}" stroke-width=".25"/>')
+            g.append(f'<rect x="{r[0]:.2f}" y="{r[1]:.2f}" width="{r[2]:.2f}" height="{r[3]:.2f}" fill="#dea884" stroke="{LINE_C}" stroke-width=".18"/>')
+            for q in P.m:
+                if q['nos'].startswith('VERT') and q['loma'] != 'cripple' and q['z0'] <= 1300 <= q['z1']:
+                    a0, a1 = lo + q['u0'], lo + q['u1']
+                    rr = (X(a0), Y(c - P.D / 2), (a1 - a0) * k, P.D * k) if hz else (X(c - P.D / 2), Y(a0), P.D * k, (a1 - a0) * k)
+                    g.append(f'<rect x="{rr[0]:.2f}" y="{rr[1]:.2f}" width="{rr[2]:.2f}" height="{rr[3]:.2f}" fill="#d6d6d6" stroke="#6a6a6a" stroke-width=".08"/>')
             for o in P.opens:
                 pass
             mx, my = r[0] + r[2] / 2, r[1] + r[3] / 2
