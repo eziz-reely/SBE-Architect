@@ -317,29 +317,38 @@ def build_panel(P, opens, junctions, rot_ends):
     fixed = []
     stud(0, 'stud')
     fixed.append((0, B))
+    sd0, sd1 = (rot_ends[0] if isinstance(rot_ends[0], int) and not isinstance(rot_ends[0], bool) else None,
+                rot_ends[1] if isinstance(rot_ends[1], int) and not isinstance(rot_ends[1], bool) else None)
     if rot_ends[0]:   # kaste: 3 detaļas (statnis, pagriezts statnis, statnis), saskrūvējamas un piesledzamas frontonam
-        stud(B, 'junction_rot', w=D)
+        r_ = stud(B, 'junction_rot', w=D)
+        if sd0:
+            r_['sd'] = sd0
         stud(B + D, 'stud')
         fixed[-1] = (0, 2 * B + D)
     stud(L - B, 'stud')
     fixed.append((L - B, L))
     if rot_ends[1]:
-        stud(L - B - D, 'junction_rot', w=D)
+        r_ = stud(L - B - D, 'junction_rot', w=D)
+        if sd1:
+            r_['sd'] = sd1
         stud(L - 2 * B - D, 'stud')
         fixed[-1] = (L - 2 * B - D, L)
     end_l, end_r = fixed[0][1], fixed[1][0]
-    for c in sorted(junctions):
-        u0 = c - D / 2
-        if u0 - B < end_l or u0 + D + B > end_r:
+    for jn in sorted(junctions, key=lambda t: t[0] if isinstance(t, tuple) else t):
+        c, jw, jsd = jn if isinstance(jn, tuple) else (jn, D, None)
+        u0 = c - jw / 2
+        if u0 - B < end_l or u0 + jw + B > end_r:
             P.warn.append(f'starpsienas pieslēgums u={_r(c)} pie gala bloka, pārbaudīt')
             continue
         if any(o['u0'] - B <= c <= o['u1'] + B for o in opens):
             P.warn.append(f'starpsienas pieslēgums u={_r(c)} ailā, pārbaudīt')
             continue
         stud(u0 - B, 'junction')
-        stud(u0, 'junction_rot', w=D)
-        stud(u0 + D, 'junction')
-        fixed.append((u0 - B, u0 + D + B))
+        rot = stud(u0, 'junction_rot', w=jw)
+        if jsd:
+            rot['sd'] = jsd
+        stud(u0 + jw, 'junction')
+        fixed.append((u0 - B, u0 + jw + B))
     ops = sorted(opens, key=lambda o: o['u0'])
     for i, o in enumerate(ops):
         a0, a1, hb = o['u0'], o['u1'], o['head']
@@ -456,6 +465,11 @@ def generate(m):
                 best, bd = w, dist
         return best
 
+    S2 = LY['S2']['layers']
+    DPART = {}
+    for p in part:
+        t = float(p['t'])
+        DPART[p['id']] = max(45.0, round(t - (sum(float(l[1] or 0) for l in S2 if (len(l) < 3 or l[2] != 'i')) if abs(t - sum(float(l[1] or 0) for l in S2)) < 2 else 50)))
     panels = []
     letters = 'ABCDEFGHIJKLMNOPRSTUVZ'
     # sāk ar ziemeļu fasādes kreiso (rietumu) malu un iet pretēji pulksteņrādītājam (skatoties no ārpuses u iet no kreisās uz labo)
@@ -509,7 +523,7 @@ def generate(m):
                 if 0 < dn < D + 300:
                     cu = (pt[0] - ox) * dirx + (pt[1] - oy) * diry
                     if 0 < cu < Lp:
-                        junc.append(cu)
+                        junc.append((cu, DPART[p['id']], None))
         build_panel(P, ops, junc, (through and cvL, through and cvR))
         P.edge, P.side = e, ('north' if ny < -.5 else 'south' if ny > .5 else 'west' if nx < -.5 else 'east')
         P.o, P.dir = (ox, oy), (dirx, diry)
@@ -559,9 +573,31 @@ def generate(m):
                 best, bd = v, abs(cur - v)
         return cur if best is None else best
 
+    SN = [(_snap(j, 0), _snap(j, 1)) for j in range(len(PR))]
+
+    def _joins(j):
+        """Starpsienas j mezgli ar perpendikulārām starpsienām: T mezgli (kaste vidū) un L stūri (pagriezts statnis galā)."""
+        me, (lo, hi) = PR[j], SN[j]
+        jun, ends = [], [False, False]
+        for i, q in enumerate(PR):
+            if i == j or q['hz'] == me['hz']:
+                continue
+            qlo, qhi = SN[i]
+            for e_, o_ in ((qlo, qhi), (qhi, qlo)):
+                if abs(e_ - me['c']) > me['dp'] / 2 + 5 or not (lo - 5 <= q['c'] <= hi + 5):
+                    continue
+                sd = 1 if o_ > me['c'] else -1               # kurā pusē ir pieslēgtās sienas ķermenis
+                if q['c'] - lo < q['dp'] / 2 + 60:
+                    ends[0] = sd
+                elif hi - q['c'] < q['dp'] / 2 + 60:
+                    ends[1] = sd
+                elif not any(abs(c0 - (q['c'] - lo)) < 60 for c0, _w, _s in jun):
+                    jun.append((q['c'] - lo, q['dp'], sd))
+        return jun, tuple(ends)
+
     for j, p in enumerate(part):
         hz, fixed_c, dpart = PR[j]['hz'], PR[j]['c'], PR[j]['dp']
-        lo, hi = _snap(j, 0), _snap(j, 1)
+        lo, hi = SN[j]
         Lp = hi - lo
         if Lp < 200:
             continue
@@ -577,7 +613,8 @@ def generate(m):
             ops.append({'u0': cu - o['platums'] / 2, 'u1': cu + o['platums'] / 2, 'sill': 0 if o['tips'] == 'durvis' else o['palodze'],
                         'head': HDR_BOT if o['tips'] == 'durvis' else o['palodze'] + o['augstums'], 'tips': o['tips'],
                         'fix': o['tips'] == 'durvis', 'wh': float(o.get('augstums') or 2070), 'sp': SP})
-        build_panel(P, ops, [], (False, False))
+        jn_, re_ = _joins(j)
+        build_panel(P, ops, jn_, re_)
         P.axis = (hz, fixed_c, lo, hi)
         panels.append(P)
     pie = [s.format(D=D, DJ=DJ, NB=NB) for s in PIE]

@@ -323,7 +323,10 @@ def plan_page(D, res, m):
             for q in P.m:
                 if q['nos'].startswith('VERT') and q['loma'] != 'cripple' and q['z0'] <= 1300 <= q['z1']:
                     a0, a1 = lo + q['u0'], lo + q['u1']
-                    rr = (X(a0), Y(c - P.D / 2), (a1 - a0) * k, P.D * k) if hz else (X(c - P.D / 2), Y(a0), P.D * k, (a1 - a0) * k)
+                    c0_, c1_ = c - P.D / 2, c + P.D / 2           # šķērsvirziens: visa sienas dziļums; pagriezts statnis tikai 45 mm pieslēgtās sienas pusē
+                    if q['loma'] == 'junction_rot' and q.get('sd'):
+                        c0_, c1_ = (c1_ - q['b'], c1_) if q['sd'] > 0 else (c0_, c0_ + q['b'])
+                    rr = (X(a0), Y(c0_), (a1 - a0) * k, (c1_ - c0_) * k) if hz else (X(c0_), Y(a0), (c1_ - c0_) * k, (a1 - a0) * k)
                     g.append(f'<rect x="{rr[0]:.2f}" y="{rr[1]:.2f}" width="{rr[2]:.2f}" height="{rr[3]:.2f}" fill="#d6d6d6" stroke="#6a6a6a" stroke-width=".08"/>')
             for o in P.opens:
                 pass
