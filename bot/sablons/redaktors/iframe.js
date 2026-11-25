@@ -2180,12 +2180,13 @@
     if (place && place.t === "section" && !e.ctrlKey && !e.metaKey && (e.key === "Tab" || /^[vh]$/i.test(e.key))) { e.preventDefault(); place.so = e.key === "Tab" ? (place.so === "v" ? "h" : "v") : e.key.toLowerCase(); post({ t: "secSo", so: place.so }); secPreview(place.lx, place.ly); return; }
     if (secSel && !place && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "Delete" || e.key === "Backspace" || /^[eE]$/.test(e.key))) { e.preventDefault(); const i = secSel.i; secClear(); post({ t: "secDel", i }); return; }
     if (secSel && e.key === "Escape") { secClear(); return; }
-    if (place && place.t === "terrace" && !(place.pts || []).length && place.cur) {   // pirmais punkts bez klikšķa: attālums no tuvākās ārsienas (Tab maina asi, Enter fiksē, otrais Enter noliek punktu)
+    if (place && place.t === "terrace" && place.step == null && !(place.pts || []).length && place.cur) {   // pirmais punkts bez klikšķa: attālums no tuvākās ārsienas (Tab maina asi, Enter fiksē, otrais Enter noliek punktu)
       if (/^[0-9]$/.test(e.key) && !e.ctrlKey) { e.preventDefault(); place.buf = (place.buf || "") + e.key; terFirstHint(); terPreview(place.lx, place.ly, false); return; }
       if (place.buf && e.key === "Backspace") { e.preventDefault(); place.buf = place.buf.slice(0, -1); terFirstHint(); terPreview(place.lx, place.ly, false); return; }
       if (e.key === "Tab" && !e.ctrlKey) { e.preventDefault(); const w = terWalls(place.cur); place.axSw = place.axSw === undefined ? (w.ax === 0 ? 1 : 0) : (place.axSw === 0 ? 1 : 0); terFirstHint(); terPreview(place.lx, place.ly, false); return; }
       if (e.key === "Enter" && (place.buf || place.fix)) { e.preventDefault(); terFirstEnter(); return; }
     }
+    if (place && place.t === "terrace" && !place.rect && (place.pts || []).length && place.cur && e.key === "Tab" && !e.ctrlKey) { e.preventDefault(); place.buf = place.buf || ""; post({ t: "hint", text: "Garums: " + (place.buf || "…") + " mm, virziens uz peli. Ieraksti skaitli un Enter (vai klikšķis) apstiprina; tad velc tālāk." }); return; }
     if (place && place.t === "terrace" && !place.rect && (place.pts || []).length && place.cur && /^[0-9]$/.test(e.key) && !e.ctrlKey) { e.preventDefault(); place.buf = (place.buf || "") + e.key; post({ t: "hint", text: "Garums: " + place.buf + " mm, virziens uz peli. Enter apstiprina." }); terPreview(place.lx, place.ly, false); return; }
     if (place && place.t === "terrace" && place.buf && e.key === "Backspace") { e.preventDefault(); place.buf = place.buf.slice(0, -1); terPreview(place.lx, place.ly, false); return; }
     if (place && place.t === "terrace" && place.buf && e.key === "Enter") {   // ierakstīts garums: nākamais punkts no pēdējā uz peles pusi (pa x vai y)
@@ -2983,6 +2984,11 @@
       place.pts = [a, [p[0], a[1]], p, [a[0], p[1]]]; terFinish(); return true;
     }
     if (pts.length > 2 && Math.hypot(p[0] - pts[0][0], p[1] - pts[0][1]) < 250) { terFinish(); return true; }
+    if (pts.length && place.buf && +place.buf > 0) {   // ierakstīts garums + klikšķis: punkts no pēdējā uz peles pusi (kā Enter)
+      const a0 = pts[pts.length - 1], v = +place.buf; place.buf = "";
+      const hz = Math.abs(p[0] - a0[0]) >= Math.abs(p[1] - a0[1]), sg = (hz ? p[0] - a0[0] : p[1] - a0[1]) >= 0 ? 1 : -1;
+      pts.push(hz ? [a0[0] + sg * v, a0[1]] : [a0[0], a0[1] + sg * v]); terPreview(e.clientX, e.clientY, e.shiftKey); return true;
+    }
     if (!pts.length || Math.hypot(p[0] - pts[pts.length - 1][0], p[1] - pts[pts.length - 1][1]) > 50) pts.push(p);
     terPreview(e.clientX, e.clientY, e.shiftKey); return true;
   }
