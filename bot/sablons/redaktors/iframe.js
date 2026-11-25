@@ -2136,6 +2136,37 @@
     d.wd = parseFloat(d.tbuf) || 0; const N = moveWall(w.ext ? Object.assign({}, w, { world: true }) : w, d.wd);
     showGhost(d, N); post({ t: "hint", text: "Attālums, mm: " + (d.tbuf || "…") + "   (Enter apstiprina, Esc atceļ)" });
   }, true);
+  // terases pārbīde ar ierakstītu izmēru: atlasītai terasei (vai vilkšanas laikā) Tab → asis un virziens, cipari, Enter
+  let tTy = null;
+  addEventListener("keydown", e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    let I = null;
+    if (drag && drag.h && drag.h.it && drag.h.it.k === "ter") I = drag.h.it.i;
+    else if (sel && sel.k === "ter" && !place && !drag) I = sel.i;
+    if (I == null || !(M.terraces || [])[I]) { if (tTy && !drag && !(sel && sel.k === "ter")) tTy = null; return; }
+    const k = e.key, eat = () => { e.preventDefault(); e.stopImmediatePropagation(); };
+    const show = () => post({ t: "hint", text: "Terases pārbīde " + (tTy.ax === "x" ? "horizontāli, " + (tTy.sg > 0 ? "→ uz austrumiem (+)" : "← uz rietumiem (−)") : "vertikāli, " + (tTy.sg > 0 ? "↓ uz dienvidiem (+)" : "↑ uz ziemeļiem (−)")) + ": " + (tTy.s || "…") + " mm   (Tab maina asi, − maina virzienu, Enter apstiprina, Esc atceļ)" });
+    if (!tTy) {
+      if (k !== "Tab") return;
+      let ax = "x", sg = 1;
+      if (drag && drag.moved) { ax = Math.abs(drag.dx) >= Math.abs(drag.dy) ? "x" : "y"; sg = (ax === "x" ? drag.dx : drag.dy) < 0 ? -1 : 1; drag = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove()); }
+      tTy = { i: I, ax, sg, s: "" }; eat(); show(); return;
+    }
+    if (tTy.i !== I) { tTy = null; return; }
+    if (/^[0-9.]$/.test(k)) { tTy.s += k; eat(); show(); return; }
+    if (k === "Backspace") { tTy.s = tTy.s.slice(0, -1); eat(); show(); return; }
+    if (k === "-") { tTy.sg = -tTy.sg; eat(); show(); return; }
+    if (k === "+") { tTy.sg = 1; eat(); show(); return; }
+    if (k === "Tab") { tTy.ax = tTy.ax === "x" ? "y" : "x"; eat(); show(); return; }
+    if (k === "Escape") { tTy = null; eat(); post({ t: "hint", text: "" }); return; }
+    if (k === "Enter") {
+      const v = parseFloat(tTy.s) * tTy.sg, ax = tTy.ax; tTy = null; eat(); post({ t: "hint", text: "" });
+      if (!v) return;
+      const N = clone(M), t = N.terraces[I], dx = ax === "x" ? v : 0, dy = ax === "y" ? v : 0;
+      t.poly = t.poly.map(q => [+(q[0] + dx).toFixed(1), +(q[1] + dy).toFixed(1)]); if (t.posts) t.posts = t.posts.map(q => [+(q[0] + dx).toFixed(1), +(q[1] + dy).toFixed(1), q[2]]);
+      post({ t: "edit", model: N, sel }); return;
+    }
+  }, true);
   addEventListener("keydown", e => {
     if (place && place.t === "decor" && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === "q" || e.key === "Q")) { e.preventDefault(); e.stopImmediatePropagation(); decQ(); return; }
     if (!place && !drag && wallKey(e)) { e.preventDefault(); return; }
