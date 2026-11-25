@@ -20,6 +20,7 @@ import kontura as KT  # noqa: E402
 
 B = 45.0                 # dēļa biezums
 CC, CLEAR_MAX = 600.0, 555.0
+MIN_GAP = 40.0               # mazākā atstarpe starp pēdējo statni un bloku; ja mazāka, pēdējo posmu dala uz pusēm
 HDR_BOT = 2130.0         # pārsedzes apakša (durvīm un logiem, kuru augša tuvu)
 SPARE_CC = 600.0
 
@@ -265,9 +266,12 @@ def _fill(a, b, mk):
         return
     k = math.ceil((g - CLEAR_MAX) / CC - 1e-9)
     pos = [a + CLEAR_MAX + CC * i for i in range(k)]
-    if g - (CLEAR_MAX + CC * (k - 1) + B) < 20:
-        gap = (g - B * k) / (k + 1)
-        pos = [a + gap * (i + 1) + B * i for i in range(k)]
+    rem = g - (CLEAR_MAX + CC * (k - 1) + B)             # atlikusī atstarpe aiz pēdējā statņa
+    if rem < MIN_GAP:
+        # pēdējā atstarpe < 40 mm: pēdējo statni nevelk, pēdējo posmu līdz atstarpes galam dala ar statni uz pusēm
+        start = (pos[k - 2] + B) if k > 1 else a
+        span = b - start - B                              # divu vienādu posmu kopējais tīrais platums
+        pos = pos[:k - 1] + [start + span / 2]
     for p in pos:
         mk(p)
 
@@ -302,7 +306,7 @@ def build_panel(P, opens, junctions, rot_ends):
                 P.add('SLIPAIS', 'top_plate', u0, u1, min(z0, z1) - dz, max(z0, z1) - dz + B, length=math.hypot(u1 - u0, z1 - z0), cut='slīps griezums gar jumtu')
     zb = NB * B
 
-    def stud(u0, role, w=B, z0=None, z1=None, depth=None):
+    def stud(u0, role, w=B, z0=None, z1=None, depth=None, cut=None):
         u1 = u0 + w
         a = zb if z0 is None else z0
         if z1 is None:
@@ -310,9 +314,9 @@ def build_panel(P, opens, junctions, rot_ends):
             pl = NT * B * max(sl(u0), sl(u1))
             lo, hi = min(t0, t1) - pl, max(t0, t1) - pl
             if hi - lo > 2:
-                return P.add('VERT.SLIPAIS', role, u0, u1, a, hi, length=hi - a, w=depth, cut='slīps augšgals')
-            return P.add('VERT.STATNIS', role, u0, u1, a, lo, length=lo - a, w=depth)
-        return P.add('VERT.STATNIS', role, u0, u1, a, z1, length=z1 - a, w=depth)
+                return P.add('VERT.SLIPAIS', role, u0, u1, a, hi, length=hi - a, w=depth, cut=('slīps augšgals; ' + cut) if cut else 'slīps augšgals')
+            return P.add('VERT.STATNIS', role, u0, u1, a, lo, length=lo - a, w=depth, cut=cut)
+        return P.add('VERT.STATNIS', role, u0, u1, a, z1, length=z1 - a, w=depth, cut=cut)
 
     fixed = []
     stud(0, 'stud')
@@ -371,11 +375,11 @@ def build_panel(P, opens, junctions, rot_ends):
                 rx = edge - B if side == 'l' else edge
                 segs_ = [(zb, sillz - B)] if sillz > 0 else []
                 segs_.append((max(sillz, zb), hb))
-                segs_.append((top_hdr, None))
+                segs_.append((hb + B, None))       # virs pārsedzes: statnis iet līdz pārsedzes apakšai (gropē), par pārsedzes biezumu garāks
                 for z0_, z1_ in segs_:
                     if z1_ is None:
-                        if P.top_at(rx) - z0_ > NT * B + 60:
-                            stud(rx, 'jack', z0=z0_)
+                        if P.top_at(rx) - top_hdr > NT * B + 60:
+                            stud(rx, 'jack', z0=z0_, cut='grope pārsedzei')
                     elif z1_ - z0_ > 20:
                         stud(rx, 'jack', z0=z0_, z1=z1_)
         lo_f = (a0 - r - B) - (B if LOGU_DUBULTI and not share_l else 0)
@@ -384,7 +388,7 @@ def build_panel(P, opens, junctions, rot_ends):
         P.add('HOR.STATNIS', 'opening_plate', hl, hr, hb, hb + B, w=D)               # augšējais horizontālais gulsnis
         P.add('PĀRSEDZE', 'header', hl, hr, hb + B, hb + B + D, w=D)                   # pārsedze tādā pašā garumā
         if a1 - a0 + 2 * r > CLEAR_MAX:
-            _fill(hl, hr, lambda u, t=top_hdr: stud(u, 'cripple', z0=t) if P.top_at(u) - t > NT * B + 60 else None)
+            _fill(hl, hr, lambda u, t=top_hdr, zh=hb + B: stud(u, 'cripple', z0=zh, cut='grope pārsedzei') if P.top_at(u) - t > NT * B + 60 else None)
         if sillz > 0:
             P.add('HOR.STATNIS', 'sill', hl, hr, sillz - B, sillz)                     # palodzes horizontālais gulsnis
             _fill(hl, hr, lambda u, z=sillz: stud(u, 'cripple', z0=zb, z1=z - B))

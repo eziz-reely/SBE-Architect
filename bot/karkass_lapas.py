@@ -94,7 +94,7 @@ def table_svg(x, y, rows, cols, widths, fs=2.6, rh=3.8, head=True, hdr_right=())
     return ''.join(out), yy
 
 
-WOOD, LINE_C = '#ffdf8c', '#1a1a1a'
+WOOD, LINE_C = '#ffdf8c', '#000000'     # Čarnikavas PDF: visas līnijas melnas, kontūras 0,05 mm
 
 
 def _dash(x1, y1, x2, y2, w=.15):
@@ -128,14 +128,14 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
             u0, u1 = q['u0'], q['u1']
             pl = KK.NT * KK.B * math.sqrt(1 + P.slope_at((u0 + u1) / 2) ** 2)
             pp = [(u0, q['z0']), (u1, q['z0']), (u1, P.top_at(u1) - pl), (u0, P.top_at(u0) - pl)]
-            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".15"/>')
+            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".06"/>')
             continue
-        g.append(f'<rect x="{X(q["u0"]):.2f}" y="{Y(q["z1"]):.2f}" width="{max((q["u1"] - q["u0"]) * k, .15):.2f}" height="{max((q["z1"] - q["z0"]) * k, .15):.2f}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".15"/>')
+        g.append(f'<rect x="{X(q["u0"]):.2f}" y="{Y(q["z1"]):.2f}" width="{max((q["u1"] - q["u0"]) * k, .15):.2f}" height="{max((q["z1"] - q["z0"]) * k, .15):.2f}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".06"/>')
     for (u0, z0), (u1, z1) in zip(P.top, P.top[1:]):
         if abs(z1 - z0) > 1:
             kk = math.sqrt(1 + ((z1 - z0) / (u1 - u0)) ** 2)
             pp = [(u0, z0), (u1, z1), (u1, z1 - KK.NT * KK.B * kk), (u0, z0 - KK.NT * KK.B * kk)]
-            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".15"/>')
+            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in pp)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".06"/>')
     # ailu izmēri iekšā ailā: platums pie apakšas, augstums rotēts, parapets
     for o in P.opens:
         w_, h_ = o['u1'] - o['u0'], o['head'] - o['sill']
@@ -271,6 +271,21 @@ def plan_page(D, res, m):
     X = lambda x: ox + x * k
     Y = lambda y: oy + y * k
     g = [f'<g font-family="Barlow,Arial,sans-serif"><polygon points="{" ".join(f"{X(p[0]):.2f},{Y(p[1]):.2f}" for p in poly)}" fill="none" stroke="none"/>']
+    BOX = []       # visu sienu ierobežojošie taisnstūri (mm), lai starpsienu izmēru ķēdes neuzkristu uz citām sienām
+    for P in res['paneli']:
+        if P.kind == 'arsiena':
+            (bx0, by0), (bx1, by1) = P.o, P.dir
+            ex_ = [bx0, bx0 + bx1 * P.L]
+            ey_ = [by0, by0 + by1 * P.L]
+            BOX.append((min(ex_) - P.D, min(ey_) - P.D, max(ex_) + P.D, max(ey_) + P.D) if abs(bx1) > .5 else (min(ex_) - P.D, min(ey_), max(ex_) + P.D, max(ey_)))
+        else:
+            hz_, c_, lo_, hi_ = P.axis
+            BOX.append((lo_, c_ - P.D / 2, hi_, c_ + P.D / 2) if hz_ else (c_ - P.D / 2, lo_, c_ + P.D / 2, hi_))
+    TXT = []       # jau novietotie izmēru teksti (lapas mm), lai nepārklājas
+
+    def _free(px, py, me):
+        return not any(b[0] - 40 <= px <= b[2] + 40 and b[1] - 40 <= py <= b[3] + 40 for b in BOX if b is not me) and _inside(poly, px, py)
+
     for P in res['paneli']:
         if P.kind == 'arsiena':
             (ox_, oy_), (dx, dy) = P.o, P.dir
@@ -280,17 +295,17 @@ def plan_page(D, res, m):
                 nx, ny = -nx, -ny
             ex_, ey_ = -nx, -ny            # uz āru
             pts = [(ox_, oy_), (ox_ + dx * P.L, oy_ + dy * P.L), (ox_ + dx * P.L + nx * P.D, oy_ + dy * P.L + ny * P.D), (ox_ + nx * P.D, oy_ + ny * P.D)]
-            g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in pts)}" fill="#feffaf" stroke="{LINE_C}" stroke-width=".18"/>')
+            g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in pts)}" fill="#feffaf" stroke="{LINE_C}" stroke-width=".06"/>')
             for q in P.m:      # statņu šķērsgriezumi (griezums 1,3 m augstumā): pelēki, kā Čarnikavas plānā
                 if q['nos'].startswith('VERT') and q['loma'] != 'cripple' and q['z0'] <= 1300 <= q['z1']:
                     o0, o1 = (P.D - q['b'], P.D) if q['loma'] == 'junction_rot' else (0.0, P.D)
                     c4 = [(ox_ + dx * q['u0'] + nx * o0, oy_ + dy * q['u0'] + ny * o0), (ox_ + dx * q['u1'] + nx * o0, oy_ + dy * q['u1'] + ny * o0),
                           (ox_ + dx * q['u1'] + nx * o1, oy_ + dy * q['u1'] + ny * o1), (ox_ + dx * q['u0'] + nx * o1, oy_ + dy * q['u0'] + ny * o1)]
-                    g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in c4)}" fill="#d6d6d6" stroke="#6a6a6a" stroke-width=".08"/>')
+                    g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in c4)}" fill="#d6d6d6" stroke="#d6d6d6" stroke-width=".05"/>')
             for o in P.opens:      # ailas: logi gaiši zilā, durvis baltas
                 q = [(ox_ + dx * o['u0'], oy_ + dy * o['u0']), (ox_ + dx * o['u1'], oy_ + dy * o['u1'])]
                 q += [(q[1][0] + nx * P.D, q[1][1] + ny * P.D), (q[0][0] + nx * P.D, q[0][1] + ny * P.D)]
-                g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in q)}" fill="{"#ffffff" if o["tips"] == "durvis" else "#c3d9fe"}" stroke="{LINE_C}" stroke-width=".2"/>')
+                g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in q)}" fill="{"#ffffff" if o["tips"] == "durvis" else "#c3d9fe"}" stroke="{LINE_C}" stroke-width=".06"/>')
             vert = abs(dy) > .5
             pt = lambda u, off: (ox_ + dx * u + ex_ * off, oy_ + dy * u + ey_ * off)
             cuts = sorted({0.0, float(P.L)} | {float(o['u0']) for o in P.opens} | {float(o['u1']) for o in P.opens})
@@ -319,7 +334,7 @@ def plan_page(D, res, m):
                 r = (X(lo), Y(c - P.D / 2), (hi - lo) * k, P.D * k)
             else:
                 r = (X(c - P.D / 2), Y(lo), P.D * k, (hi - lo) * k)
-            g.append(f'<rect x="{r[0]:.2f}" y="{r[1]:.2f}" width="{r[2]:.2f}" height="{r[3]:.2f}" fill="#dea884" stroke="{LINE_C}" stroke-width=".18"/>')
+            g.append(f'<rect x="{r[0]:.2f}" y="{r[1]:.2f}" width="{r[2]:.2f}" height="{r[3]:.2f}" fill="#dea884" stroke="{LINE_C}" stroke-width=".06"/>')
             for q in P.m:
                 if q['nos'].startswith('VERT') and q['loma'] != 'cripple' and q['z0'] <= 1300 <= q['z1']:
                     a0, a1 = lo + q['u0'], lo + q['u1']
@@ -327,9 +342,42 @@ def plan_page(D, res, m):
                     if q['loma'] == 'junction_rot' and q.get('sd'):
                         c0_, c1_ = (c1_ - q['b'], c1_) if q['sd'] > 0 else (c0_, c0_ + q['b'])
                     rr = (X(a0), Y(c0_), (a1 - a0) * k, (c1_ - c0_) * k) if hz else (X(c0_), Y(a0), (c1_ - c0_) * k, (a1 - a0) * k)
-                    g.append(f'<rect x="{rr[0]:.2f}" y="{rr[1]:.2f}" width="{rr[2]:.2f}" height="{rr[3]:.2f}" fill="#d6d6d6" stroke="#6a6a6a" stroke-width=".08"/>')
-            for o in P.opens:
-                pass
+                    g.append(f'<rect x="{rr[0]:.2f}" y="{rr[1]:.2f}" width="{rr[2]:.2f}" height="{rr[3]:.2f}" fill="#d6d6d6" stroke="#d6d6d6" stroke-width=".05"/>')
+            me_ = (lo, c - P.D / 2, hi, c + P.D / 2) if hz else (c - P.D / 2, lo, c + P.D / 2, hi)
+            cl = sorted({0.0, float(P.L)} | {float(o['u0']) for o in P.opens} | {float(o['u1']) for o in P.opens})
+            cl = [u for u in cl if 0 <= u <= P.L]
+            def _tbox(u0_, u1_, side_, dd_):       # teksta aizņemtais laukums lapā (mm)
+                px, py = (lo + (u0_ + u1_) / 2, c + side_ * (dd_ + 170)) if hz else (c + side_ * (dd_ + 170), lo + (u0_ + u1_) / 2)
+                tw, th = len(f0(u1_ - u0_)) * 2.9 + 1.0, 5.6
+                return (X(px) - (tw if hz else th) / 2, Y(py) - (th if hz else tw) / 2, X(px) + (tw if hz else th) / 2, Y(py) + (th if hz else tw) / 2)
+            hit = lambda a, b: a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+            side_ = None
+            for sd_ in (1, -1):           # puse, kur ķēde nekrīt uz citām sienām un tekstiem
+                dd_ = P.D / 2 + 330
+                segs_ = [(u0_, u1_) for u0_, u1_ in zip(cl, cl[1:]) if (u1_ - u0_) * k >= 11]
+                ok_ = all(_free(*((lo + (u0_ + u1_) / 2, c + sd_ * dd_) if hz else (c + sd_ * dd_, lo + (u0_ + u1_) / 2)), me_) for u0_, u1_ in zip(cl, cl[1:]))
+                ok_ = ok_ and not any(hit(_tbox(u0_, u1_, sd_, dd_), t_) for u0_, u1_ in segs_ for t_ in TXT)
+                if ok_:
+                    side_ = sd_
+                    break
+            if side_ is not None:
+                TXT.extend(_tbox(u0_, u1_, side_, P.D / 2 + 330) for u0_, u1_ in zip(cl, cl[1:]) if (u1_ - u0_) * k >= 11)
+            if side_ is not None and len(cl) > 1:
+                dd_ = P.D / 2 + 330
+                A = lambda u, off: (lo + u, c + side_ * off) if hz else (c + side_ * off, lo + u)
+                a_, b_ = A(cl[0], dd_), A(cl[-1], dd_)
+                g.append(_dash(X(a_[0]), Y(a_[1]), X(b_[0]), Y(b_[1]), .15))
+                for u in cl:
+                    e0, e1 = A(u, P.D / 2 + 60), A(u, dd_ + 80)
+                    g.append(_dash(X(e0[0]), Y(e0[1]), X(e1[0]), Y(e1[1]), .15))
+                    tk = A(u, dd_)
+                    g.append(f'<line x1="{X(tk[0]) - .9:.2f}" y1="{Y(tk[1]) - .9:.2f}" x2="{X(tk[0]) + .9:.2f}" y2="{Y(tk[1]) + .9:.2f}" stroke="{LINE_C}" stroke-width=".25"/>')
+                for u0_, u1_ in zip(cl, cl[1:]):
+                    if (u1_ - u0_) * k < (11 if hz else 11):
+                        continue
+                    m_ = A((u0_ + u1_) / 2, dd_ + 170)
+                    rot = '' if hz else f' transform="rotate(-90 {X(m_[0]):.2f} {Y(m_[1]):.2f})"'
+                    g.append(f'<text x="{X(m_[0]):.2f}" y="{Y(m_[1]):.2f}"{rot} font-size="4.99" text-anchor="middle" dominant-baseline="central" fill="{INK}">{f0(u1_ - u0_)}</text>')
             mx, my = r[0] + r[2] / 2, r[1] + r[3] / 2
             rt = '' if hz else f' transform="rotate(-90 {mx:.2f} {my:.2f})"'
             g.append(f'<text x="{mx:.2f}" y="{my - (1.6 if hz else -.8):.2f}" font-size="2.6" font-weight="700" text-anchor="middle" fill="{INK}"{rt}>{P.id}</text>')
