@@ -1307,7 +1307,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         b.onclick = () => { ov.remove(); toFrame({ mmAnswer: { id: d.id, i } }); }; bx.appendChild(b); });
       ov.appendChild(bx); document.body.appendChild(ov); }
     else if (d.t === "bmat") { BMAT = Object.assign({ hist: BMAT.hist }, d.mat); if (BMAT.ral && !BMAT.col && RAL[BMAT.ral]) BMAT.col = RAL[BMAT.ral][1]; if (placing && placing.t === "bucket") placing.mat = clone(BMAT); bktSync(); }
-    else if (d.t === "placed") { endPlace(); if ("pamMode" in d) pamSetMode(null); }
+    else if (d.t === "placed") { terKeys = false; endPlace(); if ("pamMode" in d) pamSetMode(null); }
     else if (d.t === "mvoff") { moveOn = false; railSync(); }
     else if (d.t === "key" && d.k === "combo") { const a = ACTIONS.find(x => keyMap[x.id] === d.c); if (a) a.run(); }
     else if (d.t === "key" && d.k === "dim") startDim();
@@ -1513,8 +1513,10 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   $("bReset").onclick = () => { $("confirm").hidden = false; $("bReset").hidden = true; };
   $("bResetNo").onclick = () => { $("confirm").hidden = true; $("bReset").hidden = false; };
   $("bResetYes").onclick = () => { $("confirm").hidden = true; $("bReset").hidden = false; sel = null; commit(clone(BASE)); };
+  let terKeys = false;   // terases/pakāpiena zīmēšana vai atlase: Tab, cipari un Enter iet uz rasējumu arī tad, ja fokuss ir panelī
   addEventListener("keydown", e => {
     if (e.target.closest("input,select")) return;
+    if ((terKeys || (placing && placing.t === "terrace") || (sel && sel.k === "ter")) && !e.ctrlKey && !e.metaKey && !e.altKey && (/^[0-9.\-+]$/.test(e.key) || e.key === "Tab" || e.key === "Enter" || e.key === "Backspace" || e.key === "Escape")) { e.preventDefault(); toFrame({ mmKey: { key: e.key, shiftKey: e.shiftKey } }); return; }
     // kontūras rīks: ierakstītos izmērus (2450;600 Enter) un Esc sūta uz rasējumu arī tad, ja fokuss ir panelī
     if (/^rect0?$/.test(pamMode || "") && !e.ctrlKey && !e.metaKey && !e.altKey && (/^[0-9.,;xX*]$/.test(e.key) || e.key === "Enter" || e.key === "Backspace" || e.key === "Escape")) { e.preventDefault(); toFrame({ mmKey: { key: e.key } }); return; }
     if (pst && !e.ctrlKey && !e.metaKey && !e.altKey && (/^Arrow(Left|Right|Up|Down)$/.test(e.key) || e.key === "Delete" || e.key === "Escape")) { e.preventDefault(); if (e.key === "Escape") { pst = null; toFrame({ mmPst: null }); panel(); } else pstKey(e.key, e.shiftKey); return; }
@@ -2967,7 +2969,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     if (t.tex) { const b3 = document.createElement("button"); b3.type = "button"; b3.textContent = "Noņemt tekstūru"; b3.onclick = () => { const n = clone(model); n.terraces[sel.i].tex = null; commit(n); }; r1.append(b3); }
     p.appendChild(r1);
     { const rs = document.createElement("div"); rs.className = "row"; const bs = document.createElement("button"); bs.type = "button"; bs.textContent = "Pievienot pakāpienu (zīmē kontūru)"; bs.title = "Pakāpiens ir jauna terase virs šīs, +150 mm; eksplikācijā netiek skaitīts, plānā un fasādē redzams";
-      bs.onclick = () => { toFrame({ mmPlace: { t: "terrace", step: sel.i } }); status("Pakāpiens: klikšķi stūros, dubultklikšķis vai Enter noslēdz."); }; rs.appendChild(bs); p.appendChild(rs); }
+      bs.onclick = () => { terKeys = true; bs.blur(); toFrame({ mmPlace: { t: "terrace", step: sel.i } }); status("Pakāpiens: Tab maina asi, ieraksti attālumu mm no ārsienas un Enter; vai klikšķi stūros, dubultklikšķis noslēdz."); }; rs.appendChild(bs); p.appendChild(rs); }
     matRows(p, "terraces", false);
     const r = document.createElement("div"); r.className = "row"; const b = document.createElement("button"); b.type = "button"; b.className = "del"; b.textContent = "Dzēst terasi"; b.onclick = del; r.appendChild(b); p.appendChild(r);
     const nt = document.createElement("p"); nt.className = "note"; nt.textContent = "Velc terases malu, lai to pagarinātu vai saīsinātu; dubultklikšķis uz malas pievieno stūri, ko var vilkt; velc laukumu, lai pārbīdītu visu terasi. Precīza pārbīde: atlasītai terasei (vai vilkšanas laikā) spied Tab, ieraksti mm (Tab maina asi, − maina virzienu) un Enter. Fasādēs terase parādās automātiski."; p.appendChild(nt);
