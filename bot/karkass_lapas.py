@@ -276,7 +276,7 @@ def plan_page(D, res, m):
             (ox_, oy_), (dx, dy) = P.o, P.dir
             nx, ny = -dy, dx
             cx, cy = ox_ + dx * P.L / 2, oy_ + dy * P.L / 2
-            if not _inside(poly, cx + nx * 50, cy + ny * 50):
+            if not _inside(poly, cx + nx * 100, cy + ny * 100):
                 nx, ny = -nx, -ny
             ex_, ey_ = -nx, -ny            # uz āru
             pts = [(ox_, oy_), (ox_ + dx * P.L, oy_ + dy * P.L), (ox_ + dx * P.L + nx * P.D, oy_ + dy * P.L + ny * P.D), (ox_ + nx * P.D, oy_ + ny * P.D)]

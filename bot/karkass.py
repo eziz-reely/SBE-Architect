@@ -431,7 +431,14 @@ def generate(m):
     def outward(e):   # ārējā normāle
         (x0, y0), (x1, y1) = e
         dx, dy = (x1 - x0) / elen(e), (y1 - y0) / elen(e)
-        return (-dy, dx) if cwise else (dy, -dx)
+        nx, ny = -dy, dx
+        mx, my = (x0 + x1) / 2 + nx * 20, (y0 + y1) / 2 + ny * 20
+        c = False
+        for i in range(n):          # kontrole: normāle jāvērš ārpus kontūras (neatkarīgi no apgriešanās virziena)
+            (ax, ay), (bx, by) = poly[i], poly[i - 1]
+            if (ay > my) != (by > my) and mx < (bx - ax) * (my - ay) / (by - ay) + ax:
+                c = not c
+        return (-nx, -ny) if c else (nx, ny)
 
     def wall_of(e):   # archicad siena, kas atbilst malai (paralēla, ass T/2 iekšpusē)
         best, bd = None, 1e9
@@ -509,28 +516,52 @@ def generate(m):
         panels.append(P)
     # starpsienas
     S2 = LY['S2']['layers']
+    PR = []     # starpsienu neapstrādātie gabali (ass, gali, biezums), lai gali saskaras ar blakus sienām
     for j, p in enumerate(part):
         t = float(p['t'])
         dpart = max(45.0, round(t - (sum(float(l[1] or 0) for l in S2 if (len(l) < 3 or l[2] != 'i')) if abs(t - sum(float(l[1] or 0) for l in S2)) < 2 else 50)))
         hz = abs(p['a'][1] - p['b'][1]) < 1
         a_, b_ = (p['a'][0], p['b'][0]) if hz else (p['a'][1], p['b'][1])
-        lo, hi = min(a_, b_), max(a_, b_)
-        fixed_c = p['a'][1] if hz else p['a'][0]
-        # gali līdz ārsienas karkasa iekšmalai, ja tuvu
+        PR.append({'hz': hz, 'c': p['a'][1] if hz else p['a'][0], 'lo': min(a_, b_), 'hi': max(a_, b_), 'dp': dpart})
+
+    def _snap(j, end):
+        """Starpsienas gals j (0 = lo, 1 = hi) uz tuvāko perpendikulāro ārsienas iekšmalu vai starpsienas skaldni (bez spraugām)."""
+        me = PR[j]
+        cur = me['hi'] if end else me['lo']
+        sg = 1 if end else -1                      # virziens no sienas ķermeņa uz galu
+        best, bd = None, 1e9
         for P0 in [q for q in panels if q.kind == 'arsiena']:
             (ex0, ey0), (ex1, ey1) = P0.edge
             ehz = abs(ey0 - ey1) < 1
-            if ehz == hz:
+            if ehz == me['hz']:
                 continue
-            line = ex0 if hz else ey0          # ārsienas fasādes līnija
+            line = ex0 if me['hz'] else ey0
             inner = line - (off + D) * (1 if (P0.side in ('east', 'south')) else -1)
-            span = sorted((ey0, ey1) if hz else (ex0, ex1))
-            if not (span[0] - 1 <= fixed_c <= span[1] + 1):
-                continue
-            if abs(lo - inner) < 130:
-                lo = inner
-            if abs(hi - inner) < 130:
-                hi = inner
+            span = sorted((ey0, ey1) if me['hz'] else (ex0, ex1))
+            if span[0] - 1 <= me['c'] <= span[1] + 1 and abs(cur - inner) < 500 and abs(cur - inner) < bd:
+                best, bd = inner, abs(cur - inner)
+        cand = [q for i, q in enumerate(PR) if i != j and q['hz'] != me['hz'] and abs(cur - q['c']) < q['dp'] / 2 + 300
+                and q['lo'] - me['dp'] - 150 <= me['c'] <= q['hi'] + me['dp'] + 150]
+        if cand:
+            q = min(cand, key=lambda r: abs(cur - r['c']))
+            same = [r for r in PR if r['hz'] == q['hz'] and abs(r['c'] - q['c']) < 5]
+            lo2, hi2 = min(r['lo'] for r in same), max(r['hi'] for r in same)
+            tee = lo2 < me['c'] - q['dp'] / 2 - 60 and hi2 > me['c'] + q['dp'] / 2 + 60       # sieta turpinās abās pusēs
+            coll = any(i != j and r['hz'] == me['hz'] and abs(r['c'] - me['c']) < 5 and abs((r['lo'] if end else r['hi']) - cur) < 300 for i, r in enumerate(PR))
+            near = q['c'] - sg * q['dp'] / 2        # skaldne, kas pavērsta pret sienas ķermeni
+            far = q['c'] + sg * q['dp'] / 2
+            pass_through = me['hz'] and not tee and not coll      # L stūrī horizontālā iet cauri līdz tālajai šķautnei
+            ends_here = not me['hz'] and (abs(q['lo'] - me['c']) < me['dp'] + 200 or abs(q['hi'] - me['c']) < me['dp'] + 200)
+            cont = any(i != j and r['hz'] == me['hz'] and abs(r['c'] - me['c']) < 5 and abs((r['lo'] if end else r['hi']) - (q['c'] + sg * q['dp'] / 2)) < 300 for i, r in enumerate(PR))
+            hpair = ends_here and any(r is not q and r['hz'] == q['hz'] and abs(r['c'] - q['c']) < 5 and (abs(r['lo'] - me['c']) < me['dp'] + 200 or abs(r['hi'] - me['c']) < me['dp'] + 200) for r in PR)
+            v = far if (pass_through or (ends_here and cont and end) or hpair) else near   # T: starpsiena beidzas pie šīs sienas; augšējā daļa iet cauri, apakšējā pieslēdzas
+            if abs(cur - v) < bd or best is None:
+                best, bd = v, abs(cur - v)
+        return cur if best is None else best
+
+    for j, p in enumerate(part):
+        hz, fixed_c, dpart = PR[j]['hz'], PR[j]['c'], PR[j]['dp']
+        lo, hi = _snap(j, 0), _snap(j, 1)
         Lp = hi - lo
         if Lp < 200:
             continue
