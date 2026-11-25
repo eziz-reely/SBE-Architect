@@ -301,7 +301,7 @@ def plan_page(D, res, m):
                     o0, o1 = (P.D - q['b'], P.D) if q['loma'] == 'junction_rot' else (0.0, P.D)
                     c4 = [(ox_ + dx * q['u0'] + nx * o0, oy_ + dy * q['u0'] + ny * o0), (ox_ + dx * q['u1'] + nx * o0, oy_ + dy * q['u1'] + ny * o0),
                           (ox_ + dx * q['u1'] + nx * o1, oy_ + dy * q['u1'] + ny * o1), (ox_ + dx * q['u0'] + nx * o1, oy_ + dy * q['u0'] + ny * o1)]
-                    g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in c4)}" fill="#d6d6d6" stroke="#d6d6d6" stroke-width=".05"/>')
+                    g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in c4)}" fill="#d6d6d6" stroke="{LINE_C}" stroke-width=".06"/>')
             for o in P.opens:      # ailas: logi gaiši zilā, durvis baltas
                 q = [(ox_ + dx * o['u0'], oy_ + dy * o['u0']), (ox_ + dx * o['u1'], oy_ + dy * o['u1'])]
                 q += [(q[1][0] + nx * P.D, q[1][1] + ny * P.D), (q[0][0] + nx * P.D, q[0][1] + ny * P.D)]
@@ -342,7 +342,7 @@ def plan_page(D, res, m):
                     if q['loma'] == 'junction_rot' and q.get('sd'):
                         c0_, c1_ = (c1_ - q['b'], c1_) if q['sd'] > 0 else (c0_, c0_ + q['b'])
                     rr = (X(a0), Y(c0_), (a1 - a0) * k, (c1_ - c0_) * k) if hz else (X(c0_), Y(a0), (c1_ - c0_) * k, (a1 - a0) * k)
-                    g.append(f'<rect x="{rr[0]:.2f}" y="{rr[1]:.2f}" width="{rr[2]:.2f}" height="{rr[3]:.2f}" fill="#d6d6d6" stroke="#d6d6d6" stroke-width=".05"/>')
+                    g.append(f'<rect x="{rr[0]:.2f}" y="{rr[1]:.2f}" width="{rr[2]:.2f}" height="{rr[3]:.2f}" fill="#d6d6d6" stroke="{LINE_C}" stroke-width=".06"/>')
             me_ = (lo, c - P.D / 2, hi, c + P.D / 2) if hz else (c - P.D / 2, lo, c + P.D / 2, hi)
             cl = sorted({0.0, float(P.L)} | {float(o['u0']) for o in P.opens} | {float(o['u1']) for o in P.opens})
             cl = [u for u in cl if 0 <= u <= P.L]
