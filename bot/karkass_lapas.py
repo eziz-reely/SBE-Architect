@@ -282,6 +282,7 @@ def plan_page(D, res, m):
         else:
             hz_, c_, lo_, hi_ = P.axis
             BOX.append((lo_, c_ - P.D / 2, hi_, c_ + P.D / 2) if hz_ else (c_ - P.D / 2, lo_, c_ + P.D / 2, hi_))
+    LET = []       # ārsienu burtu vietas (lapas mm)
     TXT = []       # jau novietotie izmēru teksti (lapas mm), lai nepārklājas
 
     def _free(px, py, me):
@@ -328,8 +329,14 @@ def plan_page(D, res, m):
                     m_ = pt((u0_ + u1_) / 2, dd + 170)
                     rot = f' transform="rotate(-90 {X(m_[0]):.2f} {Y(m_[1]):.2f})"' if vert else ''
                     g.append(f'<text x="{X(m_[0]):.2f}" y="{Y(m_[1]):.2f}"{rot} font-size="4.99" text-anchor="middle" dominant-baseline="central" fill="{INK}">{f0(u1_ - u0_)}</text>')
-            lx, ly = cx + ex_ * 2450, cy + ey_ * 2450
-            g.append(f'<text x="{X(lx):.2f}" y="{Y(ly):.2f}" font-size="9" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="{wc_}" stroke="{LINE_C}" stroke-width=".35" paint-order="stroke">{P.id}</text>')
+            u_l = P.L / 2 if P.L < 5000 else min(P.L * .12, 1100) + 450
+            for _try in range(4):          # burti nedrīkst pārklāties
+                lx, ly = pt(u_l, 2250)
+                if all(math.hypot(X(lx) - a_, Y(ly) - b_) > 14 for a_, b_ in LET):
+                    break
+                u_l += P.L * .22
+            LET.append((X(lx), Y(ly)))      # burts pie sienas kreisā gala (skatoties no ārpuses), aiz izmēru ķēdēm, kā Čarnikavā
+            g.append(f'<text x="{X(lx):.2f}" y="{Y(ly):.2f}" font-size="12" font-weight="700" text-anchor="middle" dominant-baseline="central" fill="{wc_}" stroke="{LINE_C}" stroke-width=".35" paint-order="stroke">{P.id}</text>')
         else:
             hz, c, lo, hi = P.axis
             if hz:
@@ -380,9 +387,18 @@ def plan_page(D, res, m):
                     m_ = A((u0_ + u1_) / 2, dd_ + 170)
                     rot = '' if hz else f' transform="rotate(-90 {X(m_[0]):.2f} {Y(m_[1]):.2f})"'
                     g.append(f'<text x="{X(m_[0]):.2f}" y="{Y(m_[1]):.2f}"{rot} font-size="4.99" text-anchor="middle" dominant-baseline="central" fill="{INK}">{f0(u1_ - u0_)}</text>')
-            mx, my = r[0] + r[2] / 2, r[1] + r[3] / 2
-            rt = '' if hz else f' transform="rotate(-90 {mx:.2f} {my:.2f})"'
-            g.append(f'<text x="{mx:.2f}" y="{my - (1.6 if hz else -.8):.2f}" font-size="2.6" font-weight="700" text-anchor="middle" fill="{INK}"{rt}>{P.id}</text>')
+            # skata virziena bulta un nosaukums (kā Čarnikavā): sienu skata no tās puses, kur izmēru ķēde
+            sv_ = side_ if side_ is not None else 1
+            al_ = lo + min(330, P.L * .2)                 # bultas vieta gar sienu
+            tip_, h_, w_ = P.D / 2 + 40, 200, 170
+            def _pp(a_, o_):
+                return (X(a_), Y(c + sv_ * o_)) if hz else (X(c + sv_ * o_), Y(a_))
+            tri_ = [_pp(al_, tip_), _pp(al_ - w_ / 2, tip_ + h_), _pp(al_ + w_ / 2, tip_ + h_)]
+            g.append(f'<polygon points="{" ".join(f"{a_:.2f},{b_:.2f}" for a_, b_ in tri_)}" fill="#dea884" stroke="{LINE_C}" stroke-width=".15"/>'
+                     f'<line x1="{_pp(al_ - w_ / 2, tip_ + h_ + 40)[0]:.2f}" y1="{_pp(al_ - w_ / 2, tip_ + h_ + 40)[1]:.2f}" x2="{_pp(al_ + w_ / 2, tip_ + h_ + 40)[0]:.2f}" y2="{_pp(al_ + w_ / 2, tip_ + h_ + 40)[1]:.2f}" stroke="{LINE_C}" stroke-width=".15"/>')
+            tx_, ty_ = _pp(al_ + w_ / 2 + 120, tip_ + h_ / 2)
+            rt = '' if hz else f' transform="rotate(-90 {tx_:.2f} {ty_:.2f})"'
+            g.append(f'<text x="{tx_:.2f}" y="{ty_:.2f}"{rt} font-size="3.2" font-weight="700" text-anchor="start" dominant-baseline="central" fill="#dea884" stroke="{LINE_C}" stroke-width=".22" paint-order="stroke">{P.id}</text>')
     g.append(f'<text x="{PW - 14}" y="30" font-size="2.6" text-anchor="end" fill="{MUT}">M 1:{s}</text></g>')
     g.append(kaste_detail(20, 205, res['D']))
     D.frame('KARKASA PLĀNS', ''.join(g), f'ārsienas A… (C24 45×{res["D"]:.0f}), starpsienas S1…; karkasa ārmala {res["off"]:.0f} mm no fasādes')
