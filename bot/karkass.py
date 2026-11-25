@@ -20,6 +20,7 @@ import kontura as KT  # noqa: E402
 
 B = 45.0                 # dēļa biezums
 CC, CLEAR_MAX = 600.0, 555.0
+KD = 145.0                   # karkasa statņa dziļums (kastes pagrieztā statņa platums); generate() uzstāda no ārsienas karkasa
 MIN_GAP = 40.0               # mazākā atstarpe starp pēdējo statni un bloku; ja mazāka, pēdējo posmu dala uz pusēm
 HDR_BOT = 2130.0         # pārsedzes apakša (durvīm un logiem, kuru augša tuvu)
 SPARE_CC = 600.0
@@ -324,22 +325,23 @@ def build_panel(P, opens, junctions, rot_ends):
     sd0, sd1 = (rot_ends[0] if isinstance(rot_ends[0], int) and not isinstance(rot_ends[0], bool) else None,
                 rot_ends[1] if isinstance(rot_ends[1], int) and not isinstance(rot_ends[1], bool) else None)
     if rot_ends[0]:   # kaste: 3 detaļas (statnis, pagriezts statnis, statnis), saskrūvējamas un piesledzamas frontonam
-        r_ = stud(B, 'junction_rot', w=D)
+        r_ = stud(B, 'junction_rot', w=KD)
         if sd0:
             r_['sd'] = sd0
-        stud(B + D, 'stud')
-        fixed[-1] = (0, 2 * B + D)
+        stud(B + KD, 'stud')
+        fixed[-1] = (0, 2 * B + KD)
     stud(L - B, 'stud')
     fixed.append((L - B, L))
     if rot_ends[1]:
-        r_ = stud(L - B - D, 'junction_rot', w=D)
+        r_ = stud(L - B - KD, 'junction_rot', w=KD)
         if sd1:
             r_['sd'] = sd1
-        stud(L - 2 * B - D, 'stud')
-        fixed[-1] = (L - 2 * B - D, L)
+        stud(L - 2 * B - KD, 'stud')
+        fixed[-1] = (L - 2 * B - KD, L)
     end_l, end_r = fixed[0][1], fixed[1][0]
     for jn in sorted(junctions, key=lambda t: t[0] if isinstance(t, tuple) else t):
-        c, jw, jsd = jn if isinstance(jn, tuple) else (jn, D, None)
+        c, jw, jsd = jn if isinstance(jn, tuple) else (jn, KD, None)
+        jw = max(jw, KD)           # kastes pagrieztais statnis vienmēr pilnā karkasa statņa platumā (45×KD), arī ja pieslēgtā siena plānāka
         u0 = c - jw / 2
         if u0 - B < end_l or u0 + jw + B > end_r:
             P.warn.append(f'starpsienas pieslēgums u={_r(c)} pie gala bloka, pārbaudīt')
@@ -416,6 +418,8 @@ def generate(m):
     apply_settings(m)
     LY = layers_of(m)
     D, off = frame_of(LY['S1']['layers'])
+    global KD
+    KD = D
     DJ, _ = frame_of(LY['J1']['layers'], 195.0)
     d = archicad.data_of(m)
     roof = roof_geom(m)
@@ -612,9 +616,9 @@ def generate(m):
                 if abs(e_ - me['c']) > me['dp'] / 2 + 5 or not (lo - 5 <= q['c'] <= hi + 5):
                     continue
                 sd = 1 if o_ > me['c'] else -1               # kurā pusē ir pieslēgtās sienas ķermenis
-                if q['c'] - lo < q['dp'] / 2 + 60:
+                if q['c'] - lo < max(q['dp'], KD) / 2 + 60:
                     ends[0] = sd
-                elif hi - q['c'] < q['dp'] / 2 + 60:
+                elif hi - q['c'] < max(q['dp'], KD) / 2 + 60:
                     ends[1] = sd
                 elif not any(abs(c0 - (q['c'] - lo)) < 60 for c0, _w, _s in jun):
                     jun.append((q['c'] - lo, q['dp'], sd))
