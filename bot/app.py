@@ -119,6 +119,8 @@ IMG = ('.png', '.jpg', '.jpeg', '.webp')
 TONES = ('peleks', 'sarkans', 'koks', 'zals', 'balts')
 
 
+THUMB_MIN = 1795607400   # miniatūras, kas vecākas par šo laiku, tiek pārzīmētas (2026-11-25: fasādes tekstūras)
+
 def media(dp, key, mtime):
     """Projekta bildes kartītei: miniatūras (plāns, fasāde), bota vizualizācijas pa toņiem (viz/V<n>_<tonis>.png) un paša ieliktās bildes."""
     url = lambda rel: f"/pf/{key}/{rel.replace(os.sep, '/')}?v={int(os.path.getmtime(os.path.join(dp, rel)))}"
@@ -127,6 +129,7 @@ def media(dp, key, mtime):
         rel = os.path.join('miniaturas', n + '.png')
         if os.path.exists(os.path.join(dp, rel)):
             th[n] = url(rel)
+    mtime = max(mtime, THUMB_MIN)   # vecās miniatūras (bez fasādes tekstūrām) pārzīmējas vienreiz
     fresh = bool(th) and all(os.path.getmtime(os.path.join(dp, 'miniaturas', n + '.png')) >= mtime for n in ('plans', 'fasade') if n in th) and len(th) == 2
     bot, own = {}, []
     vd = os.path.join(dp, 'viz')

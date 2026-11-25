@@ -416,6 +416,10 @@ async function capture(p) {
     const c = svg.cloneNode(true); c.setAttribute("viewBox", `${x} ${y} ${w} ${h}`);
     const W = 1000, H = Math.round(W * h / w); c.setAttribute("width", W); c.setAttribute("height", H); c.removeAttribute("style"); c.removeAttribute("class");
     c.setAttribute("xmlns", "http://www.w3.org/2000/svg"); c.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    { const NS = "http://www.w3.org/2000/svg", dd = doc.createElementNS(NS, "defs");   // fasādes tekstūras u.c. ir citos lapas <defs>/stilos: ieliek klonā, citādi miniatūrā paliek pelēks
+      doc.querySelectorAll("defs").forEach(d => { if (!svg.contains(d)) dd.appendChild(d.cloneNode(true)); });
+      const st = doc.createElementNS(NS, "style"); st.textContent = [...doc.querySelectorAll("style")].map(q => q.textContent).join("\n");
+      c.insertBefore(dd, c.firstChild); c.insertBefore(st, c.firstChild); }
     const bg = doc.createElementNS("http://www.w3.org/2000/svg", "rect"); [["x", x], ["y", y], ["width", w], ["height", h], ["fill", "#fff"]].forEach(([a, v]) => bg.setAttribute(a, v)); c.insertBefore(bg, c.firstChild);
     const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(c)], { type: "image/svg+xml" }));
     const img = new Image(); img.src = url; await img.decode();
