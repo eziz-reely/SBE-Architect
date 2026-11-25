@@ -1896,17 +1896,32 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     Object.entries(RAL).forEach(([k, v]) => { opts[k] = k + " · " + v[0]; });
     if (!opts[wt]) opts[wt] = wt;
     const withTone = Object.assign({ tonis: "Fasādes tonī" }, opts);
+    { const w0 = sel && sel.k === "win" ? itemOf(model, sel) : null;   // izvēlētā loga izmēri
+      if (w0) { const hd = w0.head != null ? w0.head : null, sp = document.createElement("span"); sp.className = "ta"; sp.style.cssText = "margin-left:8px;font-weight:600;color:var(--ink);white-space:nowrap"; sp.textContent = `Izvēlētais logs: ${Math.round(w0.len)} × ${hd != null ? Math.round(hd - (w0.sill || 0)) : "?"} mm · palodze ${Math.round(w0.sill || 0)} mm`; box.appendChild(sp); } }
+    { const w0 = sel && sel.k === "win" ? itemOf(model, sel) : null;   // loga veida izvēle ar sīktēliem (izvēlētajam logam)
+      if (w0 && w0.kind !== "parts") {
+        const TH = { fixed: "", turn: '<path d="M3 3 21 11.5 3 20z"/>', tilt: '<path d="M3 3 21 11.5 3 20z"/><path d="M3 20 12 13 21 20" opacity=".55"/>', hopper: '<path d="M3 3 12 21 21 3z"/>', casement2: '<path d="M12 3 3 11.5 12 20M12 3 21 11.5 12 20"/>', slide2: '<path d="M12 3v17M5 11.5h5M7.5 9.5l-2.5 2 2.5 2M14 11.5h5M16.5 9.5l2.5 2-2.5 2"/>' };
+        const wr = document.createElement("span"); wr.style.cssText = "display:inline-flex;gap:3px;margin-left:6px;align-items:center"; wr.title = "Loga veids";
+        Object.entries(KIND).forEach(([k, nm]) => { const bt = document.createElement("button"); bt.type = "button"; bt.title = nm; bt.setAttribute("aria-label", nm); bt.setAttribute("aria-pressed", String((w0.kind || "fixed") === k));
+          bt.style.cssText = "width:30px;height:30px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:3px;border:1px solid " + ((w0.kind || "fixed") === k ? "var(--accent)" : "var(--line2)") + ";background:" + ((w0.kind || "fixed") === k ? "var(--accent-soft, rgba(34,102,216,.12))" : "var(--field)");
+          bt.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><rect x="2.5" y="2.5" width="19" height="19" rx="1"/>' + (TH[k] || '<path d="M2.5 2.5 21.5 21.5" opacity="0"/>') + '</svg>';
+          bt.onclick = () => { const n = clone(model), w = itemOf(n, sel); if (!w) return; w.kind = k; delete w.parts; commit(n); }; wr.appendChild(bt); });
+        box.appendChild(wr); } }
     const sep = document.createElement("span"); sep.className = "ta"; sep.style.cssText = "margin-left:8px;padding-left:10px;border-left:1px solid var(--line2);font-weight:600;color:var(--ink);white-space:nowrap"; sep.textContent = "Visas mājas logi"; box.appendChild(sep);
-    const sel = (lab, list, cur, fn, tt) => {
+    const selF = (lab, list, cur, fn, tt) => {
       const l = document.createElement("div"); l.className = "ta"; l.style.cssText = "display:flex;flex-direction:row;align-items:center;gap:5px;margin:0 0 0 4px;white-space:nowrap"; l.title = tt || lab; { const sp = document.createElement("span"); sp.textContent = lab; l.appendChild(sp); }
       const e = document.createElement("select"); e.style.cssText = "height:30px;max-width:150px;border:1px solid var(--line2);border-radius:3px;background:var(--field);color:var(--ink)";
       Object.entries(list).forEach(([k, v]) => { const o = document.createElement("option"); o.value = k; o.textContent = v; e.appendChild(o); }); e.value = cur;
       e.onchange = () => { const n = clone(model); n.projekts = n.projekts || {}; fn(n, e.value); commit(n); }; l.appendChild(e); box.appendChild(l);
     };
-    sel("Rāmji", opts, wt, (n, v) => { n.projekts.logu_tonis = v; n.projekts.logu_hex = RAL[v] ? RAL[v][1] : n.projekts.logu_hex; }, "Logu un durvju rāmju tonis visai mājai");
-    sel("Aplodas", withTone, P.aplodas || wt, (n, v) => { if (v === winTone(n.projekts)) delete n.projekts.aplodas; else n.projekts.aplodas = v; }, "Logu aplodu tonis visai mājai");
-    sel("Palodzes", withTone, P.palodzes || P.aplodas || wt, (n, v) => { if (v === (n.projekts.aplodas || winTone(n.projekts))) delete n.projekts.palodzes; else n.projekts.palodzes = v; }, "Palodžu tonis visai mājai");
-    sel("Palodze no apakšas", { ir: "Ir", nav: "Nav" }, SPq.on === false ? "nav" : "ir", (n, v) => {
+    selF("Rāmji", opts, wt, (n, v) => { n.projekts.logu_tonis = v; n.projekts.logu_hex = RAL[v] ? RAL[v][1] : n.projekts.logu_hex; }, "Logu un durvju rāmju tonis visai mājai");
+    selF("Aplodas", withTone, P.aplodas || wt, (n, v) => { if (v === winTone(n.projekts)) delete n.projekts.aplodas; else n.projekts.aplodas = v; }, "Logu aplodu tonis visai mājai");
+    selF("Palodzes", withTone, P.palodzes || P.aplodas || wt, (n, v) => { if (v === (n.projekts.aplodas || winTone(n.projekts))) delete n.projekts.palodzes; else n.projekts.palodzes = v; }, "Palodžu tonis visai mājai");
+    { const all = []; [model, model.loft].forEach(L => L && (L.windows || []).forEach(w => all.push(w)));
+      const cv = all.length && all.every(w => casOf(w) === casOf(all[0])) ? casOf(all[0]) : "mix";
+      selF("Aplodas visiem logiem", cv === "mix" ? { mix: "Dažādi (izvēlies)", 1: "Ar aplodām", 0: "Bez aplodām", all: "Ar aplodām arī apakšā" } : { 1: "Ar aplodām", 0: "Bez aplodām", all: "Ar aplodām arī apakšā" }, cv,
+        (n, v) => { if (v === "mix") return; [n, n.loft].forEach(L => L && (L.windows || []).forEach(w => setCas(w, v))); (n.gableWins || []).forEach(g => { delete g.casing; delete g.casingAll; if (v === "0") g.casing = 0; if (v === "all") g.casingAll = true; }); }, "Uzliek aplodas (vai noņem) visiem mājas logiem uzreiz; atsevišķam logam var mainīt tā panelī"); }
+    selF("Palodzes profils zem logiem", { ir: "Ir", nav: "Nav" }, SPq.on === false ? "nav" : "ir", (n, v) => {
       const q = Object.assign({}, n.projekts.palodzes_prof); if (v === "nav") q.on = false; else delete q.on;
       if (Object.keys(q).length) n.projekts.palodzes_prof = q; else delete n.projekts.palodzes_prof; }, "Palodzes profils zem logiem visai mājai (arī sadaļā Materiāli)");
   }
@@ -3257,6 +3272,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
   }
   function panel() {
     mats(); majaOrder(); try { syncSec(); } catch (_) {}
+    try { if (sel && sel.k === "win") toolOpt(); } catch (_) {}   // loga izmēri rīku joslā (logu rīks)
     const p = $("panel"); p.textContent = ""; fid = 0;
     if (pst && pstCard(p)) return;
     const it = itemOf(model, sel);
