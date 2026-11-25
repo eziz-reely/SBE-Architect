@@ -555,7 +555,7 @@ function mmRailTop(v, r, x, y) { return Math.min(mmRailBase(v, r) + (r.h != null
          'P(span / 2, ridgeTop - vt)].join(" "), fill: FAS ? "#F2F0EA" : "#4a5055", stroke: C.ink, "stroke-width": 10, "data-keep": 1 }, g);'),
         # [MM] terases/lieveņa zīme (nosaukums, Nr., m²) pārvietojama: pozīcija v.stampAt[nr], atlasāma kā telpas zīme
         ('  stamp(g, tx, cy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);\n  lvlMark(g, tx, cy + 720, lv(pc.up ? -ROOF.plinth + 40 + pc.up + (pc.th || 120) : -ROOF.floorT));',
-         '  { let sa = (window.__SA || {})[nr];\n    if (!sa && pc.__ter && !pc.up) {   // noklusēti: terases kontūras iekšienē vistālāk no malām (L formas terasei nav bbox centrā mājas iekšā)\n      const P_ = pc.poly, inP = (x, y) => { let c = false; for (let i = 0, j = P_.length - 1; i < P_.length; j = i++) if ((P_[i][1] > y) !== (P_[j][1] > y) && x < (P_[j][0] - P_[i][0]) * (y - P_[i][1]) / (P_[j][1] - P_[i][1]) + P_[i][0]) c = !c; return c; };\n      const dE = (x, y) => Math.min(...P_.map((q, i) => { const r_ = P_[(i + 1) % P_.length], dx = r_[0] - q[0], dy = r_[1] - q[1], l2 = dx * dx + dy * dy || 1, t_ = Math.max(0, Math.min(1, ((x - q[0]) * dx + (y - q[1]) * dy) / l2)); return Math.hypot(x - q[0] - t_ * dx, y - q[1] - t_ * dy); }));\n      let bd = -1; for (let x = x0 + 100; x < x1; x += 150) for (let y = y0 + 100; y < y1; y += 150) if (inP(x, y)) { const d_ = dE(x, y); if (d_ > bd) { bd = d_; sa = [x, y]; } }\n    }\n    const zx = sa ? sa[0] : tx, zy = sa ? sa[1] : cy, sg = el("g", pc.__ter ? { "data-tstamp": nr } : {}, g);\n    stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);\n    if (!(pc.__ter && pc.up)) lvlMark(g, zx, zy + 720, lv(pc.up ? -ROOF.plinth + 40 + pc.up + (pc.th || 120) : -ROOF.floorT)); }'),
+         '  { let sa = (window.__SA || {})[nr];\n    if (!sa && pc.__ter && !pc.up && !pc.pak) {   // noklusēti: terases kontūras iekšienē vistālāk no malām (L formas terasei nav bbox centrā mājas iekšā)\n      const P_ = pc.poly, inP = (x, y) => { let c = false; for (let i = 0, j = P_.length - 1; i < P_.length; j = i++) if ((P_[i][1] > y) !== (P_[j][1] > y) && x < (P_[j][0] - P_[i][0]) * (y - P_[i][1]) / (P_[j][1] - P_[i][1]) + P_[i][0]) c = !c; return c; };\n      const dE = (x, y) => Math.min(...P_.map((q, i) => { const r_ = P_[(i + 1) % P_.length], dx = r_[0] - q[0], dy = r_[1] - q[1], l2 = dx * dx + dy * dy || 1, t_ = Math.max(0, Math.min(1, ((x - q[0]) * dx + (y - q[1]) * dy) / l2)); return Math.hypot(x - q[0] - t_ * dx, y - q[1] - t_ * dy); }));\n      let bd = -1; for (let x = x0 + 100; x < x1; x += 150) for (let y = y0 + 100; y < y1; y += 150) if (inP(x, y)) { const d_ = dE(x, y); if (d_ > bd) { bd = d_; sa = [x, y]; } }\n    }\n    const zx = sa ? sa[0] : tx, zy = sa ? sa[1] : cy, sg = el("g", pc.__ter ? { "data-tstamp": nr } : {}, g);\n    stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);\n    if (!(pc.__ter && pc.up)) lvlMark(g, zx, zy + 720, lv(pc.up ? -ROOF.plinth + 40 + pc.up + (pc.th || 120) : -ROOF.floorT)); }'),
         ('  const g = el("g", { "data-block": "plan" }, parent);\n  const pts = v.poly.map(p => p.join(",")).join(" ");',
          '  const g = el("g", { "data-block": "plan" }, parent);\n  window.__SA = v.stampAt || {};\n  const pts = v.poly.map(p => p.join(",")).join(" ");'),
         # [MM] ārējās mēru ķēdes sākas aiz terasēm un lieveņa (noklusēti nedrīkst iet pāri tām)
@@ -568,7 +568,7 @@ function mmRailTop(v, r, x, y) { return Math.min(mmRailBase(v, r) + (r.h != null
         ('axX, "x", 1, v.D + E);', 'axX, "x", 1, v.D + E + (EXS ? EXS + 300 : 0) + (CO.s || 0));'),
         # [MM] pakāpiens nav telpa: zīmē tikai nosaukumu (bez Nr. un m²), eksplikācijā neiet
         ('    stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);',
-         '    if (pc.__ter && pc.up) lvlMark(sg, zx, zy, lv(pc.up ? -ROOF.plinth + 40 + pc.up + (pc.th || 120) : -ROOF.floorT)); else stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);'),
+         '    if (pc.__ter && (pc.up || pc.pak)) lvlMark(sg, zx, zy, lv(pc.up ? -ROOF.plinth + 40 + pc.up + (pc.th || 120) : -ROOF.floorT)); else stamp(sg, zx, zy, pc.name || "Lievenis", nr, polyArea(pc.poly), 1);'),
         # [MM] noteksūkņa skavas garajā fasādē: smalka melna kontūra
         ('x: u - 65, y: -z - 25, width: 130, height: 50, fill: "#24282b" }, g);',
          'x: u - 65, y: -z - 25, width: 130, height: 50, fill: "#24282b", stroke: "#000", "stroke-width": 5 }, g);'),
@@ -577,11 +577,11 @@ function mmRailTop(v, r, x, y) { return Math.min(mmRailBase(v, r) + (r.h != null
          '  { el("rect", { x: -1600, y: ROOF.plinth, width: span + 3200, height: 300, fill: "#fff" }, g); let d = ""; for (let x = -1400; x < span + 1400 - 260; x += 200) d += `M ${x} ${ROOF.plinth + 260} L ${x + 260} ${ROOF.plinth} `; el("path", { d, stroke: "#666", "stroke-width": 8, fill: "none" }, g);\n    el("line", { x1: -1600, y1: ROOF.plinth, x2: span + 1600, y2: ROOF.plinth, stroke: C.ink, "stroke-width": 45, "data-keep": 1 }, g); }   // [MM] zemes līnija virs visa, kas zem tās\n  const axU = ax.map(([a]) => map(a)), AG ='),
         # [MM] eksplikācija: ārtelpās arī terases (pakāpieni, t.up, netiek skaitīti)
         ("const n = v.rooms.length, pr = v.porch ? 2 : 0, rows = n + 4 + pr;",
-         "const OUT = [].concat(v.porch ? [v.porch] : [], (v.terraces || []).filter(t => !t.up)), n = v.rooms.length, pr = OUT.length ? OUT.length + 1 : 0, rows = n + 4 + pr;"),
+         "const OUT = [].concat(v.porch ? [v.porch] : [], (v.terraces || []).filter(t => !t.up && !t.pak)), n = v.rooms.length, pr = OUT.length ? OUT.length + 1 : 0, rows = n + 4 + pr;"),
         ('cell(c1 / 2, yy + RH, String(n + 1), { a: "middle" }); cell(c1 + 2, yy + RH, v.porch.name || "Lievenis"); cell(WX - 2, yy + RH, f2(polyArea(v.porch.poly)), { a: "end" });',
          'OUT.forEach((o, oi) => { const y2 = yy + (oi + 1) * RH; cell(c1 / 2, y2, String(n + 1 + oi), { a: "middle" }); cell(c1 + 2, y2, o.name || (o === v.porch ? "Lievenis" : "Terase")); cell(WX - 2, y2, f2(polyArea(o.poly)), { a: "end" }); });'),
         ("(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), v.rooms.length + (v.porch ? 2 : 1) + ti));",
-         "(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), t.up ? 1000 + ti : v.rooms.length + (v.porch ? 2 : 1) + (v.terraces || []).slice(0, ti).filter(q => !q.up).length));"),
+         "(v.terraces || []).forEach((t, ti) => porchPlan(g, terFix(t), (t.up || t.pak) ? 1000 + ti : v.rooms.length + (v.porch ? 2 : 1) + (v.terraces || []).slice(0, ti).filter(q => !q.up && !q.pak).length));"),
         # [MM] loga ārējā aploda nedrīkst iziet ārpus ieejas nišas (ieliekuma) uz blakus sienu: ailu sānu aplodas apgriež pie nišas malas
         ("const win = (u0, u1, z0, z1, PN, cas) => {", "const win = (u0, u1, z0, z1, PN, cas, cl = cas, cr = cas) => {"),
         ("      R(u0 - cas, u1 + cas, z0 - CB, z1 + cas, { fill: cc, ...ln });",
@@ -721,7 +721,9 @@ function mmRailTop(v, r, x, y) { return Math.min(mmRailBase(v, r) + (r.h != null
     # [MM] apbūves laukums: redaktorā uzzīmētie kontūri (model.apbuve = [{n, poly}], vecais formāts = viens poligons), citādi mājas kontūra
     FOOT = ('function footList(v) {\n  let a = v.apbuve;\n  if (a && a.length && typeof a[0][0] === "number") a = [{ n: "Dzīvojamā māja", poly: a }];\n'
             '  const L = (a || []).filter(e => e && e.poly && e.poly.length > 2).map(e => ({ n: e.n || "Apbūve", a: polyArea(e.poly) }));\n'
-            '  return L.length ? L : [{ n: "Dzīvojamā māja", a: polyArea(v.poly) }];\n}\n'
+            '  const B = L.length ? L : [{ n: "Dzīvojamā māja", a: polyArea(v.poly) }];\n'
+            '  (v.terraces || []).forEach(t => { if (t.apb && t.poly && t.poly.length > 2) B.push({ n: t.name || "Terase", a: polyArea(t.poly) }); });   // terase/pakāpiens ar ķeksi "ieskaitīt apbūves laukumā"\n'
+            '  return B;\n}\n'
             'function footA(v) { return footList(v).reduce((s, e) => s + e.a, 0); }\n')
     cad = cad.replace('polyArea(v.poly)', 'footA(v)')
     for a_, b_ in [('    box(y, 4);\n', '    const FL = footList(v);\n    box(y, 3 + FL.length);\n'),

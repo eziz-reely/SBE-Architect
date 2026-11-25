@@ -434,7 +434,7 @@ function modelSheetAt(v, scMin) {
   const planBot = (g, y0) => { try { const hid = svg.isConnected; if (!hid) { svg.style.cssText = "position:absolute;visibility:hidden"; document.body.appendChild(svg); } const b = g.getBBox(); if (!hid) svg.remove(); return b && b.height ? y0 + (b.y + b.height) * k : 0; } catch (e) { return 0; } };   // plāna zīmējuma faktiskā apakšmala lapā (mm): virsraksts nedrīkst iet pāri asu burbuļiem un mēru ķēdēm
   let y = Math.max(PY + d + 29, planBot(svg.querySelector('g[data-block="plan"]'), PY) + 8);
   sheetHeading(svg, 26, y, 215, tx.plan);
-  mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly), [].concat(v.porch ? [{ name: v.porch.name || (L === "en" ? "Porch" : "Lievenis"), poly: v.porch.poly }] : [], (v.terraces || []).filter(t => !t.up)));
+  mmTable(svg, TX, PY - 12, TW, tx.expl, tx.f1, mmRooms(v), L, polyArea(v.poly), [].concat(v.porch ? [{ name: v.porch.name || (L === "en" ? "Porch" : "Lievenis"), poly: v.porch.poly }] : [], (v.terraces || []).filter(t => !t.up && !t.pak)));
 
   // 2) loft: tie paši ārējie izmēri kā 1. stāvam (mājas gabarīti, bez dublēšanas); sava telpu tabula blakus
   if (lf) {

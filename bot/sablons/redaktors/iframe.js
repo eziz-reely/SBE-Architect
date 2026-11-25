@@ -2830,7 +2830,7 @@
     terPreview(place.lx, place.ly, false);
   }
   function terCommit(pts, up, name, flat) {
-    const N = clone(M); N.terraces = (N.terraces || []).concat([Object.assign({ name: name || "Terase", poly: pts, th: 120, preset: "deck", tex: null, texRot: 0, texW: 1000, corners: false, up }, flat ? { flat: true } : {})]);
+    const N = clone(M); N.terraces = (N.terraces || []).concat([Object.assign({ name: name || "Terase", poly: pts, th: 120, preset: "deck", tex: null, texRot: 0, texW: 1000, corners: false, up }, flat ? { flat: true } : {}, name === "Pakāpiens" ? { pak: true } : {})]);
     place = null; document.body.style.cursor = ""; document.querySelectorAll("g.mm-ov .gh").forEach(x => x.remove());
     post({ t: "edit", model: N, sel: { k: "ter", i: N.terraces.length - 1, lv: "main" }, placed: true });
   }

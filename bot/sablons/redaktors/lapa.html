@@ -1719,7 +1719,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       rows.push({ t: title, col: o.col || null, ral: o.ral || "", tex: o.tex || null, note: L.length > 1 ? L.length + " gab." : "", tex_ok: true,
         apply: (N, m) => { (N[arr] || []).forEach(q => setCol(q, m)); }, texImport: url => put(N => (N[arr] || []).forEach(q => { q.tex = url; q.texW = q.texW || 1000; delete q.col; delete q.ral; })) }); };
     grp("Stabi", "posts", q => q);
-    (model.terraces || []).forEach((t, i) => rows.push({ t: t.name || "Terase", col: t.col || null, ral: t.ral || "", tex: t.tex || null, note: terSupport(model, i) >= 0 || t.up ? "pakāpiens" : "", apply: (N, m) => { const o = N.terraces[i]; setCol(o, m); if (!m.tex) delete o.tex; },
+    (model.terraces || []).forEach((t, i) => rows.push({ t: t.name || "Terase", col: t.col || null, ral: t.ral || "", tex: t.tex || null, note: terSupport(model, i) >= 0 || t.up || t.pak ? "pakāpiens" : "", apply: (N, m) => { const o = N.terraces[i]; setCol(o, m); if (!m.tex) delete o.tex; },
       texImport: url => put(N => { const o = N.terraces[i]; o.tex = url; o.texW = o.texW || 1000; delete o.col; delete o.ral; }) }));
     if (model.porch) rows.push({ t: model.porch.name || "Lievenis", col: model.porch.col || null, ral: model.porch.ral || "", tex: model.porch.tex || null, note: "", apply: (N, m) => { setCol(N.porch, m); if (!m.tex) delete N.porch.tex; }, texImport: url => put(N => { N.porch.tex = url; N.porch.texW = N.porch.texW || 1000; delete N.porch.col; delete N.porch.ral; }) });
     rows.forEach(r => {
@@ -2516,7 +2516,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         }));
       }
       { // apbūves laukums: kontūra laukums (poly vai uzzīmētie) manuālai pārbaudei + rīks jauniem kontūriem
-        const auto = apbArea(model.poly && model.poly.length > 2 ? model.poly : [[0, 0], [model.W, 0], [model.W, model.D], [0, model.D]]), L = apbList(model), tot = L.reduce((s_, e) => s_ + apbArea(e.poly), 0);
+        const auto0 = apbArea(model.poly && model.poly.length > 2 ? model.poly : [[0, 0], [model.W, 0], [model.W, model.D], [0, model.D]]), L = apbList(model), terA = (model.terraces || []).filter(q_ => q_.apb).reduce((s_, q_) => s_ + apbArea(q_.poly), 0), auto = auto0 + terA, tot = L.reduce((s_, e) => s_ + apbArea(e.poly), 0) + terA;
         const row = document.createElement("div"); row.className = "full"; row.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:4px 0";
         const t = document.createElement("span"); t.style.cssText = "font-size:12px"; t.innerHTML = "<b>Apbūves laukums:</b> " + (L.length ? apbFmt(tot) + " (uzzīmēts: " + L.map(e => e.n + " " + apbFmt(apbArea(e.poly))).join(", ") + ") · mājas kontūra: " + apbFmt(auto) : apbFmt(auto) + " (pēc mājas kontūras)");
         const bA = document.createElement("button"); bA.type = "button"; bA.textContent = "Pievienot būvasi"; bA.onclick = () => { const b = OPENB[23]; if (b) b.click(); railSync(); };
@@ -2936,6 +2936,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     g.append(field("Nosaukums", t.name || "Terase", (n, v) => { n.terraces[I()].name = v; }, "text", "full"));
     g.append(field("Pīrāgs", t.preset || "deck", (n, v) => { const q = n.terraces[I()]; q.preset = v; if (TER_PRE[v] && TER_PRE[v][1] != null) q.th = TER_PRE[v][1]; }, Object.fromEntries(Object.entries(TER_PRE).map(([k, a]) => [k, a[0] + (a[1] != null ? " · " + a[1] + " mm" : "")])), "full"));
     g.append(field(terSupport(model, sel.i) >= 0 ? "Pacēlums virs terases, mm (0 = stāv uz terases)" : "Augstums virs pamata, mm", t.up || 0, (n, v) => { n.terraces[I()].up = Math.max(0, Math.min(2000, v)); }));
+    g.append(field("Apbūves laukumā", t.apb ? "1" : "0", (n, v) => { const q = n.terraces[I()]; if (v === "1") q.apb = true; else delete q.apb; }, { 0: "Neieskaitīt", 1: "Ieskaitīt (tiek skaitīts apbūvē)" }, "full"));
     g.append(field("Pīrāga biezums, mm", t.th || 120, (n, v) => { const q = n.terraces[I()]; q.th = Math.max(20, Math.min(1500, v)); q.preset = "cits"; }));
     g.append(field("Stūra statņi", t.corners ? "1" : "0", (n, v) => { const q = n.terraces[I()]; q.corners = v === "1"; if (q.corners) delete q.posts; }, { 0: "Nav", 1: "Lamellu statņi stūros" }));
     g.append(field("Tekstūras platums, mm", t.texW || 1000, (n, v) => { n.terraces[I()].texW = Math.max(100, v); }));
