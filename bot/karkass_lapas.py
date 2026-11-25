@@ -308,7 +308,10 @@ def plan_page(D, res, m):
             for o in P.opens:      # ailas: logi gaiši zilā, durvis baltas
                 q = [(ox_ + dx * o['u0'], oy_ + dy * o['u0']), (ox_ + dx * o['u1'], oy_ + dy * o['u1'])]
                 q += [(q[1][0] + nx * P.D, q[1][1] + ny * P.D), (q[0][0] + nx * P.D, q[0][1] + ny * P.D)]
-                g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in q)}" fill="{"#ffffff" if o["tips"] == "durvis" else "#c3d9fe"}" stroke="{LINE_C}" stroke-width=".06"/>')
+                g.append(f'<polygon points="{" ".join(f"{X(a_):.2f},{Y(b_):.2f}" for a_, b_ in q)}" fill="#ffffff" stroke="{LINE_C}" stroke-width=".06"/>')
+                if o['tips'] != 'durvis':      # logs: stikla līnija ailas vidū (durvis paliek tukšas)
+                    m0_, m1_ = ((q[0][0] + q[3][0]) / 2, (q[0][1] + q[3][1]) / 2), ((q[1][0] + q[2][0]) / 2, (q[1][1] + q[2][1]) / 2)
+                    g.append(f'<line x1="{X(m0_[0]):.2f}" y1="{Y(m0_[1]):.2f}" x2="{X(m1_[0]):.2f}" y2="{Y(m1_[1]):.2f}" stroke="{LINE_C}" stroke-width=".12"/>')
             vert = abs(dy) > .5
             pt = lambda u, off: (ox_ + dx * u + ex_ * off, oy_ + dy * u + ey_ * off)
             cuts = sorted({0.0, float(P.L)} | {float(o['u0']) for o in P.opens} | {float(o['u1']) for o in P.opens})

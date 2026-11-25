@@ -540,7 +540,28 @@ def generate(m):
         dpart = max(45.0, round(t - (sum(float(l[1] or 0) for l in S2 if (len(l) < 3 or l[2] != 'i')) if abs(t - sum(float(l[1] or 0) for l in S2)) < 2 else 50)))
         hz = abs(p['a'][1] - p['b'][1]) < 1
         a_, b_ = (p['a'][0], p['b'][0]) if hz else (p['a'][1], p['b'][1])
-        PR.append({'hz': hz, 'c': p['a'][1] if hz else p['a'][0], 'lo': min(a_, b_), 'hi': max(a_, b_), 'dp': dpart})
+        PR.append({'hz': hz, 'c': p['a'][1] if hz else p['a'][0], 'lo': min(a_, b_), 'hi': max(a_, b_), 'dp': dpart, 'walls': [p]})
+    # kolineāras starpsienas, ko perpendikulāra siena (T mezgls) sadalījusi, ir viena siena: apvieno vienā panelī
+    again = True
+    while again:
+        again = False
+        for ia in range(len(PR)):
+            for ib in range(len(PR)):
+                a_, b_ = PR[ia], PR[ib]
+                if ia == ib or a_['hz'] != b_['hz'] or abs(a_['c'] - b_['c']) > 5 or abs(a_['dp'] - b_['dp']) > 1 or b_['lo'] < a_['lo']:
+                    continue
+                gap_ = b_['lo'] - a_['hi']
+                if not -1 <= gap_ <= 400:
+                    continue
+                tee_ = any(q['hz'] != a_['hz'] and a_['hi'] - 60 <= q['c'] <= b_['lo'] + 60 and q['lo'] - q['dp'] - 150 <= a_['c'] <= q['hi'] + q['dp'] + 150
+                           for q in PR if q is not a_ and q is not b_)
+                if gap_ <= 60 or tee_:
+                    PR[ia] = {**a_, 'hi': max(a_['hi'], b_['hi']), 'walls': a_['walls'] + b_['walls']}
+                    del PR[ib]
+                    again = True
+                    break
+            if again:
+                break
 
     def _snap(j, end):
         """Starpsienas gals j (0 = lo, 1 = hi) uz tuvāko perpendikulāro ārsienas iekšmalu vai starpsienas skaldni (bez spraugām)."""
@@ -599,7 +620,7 @@ def generate(m):
                     jun.append((q['c'] - lo, q['dp'], sd))
         return jun, tuple(ends)
 
-    for j, p in enumerate(part):
+    for j in range(len(PR)):
         hz, fixed_c, dpart = PR[j]['hz'], PR[j]['c'], PR[j]['dp']
         lo, hi = SN[j]
         Lp = hi - lo
@@ -608,7 +629,8 @@ def generate(m):
         P = Panel(f'S{j + 1}', 'starpsiena', Lp, [(0, ceil), (Lp, ceil)], dpart, '(starpsiena)')
         ops = []
         for o in d['opens']:
-            if o['siena'] != p['id']:
+            p = next((w_ for w_ in PR[j]['walls'] if w_['id'] == o['siena']), None)
+            if p is None:
                 continue
             wd = (p['b'][0] - p['a'][0], p['b'][1] - p['a'][1])
             wl_ = math.hypot(*wd)
