@@ -176,7 +176,7 @@
     function roofDetail(roofs, c) {
       const { grp, poly, P, roofM, th0, vk } = c, up = new THREE.Vector3(0, 1, 0), SH = 2.5, BT = 50, RAF = 195;
       const M = (col, o) => new THREE.MeshLambertMaterial(Object.assign({ color: col, side: THREE.DoubleSide }, o || {}));
-      const dark = M("#2b3034"), fasM = M(P.fascia_hex || "#3a4046"), capM = M("#23282c"), rafM = M(P.sparu_hex || "#8c6c48"), sofM = M(P.parkare_hex || "#3a4046");
+      const dark = M("#3c4146"), fasM = M(P.fascia_hex || "#3c4146"), capM = M("#3c4146"), rafM = M(P.sparu_hex || "#8c6c48"), sofM = M(P.parkare_hex || "#3a4046");
       const S = roofs.map(g => {
         const o = g.outer.map(T3), d = new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), b = basis(o, d), O = o[0];
         { const uh = new THREE.Vector3().crossVectors(up, b.n).normalize(); if (uh.lengthSq() > .5) { b.u = uh; b.v = new THREE.Vector3().crossVectors(b.n, uh); } }   // falču raksts vienmēr pa kritumlīniju, nevis pa pirmo kontūras malu
@@ -261,14 +261,15 @@
           }
           const stripP = [e.a, e.b, [e.b[0] + e.ni[0] * ov, e.b[1] + e.ni[1] * ov], [e.a[0] + e.ni[0] * ov, e.a[1] + e.ni[1] * ov]];
           const full = s.th + 4, lo = R0 - 18;   // spāres gals vienmēr aizvērts: galda dēlis (dzega, vēja kaste) vai metāls (gals bez vēja kastes)
-          const bt = eave || vk ? 22 : 4, edgeM = eave || vk ? fasM : capM;
+          const sdN = Math.abs(out[1]) > Math.abs(out[0]) ? (out[1] < 0 ? "north" : "south") : (out[0] < 0 ? "west" : "east"), flush = eave && !ov;   // bez pārkares: dzegas mala klāta ar to pašu vagondēli kā siena (14 mm), tikai augšā plāna metāla lāse
+          const bt = flush ? 14 : eave || vk ? 22 : 4, edgeM = flush ? c.wallPlain(sdN) : eave || vk ? fasM : capM;
           if (ov) {   // pārkare: slīpā apakša (zem spārēm) + masīvs pīrāgs ar vertikālu griezumu
             slab(s, stripP, lo, R0, [sofM, sofM], true);
             slab(s, stripP, R0, s.th - SH - BT, [dark, dark], true);
           }
           hexa([at(s, e.a, ov ? lo : 0), at(s, e.b, ov ? lo : 0), at(s, e.b, full), at(s, e.a, full)], O3.clone().multiplyScalar(bt), edgeM).userData.bk = { k: "ov" };   // galda / vēja dēlis vai metāla mala
           if (eave) {   // metāla lāses mala virs dēļa
-            hexa([at(s, e.a, s.th - 40), at(s, e.b, s.th - 40), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt)), O3.clone().multiplyScalar(2.5), capM);
+            hexa([at(s, e.a, s.th - (flush ? 55 : 40)), at(s, e.b, s.th - (flush ? 55 : 40)), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt)), O3.clone().multiplyScalar(2.5), capM);
             gutter(s, e, bt, ov, out, L3, O3, R0);
           }
           if (!eave) slab(s, [e.a, e.b, [e.b[0] + e.ni[0] * 80, e.b[1] + e.ni[1] * 80], [e.a[0] + e.ni[0] * 80, e.a[1] + e.ni[1] * 80]], s.th, s.th + 6, [capM, capM], true);   // vēja loksnes metāla josla uz jumta
@@ -320,7 +321,7 @@
       });
       if (roofs.length) {
         const poly0 = m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [m.W, 0], [m.W, m.D], [0, m.D]];
-        try { roofDetail(roofs, { grp, poly: poly0.map(p => [+p[0], +p[1]]), P, roofM: mats.M_ROOF, th0: roofs[0].d || 300, vk: (m.jumts || {}).vejkaste !== false }); }
+        try { roofDetail(roofs, { grp, poly: poly0.map(p => [+p[0], +p[1]]), P, roofM: mats.M_ROOF, th0: roofs[0].d || 300, wallPlain: sd => wallMat(sd)[1], vk: (m.jumts || {}).vejkaste !== false }); }
         catch (e) { console.error("3D jumts:", e); roofs.forEach(g => { const me = extrude(g, mats.M_ROOF); me.userData.bk = { k: "ov" }; grp.add(me); }); }
       }
       { const wg = geo.find(g => g.k === "s" && g.mat === "M_WALL"); try { details(m, geo, grp, mat, frameM, wg ? wg.d : 283.5); } catch (e) { console.error("3D detaļas:", e); } }
