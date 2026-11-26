@@ -68,6 +68,12 @@
       x.fillStyle = "#3d4247"; x.fillRect(0, 0, 64, 64); x.fillStyle = "#2a2e32"; for (let i = 0; i < 64; i += 16) x.fillRect(0, i, 64, 2);
       const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
     }
+    // horizontālais vagondēlis: dēļi gar sienu, sprauga starp dēļiem
+    function stripeTexH(mod, n, gap, vary) {
+      const c = document.createElement("canvas"); c.width = 8; c.height = 64 * n; const x = c.getContext("2d");
+      for (let i = 0; i < n; i++) { const l = Math.round(255 * (1 - vary * ((i * 37 % 10) / 10))); x.fillStyle = `rgb(${l},${l},${l})`; x.fillRect(0, i * 64, 8, 64); x.fillStyle = `rgba(0,0,0,${gap})`; x.fillRect(0, i * 64, 8, 4); x.fillStyle = "rgba(255,255,255,.16)"; x.fillRect(0, i * 64 + 4, 8, 2); }
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1 / 1000, 1 / mod); t.anisotropy = 8; return t;
+    }
     function D0(m) { return m.D; }
     // joslu tekstūra (pelēktoņi, krāsu dod materiāls): fasādes dēļi, jumta valči, terases dēļi. mod = viena raksta platums mm
     function stripeTex(mod, n, gap, vary) {
@@ -93,6 +99,17 @@
         bx.applyMatrix4(new THREE.Matrix4().makeBasis(d, w, o3).setPosition(mid.addScaledVector(w, cw / 2).addScaledVector(o3, th / 2))); out.add(bx);
       });
     }
+    function casingBoards(P3, o3, mat, out, skipBottom) {   // aplodas: sāni 65, augša/apakša 95, biezums 19
+      const c = P3.reduce((r, p) => r.add(p), new THREE.Vector3()).multiplyScalar(1 / P3.length), minY = Math.min(...P3.map(p => p.y));
+      P3.forEach((a, i) => {
+        const b = P3[(i + 1) % P3.length], d = new THREE.Vector3().subVectors(b, a), L = d.length(); if (L < 1) return; d.normalize();
+        const mid = a.clone().add(b).multiplyScalar(.5); if (skipBottom && Math.abs(d.y) < .01 && mid.y <= minY + 1) return;
+        const vert = Math.abs(d.y) > .99, cw = vert ? 65 : 95;
+        let w = new THREE.Vector3().crossVectors(o3, d).normalize(); if (w.dot(mid.clone().sub(c)) < 0) { w.negate(); d.negate(); }
+        const bx = new THREE.Mesh(new THREE.BoxGeometry(vert ? L : L + 130, cw, 19), mat);
+        bx.applyMatrix4(new THREE.Matrix4().makeBasis(d, w, o3).setPosition(mid.addScaledVector(w, cw / 2).addScaledVector(o3, 9.5))); out.add(bx);
+      });
+    }
     // fasādes detaļas kā rasējumā: aplodas, palodzes, dalījumi, durvju stikls un rokturis, notekas, stabi, terases, lievenis
     function details(m, geo, grp, mat, frameM, T) {
       const P = m.projekts || {}, J = m.jumts || {}, W = m.W, D = m.D, pitch = J.pitch || 30, tan = Math.tan(pitch * Math.PI / 180), eave = J.eave || 2600, ov = +J.ov || 0;
@@ -103,14 +120,15 @@
         if ((g.k !== "g" && g.k !== "d") || !g.n) return;
         const o = [-g.n[0], -g.n[1]], o3 = new THREE.Vector3(o[0], 0, o[1]), face = g.pts.map(p => T3([p[0] + o[0] * T / 2, p[1] + o[1] * T / 2, p[2]]));
         const w = g.k === "g" ? (g.ref.k === "win" ? (m.windows || [])[g.ref.i] : (m.gableWins || [])[g.ref.i]) : (m.doors || [])[g.ref.i], cas = w && w.casing === 0 ? 0 : 1;
-        if (cas) edgeBoards(face, o3, 100, 24, frameM, grp, !(w && w.casingAll));
+        if (cas) casingBoards(face, o3, frameM, grp, !(w && w.casingAll));
         const z0 = Math.min(...g.pts.map(p => p[2])), z1 = Math.max(...g.pts.map(p => p[2])), bot = g.pts.filter(p => p[2] <= z0 + 1);
         if (bot.length >= 2) {
           const a = bot[0], b = bot[bot.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), t = [(b[0] - a[0]) / L, (b[1] - a[1]) / L], cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2, at = (f, off, z) => [a[0] + (b[0] - a[0]) * f + o[0] * off, a[1] + (b[1] - a[1]) * f + o[1] * off, z];
           if (g.k === "g") {
-            grp.add(obox([cx + o[0] * (T / 2 + 25), cy + o[1] * (T / 2 + 25), z0 - 8], t, L + 70, 90, 16, frameM));   // skārda palodze
+            grp.add(obox([cx + o[0] * (T / 2 + 13), cy + o[1] * (T / 2 + 13), z0 - 12.5], t, L + 130, 26, 25, frameM));   // palodze: izvirzījums max 7 mm aiz aplodām (19 + 7)
+            if (g.pts.length === 4) grp.add(obox([cx + o[0] * (T / 2 + 13), cy + o[1] * (T / 2 + 13), z1 + 105], t, L + 130, 26, 20, frameM));   // augšējā dzega 20 mm
             const cuts = []; if (w && w.parts && w.parts.length > 1) { let u = 0; w.parts.slice(0, -1).forEach(q => { u += +q.len || 0; cuts.push(u / (w.len || L)); }); } else if (w && /^slide/.test(w.kind || "")) cuts.push(.5);
-            cuts.forEach(f => grp.add(obox(at(f, 15, (z0 + z1) / 2), t, 70, 80, z1 - z0, frameM)));   // dalījuma statnis
+            cuts.forEach(f => grp.add(obox(at(f, -155, (z0 + z1) / 2), t, 60, 60, z1 - z0, frameM)));   // dalījuma statnis
           } else {
             const fl = g.hinge === "e" ? 1 : 0, f = x => fl ? 1 - x : x;
             grp.add(obox(at(f(.76), 14, 1100), t, Math.min(140, L * .16), 10, 1500, glassD));   // šaura stikla josla
@@ -130,12 +148,7 @@
           grp.add(cyl(T3(top), T3([wp[0], wp[1], top[2] - Math.max(250, l2 * .8)]), 45, gutM)); grp.add(cyl(T3([wp[0], wp[1], top[2] - Math.max(250, l2 * .8)]), T3([wp[0], wp[1], -250]), 45, gutM)); });
       };
       const wallOf = t => { let best = null, bd = 1e9; poly.forEach((p0, i) => { const p1 = poly[(i + 1) % poly.length], dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((t[0] - p0[0]) * dx + (t[1] - p0[1]) * dy) / l)), q = [p0[0] + u * dx, p0[1] + u * dy], d2 = Math.hypot(t[0] - q[0], t[1] - q[1]); if (d2 < bd) { bd = d2; best = q; } }); return best; };
-      if (RL) RL.eaves.forEach(([p, q, key]) => run(p, q, wallOf, key)); else {
-      run([-oW, -oN - 60, eave - oN * tan], [W + oE, -oN - 60, eave - oN * tan], t => [Math.max(60, Math.min(W - 60, t[0])), 0], "north");
-      run([-oW, D + oS + 60, eave - oS * tan], [W + oE, D + oS + 60, eave - oS * tan], t => [Math.max(60, Math.min(W - 60, t[0])), D], "south");
-      if (tanH) { const zW = eave - oW * tanH, zE = eave - oE * tanH;
-        run([-oW - 60, -oN, zW], [-oW - 60, D + oS, zW], t => [0, Math.max(60, Math.min(D - 60, t[1]))], "west");
-        run([W + oE + 60, -oN, zE], [W + oE + 60, D + oS, zE], t => [W, Math.max(60, Math.min(D - 60, t[1]))], "east"); } }
+      // teknes un notekcaurules zīmē roofDetail (pēc fasādes: pustekne ar 120 mm augstumu, caurule Ø80 180 mm no stūra)
       // stabi: līdz jumta apakšai vai līdz savam augstumam (posts[i].h)
       const texOf = (o, k) => { if (!o || !o.tex) return null; const t = new THREE.TextureLoader().load(o.tex, () => draw()); t.wrapS = t.wrapT = THREE.RepeatWrapping; const w = Math.max(100, +o.texW || 1000); t.repeat.set(k / w, k / w); if (o.texRot) t.rotation = o.texRot * Math.PI / 180; return t; };
       const wood = (c, o) => { const t = texOf(o, 300); return t ? new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide }) : mat(c || "#b98a5c"); };
@@ -158,27 +171,158 @@
       (m.terraces || []).forEach((t, i) => deck(t.poly, -25, Math.max(60, (+t.th || 300) - 25), t.col, { k: "ter", i }, t));
       if (m.porch) { deck(m.porch.poly, -25, 275, m.porch.col, { k: "porch" }, m.porch); const s = m.porch.step, sp = m.porch.stepPoly || (s && [[s[0], s[1]], [s[2], s[1]], [s[2], s[3]], [s[0], s[3]]]); if (sp) deck(sp, -165, 135, m.porch.col, { k: "porch" }); }
     }
+    // ---------- jumta mezgls: spāres ar vertikālu galu griezumu, pārkares apakša, fascija, kores/dzegu metāla nosegi ----------
+    // Slāņu secība virs plaknes (perpendikulāri): [0..R0] iekšējie slāņi, [R0..R0+195] spāres, 50 latojumi, 2,5 jumta segums. Visi malu griezumi ir VERTIKĀLI (bīde pa vertikāli).
+    function roofDetail(roofs, c) {
+      const { grp, poly, P, roofM, th0, vk } = c, up = new THREE.Vector3(0, 1, 0), SH = 2.5, BT = 50, RAF = 195;
+      const M = (col, o) => new THREE.MeshLambertMaterial(Object.assign({ color: col, side: THREE.DoubleSide }, o || {}));
+      const dark = M("#2b3034"), fasM = M(P.fascia_hex || "#3a4046"), capM = M("#23282c"), rafM = M(P.sparu_hex || "#8c6c48"), sofM = M(P.parkare_hex || "#3a4046");
+      const S = roofs.map(g => {
+        const o = g.outer.map(T3), d = new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), b = basis(o, d), O = o[0];
+        { const uh = new THREE.Vector3().crossVectors(up, b.n).normalize(); if (uh.lengthSq() > .5) { b.u = uh; b.v = new THREE.Vector3().crossVectors(b.n, uh); } }   // falču raksts vienmēr pa kritumlīniju, nevis pa pirmo kontūras malu
+        return { g, b, O, nz: b.n.y, th: +g.d || th0, pl: g.outer.map(p => [p[0], p[1]]), zAt: (x, y) => O.y - (b.n.x * (x - O.x) + b.n.z * (y - O.z)) / b.n.y };
+      });
+      const slab = (s, pl, t0, t1, mats, bk) => {   // plāna daudzstūris uz slīpnes, biezums t0..t1 perpendikulāri, malas vertikālas
+        if (pl.length < 3) return;
+        const { u, v } = s.b, to2 = ([x, y]) => { const p = new THREE.Vector3(x, s.zAt(x, y), y).sub(s.O); return new THREE.Vector2(p.dot(u), p.dot(v)); };
+        const ge = new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(to2)), { depth: t1 - t0, bevelEnabled: false });
+        ge.applyMatrix4(new THREE.Matrix4().makeBasis(u, v, up.clone().multiplyScalar(1 / s.nz)).setPosition(s.O.clone().addScaledVector(up, t0 / s.nz)));   // bīde ir ģeometrijā (Object3D.applyMatrix4 bīdi pazaudē)
+        const me = new THREE.Mesh(ge, mats);
+        if (bk) me.userData.bk = { k: "ov" }; grp.add(me);
+      };
+      const hexa = (q, vec, mat) => {   // četrstūris (4 punkti) izvilkts pa vec
+        const p = [...q, ...q.map(r => r.clone().add(vec))], pos = [];
+        [[0, 1, 2, 3], [7, 6, 5, 4], [0, 4, 5, 1], [1, 5, 6, 2], [2, 6, 7, 3], [3, 7, 4, 0]].forEach(([a, b, c2, d]) => [a, b, c2, a, c2, d].forEach(i => pos.push(p[i].x, p[i].y, p[i].z)));
+        const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); const me = new THREE.Mesh(g, mat); grp.add(me); return me;
+      };
+      const at = (s, [x, y], t) => new THREE.Vector3(x, s.zAt(x, y) + t / s.nz, y);   // punkts uz slīpnes ar vertikālu bīdi t/nz
+      const clip = (pl, a, n, d) => {   // pusplakne: paturam punktus ar (p-a)·n >= d
+        const out = [], f = p => (p[0] - a[0]) * n[0] + (p[1] - a[1]) * n[1] - d;
+        pl.forEach((p, i) => { const q = pl[(i + 1) % pl.length], fp = f(p), fq = f(q); if (fp >= 0) out.push(p); if ((fp >= 0) !== (fq >= 0)) { const k = fp / (fp - fq); out.push([p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k]); } });
+        return out;
+      };
+      const rayHit = (m, n) => {   // attālums no punkta pa virzienu n līdz plāna kontūrai (0 = punkts jau uz kontūras)
+        let best = 1e9;
+        poly.forEach((p, i) => { const q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], dn = n[0] * dy - n[1] * dx; if (Math.abs(dn) < 1e-9) return;
+          const t = ((p[0] - m[0]) * dy - (p[1] - m[1]) * dx) / dn, u = ((p[0] - m[0]) * n[1] - (p[1] - m[1]) * n[0]) / dn; if (u >= -1e-6 && u <= 1 + 1e-6 && t > -1e-6) best = Math.min(best, t); });
+        return best > 1e8 ? 0 : best;
+      };
+      const key = (p) => p.map(v => Math.round(v)).join(",");
+      const shared = {};
+      S.forEach((s, k) => s.pl.forEach((p, i) => { const q = s.pl[(i + 1) % s.pl.length], a = [p[0], p[1], s.g.outer[i][2]], b = [q[0], q[1], s.g.outer[(i + 1) % s.pl.length][2]], kk = [key(a), key(b)].sort().join("|"); (shared[kk] = shared[kk] || []).push({ k, i }); }));
+      const gutM = M(hexOf(P.noteku_tonis || "RAL 7016")), clampM = M("#22262a");
+      const cylB = (a, b, r, mat) => { const d = new THREE.Vector3().subVectors(b, a), L = d.length(); if (L < 1) return; const me = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 16), mat); me.position.copy(a).addScaledVector(d, .5); me.quaternion.setFromUnitVectors(up, d.clone().normalize()); grp.add(me); };
+      const ball = (p, r, mat) => { const me = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 8), mat); me.position.copy(p); grp.add(me); };
+      // teknes pēc fasādes: pustekne ar 120 mm augstumu (augša vienā līmenī ar jumta malas augšu), āķi ik 600, gala vāki, notekcaurule Ø80 180 mm no stūra ar savienojumu, skavām un ceļgalu
+      const gutter = (s, e, bt, ov, out, L3, O3, R0) => {
+        const key = Math.abs(out[1]) > Math.abs(out[0]) ? (out[1] < 0 ? "north" : "south") : (out[0] < 0 ? "west" : "east"), NK = P.notekas || {};
+        if (NK[key] === false || NK.visas === false) return;
+        const r = 60, top = at(s, e.a, s.th + 4).y, zc = top - r, off = bt + r + 3, pt = (p, o, z) => new THREE.Vector3(p[0] + out[0] * o, z, p[1] + out[1] * o);
+        const A = pt([e.a[0] - e.d[0] * 40, e.a[1] - e.d[1] * 40], off, zc), B = pt([e.b[0] + e.d[0] * 40, e.b[1] + e.d[1] * 40], off, zc), len = A.distanceTo(B);
+        const gg = new THREE.CylinderGeometry(r, r, len, 28, 1, true, Math.PI / 2, Math.PI); gg.applyMatrix4(new THREE.Matrix4().makeBasis(O3, L3, up).setPosition(A.clone().add(B).multiplyScalar(.5))); grp.add(new THREE.Mesh(gg, gutM));
+        [A, B].forEach(p => { const cg = new THREE.CircleGeometry(r, 28, Math.PI, Math.PI); cg.applyMatrix4(new THREE.Matrix4().makeBasis(O3, up, L3).setPosition(p)); grp.add(new THREE.Mesh(cg, gutM)); });   // gala vāki
+        const nh = Math.max(1, Math.round(e.L / 600));
+        for (let i = 0; i <= nh; i++) { const t = Math.max(30, Math.min(e.L - 30, i * e.L / nh)), c0 = pt([e.a[0] + e.d[0] * t, e.a[1] + e.d[1] * t], off, zc);   // āķi: loks ap teknes profilu + josla uz dēļa
+          const tg = new THREE.TorusGeometry(r + 2, 2.2, 6, 20, Math.PI); tg.applyMatrix4(new THREE.Matrix4().makeBasis(O3, up.clone().negate(), L3).setPosition(c0)); grp.add(new THREE.Mesh(tg, clampM));
+          hexa([c0.clone().addScaledVector(O3, -off + bt - 1).setY(zc - 4), c0.clone().setY(zc - 4), c0.clone().setY(zc + r + 4), c0.clone().addScaledVector(O3, -off + bt - 1).setY(zc + r + 4)].map(q => q.addScaledVector(L3, -11)), L3.clone().multiplyScalar(22), clampM); }
+        // notekcaurules: pie sienas, 180 mm no stūra
+        const spans = []; poly.forEach((p, i) => { const q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1; if (Math.abs(dx * e.d[1] - dy * e.d[0]) / l > .01) return;
+          const dist = (p[0] - e.a[0]) * e.ni[0] + (p[1] - e.a[1]) * e.ni[1]; if (Math.abs(dist - ov) > 8) return; const t0 = (p[0] - e.a[0]) * e.d[0] + (p[1] - e.a[1]) * e.d[1], t1 = (q[0] - e.a[0]) * e.d[0] + (q[1] - e.a[1]) * e.d[1]; spans.push([Math.min(t0, t1), Math.max(t0, t1)]); });
+        if (!spans.length) return;
+        const t0 = Math.min(...spans.map(q => q[0])), t1 = Math.max(...spans.map(q => q[1])), ts = t1 - t0 > 1200 ? [t0 + 180, t1 - 180] : [(t0 + t1) / 2];
+        ts.forEach(t => {
+          const pe = [e.a[0] + e.d[0] * t, e.a[1] + e.d[1] * t], pw = [pe[0] + e.ni[0] * ov, pe[1] + e.ni[1] * ov], wo = 50, hz = off - ov - wo;
+          const P1 = pt(pe, off, zc - r), P2 = P1.clone().setY(P1.y - 150), jog = Math.abs(hz) < 12 ? 0 : Math.max(300, Math.abs(hz) * 1.5), P3 = pt(pw, wo, P2.y - jog), P4 = pt(pw, wo, -150);
+          cylB(P1, P2, 40, gutM); ball(P2, 40, gutM); if (jog) { cylB(P2, P3, 40, gutM); ball(P3, 40, gutM); } cylB(P3, P4, 40, gutM);
+          for (let z = 600; z < P3.y - 250; z += 1100) { const cl = new THREE.Mesh(new THREE.CylinderGeometry(46, 46, 30, 16), clampM); cl.position.set(P4.x, z, P4.z); grp.add(cl); }
+          const foot = pt(pw, wo + 170, -215); ball(P4, 40, gutM); cylB(P4, foot, 40, gutM);   // apakšējais ceļgals uz āru
+        });
+      };
+      S.forEach((s, k) => {
+        const R0 = Math.max(0, s.th - SH - BT - RAF), n0 = s.pl.length, cen = s.pl.reduce((r, p) => [r[0] + p[0] / n0, r[1] + p[1] / n0], [0, 0]);
+        let inner = s.pl.slice();
+        const edges = s.pl.map((a, i) => {
+          const b = s.pl[(i + 1) % n0], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 1) return null;
+          const d = [(b[0] - a[0]) / L, (b[1] - a[1]) / L]; let ni = [-d[1], d[0]]; if ((cen[0] - a[0]) * ni[0] + (cen[1] - a[1]) * ni[1] < 0) ni = [-ni[0], -ni[1]];
+          const za = s.g.outer[i][2], zb = s.g.outer[(i + 1) % n0][2], kk = [key([a[0], a[1], za]), key([b[0], b[1], zb])].sort().join("|"), mates = (shared[kk] || []).filter(q => q.k !== k);
+          return { a, b, L, d, ni, za, zb, mates, i };
+        }).filter(Boolean);
+        edges.forEach(e => { if (e.mates.length) return; const mid = [(e.a[0] + e.b[0]) / 2, (e.a[1] + e.b[1]) / 2], onWall = poly.some((p, i) => { const q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], l2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((mid[0] - p[0]) * dx + (mid[1] - p[1]) * dy) / l2)); return Math.hypot(mid[0] - p[0] - u * dx, mid[1] - p[1] - u * dy) < 6; });
+          const ov = onWall ? 0 : rayHit(mid, e.ni); e.ov = ov > 5 && ov < 3000 ? ov : 0; if (e.ov) inner = clip(inner, e.a, e.ni, e.ov); });
+        // pamatplaksne: viss pīrāgs [0..th], malas vertikālas
+        slab(s, s.pl, s.th - SH - BT, s.th, [roofM, dark], true);   // augšējā kārta (latojumi + segums) visai slīpnei vienā gabalā, lai jumtā nav šuvju līniju
+        slab(s, inner, 0, s.th - SH - BT, [dark, dark], true);
+        edges.forEach(e => {
+          const eave = !e.mates.length && Math.abs(e.za - e.zb) < 1 && s.zAt(cen[0], cen[1]) > e.za, out = [-e.ni[0], -e.ni[1]], ov = e.ov || 0, L3 = new THREE.Vector3(e.d[0], 0, e.d[1]), O3 = new THREE.Vector3(out[0], 0, out[1]);
+          if (e.mates.length) {   // kore, grēda vai ieleja: metāla nosegs katrā pusē
+            const o = S[e.mates[0].k], oc = o.pl.reduce((r, p) => [r[0] + p[0] / o.pl.length, r[1] + p[1] / o.pl.length], [0, 0]), convex = o.zAt(oc[0], oc[1]) < s.zAt(oc[0], oc[1]) - 1, w = convex ? 140 : 100;
+            slab(s, [e.a, e.b, [e.b[0] + e.ni[0] * w, e.b[1] + e.ni[1] * w], [e.a[0] + e.ni[0] * w, e.a[1] + e.ni[1] * w]], s.th, s.th + (convex ? 10 : 6), [capM, capM], true);
+            return;
+          }
+          const stripP = [e.a, e.b, [e.b[0] + e.ni[0] * ov, e.b[1] + e.ni[1] * ov], [e.a[0] + e.ni[0] * ov, e.a[1] + e.ni[1] * ov]];
+          const full = s.th + 4, lo = R0 - 18;   // spāres gals vienmēr aizvērts: galda dēlis (dzega, vēja kaste) vai metāls (gals bez vēja kastes)
+          const bt = eave || vk ? 22 : 4, edgeM = eave || vk ? fasM : capM;
+          if (ov) {   // pārkare: slīpā apakša (zem spārēm) + masīvs pīrāgs ar vertikālu griezumu
+            slab(s, stripP, lo, R0, [sofM, sofM], true);
+            slab(s, stripP, R0, s.th - SH - BT, [dark, dark], true);
+          }
+          hexa([at(s, e.a, ov ? lo : 0), at(s, e.b, ov ? lo : 0), at(s, e.b, full), at(s, e.a, full)], O3.clone().multiplyScalar(bt), edgeM).userData.bk = { k: "ov" };   // galda / vēja dēlis vai metāla mala
+          if (eave) {   // metāla lāses mala virs dēļa
+            hexa([at(s, e.a, s.th - 40), at(s, e.b, s.th - 40), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt)), O3.clone().multiplyScalar(2.5), capM);
+            gutter(s, e, bt, ov, out, L3, O3, R0);
+          }
+          if (!eave) slab(s, [e.a, e.b, [e.b[0] + e.ni[0] * 80, e.b[1] + e.ni[1] * 80], [e.a[0] + e.ni[0] * 80, e.a[1] + e.ni[1] * 80]], s.th, s.th + 6, [capM, capM], true);   // vēja loksnes metāla josla uz jumta
+        });
+      });
+    }
+    // ---------- logs kā realitātē: aplodas ārpusē, ailas odere, rāmis un spārns, dubultā stikla pakete 4-16-4 ar distancētāju ----------
+    // dziļumi d mērīti no sienas ārējās virsmas uz iekšu: odere 0..120, rāmis 120..190, stikli 140..144 un 160..164, distancētājs 144..160
+    function windowDetail(g, T, grp, frameM, glassM, picks) {
+      const ni = new THREE.Vector3(g.n[0], 0, g.n[1]).normalize(), F = g.pts.map(T3).map(p => p.addScaledVector(ni, -T / 2));
+      const cen = F.reduce((r, p) => r.add(p), new THREE.Vector3()).multiplyScalar(1 / F.length), at = (p, d) => p.clone().addScaledVector(ni, d);
+      const spM = new THREE.MeshLambertMaterial({ color: "#1b1d1f", side: THREE.DoubleSide });
+      const ring = (w, d0, d1, mat, inset) => F.forEach((a, i) => {
+        const b = F[(i + 1) % F.length], dv = b.clone().sub(a), L = dv.length(); if (L < 1) return; dv.normalize();
+        const wd = new THREE.Vector3().crossVectors(ni, dv).normalize(); if (wd.dot(cen.clone().sub(a)) < 0) wd.negate();   // uz ailas centru
+        const bx = new THREE.Mesh(new THREE.BoxGeometry(L, w, d1 - d0), mat);
+        bx.applyMatrix4(new THREE.Matrix4().makeBasis(dv, wd, ni).setPosition(a.clone().add(b).multiplyScalar(.5).addScaledVector(wd, inset + w / 2).addScaledVector(ni, (d0 + d1) / 2))); grp.add(bx);
+      });
+      ring(19, 0, 120, frameM, 1);      // ailas odere
+      ring(50, 120, 190, frameM, 0);    // ārējais rāmis 50 × 70
+      ring(35, 130, 182, frameM, 50);   // spārns
+      ring(14, 144, 160, spM, 85);      // stikla distancētājs
+      const pane = d => { const { n, u, v } = basis(F), to2 = p => new THREE.Vector2(p.clone().sub(F[0]).dot(u), p.clone().sub(F[0]).dot(v)), ge = new THREE.ExtrudeGeometry(new THREE.Shape(F.map(to2)), { depth: 4, bevelEnabled: false }), me = new THREE.Mesh(ge, glassM.clone());
+        me.applyMatrix4(new THREE.Matrix4().makeBasis(u, v, n).setPosition(at(F[0], n.dot(ni) > 0 ? d : d + 4))); me.material.opacity = .5; me.userData.ref = g.ref; picks.push(me); grp.add(me); };
+      pane(140); pane(160);
+    }
     function buildScene(m) {
       const P = m.projekts || {}, tk = V.tone || lv0(), wallHex = (tk === lv0() && P.sienas_hex) || TONES[tk].sw, frameHex = hexOf(P.logu_tonis || TONES[tk].logi);
       const geo = []; skpRb(m, geo);
       const grp = new THREE.Group(), walls = [], picks = [];
       const mat = (c, o = {}) => new THREE.MeshLambertMaterial(Object.assign({ color: c, side: THREE.DoubleSide }, o));
-      const cladTex = stripeTex(600, 4, .5, .1), seamTex = stripeTex(500, 1, .35, 0), sideHex = (tk === lv0() && P.fasade_side) || {}, wallM = {};
+      const cladTex = (P.apdare_orient === "h" ? stripeTexH : stripeTex)(600, 4, .6, .1), seamTex = stripeTex(500, 1, .35, 0), sideHex = (tk === lv0() && P.fasade_side) || {}, wallM = {};
       const wallMat = sd => wallM[sd] || (wallM[sd] = [mat((sideHex[sd] && sideHex[sd].hex) || wallHex, { map: cladTex }), mat((sideHex[sd] && sideHex[sd].hex) || wallHex)]);   // [fasādes plakne ar dēļiem, ailu un galu malas]
-      const mats = { M_WALL: mat(wallHex), M_INT: mat("#f2efe9"), M_FLOOR: mat(P.pamati === "platne" ? "#9a9a96" : hexOf(P.cokols || "RAL 9005")), M_ROOF: mat("#454b50", { map: seamTex }), M_STAIR: mat("#c9a77c") };
-      const frameM = mat(frameHex), glassM = mat("#7fa5b8", { transparent: true, opacity: .75 });
+      const mats = { M_WALL: mat(wallHex), M_INT: mat("#f2efe9"), M_FLOOR: mat(P.pamati === "platne" ? "#9a9a96" : hexOf(P.cokols || "RAL 9005")), M_ROOF: mat("#3c4146", { map: seamTex }), M_STAIR: mat("#c9a77c") };
+      const frameM = mat(frameHex), glassM = mat("#6f8d9b", { transparent: true, opacity: .75 });
       const facts = { win: { south: 0, north: 0, east: 0, west: 0 }, door: { south: 0, north: 0, east: 0, west: 0 }, gable: { east: 0, west: 0 } };
+      const roofs = [], WT = (geo.find(q => q.k === "s" && q.mat === "M_WALL") || {}).d || 283.5;
       geo.forEach(g => {
+        if (g.k === "s" && g.mat === "M_ROOF") { roofs.push(g); return; }
         if (g.k === "s") { const me = extrude(g, g.mat === "M_WALL" ? wallMat(sideOfN(g.dir)) : mats[g.mat] || mats.M_WALL);
           if (g.mat === "M_ROOF" && P.parkare_hex && tk === lv0()) { const sf = extrude(Object.assign({}, g, { d: 18 }), mat(P.parkare_hex)); sf.userData.bk = { k: "ov" }; sf.position.addScaledVector(new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), -19); grp.add(sf); } /* jumta pārkares apakša savā tonī */ if (g.mat === "M_WALL") { walls.push(me); me.userData.bk = { k: "fas", side: sideOfN(g.dir) }; } if (g.mat === "M_ROOF") me.userData.bk = { k: "ov" }; if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
         else if (g.k === "g") {
-          const p3 = g.pts.map(T3); { const gm = planeMesh(p3, glassM.clone(), 0); gm.userData.ref = g.ref; picks.push(gm); grp.add(gm); } frameAround(p3, frameM, grp, 80, 90);
+          windowDetail(g, WT, grp, frameM, glassM, picks);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) { if (g.pts.some(p => p[2] > (m.jumts && m.jumts.eave || 2600) - 400) || g.pts.length > 4) facts.gable[sd] = (facts.gable[sd] || 0) + 1; else facts.win[sd]++; }
         } else if (g.k === "d") {
           const p3 = g.pts.map(T3); { const dm = planeMesh(p3, frameM.clone(), 0); dm.userData.ref = g.ref; picks.push(dm); grp.add(dm); } frameAround(p3, frameM, grp, 90, 100);
           const sd = sideOf(g.pts, m.W, m.D); if (sd) facts.door[sd]++;
         }
       });
+      if (roofs.length) {
+        const poly0 = m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [m.W, 0], [m.W, m.D], [0, m.D]];
+        try { roofDetail(roofs, { grp, poly: poly0.map(p => [+p[0], +p[1]]), P, roofM: mats.M_ROOF, th0: roofs[0].d || 300, vk: (m.jumts || {}).vejkaste !== false }); }
+        catch (e) { console.error("3D jumts:", e); roofs.forEach(g => { const me = extrude(g, mats.M_ROOF); me.userData.bk = { k: "ov" }; grp.add(me); }); }
+      }
       { const wg = geo.find(g => g.k === "s" && g.mat === "M_WALL"); try { details(m, geo, grp, mat, frameM, wg ? wg.d : 283.5); } catch (e) { console.error("3D detaļas:", e); } }
       (m.freeWalls || []).forEach(f => { const hh = (m.jumts && m.jumts.eave) || 2600, b = new THREE.Mesh(new THREE.BoxGeometry(f[2], hh, f[3]), mat(wallHex)); b.position.set(f[0] + f[2] / 2, hh / 2, f[1] + f[3] / 2); grp.add(b); });   // brīvās sienas
       // terase
@@ -217,6 +361,11 @@
       const gr = new THREE.Mesh(new THREE.PlaneGeometry(200000, 200000), new THREE.MeshLambertMaterial({ color: "#939c84" }));
       gr.rotation.x = -Math.PI / 2; gr.position.y = -301; grp.add(gr);
       grp.traverse(o => { if (o.isMesh && o !== gr && !(o.material && o.material.transparent)) { o.castShadow = true; o.receiveShadow = true; } }); gr.receiveShadow = true;
+      // SketchUp stila malas: smalka melna līnija visai ģeometrijai (leņķis > 25°); virsmas nobīdītas, lai līnijas nemirgo
+      { const edgeM = new THREE.LineBasicMaterial({ color: "#0b0d0e" }), ms = [];
+        grp.traverse(o => { if (o.isMesh && o !== gr && o.geometry && !(o.material && !Array.isArray(o.material) && o.material.transparent)) ms.push(o); });
+        ms.forEach(o => { (Array.isArray(o.material) ? o.material : [o.material]).forEach(q => { q.polygonOffset = true; q.polygonOffsetFactor = 1; q.polygonOffsetUnits = 1; });
+          const l = new THREE.LineSegments(new THREE.EdgesGeometry(o.geometry, 25), edgeM); l.userData.edge = 1; l.raycast = () => {}; l.castShadow = false; l.receiveShadow = false; o.add(l); }); }
       return { grp, walls, facts, tr, picks };
     }
     // ---------- kamera ----------
