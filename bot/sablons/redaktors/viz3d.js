@@ -337,16 +337,18 @@
         const key = Math.abs(out[1]) > Math.abs(out[0]) ? (out[1] < 0 ? "north" : "south") : (out[0] < 0 ? "west" : "east"), NK = P.notekas || {};
         if (NK[key] === false || NK.visas === false) return;
         const r = 60, top = at(s, e.a, s.th + 4).y, zc = top - r, off = bt + r + 3, pt = (p, o, z) => new THREE.Vector3(p[0] + out[0] * o, z, p[1] + out[1] * o);
-        const A = pt([e.a[0] - e.d[0] * 40, e.a[1] - e.d[1] * 40], off, zc), B = pt([e.b[0] + e.d[0] * 40, e.b[1] + e.d[1] * 40], off, zc), len = A.distanceTo(B);
+        const spans = []; poly.forEach((p, i) => { const q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1; if (Math.abs(dx * e.d[1] - dy * e.d[0]) / l > .01) return;
+          const dist = (p[0] - e.a[0]) * e.ni[0] + (p[1] - e.a[1]) * e.ni[1]; if (Math.abs(dist - ov) > 8) return; const t0 = (p[0] - e.a[0]) * e.d[0] + (p[1] - e.a[1]) * e.d[1], t1 = (q[0] - e.a[0]) * e.d[0] + (q[1] - e.a[1]) * e.d[1]; spans.push([Math.min(t0, t1), Math.max(t0, t1)]); });
+        // teknes gali: neiziet ārpus fasādes, beidzas 15 mm pirms tās (ja nav sienas, vecais pagarinājums)
+        const tA = spans.length ? Math.min(...spans.map(q => q[0])) + 15 : -40, tB = spans.length ? Math.max(...spans.map(q => q[1])) - 15 : e.L + 40;
+        const A = pt([e.a[0] + e.d[0] * tA, e.a[1] + e.d[1] * tA], off, zc), B = pt([e.a[0] + e.d[0] * tB, e.a[1] + e.d[1] * tB], off, zc), len = A.distanceTo(B);
         const gg = new THREE.CylinderGeometry(r, r, len, 28, 1, true, Math.PI / 2, Math.PI); gg.applyMatrix4(new THREE.Matrix4().makeBasis(O3, L3, up).setPosition(A.clone().add(B).multiplyScalar(.5))); grp.add(new THREE.Mesh(gg, gutM));
         [A, B].forEach(p => { const cg = new THREE.CircleGeometry(r, 28, Math.PI, Math.PI); cg.applyMatrix4(new THREE.Matrix4().makeBasis(O3, up, L3).setPosition(p)); grp.add(new THREE.Mesh(cg, gutM)); });   // gala vāki
-        const nh = Math.max(1, Math.round(e.L / 600));
-        for (let i = 0; i <= nh; i++) { const t = Math.max(30, Math.min(e.L - 30, i * e.L / nh)), c0 = pt([e.a[0] + e.d[0] * t, e.a[1] + e.d[1] * t], off, zc);   // āķi: loks ap teknes profilu + josla uz dēļa
+        const nh = Math.max(1, Math.round((tB - tA) / 600));
+        for (let i = 0; i <= nh; i++) { const t = Math.max(tA + 30, Math.min(tB - 30, tA + i * (tB - tA) / nh)), c0 = pt([e.a[0] + e.d[0] * t, e.a[1] + e.d[1] * t], off, zc);   // āķi: loks ap teknes profilu + josla uz dēļa
           const tg = new THREE.TorusGeometry(r + 2, 2.2, 6, 20, Math.PI); tg.applyMatrix4(new THREE.Matrix4().makeBasis(O3, up.clone().negate(), L3).setPosition(c0)); grp.add(new THREE.Mesh(tg, clampM));
         }
         // notekcaurules: pie sienas, 180 mm no stūra
-        const spans = []; poly.forEach((p, i) => { const q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1; if (Math.abs(dx * e.d[1] - dy * e.d[0]) / l > .01) return;
-          const dist = (p[0] - e.a[0]) * e.ni[0] + (p[1] - e.a[1]) * e.ni[1]; if (Math.abs(dist - ov) > 8) return; const t0 = (p[0] - e.a[0]) * e.d[0] + (p[1] - e.a[1]) * e.d[1], t1 = (q[0] - e.a[0]) * e.d[0] + (q[1] - e.a[1]) * e.d[1]; spans.push([Math.min(t0, t1), Math.max(t0, t1)]); });
         if (!spans.length) return;
         const t0 = Math.min(...spans.map(q => q[0])), t1 = Math.max(...spans.map(q => q[1])), ts = t1 - t0 > 1200 ? [t0 + 180, t1 - 180] : [(t0 + t1) / 2];
         ts.forEach(t => {
@@ -555,7 +557,7 @@
       V.renderer.setPixelRatio(Math.min(2, devicePixelRatio || 1)); V.renderer.setSize(w, h, false);
       V.canvas.style.width = w + "px"; V.canvas.style.height = h + "px"; draw();
     }
-    function draw() { if (!V.renderer) return; applyCam(); sun(); V.renderer.render(V.scene, V.cam); }
+    function draw() { if (!V.renderer) return; applyCam(); sun(); V.light.castShadow = !!V.shadows; V.renderer.render(V.scene, V.cam); }
     function sun() {   // saule no kameras puses, pa kreisi un augstu: fasāde izgaismota, pārkare met ēnu
       const a = (V.az + 35) * Math.PI / 180, cx = V.cx || 0, cz = V.cz || 0; V.light.target.position.set(cx, 1200, cz); V.light.position.set(cx + Math.sin(a) * 30000, 26000, cz + Math.cos(a) * 30000); V.light.target.updateMatrixWorld();
     }
@@ -659,7 +661,7 @@
       V.canvas = $("v3canvas"); V.renderer = new THREE.WebGLRenderer({ canvas: V.canvas, antialias: true, preserveDrawingBuffer: true });
       V.renderer.setClearColor(0xe8ecef, 1); V.scene = new THREE.Scene(); V.scene.background = new THREE.Color(0xe8ecef);
       V.scene.add(new THREE.HemisphereLight(0xffffff, 0x99a090, .8)); V.light = new THREE.DirectionalLight(0xffffff, .75); V.scene.add(V.light); V.scene.add(V.light.target);
-      V.renderer.shadowMap.enabled = true; V.renderer.shadowMap.type = THREE.PCFSoftShadowMap; V.light.castShadow = true; V.light.shadow.mapSize.set(4096, 4096); V.light.shadow.bias = -0.0004; V.light.shadow.normalBias = 40;
+      V.renderer.shadowMap.enabled = true; V.shadows = !!V.shadows; V.renderer.shadowMap.type = THREE.PCFSoftShadowMap; V.light.castShadow = true; V.light.shadow.mapSize.set(4096, 4096); V.light.shadow.bias = -0.0004; V.light.shadow.normalBias = 40;
       { const c = V.light.shadow.camera; c.left = c.bottom = -22000; c.right = c.top = 22000; c.near = 1000; c.far = 120000; c.updateProjectionMatrix(); }
       V.camP = V.cam = new THREE.PerspectiveCamera(fovOf(V.lens), ASPECT, 100, 400000); V.camO = new THREE.OrthographicCamera(-1, 1, 1, -1, 100, 400000);
       $("v3views").innerHTML = VIEWS.map(v => `<button type="button" data-v="${v[0]}" aria-pressed="false">${v[1]}</button>`).join("");
@@ -672,6 +674,7 @@
       $("v3mode").onclick = e => { const b = e.target.closest("button"); if (!b) return; V.kar = b.dataset.k === "1"; syncKar(); rebuild(); };
       $("v3kLay").onchange = e => { V.kLay = e.target.value; rebuild(); };
       $("v3kOp").oninput = e => { V.kShell = +e.target.value; $("v3kOpV").textContent = V.kShell + " %"; rebuild(); };
+      $("v3shad").onchange = e => { V.shadows = e.target.checked; draw(); };   // ēnas (pēc noklusējuma izslēgtas)
       $("v3odere").onchange = e => { const n = clone(model); n.projekts = n.projekts || {}; if (e.target.value === "fasade") n.projekts.logu_odere = "fasade"; else delete n.projekts.logu_odere; commit(n); rebuild(); };
       $("v3free").onchange = e => { V.free = e.target.checked; if (V.free) { V.el = 12; V.dist0 = null; V.pan = V.pan || [0, 0, 0]; } draw(); };
       $("v3ortho").onchange = e => { V.ortho = e.target.checked; if (V.ortho) { V.free = true; V.pan = V.pan || [0, 0, 0]; } syncCam(); draw(); };
@@ -790,7 +793,7 @@
     }
     function openV() {
       V.open = true; $("v3").hidden = false; init(); if (!V.renderer) return;
-      V.tone = V.tone || lv0(); $("v3lens").value = V.lens; $("v3tone").value = V.tone; $("v3odere").value = (model.projekts || {}).logu_odere === "fasade" ? "fasade" : "aplodas"; syncKar(); $("v3atm").value = V.atm; terraceUI(); terList(); rebuild(); resize(); setView(V.view);
+      V.tone = V.tone || lv0(); $("v3lens").value = V.lens; $("v3tone").value = V.tone; $("v3shad").checked = !!V.shadows; $("v3odere").value = (model.projekts || {}).logu_odere === "fasade" ? "fasade" : "aplodas"; syncKar(); $("v3atm").value = V.atm; terraceUI(); terList(); rebuild(); resize(); setView(V.view);
     }
     function close() { V.open = false; $("v3").hidden = true; }
     $("b3d").onclick = openV;
