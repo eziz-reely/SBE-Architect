@@ -776,6 +776,19 @@ class H(BaseHTTPRequestHandler):
                 except Exception as e:
                     return self.send(500, 'Karkasa lapas neizdevās: ' + str(e), 'text/plain; charset=utf-8')
                 return self.send(200, {'ok': True, 'name': nm, 'lapas': n, 'notes': notes})
+            if p.startswith('/api/karkass3d/'):   # ražošanas karkass 3D skatam (body = model.json no redaktora): paneļu detaļas un spāres
+                d = path_for(p[15:]); b = self.body()
+                if not d or not isinstance(b, dict) or 'W' not in b:
+                    return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
+                try:
+                    import karkass, importlib
+                    _f = getattr(karkass, '__file__', None)
+                    if _f and os.path.getmtime(_f) > MOD_T.get(karkass.__name__, _MOD_START):
+                        importlib.reload(karkass)
+                    MOD_T[karkass.__name__] = time.time()
+                    return self.send(200, karkass.frame3d(b))
+                except Exception as e:
+                    return self.send(500, 'Karkasa 3D neizdevās: ' + str(e), 'text/plain; charset=utf-8')
             if p.startswith('/api/cenas-lasit/'):   # cenu profili + šī modeļa tāmes materiāli (body = model.json no redaktora)
                 d = path_for(p[17:]); b = self.body()
                 if not d or not isinstance(b, dict) or 'W' not in b:

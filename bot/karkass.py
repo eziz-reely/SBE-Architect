@@ -534,7 +534,7 @@ def generate(m):
                         junc.append((cu, DPART[p['id']], None))
         build_panel(P, ops, junc, (through and cvL, through and cvR))
         P.edge, P.side = e, ('north' if ny < -.5 else 'south' if ny > .5 else 'west' if nx < -.5 else 'east')
-        P.o, P.dir = (ox, oy), (dirx, diry)
+        P.o, P.dir, P.nin = (ox, oy), (dirx, diry), (-nx, -ny)
         panels.append(P)
     # starpsienas
     S2 = LY['S2']['layers']
@@ -670,6 +670,85 @@ def spare_list(roof, DJ):
         rows[k] = rows.get(k, 0) + 1
     return sorted(((n, h, b, g, c) for (n, h, b, g), c in rows.items()), key=lambda r: (r[0], -r[3]))
 
+
+
+def frame3d(m):
+    """Karkass 3D skatam: paneļu detaļas kā (u, z) daudzstūri ar dziļumu + spāres. Pasaules punkts = o + dir*u + nin*d (plāna x, y), z uz augšu."""
+    res = generate(m)
+    panels, mem = [], []
+    for P in res['paneli']:
+        if getattr(P, 'o', None) is not None and hasattr(P, 'dir'):
+            o, dr, ni = P.o, P.dir, P.nin
+        elif hasattr(P, 'axis'):
+            hz, c, lo, hi = P.axis
+            o, dr, ni = ((lo, c - P.D / 2), (1, 0), (0, 1)) if hz else ((c - P.D / 2, lo), (0, 1), (1, 0))
+        else:
+            continue
+        pi = len(panels)
+        panels.append({'id': P.id, 'kind': P.kind, 'o': [_r(o[0]), _r(o[1])], 'd': [_r(dr[0]), _r(dr[1])], 'n': [_r(ni[0]), _r(ni[1])]})
+        for q in P.m:
+            u0, u1, z0, z1, role = q['u0'], q['u1'], q['z0'], q['z1'], q['loma']
+            if role == 'top_plate' and q.get('cut'):
+                k = P.slope_at((u0 + u1) / 2)
+                s_ = math.sqrt(1 + k * k)
+                zl = z0 if k >= 0 else z0 + abs(k) * (u1 - u0)
+                zr = zl + k * (u1 - u0)
+                poly = [(u0, zl), (u1, zr), (u1, zr + B * s_), (u0, zl + B * s_)]
+            elif q.get('cut') and 'slīps augšgals' in q['cut']:
+                pl = NT * B * max(math.sqrt(1 + P.slope_at(u0) ** 2), math.sqrt(1 + P.slope_at(u1) ** 2))
+                poly = [(u0, z0), (u1, z0), (u1, P.top_at(u1) - pl), (u0, P.top_at(u0) - pl)]
+            else:
+                poly = [(u0, z0), (u1, z0), (u1, z1), (u0, z1)]
+            mem.append([pi, role, [[_r(a), _r(b)] for a, b in poly], _r(q['h'])])
+    # spāres: katrai jumta plaknei, soļi SPARE_CC pa horizontāli perpendikulāri kritumam, nogriezti pret plaknes kontūru
+    rafters = []
+    DJ = res['DJ']
+    for name, pts, tn in res['jumts']['planes']:
+        P3 = [tuple(p) for p in pts]
+        if len(P3) < 3:
+            continue
+        a, b, c = P3[0], P3[1], P3[2]
+        ux, uy, uz = b[0] - a[0], b[1] - a[1], b[2] - a[2]
+        vx, vy, vz = c[0] - a[0], c[1] - a[1], c[2] - a[2]
+        nx_, ny_, nz_ = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
+        if abs(nz_) < 1e-9:
+            continue
+        gx, gy = -nx_ / nz_, -ny_ / nz_
+        gl = math.hypot(gx, gy)
+        if gl < 1e-9:
+            continue
+        dx, dy = gx / gl, gy / gl             # kritums uz augšu (plānā)
+        lx, ly = -dy, dx
+        zf = lambda x, y: a[2] + gx * (x - a[0]) + gy * (y - a[1])
+        nn = math.sqrt(gx * gx + gy * gy + 1)
+        nrm = (-gx / nn, -gy / nn, 1 / nn)
+        poly2 = [(p[0], p[1]) for p in P3]
+        lats = [p[0] * lx + p[1] * ly for p in poly2]
+        l0, l1 = min(lats), max(lats)
+        pos, t = [], l0
+        while t < l1 - B - 1:
+            pos.append(t)
+            t += SPARE_CC
+        pos.append(l1 - B)
+        for t in pos:
+            lc = t + B / 2
+            xs = []
+            for i in range(len(poly2)):
+                p, q_ = poly2[i], poly2[(i + 1) % len(poly2)]
+                lp, lq = p[0] * lx + p[1] * ly, q_[0] * lx + q_[1] * ly
+                if (lp - lc) * (lq - lc) < 0:
+                    f = (lc - lp) / (lq - lp)
+                    x, y = p[0] + (q_[0] - p[0]) * f, p[1] + (q_[1] - p[1]) * f
+                    xs.append(x * dx + y * dy)
+            xs.sort()
+            for i in range(0, len(xs) - 1, 2):
+                s0, s1 = xs[i], xs[i + 1]
+                if s1 - s0 < 50:
+                    continue
+                p0 = (lc * lx + s0 * dx, lc * ly + s0 * dy)
+                p1 = (lc * lx + s1 * dx, lc * ly + s1 * dy)
+                rafters.append([[_r(p0[0]), _r(p0[1]), _r(zf(*p0))], [_r(p1[0]), _r(p1[1]), _r(zf(*p1))], [round(v, 4) for v in nrm]])
+    return {'id': res.get('id'), 'D': res['D'], 'DJ': DJ, 'B': B, 'paneli': panels, 'det': mem, 'spares': rafters}
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:

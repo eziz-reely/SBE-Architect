@@ -1009,9 +1009,15 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
     <p class="pcap">Skats (fotogrāfa kadrs)</p>
     <div id="v3views"></div>
     <label>Objektīvs<select id="v3lens"><option value="35">35 mm (plats, spēcīga perspektīva)</option><option value="50">50 mm</option><option value="85">85 mm (ieteicams)</option><option value="135">135 mm (saplacināts)</option></select></label>
-    <label class="v3chk"><input type="checkbox" id="v3free"> Brīvā kamera (virzienu un augstumu var mainīt)</label>
+    <label class="v3chk"><input type="checkbox" id="v3free"> Brīvā kamera (orbīta bez ierobežojumiem)</label>
+    <label class="v3chk"><input type="checkbox" id="v3ortho"> Paralēlā projekcija (bez perspektīvas)</label>
+    <div class="row2"><button id="v3iso" type="button" class="v3b">Izometrija</button><button id="v3top" type="button" class="v3b">No augšas</button></div>
     <button id="v3reset" type="button" class="v3b">Atiestatīt kadru</button>
-    <p class="pnote">Velc ar peli, lai pagrieztu. Ritenis tuvina un tālina.</p>
+    <p class="pnote">Velc: orbīta ap māju (kā SketchUp). Shift+velc vai labā poga: pārbīde. Ritenis: tuvināt. Dubultklikšķis: atiestatīt kadru.</p>
+    <p class="pcap">Ražošanas karkass</p>
+    <label class="v3chk"><input type="checkbox" id="v3kar"> Rādīt karkasu (statņi, gulšņi, pārsedzes, spāres) bez apdares</label>
+    <label>Rādīt<select id="v3kLay"><option value="">Viss karkass</option><option value="w">Tikai sienas</option><option value="r">Tikai spāres</option></select></label>
+    <p class="pnote" id="v3kMsg"></p>
     <p class="pcap">Terase</p>
     <label class="v3chk"><input type="checkbox" id="v3tOn"> Rādīt terasi</label>
     <div id="v3tBox" hidden>
@@ -1919,6 +1925,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     selF("Rāmju tonis", opts, wt, (n, v) => { n.projekts.logu_tonis = v; n.projekts.logu_hex = RAL[v] ? RAL[v][1] : n.projekts.logu_hex; }, "Logu un durvju rāmju tonis visai mājai");
     selF("Aplodu tonis", withTone, P.aplodas || wt, (n, v) => { if (v === winTone(n.projekts)) delete n.projekts.aplodas; else n.projekts.aplodas = v; }, "Logu aplodu tonis visai mājai");
     selF("Palodzes tonis", withTone, P.palodzes || P.aplodas || wt, (n, v) => { if (v === (n.projekts.aplodas || winTone(n.projekts))) delete n.projekts.palodzes; else n.projekts.palodzes = v; }, "Palodžu tonis visai mājai");
+    selF("Ailu odere", { aplodas: "Aplodu tonī", fasade: "Fasādes dēļi" }, P.logu_odere === "fasade" ? "fasade" : "aplodas", (n, v) => { if (v === "fasade") n.projekts.logu_odere = "fasade"; else delete n.projekts.logu_odere; }, "Logu ailu iekšpuse (odere): aplodu tonī vai fasādes vagondēlis (3D)");
     { const all = []; [model, model.loft].forEach(L => L && (L.windows || []).forEach(w => all.push(w)));
       const cv = all.length && all.every(w => casOf(w) === casOf(all[0])) ? casOf(all[0]) : "mix";
       selF("Aplodas", cv === "mix" ? { mix: "Dažādi (izvēlies)", 1: "Ar aplodām", 0: "Bez aplodām", all: "Ar aplodām arī apakšā" } : { 1: "Ar aplodām", 0: "Bez aplodām", all: "Ar aplodām arī apakšā" }, cv,
@@ -2372,6 +2379,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     g1.appendChild(field("Jumta seguma raksts", P.jumta_tex || "", (n, v) => { n.projekts = n.projekts || {}; if (v) n.projekts.jumta_tex = v; else delete n.projekts.jumta_tex; }, { "": "Falcēts skārds (smalkas līnijas)", spanish: "Spanish tiles" }, "full"));
     g1.appendChild(colorField("Logu aplodas", cur, hex(cur), (n, v) => { n.projekts = n.projekts || {}; if (v === winTone(n.projekts)) delete n.projekts.aplodas; else n.projekts.aplodas = v; }, withTone));
     g1.appendChild(colorField("Palodzes", sil, hex(sil), (n, v) => { n.projekts = n.projekts || {}; if (v === (n.projekts.aplodas || winTone(n.projekts))) delete n.projekts.palodzes; else n.projekts.palodzes = v; }, withTone));
+    g1.appendChild(field("Ailu odere (iekšpuse)", P.logu_odere === "fasade" ? "fasade" : "aplodas", (n, v) => { n.projekts = n.projekts || {}; if (v === "fasade") n.projekts.logu_odere = "fasade"; else delete n.projekts.logu_odere; }, { aplodas: "Aplodu tonī", fasade: "Fasādes dēļi" }, "full"));
     { const SPq = P.palodzes_prof || {}, spSet = (n, fn) => { n.projekts = n.projekts || {}; const q = Object.assign({}, n.projekts.palodzes_prof); fn(q); if (Object.keys(q).length) n.projekts.palodzes_prof = q; else delete n.projekts.palodzes_prof; };   // logu iestatījums ražošanas komplektam
       g1.appendChild(field("Palodzes profils (montāžas mezgls)", SPq.on === false ? "nav" : "ir", (n, v) => spSet(n, q => { if (v === "nav") q.on = false; else delete q.on; }), { ir: "Ir", nav: "Nav" }, "full"));
       g1.appendChild(field("Palodzes profila augstums, mm", SPq.h || 30, (n, v) => spSet(n, q => { v = Math.max(10, Math.min(100, Math.round(+v) || 30)); if (v === 30) delete q.h; else q.h = v; }), null, "full")); }
