@@ -125,6 +125,9 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
     for q in sorted(P.m, key=lambda q: 0 if q['loma'] in ('bottom_plate', 'top_plate') else 1):
         if q['nos'] == 'SLIPAIS':
             continue
+        if q.get('poly'):   # slīpa pārsedze (frontona slīpais logs)
+            g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in q["poly"])}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".06"/>')
+            continue
         if q['nos'] == 'VERT.SLIPAIS':
             u0, u1 = q['u0'], q['u1']
             pl = KK.NT * KK.B * math.sqrt(1 + P.slope_at((u0 + u1) / 2) ** 2)
@@ -470,19 +473,24 @@ def section_page(D, res, m):
     g = [f'<g font-family="{FONT}">']
     # zeme un grīda
     g.append(f'<line x1="{X(xs0 - 600):.2f}" y1="{Y(-400):.2f}" x2="{X(xs1 + 600):.2f}" y2="{Y(-400):.2f}" stroke="{LINE_C}" stroke-width=".5"/>')
-    # sienas (karkass): gulšņi 2×45, augšgulsnis 1×45, statņi
+    # sienas (karkass): gulšņi 2×45, augšgulsnis 1×45, statņi; augšgulsnis ZP = spāres apakša karkasa ārmalā + iezāģis
+    zp = res.get('zp') or eave + off * tan + KK.SEAT
     for x_in in (off, span - off - DK):
-        g.append(_poly_s([(x_in, 0), (x_in + DK, 0), (x_in + DK, eave), (x_in, eave)], X, Y, WOOD, .3))
-        for z0, z1 in ((0, 2 * KK.B), (eave - KK.NT * KK.B, eave)):
+        g.append(_poly_s([(x_in, 0), (x_in + DK, 0), (x_in + DK, zp), (x_in, zp)], X, Y, WOOD, .3))
+        for z0, z1 in ((0, 2 * KK.B), (zp - KK.NT * KK.B, zp)):
             g.append(_poly_s([(x_in, z0), (x_in + DK, z0), (x_in + DK, z1), (x_in, z1)], X, Y, WOOD, .3))
-    # spāres: apakšmala no dzegas pārkares līdz korei, biezums DJ perpendikulāri
-    c, s_ = math.cos(th), math.sin(th)
-    for side, (xe, sg) in (('N', (-oN, 1)), ('S', (span + oS, -1))):
-        ze = eave - (oN if side == 'N' else oS) * tan
-        pts = [(xe, ze), (span / 2, hr), (span / 2 - sg * s_ * DJ, hr + c * DJ), (xe - sg * s_ * DJ, ze + c * DJ)]
-        g.append(_poly_s(pts, X, Y, WOOD, .3))
+    # spāres: iezāģis 50 mm uz augšgulšņa; bez pārkares gals vertikāls karkasa ārmalā, ar pārkari spāre iet ārā; korē vertikāls zāģējums
+    c = math.cos(th)
+    dz = DJ / c
+    sc = KK.SEAT / tan
+    for side, oo in (('N', oN), ('S', oS)):
+        zb = lambda x: eave + tan * x                         # spāres apakša (x no fasādes uz iekšu)
+        pl = ([(-oo, zb(-oo)), (off, zb(off))] if oo > 1 else []) + [(off, zp), (off + sc, zp), (span / 2, hr), (span / 2, hr + dz), (-oo if oo > 1 else off, zb(-oo if oo > 1 else off) + dz)]
+        if side == 'S':
+            pl = [(span - x, z) for x, z in pl]
+        g.append(_poly_s(pl, X, Y, WOOD, .3))
     # kores dēlis
-    g.append(_poly_s([(span / 2 - 22, hr + DJ * c - 40), (span / 2 + 22, hr + DJ * c - 40), (span / 2 + 22, hr + DJ * c + 160), (span / 2 - 22, hr + DJ * c + 160)], X, Y, WOOD, .3))
+    g.append(_poly_s([(span / 2 - 22, hr + dz - 40), (span / 2 + 22, hr + dz - 40), (span / 2 + 22, hr + dz + 160), (span / 2 - 22, hr + dz + 160)], X, Y, WOOD, .3))
     # izmēri
     yb = Y(-400) + 7
     g.append(_dash(X(xs0), yb, X(xs1), yb) + _tick(X(xs0), yb) + _tick(X(xs1), yb))

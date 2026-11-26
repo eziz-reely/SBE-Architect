@@ -280,6 +280,38 @@ def _fill(a, b, mk):
         mk(p)
 
 
+def gwin_frame(P, o, i, ops, fixed, stud, sl):
+    """Frontona slīpā loga (piecstūra) konstrukcija: dubulti statņi abās malās līdz jumtam, palodzes gulsnis ar īsstatņiem zem tā,
+    slīpas pārsedzes pa abām augšmalas slīpnēm (paralēli jumtam, ailas augša = jumta apakša - gap)."""
+    a0, a1, z0, gap = o['u0'], o['u1'], o['sill'], o['gap']
+    share_l = i > 0 and a0 - ops[i - 1]['u1'] <= 180
+    share_r = i + 1 < len(ops) and ops[i + 1]['u0'] - a1 <= 180
+    tp = lambda u: P.top_at(u) - gap            # ailas augšmala
+    for side, edge, shared in (('l', a0, share_l), ('r', a1, share_r)):
+        kx = edge - B if side == 'l' else edge
+        for j in range(1 if shared else 2):     # malas statņi: dubulti (blakus ailām kopīgi)
+            stud(kx - j * B if side == 'l' else kx + j * B, 'king')
+    # statņi zem un pie ailas: apakša līdz palodzei
+    for side, edge in (('l', a0), ('r', a1)):
+        sx = edge - B if side == 'l' else edge
+        stud(sx, 'jack', z0=(NB * B), z1=z0 - B) if z0 - B - (NB * B) > 20 else None
+    lo_f, hi_f = a0 - B - (0 if share_l else B), a1 + B + (0 if share_r else B)
+    fixed.append((lo_f, hi_f))
+    P.add('HOR.STATNIS', 'sill', a0 - B, a1 + B, z0 - B, z0)           # palodzes gulsnis
+    _fill(a0 - B, a1 + B, lambda u, z=z0: stud(u, 'cripple', z0=(NB * B), z1=z - B))
+    # slīpās pārsedzes: viens posms katrai jumta slīpnei, ko aila šķērso (lūzums jumta kores virsotnē)
+    pk = [u for (u, _) in P.top[1:-1]]
+    cuts = [a0] + [u for u in pk if a0 < u < a1] + [a1]
+    o['head'] = max(tp(u) for u in cuts)   # ailas augstākais punkts (mēriem)
+    for ua, ub in zip(cuts, cuts[1:]):
+        ta, tb = tp(ua), tp(ub)
+        k = (tb - ta) / ((ub - ua) or 1)
+        hv = P.D * math.sqrt(1 + k * k)
+        poly = [(ua, ta - hv), (ub, tb - hv), (ub, tb), (ua, ta)]
+        q = P.add('PĀRSEDZE', 'header', ua, ub, min(ta, tb) - hv, max(ta, tb), length=math.hypot(ub - ua, tb - ta), w=P.D, cut='slīps griezums gar jumtu')
+        q['poly'] = [[_r(a_), _r(b_)] for a_, b_ in poly]
+
+
 def build_panel(P, opens, junctions, rot_ends):
     """Detaļas panelim P. opens: [{u0,u1,sill,head,tips}]; junctions: starpsienu asis u; rot_ends: (sākumā, beigās) pagriezts statnis stūrim."""
     L, D = P.L, P.D
@@ -360,6 +392,9 @@ def build_panel(P, opens, junctions, rot_ends):
         fixed.append((u0 - B, u0 + jw + B))
     ops = sorted(opens, key=lambda o: o['u0'])
     for i, o in enumerate(ops):
+        if o.get('gw'):
+            gwin_frame(P, o, i, ops, fixed, stud, sl)
+            continue
         a0, a1, hb = o['u0'], o['u1'], o['head']
         room = min(P.top_at(a0 - B), P.top_at(a1 + B)) - NT * B * max(sl(a0), sl(a1))
         hdr_h = B + D                      # augšējais gulsnis (45) + pārsedze (45×D)
@@ -528,6 +563,23 @@ def generate(m):
                     head = HDR_BOT if head <= HDR_BOT + 150 else head
                 ops.append({'u0': cu - o['platums'] / 2, 'u1': cu + o['platums'] / 2, 'sill': 0 if o['tips'] == 'durvis' else o['palodze'], 'head': head,
                             'tips': o['tips'], 'fix': head == HDR_BOT, 'wh': float(o.get('augstums') or 2070), 'sp': SP})
+        sd_ = 'north' if ny < -.5 else 'south' if ny > .5 else 'west' if nx < -.5 else 'east'
+        if not through:   # frontona slīpie un fiksētie logi (model.json gableWins): aila ar kores slīpumu augšā
+            eave_, tn_ = float((m.get('jumts') or {}).get('eave') or 2600), roof['planes'][0][2]
+            mp_ = (lambda a: Dd - a) if sd_ == 'east' else (lambda a: a)
+            for gw in m.get('gableWins') or []:
+                if gw.get('side') != sd_:
+                    continue
+                fa, fb = sorted((mp_(float(gw['u0'])), mp_(float(gw['u1']))))
+                if gw.get('win'):
+                    ops.append({'u0': fa - ext_l, 'u1': fb - ext_l, 'sill': float(gw['z0']), 'head': float(gw.get('z1') or gw['z0'] + 550), 'tips': 'logs', 'fix': False, 'wh': float(gw.get('z1') or 0) - float(gw['z0']), 'sp': 0})
+                    continue
+                z0_, gap_ = float(gw.get('z0') or 2450), (float(gw['gap']) if gw.get('gap') is not None else 200.0)
+                uMin = max(0.0, (z0_ + gap_ - eave_) / tn_)
+                a0_, a1_ = max(fa, uMin), min(fb, el_ - uMin)
+                if a1_ - a0_ < 50:
+                    continue
+                ops.append({'u0': a0_ - ext_l, 'u1': a1_ - ext_l, 'sill': z0_, 'head': P.top_at(0) + 0, 'tips': 'gwin', 'gw': True, 'gap': gap_, 'fix': False, 'wh': 0, 'sp': 0})
         junc = []
         for p in part:
             for pt in (p['a'], p['b']):
@@ -692,7 +744,9 @@ def frame3d(m):
         panels.append({'id': P.id, 'kind': P.kind, 'o': [_r(o[0]), _r(o[1])], 'd': [_r(dr[0]), _r(dr[1])], 'n': [_r(ni[0]), _r(ni[1])]})
         for q in P.m:
             u0, u1, z0, z1, role = q['u0'], q['u1'], q['z0'], q['z1'], q['loma']
-            if role == 'top_plate' and q.get('cut'):
+            if q.get('poly'):
+                poly = q['poly']
+            elif role == 'top_plate' and q.get('cut'):
                 k = P.slope_at((u0 + u1) / 2)
                 s_ = math.sqrt(1 + k * k)
                 zl = z0 if k >= 0 else z0 + abs(k) * (u1 - u0)
