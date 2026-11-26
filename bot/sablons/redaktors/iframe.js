@@ -563,7 +563,7 @@
   let selPt = null;
   // [TRE] slīpā loga augstums: augšmala seko jumtam (jumta augstums pie malas − 200 mm), logs ir trapece; atgriež {hL, hR, hMax, zTop}
   function gwHeights(X, gw) {
-    const s = gw.side, sp = (s === "east" || s === "west") ? X.D : X.W, J = X.jumts || {}, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), top = u => ev + Math.min(u, sp - u) * tn - (gw.gap != null ? +gw.gap : 200);
+    const s = gw.side, sp = (s === "east" || s === "west") ? X.D : X.W, J = X.jumts || {}, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), top = u => ev + Math.min(u, sp - u) * tn - (gw.gap != null ? +gw.gap : 245);
     const u0 = gw.u0, u1 = gw.u1, mid = sp / 2, hL = Math.max(0, top(u0) - gw.z0), hR = Math.max(0, top(u1) - gw.z0), hM = u0 < mid && u1 > mid ? Math.max(0, top(mid) - gw.z0) : 0, hMax = gw.z1 ? gw.z1 - gw.z0 : Math.max(hL, hR, hM);
     return { hL: Math.round(hL), hR: Math.round(hR), hMax: Math.round(hMax), zTop: Math.round(gw.z0 + hMax) };
   }

@@ -3613,7 +3613,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
         field("No stūra, mm", it.u0, (n, v) => { const w = S(n), L = w.u1 - w.u0; w.u0 = v; w.u1 = v + L; fix(n); }),
         field("Apakša, mm", it.z0, (n, v) => { S(n).z0 = Math.max(0, v); fix(n); }));
       if (!it.win) {   // slīpā loga augstums: augšmala seko jumtam
-        const J = model.jumts || {}, sp = (it.side === "east" || it.side === "west") ? model.D : model.W, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), gap = it.gap != null ? +it.gap : 200, top = u => ev + Math.min(u, sp - u) * tn - gap, mid = sp / 2;
+        const J = model.jumts || {}, sp = (it.side === "east" || it.side === "west") ? model.D : model.W, ev = J.eave || 2600, tn = Math.tan((J.pitch || 30) * Math.PI / 180), gap = it.gap != null ? +it.gap : 245, top = u => ev + Math.min(u, sp - u) * tn - gap, mid = sp / 2;
         const hL = Math.round(Math.max(0, top(it.u0) - it.z0)), hR = Math.round(Math.max(0, top(it.u1) - it.z0)), hM = it.u0 < mid && it.u1 > mid ? Math.round(Math.max(0, top(mid) - it.z0)) : 0;
         const zTop = Math.round(Math.max(top(it.u0), top(it.u1), it.u0 < mid && it.u1 > mid ? top(mid) : 0));
         g.append(field("Augstums (lielākais), mm", Math.max(hL, hR, hM), (n, v) => { S(n).z0 = Math.max(0, zTop - Math.max(100, v)); fix(n); }, null, "full"));
@@ -4173,7 +4173,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     const onEdge = (o, s, p0, p1) => edges.find(e => e.o === o && Math.abs(e.st - s) < 45 && p0 >= e.lo - 2 && p1 <= e.hi + 2);
     const exDoors = (m.doors || []).filter(d => onEdge(d.o, d.o === "h" ? d.y : d.x, d.o === "h" ? d.x : d.y, (d.o === "h" ? d.x : d.y) + d.w));
     const gwPts = g => {   // slīpais/piecstūra logs gala sienā, punkti (y, z)
-      const yy = u => (g.side === "west" ? D - u : u), u0 = g.u0, u1 = g.u1, xs = g.side === "west" ? 0 : W, top = u => roofZ(xs, yy(u)) - 350;
+      const yy = u => (g.side === "west" ? D - u : u), u0 = g.u0, u1 = g.u1, xs = g.side === "west" ? 0 : W, top = u => roofZ(xs, yy(u)) - (g.gap != null ? +g.gap + 150 : 395);
       if (g.win) return [[u0, g.z0], [u1, g.z0], [u1, g.z1], [u0, g.z1]].map(([u, z]) => [yy(u), z]);
       const pts = [[u0, g.z0], [u1, g.z0], [u1, top(u1)]], um = g.side === "west" ? D - D / 2 : D / 2; if (um > Math.min(u0, u1) && um < Math.max(u0, u1)) pts.push([um, top(um)]); pts.push([u0, top(u0)]);
       return pts.map(([u, z]) => [yy(u), z]);

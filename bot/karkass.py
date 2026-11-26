@@ -598,7 +598,7 @@ def generate(m):
                 if gw.get('win'):
                     ops.append({'u0': fa - ext_l, 'u1': fb - ext_l, 'sill': float(gw['z0']), 'head': float(gw.get('z1') or gw['z0'] + 550), 'tips': 'logs', 'fix': False, 'wh': float(gw.get('z1') or 0) - float(gw['z0']), 'sp': 0})
                     continue
-                z0_, gap_ = float(gw.get('z0') or 2450), (float(gw['gap']) if gw.get('gap') is not None else 200.0)
+                z0_, gap_ = float(gw.get('z0') or 2450), (float(gw['gap']) if gw.get('gap') is not None else 245.0)
                 uMin = max(0.0, (z0_ + gap_ - eave_) / tn_)
                 a0_, a1_ = max(fa, uMin), min(fb, el_ - uMin)
                 if a1_ - a0_ < 50:
