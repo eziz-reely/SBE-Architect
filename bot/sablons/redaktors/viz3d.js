@@ -72,7 +72,12 @@
         const me = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: d, bevelEnabled: false }), mt(role));
         me.applyMatrix4(new THREE.Matrix4().makeBasis(u3, up, n3).setPosition(T3([p.o[0], p.o[1], 0]))); add(me);
       });
-      if (lay !== "w") (kd.spares || []).forEach(([a, b, nv]) => {
+      if (lay !== "w" && kd.rafs) kd.rafs.forEach(r => {   // spāre ar iezāģi un vertikāliem galiem: profils vertikālā plaknē, biezums B
+        const sh = new THREE.Shape(r.poly.map(q => new THREE.Vector2(q[0], q[1])));
+        const me = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: kd.B, bevelEnabled: false }), mt("rafter"));
+        me.applyMatrix4(new THREE.Matrix4().makeBasis(new THREE.Vector3(r.d[0], 0, r.d[1]), up, new THREE.Vector3(r.n[0], 0, r.n[1])).setPosition(T3([r.o[0], r.o[1], 0]))); add(me);
+      });
+      if (lay !== "w" && !kd.rafs) (kd.spares || []).forEach(([a, b, nv]) => {
         const p0 = T3(a), p1 = T3(b), dv = p1.clone().sub(p0), L = dv.length(); if (L < 5) return; dv.normalize();
         const n = new THREE.Vector3(nv[0], nv[2], nv[1]), l = new THREE.Vector3().crossVectors(n, dv).normalize(), nn = new THREE.Vector3().crossVectors(dv, l).normalize();
         const me = new THREE.Mesh(new THREE.BoxGeometry(L, kd.DJ, kd.B), mt("rafter"));

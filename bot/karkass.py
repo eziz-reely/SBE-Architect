@@ -35,6 +35,9 @@ PASTIPR = True                # loga pārsedze un palodze dubultas (pastiprināt
 SP = 30.0                     # palodzes profils (projekts.palodzes_prof: on, h); specifikācijā tas ir logam klāt, aila no ±0 paliek tāda pati
 
 
+SEAT = 50.0   # spāres iezāģis pa vertikāli (lietotāja likums); garensienas augšgulsnis ir par SEAT augstāk par spāres apakšu karkasa ārmalā
+
+
 def apply_settings(m):
     global NB, UZL_W, UZL_H, LOGU_DUBULTI, PASTIPR, SP
     sp = (m.get('projekts') or {}).get('palodzes_prof') or {}
@@ -49,10 +52,10 @@ def apply_settings(m):
 PIE = [
     "Karkasa ārmala = fasādes ārmala mīnus slāņi ārpus karkasa (pīrāgs S-04). Ārsienas karkass C24 45×{D:.0f}, statņi c/c 600 (tīrā atstarpe ≤ 555).",
     "Stūri: garenvirziena (garāko) sienu paneļi iet cauri līdz ārmalai, šķērssienas pieiet pie to iekšējās šķautnes; iekšējā stūrī caurejošais panelis ir garāks par karkasa biezumu.",
-    "Ārsienu augšmala seko jumta apakšai fasādes līnijā (frontonos slīpi). Augšgulsnis viens; apakšgulšņi {NB} (iestatījums).",
+    "Ārsienu augšmala seko jumta apakšai (frontonos slīpi), bet ne zemāk par augšgulšņa virsu: spāres apakša karkasa ārmalā + 50 mm iezāģis (frontona galā horizontāls posms). Augšgulsnis viens; apakšgulšņi {NB} (iestatījums).",
     "Aila = loga vai durvju izmērs no projekta; ja ailas augša tuvāk par 150 mm no 2130, pārsedzes apakša = 2130. Pārsedze 45 plakaniski + 45×{D:.0f} uz šķautnes.",
     "Starpsienas no plāna (karkass = sienas biezums mīnus apšuvums), augstums = griesti; gali līdz ārsienas karkasa iekšmalai.",
-    "Spāres C24 45×{DJ:.0f} c/c 600 pa jumta plaknēm ar pārkari; L jumtam ielejas spāres saīsinātas pēc ielejas līnijas.",
+    "Spāres C24 45×{DJ:.0f} c/c 600 pa jumta plaknēm ar iezāģi 50 mm uz augšgulšņa (bez pārkares gals vertikāls karkasa ārmalā); L jumtam ielejas spāres saīsinātas pēc ielejas līnijas.",
 ]
 
 
@@ -427,6 +430,7 @@ def generate(m):
     W, Dd = float(m['W']), float(m['D'])
     poly = [tuple(map(float, p)) for p in (m.get('poly') or [[0, 0], [W, 0], [W, Dd], [0, Dd]])]
     n = len(poly)
+    ZP = min(z(p[0], p[1]) for p in poly) + off * roof['planes'][0][2] + SEAT   # augšgulšņa virsa: spāres apakša karkasa ārmalā + iezāģis
     warn = list(roof.get('notes') or [])
     ceil = float(m.get('ceiling') or 2600)
     walls = {w['id']: w for w in d['walls']}
@@ -507,7 +511,7 @@ def generate(m):
         el_ = elen(e)
         fx = lambda u: (pL[0] + dirx * min(max(ext_l + u, 0), el_), pL[1] + diry * min(max(ext_l + u, 0), el_))   # pagarinājums aiz stūra: augstums kā stūrī
         N = max(2, int(Lp / 10))
-        top = _simplify([(Lp * j / N, z(*fx(Lp * j / N))) for j in range(N + 1)])
+        top = _simplify([(Lp * j / N, max(z(*fx(Lp * j / N)), ZP)) for j in range(N + 1)])   # augša = spāres apakša, bet ne zemāk par augšgulsni ZP (iezāģa horizontālā daļa frontona galā)
         P = Panel(letters[k] if k < len(letters) else f'E{k + 1}', 'arsiena', Lp, top, D, '(caurejošā)' if through else '(šķērssiena)')
         w = wall_of(e)
         ops = []
@@ -648,7 +652,7 @@ def generate(m):
         P.axis = (hz, fixed_c, lo, hi)
         panels.append(P)
     pie = [s.format(D=D, DJ=DJ, NB=NB) for s in PIE]
-    return {'id': m.get('id'), 'paneli': panels, 'jumts': roof, 'D': D, 'DJ': DJ, 'off': off, 'piezimes': pie + warn, 'slani': LY}
+    return {'id': m.get('id'), 'zp': ZP, 'paneli': panels, 'jumts': roof, 'D': D, 'DJ': DJ, 'off': off, 'piezimes': pie + warn, 'slani': LY}
 
 
 def cutlist(panels):
@@ -701,8 +705,11 @@ def frame3d(m):
                 poly = [(u0, z0), (u1, z0), (u1, z1), (u0, z1)]
             mem.append([pi, role, [[_r(a), _r(b)] for a, b in poly], _r(q['h'])])
     # spāres: katrai jumta plaknei, soļi SPARE_CC pa horizontāli perpendikulāri kritumam, nogriezti pret plaknes kontūru
-    rafters = []
+    rafters, rafs = [], []
     DJ = res['DJ']
+    ZPf, off = res['zp'], res['off']
+    zr_ = res['jumts']['z']
+    ZE0 = min(zr_(p[0], p[1]) for p in res['jumts']['poly'])   # jumta apakša fasādes līnijā (pie teknes)
     for name, pts, tn in res['jumts']['planes']:
         P3 = [tuple(p) for p in pts]
         if len(P3) < 3:
@@ -748,7 +755,19 @@ def frame3d(m):
                 p0 = (lc * lx + s0 * dx, lc * ly + s0 * dy)
                 p1 = (lc * lx + s1 * dx, lc * ly + s1 * dy)
                 rafters.append([[_r(p0[0]), _r(p0[1]), _r(zf(*p0))], [_r(p1[0]), _r(p1[1]), _r(zf(*p1))], [round(v, 4) for v in nrm]])
-    return {'id': res.get('id'), 'D': res['D'], 'DJ': DJ, 'B': B, 'paneli': panels, 'det': mem, 'spares': rafters}
+                # spāres profils vertikālā plaknē (u = s pa kritumu, z): iezāģis 50 uz augšgulšņa, bez pārkares gals vertikāls karkasa ārmalā, korē vertikāls zāģējums
+                zb = lambda sv: zf(lc * lx + sv * dx, lc * ly + sv * dy)
+                zlow = min(zf(*q_) for q_ in poly2)
+                dz = DJ * nn
+                ovl = max(0.0, (ZE0 - zb(s0)) / gl) if zb(s0) <= zlow + 1 else 0.0
+                sw = s0 + ovl + off
+                if zb(s0) <= zlow + 1 and sw + SEAT / gl < s1:
+                    sc = SEAT / gl
+                    pl = ([(s0, zb(s0)), (sw, zb(sw))] if ovl > 1 else []) + [(sw, ZPf), (sw + sc, ZPf), (s1, zb(s1)), (s1, zb(s1) + dz), (sw if ovl <= 1 else s0, zb(sw if ovl <= 1 else s0) + dz)]
+                else:
+                    pl = [(s0, zb(s0)), (s1, zb(s1)), (s1, zb(s1) + dz), (s0, zb(s0) + dz)]
+                rafs.append({'o': [_r(t * lx), _r(t * ly)], 'd': [round(dx, 5), round(dy, 5)], 'n': [round(lx, 5), round(ly, 5)], 'poly': [[_r(a_), _r(b_)] for a_, b_ in pl]})
+    return {'id': res.get('id'), 'D': res['D'], 'DJ': DJ, 'B': B, 'paneli': panels, 'det': mem, 'spares': rafters, 'rafs': rafs, 'B2': B}
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
