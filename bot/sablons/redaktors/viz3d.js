@@ -317,7 +317,7 @@
         const nh = Math.max(1, Math.round(e.L / 600));
         for (let i = 0; i <= nh; i++) { const t = Math.max(30, Math.min(e.L - 30, i * e.L / nh)), c0 = pt([e.a[0] + e.d[0] * t, e.a[1] + e.d[1] * t], off, zc);   // āķi: loks ap teknes profilu + josla uz dēļa
           const tg = new THREE.TorusGeometry(r + 2, 2.2, 6, 20, Math.PI); tg.applyMatrix4(new THREE.Matrix4().makeBasis(O3, up.clone().negate(), L3).setPosition(c0)); grp.add(new THREE.Mesh(tg, clampM));
-          hexa([c0.clone().addScaledVector(O3, -off + bt - 1).setY(zc - 4), c0.clone().setY(zc - 4), c0.clone().setY(zc + r + 4), c0.clone().addScaledVector(O3, -off + bt - 1).setY(zc + r + 4)].map(q => q.addScaledVector(L3, -11)), L3.clone().multiplyScalar(22), clampM); }
+        }
         // notekcaurules: pie sienas, 180 mm no stūra
         const spans = []; poly.forEach((p, i) => { const q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], l = Math.hypot(dx, dy) || 1; if (Math.abs(dx * e.d[1] - dy * e.d[0]) / l > .01) return;
           const dist = (p[0] - e.a[0]) * e.ni[0] + (p[1] - e.a[1]) * e.ni[1]; if (Math.abs(dist - ov) > 8) return; const t0 = (p[0] - e.a[0]) * e.d[0] + (p[1] - e.a[1]) * e.d[1], t1 = (q[0] - e.a[0]) * e.d[0] + (q[1] - e.a[1]) * e.d[1]; spans.push([Math.min(t0, t1), Math.max(t0, t1)]); });
@@ -360,7 +360,8 @@
             slab(s, stripP, lo, R0, [sofM, sofM], true);
             slab(s, stripP, R0, s.th - SH - BT, [dark, dark], true);
           }
-          hexa([at(s, e.a, ov ? lo : 0), at(s, e.b, ov ? lo : 0), at(s, e.b, full), at(s, e.a, full)], O3.clone().multiplyScalar(bt), edgeM, edgeM === tex ? L3 : null).userData.bk = { k: "ov" };   // galda / vēja dēlis vai metāla mala
+          const hiA = !eave && s.zAt(e.a[0], e.a[1]) > s.zAt(e.b[0], e.b[1]), ea = !eave && hiA ? [e.a[0] - e.d[0] * 40, e.a[1] - e.d[1] * 40] : e.a, eb = !eave && !hiA ? [e.b[0] + e.d[0] * 40, e.b[1] + e.d[1] * 40] : e.b;   // vēja dēļi pie kores nedaudz pārklājas, bez spraugas
+          hexa([at(s, ea, ov ? lo : 0), at(s, eb, ov ? lo : 0), at(s, eb, full), at(s, ea, full)], O3.clone().multiplyScalar(bt), edgeM, edgeM === tex ? L3 : null).userData.bk = { k: "ov" };   // galda / vēja dēlis vai metāla mala
           if (eave || (vk && !ov)) {   // metāla lāses mala virs dēļa (dzegai un vēja kastei bez pārkares)
             hexa([at(s, e.a, s.th - (flush ? 55 : 40)), at(s, e.b, s.th - (flush ? 55 : 40)), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt)), O3.clone().multiplyScalar(2.5), capM);
             if (eave) gutter(s, e, bt, ov, out, L3, O3, R0);
