@@ -652,7 +652,7 @@ def skice_page(D, mp, m):
     land = ((m.get('projekts') or {}).get('kompozicija') or {}).get('orient') == 'l'
     w, h = (420, 297) if land else (297, 420)
     sc = min(PW / w, PH / h)
-    D.raw(f'<div class="sk"><iframe title="Skice" style="width:{w}mm;height:{h}mm;transform:scale({sc:.4f});transform-origin:0 0;margin-left:{(PW - w * sc) / 2:.1f}mm" '
+    D.raw(f'<div class="sk"><iframe title="Skice" style="pointer-events:none;width:{w}mm;height:{h}mm;transform:scale({sc:.4f});transform-origin:0 0;margin-left:{(PW - w * sc) / 2:.1f}mm" '
           f'srcdoc="{html.escape(src, quote=True)}"></iframe></div>')
 
 
