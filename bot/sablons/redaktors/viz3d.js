@@ -353,11 +353,12 @@
         const t0 = Math.min(...spans.map(q => q[0])), t1 = Math.max(...spans.map(q => q[1])), ts = t1 - t0 > 1200 ? [t0 + 180, t1 - 180] : [(t0 + t1) / 2];
         ts.forEach(t => {
           const pe = [e.a[0] + e.d[0] * t, e.a[1] + e.d[1] * t], pw = [pe[0] + e.ni[0] * ov, pe[1] + e.ni[1] * ov], wo = 50, hz = off - ov - wo;
-          const P1 = pt(pe, off, zc - r + 30), P2 = P1.clone().setY(P1.y - 180), jog = Math.abs(hz) < 12 ? 0 : Math.max(300, Math.abs(hz) * 1.5), P3 = pt(pw, wo, P2.y - jog), P4 = pt(pw, wo, -150);
+          const free = ov > 150;   // ar jumta pārkari noteka seko teknei: taisni lejup zem teknes, bez lieces uz sienu
+          const P1 = pt(pe, off, zc - r + 30), P2 = P1.clone().setY(P1.y - 180), jog = free || Math.abs(hz) < 12 ? 0 : Math.max(300, Math.abs(hz) * 1.5), P3 = free ? P2.clone() : pt(pw, wo, P2.y - jog), P4 = free ? pt(pe, off, -150) : pt(pw, wo, -150);
           { const fg = new THREE.CylinderGeometry(58, 40, 50, 20, 1, true); const fm = new THREE.Mesh(fg, gutM); fm.position.copy(P1).setY(P1.y + 5); grp.add(fm); }   // notekas piltuve teknes dibenā
           cylB(P1, P2, 40, gutM); ball(P2, 40, gutM); if (jog) { cylB(P2, P3, 40, gutM); ball(P3, 40, gutM); } cylB(P3, P4, 40, gutM);
-          for (let z = 600; z < P3.y - 250; z += 1100) { const cl = new THREE.Mesh(new THREE.CylinderGeometry(46, 46, 30, 16), clampM); cl.position.set(P4.x, z, P4.z); grp.add(cl); }
-          const foot = pt(pw, wo + 170, -215); ball(P4, 40, gutM); cylB(P4, foot, 40, gutM);   // apakšējais ceļgals uz āru
+          for (let z = free ? 1e9 : 600; z < P3.y - 250; z += 1100) { const cl = new THREE.Mesh(new THREE.CylinderGeometry(46, 46, 30, 16), clampM); cl.position.set(P4.x, z, P4.z); grp.add(cl); }
+          const foot = free ? pt(pe, off + 170, -215) : pt(pw, wo + 170, -215); ball(P4, 40, gutM); cylB(P4, foot, 40, gutM);   // apakšējais ceļgals uz āru
         });
       };
       const RE = [];   // vēja dēļu gali pie kores: 100 mm plakanā daļa starp tiem tiek aizpildīta
@@ -385,7 +386,7 @@
           const stripP = [e.a, e.b, [e.b[0] + e.ni[0] * ov, e.b[1] + e.ni[1] * ov], [e.a[0] + e.ni[0] * ov, e.a[1] + e.ni[1] * ov]];
           const full = s.th + 4, lo = R0 - 18;   // spāres gals vienmēr aizvērts: galda dēlis (dzega, vēja kaste) vai metāls (gals bez vēja kastes)
           const sdN = Math.abs(out[1]) > Math.abs(out[0]) ? (out[1] < 0 ? "north" : "south") : (out[0] < 0 ? "west" : "east"), flush = !ov && (eave || vk), tex = c.wallTex(sdN);   // bez pārkares: dzegas mala klāta ar to pašu vagondēli kā siena (14 mm), tikai augšā plāna metāla lāse
-          const bt = flush ? 3 : eave || vk ? 22 : 4, edgeM = flush || (!eave && vk) ? tex : eave ? fasM : capM;   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
+          const rake = !eave && ov > 0, bt = rake ? 25 : flush ? 3 : eave || vk ? 22 : 4, edgeM = rake ? (P.vejmala === "balta" ? M("#f2f2ef") : P.sparu_hex ? rafM : fasM) : flush || (!eave && vk) ? tex : eave ? fasM : capM;   // gals ar pārkari: spāres dekoratīvais dēlis (sparu_hex) pa slīpumu + metāla mala   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
           if (ov) {   // pārkare: slīpā apakša (zem spārēm) + masīvs pīrāgs ar vertikālu griezumu
             slab(s, stripP, lo, R0, [sofM, sofM], true);
             slab(s, stripP, R0, s.th - SH - BT, [dark, dark], true);
@@ -394,7 +395,7 @@
           hexa([at(s, ea, ov ? lo : 0), at(s, eb, ov ? lo : 0), at(s, eb, full), at(s, ea, full)], O3.clone().multiplyScalar(bt), edgeM, edgeM === tex ? c.wallUV(sdN, at(s, e.a, 0)) : null);
           { const sm = grp.children[grp.children.length - 1]; sm.userData.bk = { k: "ov" }; if (edgeM === tex) { sm.userData.noEdge = true; grp.userData.noSeam = true; if (!eave) { const he = hiA ? e.a : e.b; RE.push({ lo: at(s, he, 0), hi: at(s, he, full), O3, bt, tex, uv: c.wallUV(sdN, at(s, e.a, 0)) }); } } }   // bez pārkares: dēļi tajā pašā plaknē kā siena (3 mm), bez šuves līnijas   // galda / vēja dēlis vai metāla mala
           if (eave && !ov) hexa([at(s, ea, s.th - 55), at(s, eb, s.th - 55), at(s, eb, s.th - 53), at(s, ea, s.th - 53)].map(q => q.addScaledVector(O3, bt + 2.5)), O3.clone().multiplyScalar(7), capM);   // lāseņa nolaidums (atloks uz āru)
-          if (eave || (vk && !ov)) {   // metāla lāses mala virs dēļa (dzegai un vēja kastei bez pārkares)
+          if (eave || (vk && !ov) || rake) {   // metāla lāses mala virs dēļa (dzegai un vēja kastei bez pārkares)
             hexa([at(s, e.a, s.th - (flush ? 55 : 40)), at(s, e.b, s.th - (flush ? 55 : 40)), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt)), O3.clone().multiplyScalar(2.5), capM);
             if (eave) gutter(s, e, bt, ov, out, L3, O3, R0);
           }
