@@ -273,19 +273,19 @@
         { const uh = new THREE.Vector3().crossVectors(up, b.n).normalize(); if (uh.lengthSq() > .5) { b.u = uh; b.v = new THREE.Vector3().crossVectors(b.n, uh); } }   // falču raksts vienmēr pa kritumlīniju, nevis pa pirmo kontūras malu
         return { g, b, O, nz: b.n.y, th: +g.d || th0, pl: g.outer.map(p => [p[0], p[1]]), zAt: (x, y) => O.y - (b.n.x * (x - O.x) + b.n.z * (y - O.z)) / b.n.y };
       });
-      const slab = (s, pl, t0, t1, mats, bk) => {   // plāna daudzstūris uz slīpnes, biezums t0..t1 perpendikulāri, malas vertikālas
+      const slab = (s, pl, t0, t1, mats, bk, noEdge) => {   // plāna daudzstūris uz slīpnes, biezums t0..t1 perpendikulāri, malas vertikālas
         if (pl.length < 3) return;
         const { u, v } = s.b, to2 = ([x, y]) => { const p = new THREE.Vector3(x, s.zAt(x, y), y).sub(s.O); return new THREE.Vector2(p.dot(u), p.dot(v)); };
         const ge = new THREE.ExtrudeGeometry(new THREE.Shape(pl.map(to2)), { depth: t1 - t0, bevelEnabled: false });
         ge.applyMatrix4(new THREE.Matrix4().makeBasis(u, v, up.clone().multiplyScalar(1 / s.nz)).setPosition(s.O.clone().addScaledVector(up, t0 / s.nz)));   // bīde ir ģeometrijā (Object3D.applyMatrix4 bīdi pazaudē)
         const me = new THREE.Mesh(ge, mats);
-        if (bk) me.userData.bk = { k: "ov" }; grp.add(me);
+        if (bk) me.userData.bk = { k: "ov" }; if (noEdge) me.userData.noEdge = true; grp.add(me);
       };
       const hexa = (q, vec, mat, uvL) => {   // četrstūris (4 punkti) izvilkts pa vec
         const p = [...q, ...q.map(r => r.clone().add(vec))], pos = [];
         [[0, 1, 2, 3], [7, 6, 5, 4], [0, 4, 5, 1], [1, 5, 6, 2], [2, 6, 7, 3], [3, 7, 4, 0]].forEach(([a, b, c2, d]) => [a, b, c2, a, c2, d].forEach(i => pos.push(p[i].x, p[i].y, p[i].z)));
         const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals();
-        if (uvL) { const uv = []; for (let i = 0; i < pos.length; i += 3) uv.push(pos[i] * uvL.x + pos[i + 2] * uvL.z, pos[i + 1]); g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); }   // dēļu raksts: u pa fasādi, v augšup
+        if (uvL) { const uv = [], pv = new THREE.Vector3(); for (let i = 0; i < pos.length; i += 3) { pv.set(pos[i], pos[i + 1], pos[i + 2]); const t = uvL(pv); uv.push(t[0], t[1]); } g.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2)); }   // dēļu raksts: u pa fasādi, v augšup
         const me = new THREE.Mesh(g, mat); grp.add(me); return me;
       };
       const at = (s, [x, y], t) => new THREE.Vector3(x, s.zAt(x, y) + t / s.nz, y);   // punkts uz slīpnes ar vertikālu bīdi t/nz
@@ -344,7 +344,7 @@
           const ov = onWall ? 0 : rayHit(mid, e.ni); e.ov = ov > 5 && ov < 3000 ? ov : 0; if (e.ov) inner = clip(inner, e.a, e.ni, e.ov); });
         // pamatplaksne: viss pīrāgs [0..th], malas vertikālas
         slab(s, s.pl, s.th - SH - BT, s.th, [roofM, dark], true);   // augšējā kārta (latojumi + segums) visai slīpnei vienā gabalā, lai jumtā nav šuvju līniju
-        slab(s, inner, 0, s.th - SH - BT, [dark, dark], true);
+        slab(s, inner, 0, s.th - SH - BT, [dark, dark], true, true);   // spāru kārta: līnijas nav vajadzīgas (apakšā/sānos segta)
         edges.forEach(e => {
           const eave = !e.mates.length && Math.abs(e.za - e.zb) < 1 && s.zAt(cen[0], cen[1]) > e.za, out = [-e.ni[0], -e.ni[1]], ov = e.ov || 0, L3 = new THREE.Vector3(e.d[0], 0, e.d[1]), O3 = new THREE.Vector3(out[0], 0, out[1]);
           if (e.mates.length) {   // kore, grēda vai ieleja: metāla nosegs katrā pusē
@@ -355,13 +355,14 @@
           const stripP = [e.a, e.b, [e.b[0] + e.ni[0] * ov, e.b[1] + e.ni[1] * ov], [e.a[0] + e.ni[0] * ov, e.a[1] + e.ni[1] * ov]];
           const full = s.th + 4, lo = R0 - 18;   // spāres gals vienmēr aizvērts: galda dēlis (dzega, vēja kaste) vai metāls (gals bez vēja kastes)
           const sdN = Math.abs(out[1]) > Math.abs(out[0]) ? (out[1] < 0 ? "north" : "south") : (out[0] < 0 ? "west" : "east"), flush = !ov && (eave || vk), tex = c.wallTex(sdN);   // bez pārkares: dzegas mala klāta ar to pašu vagondēli kā siena (14 mm), tikai augšā plāna metāla lāse
-          const bt = flush ? 14 : eave || vk ? 22 : 4, edgeM = flush || (!eave && vk) ? tex : eave ? fasM : capM;   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
+          const bt = flush ? 3 : eave || vk ? 22 : 4, edgeM = flush || (!eave && vk) ? tex : eave ? fasM : capM;   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
           if (ov) {   // pārkare: slīpā apakša (zem spārēm) + masīvs pīrāgs ar vertikālu griezumu
             slab(s, stripP, lo, R0, [sofM, sofM], true);
             slab(s, stripP, R0, s.th - SH - BT, [dark, dark], true);
           }
-          const hiA = !eave && s.zAt(e.a[0], e.a[1]) > s.zAt(e.b[0], e.b[1]), ea = !eave && hiA ? [e.a[0] - e.d[0] * 40, e.a[1] - e.d[1] * 40] : e.a, eb = !eave && !hiA ? [e.b[0] + e.d[0] * 40, e.b[1] + e.d[1] * 40] : e.b;   // vēja dēļi pie kores nedaudz pārklājas, bez spraugas
-          hexa([at(s, ea, ov ? lo : 0), at(s, eb, ov ? lo : 0), at(s, eb, full), at(s, ea, full)], O3.clone().multiplyScalar(bt), edgeM, edgeM === tex ? L3 : null).userData.bk = { k: "ov" };   // galda / vēja dēlis vai metāla mala
+          const hiA = !eave && s.zAt(e.a[0], e.a[1]) > s.zAt(e.b[0], e.b[1]), ea = e.a, eb = e.b;
+          hexa([at(s, ea, ov ? lo : 0), at(s, eb, ov ? lo : 0), at(s, eb, full), at(s, ea, full)], O3.clone().multiplyScalar(bt), edgeM, edgeM === tex ? c.wallUV(sdN, at(s, e.a, 0)) : null);
+          { const sm = grp.children[grp.children.length - 1]; sm.userData.bk = { k: "ov" }; if (edgeM === tex) { sm.userData.noEdge = true; grp.userData.noSeam = true; } }   // bez pārkares: dēļi tajā pašā plaknē kā siena (3 mm), bez šuves līnijas   // galda / vēja dēlis vai metāla mala
           if (eave || (vk && !ov)) {   // metāla lāses mala virs dēļa (dzegai un vēja kastei bez pārkares)
             hexa([at(s, e.a, s.th - (flush ? 55 : 40)), at(s, e.b, s.th - (flush ? 55 : 40)), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt)), O3.clone().multiplyScalar(2.5), capM);
             if (eave) gutter(s, e, bt, ov, out, L3, O3, R0);
@@ -399,10 +400,15 @@
       const facts = { win: { south: 0, north: 0, east: 0, west: 0 }, door: { south: 0, north: 0, east: 0, west: 0 }, gable: { east: 0, west: 0 } };
       const roofs = [], WT = (geo.find(q => q.k === "s" && q.mat === "M_WALL") || {}).d || 283.5;
       const WL = geo.filter(q => q.k === "s" && q.mat === "M_WALL");
+      const wallUV = (sd, p0) => {   // tas pats dēļu raksts kā sienas plaknei (izspiešanas UV): joslas dēļi turpina sienas dēļus
+        const cand = WL.filter(q => sideOfN(q.dir) === sd).map(q => { const o = q.outer.map(T3), dir = new THREE.Vector3(q.dir[0], q.dir[2], q.dir[1]).normalize(), b = basis(o, dir); return { O: o[0], u: b.u, v: b.v, n: b.n }; });
+        const w = cand.sort((a, b) => Math.abs(p0.clone().sub(a.O).dot(a.n)) - Math.abs(p0.clone().sub(b.O).dot(b.n)))[0];
+        return p => w ? [p.clone().sub(w.O).dot(w.u), p.clone().sub(w.O).dot(w.v)] : [p.x, p.y];
+      };
       geo.forEach(g => {
         if (g.k === "s" && g.mat === "M_ROOF") { roofs.push(g); return; }
         if (g.k === "s") { const me = extrude(g, g.mat === "M_WALL" ? wallMat(sideOfN(g.dir)) : mats[g.mat] || mats.M_WALL);
-          if (g.mat === "M_ROOF" && P.parkare_hex && tk === lv0()) { const sf = extrude(Object.assign({}, g, { d: 18 }), mat(P.parkare_hex)); sf.userData.bk = { k: "ov" }; sf.position.addScaledVector(new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), -19); grp.add(sf); } /* jumta pārkares apakša savā tonī */ if (g.mat === "M_WALL") { try { trimShared(me, g, WL); } catch (e) { console.error("trim", e); } walls.push(me); me.userData.bk = { k: "fas", side: sideOfN(g.dir) }; } if (g.mat === "M_ROOF") me.userData.bk = { k: "ov" }; if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
+          if (g.mat === "M_ROOF" && P.parkare_hex && tk === lv0()) { const sf = extrude(Object.assign({}, g, { d: 18 }), mat(P.parkare_hex)); sf.userData.bk = { k: "ov" }; sf.position.addScaledVector(new THREE.Vector3(g.dir[0], g.dir[2], g.dir[1]).normalize(), -19); grp.add(sf); } /* jumta pārkares apakša savā tonī */ if (g.mat === "M_WALL") { me.userData.wallTop = g.outer.map(T3); try { trimShared(me, g, WL); } catch (e) { console.error("trim", e); } walls.push(me); me.userData.bk = { k: "fas", side: sideOfN(g.dir) }; } if (g.mat === "M_ROOF") me.userData.bk = { k: "ov" }; if (g.mat !== "M_INT" && g.mat !== "M_STAIR") grp.add(me); }
         else if (g.k === "g") {
           { const rsd = sideOf(g.pts, m.W, m.D) || "south", fac = P.logu_odere === "fasade"; windowDetail(g, WT, grp, frameM, glassM, picks, fac ? wallMat(rsd)[0] : casM, fac); }
           const sd = sideOf(g.pts, m.W, m.D); if (sd) { if (g.pts.some(p => p[2] > (m.jumts && m.jumts.eave || 2600) - 400) || g.pts.length > 4) facts.gable[sd] = (facts.gable[sd] || 0) + 1; else facts.win[sd]++; }
@@ -413,7 +419,7 @@
       });
       if (roofs.length) {
         const poly0 = m.poly && m.poly.length > 2 ? m.poly : [[0, 0], [m.W, 0], [m.W, m.D], [0, m.D]];
-        try { roofDetail(roofs, { grp, poly: poly0.map(p => [+p[0], +p[1]]), P, roofM: mats.M_ROOF, th0: roofs[0].d || 300, wallPlain: sd => wallMat(sd)[1], wallTex: sd => wallMat(sd)[0], vk: (m.jumts || {}).vejkaste !== false }); }
+        try { roofDetail(roofs, { grp, poly: poly0.map(p => [+p[0], +p[1]]), P, roofM: mats.M_ROOF, th0: roofs[0].d || 300, wallPlain: sd => wallMat(sd)[1], wallTex: sd => wallMat(sd)[0], wallUV, vk: (m.jumts || {}).vejkaste !== false }); }
         catch (e) { console.error("3D jumts:", e); roofs.forEach(g => { const me = extrude(g, mats.M_ROOF); me.userData.bk = { k: "ov" }; grp.add(me); }); }
       }
       { const wg = geo.find(g => g.k === "s" && g.mat === "M_WALL"); try { details(m, geo, grp, mat, frameM, wg ? wg.d : 283.5, { casM, sillM, tk, wallHex }); } catch (e) { console.error("3D detaļas:", e); } }
@@ -458,7 +464,15 @@
       { const edgeM = new THREE.LineBasicMaterial({ color: "#0b0d0e" }), ms = [];
         grp.traverse(o => { if (o.isMesh && o !== gr && o.geometry && !(o.material && !Array.isArray(o.material) && o.material.transparent)) ms.push(o); });
         ms.forEach(o => { (Array.isArray(o.material) ? o.material : [o.material]).forEach(q => { q.polygonOffset = true; q.polygonOffsetFactor = 1; q.polygonOffsetUnits = 1; });
+          if (o.userData.noEdge) return;
           let eg = new THREE.EdgesGeometry(o.geometry, 25);
+          if (o.userData.wallTop && grp.userData.noSeam) {   // sienas augšmala sakrīt ar vagondēļa joslu tajā pašā plaknē: šuves līniju nerāda
+            o.updateMatrix(); const ep = eg.attributes.position, WT2 = o.userData.wallTop, keep = [], a = new THREE.Vector3(), b = new THREE.Vector3();
+            const dseg = (p, q, r) => { const d = q.clone().sub(p), t = Math.max(0, Math.min(1, r.clone().sub(p).dot(d) / (d.lengthSq() || 1))); return r.distanceTo(p.clone().addScaledVector(d, t)); };
+            for (let i = 0; i < ep.count; i += 2) { a.fromBufferAttribute(ep, i).applyMatrix4(o.matrix); b.fromBufferAttribute(ep, i + 1).applyMatrix4(o.matrix); let drop = false;
+              WT2.forEach((p, k) => { const q = WT2[(k + 1) % WT2.length]; if (Math.min(p.y, q.y) < 50 || Math.abs(p.y - q.y) < 1 && p.y < 50) return; if (Math.hypot(q.x - p.x, q.z - p.z) < 5) return; if (dseg(p, q, a) < 3 && dseg(p, q, b) < 3) drop = true; });
+              if (!drop) keep.push(ep.getX(i), ep.getY(i), ep.getZ(i), ep.getX(i + 1), ep.getY(i + 1), ep.getZ(i + 1)); }
+            eg = new THREE.BufferGeometry(); eg.setAttribute("position", new THREE.Float32BufferAttribute(keep, 3)); }
           if (o.userData.oth) { o.updateMatrix(); const ep = eg.attributes.position, keep = [], a = new THREE.Vector3(), b = new THREE.Vector3(), mid = new THREE.Vector3();   // līnijas uz blakus sienas plaknes, ar tās kontūras iekšpusē, nerāda
             const dist2 = (p, poly) => { let d = 1e9; poly.forEach((q, i) => { const r = poly[(i + 1) % poly.length], dx = r[0] - q[0], dy = r[1] - q[1], l2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((p[0] - q[0]) * dx + (p[1] - q[1]) * dy) / l2)); d = Math.min(d, Math.hypot(p[0] - q[0] - dx * t, p[1] - q[1] - dy * t)); }); return d; };
             const inside = (pt, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a2 = poly[i], b2 = poly[j]; if ((a2[1] > pt[1]) !== (b2[1] > pt[1]) && pt[0] < (b2[0] - a2[0]) * (pt[1] - a2[1]) / (b2[1] - a2[1]) + a2[0]) c = !c; } return c; };
