@@ -54,6 +54,13 @@ def main():
     cfg = json.load(open(os.path.join(HERE, 'sablons', 'mm-config.json'), encoding='utf-8'))
     tones = {k: dict(t, tex=base64.b64encode(open(os.path.join(HERE, 'sablons', t['tex']), 'rb').read()).decode()) for k, t in cfg['toni'].items()}
     viz3d = open(os.path.join(d, 'viz3d.js'), encoding='utf-8').read().replace('__MM_ATMOS__', jsstr(cfg['atmosferas']))
+    try:   # ražošanas karkasa 3D momentuzņēmums (ja programmas servera nav, 3D skats rāda to)
+        import karkass
+        kar3d = jsstr(karkass.frame3d(m))
+    except Exception as e:
+        print('BRĪDINĀJUMS: karkasa 3D momentuzņēmums neizdevās:', e)
+        kar3d = 'null'
+    viz3d = viz3d.replace('__MM_KAR3D__', kar3d)
     three = open(os.path.join(d, 'three.min.js'), encoding='utf-8').read().replace('</script', '<\\/script')
     razos = open(os.path.join(d, 'razosana.js'), encoding='utf-8').read()
     page = page.replace('/*@@RAZOSANA@@*/', razos)

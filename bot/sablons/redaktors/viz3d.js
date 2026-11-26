@@ -5,7 +5,8 @@
     const SIDE_LV = { south: "Dienvidi (ieeja)", north: "Ziemeļi", east: "Austrumi", west: "Rietumi" };
     const VIEWS = [["S", "Fasāde S", 0], ["E", "Fasāde A", 90], ["N", "Fasāde Z", 180], ["W", "Fasāde R", 270],
       ["SE", "3/4 DA", 45], ["NE", "3/4 ZA", 135], ["NW", "3/4 ZR", 225], ["SW", "3/4 DR", 315]];
-    const ATM = __MM_ATMOS__;
+    const ATM = __MM_ATMOS__, KAR_SNAP = __MM_KAR3D__;
+    function syncKar() { document.querySelectorAll("#v3mode button").forEach(b => b.setAttribute("aria-pressed", String((b.dataset.k === "1") === !!V.kar))); if ($("v3kBox")) $("v3kBox").hidden = !V.kar; }
     const ATM_KEYS = Object.keys(ATM);
     const CAM_H = 1600, ASPECT = 1.5, fovOf = mm => 2 * Math.atan(12 / mm) * 180 / Math.PI;
     const hexOf = ral => { const r = RAL[ral]; return r ? r[1] : "#383E42"; };
@@ -531,10 +532,15 @@
       const r = buildScene(model);
       if (V.kar) {   // ražošanas karkass: apvalks nerādās, tikai zeme un karkass
         const ms = $("v3kMsg"), now = JSON.stringify(model);
-        if (V.kdata && V.kAt === now) { r.grp.children.slice().forEach(c => { if (c !== r.gr) r.grp.remove(c); }); r.grp.add(buildFrame(V.kdata, V.kLay || "")); r.picks = []; r.walls = []; if (ms) ms.textContent = `${V.kdata.det.length} karkasa detaļas, ${V.kdata.spares.length} spāres`; }
-        else if (!V.kBusy) { V.kBusy = true; if (ms) ms.textContent = "Gatavo karkasu…";
-          fetch("/api/karkass3d/" + ((window.MM_LOCAL || {}).key || ""), { method: "POST", headers: { "Content-Type": "application/json" }, body: now }).then(async x => { if (!x.ok) throw new Error((await x.text()) || x.status); return x.json(); })
-            .then(j => { V.kdata = j; V.kAt = now; V.kBusy = false; rebuild(); }).catch(e => { V.kBusy = false; V.kar = false; if ($("v3kar")) $("v3kar").checked = false; if (ms) ms.textContent = "Karkasu neizdevās uzbūvēt: " + ((e && e.message) || e) + " (darbojas tikai programmā „SBE projekti”)"; rebuild(); }); }
+        if (V.kdata && V.kAt === now) { r.grp.children.slice().forEach(c => { if (c !== r.gr) r.grp.remove(c); }); r.grp.add(buildFrame(V.kdata, V.kLay || "")); r.picks = []; r.walls = []; if (ms) ms.textContent = `${V.kdata.det.length} karkasa detaļas, ${V.kdata.spares.length} spāres${V.kSnap ? " (pēc lapas būvēšanas brīža modeļa)" : ""}`; }
+        else if (!V.kBusy) {
+          const snap = () => { if (!KAR_SNAP) return false; V.kdata = KAR_SNAP; V.kAt = now; V.kSnap = true; V.kBusy = false; rebuild(); return true; };
+          V.kBusy = true;
+          if (!(window.MM_LOCAL || {}).key) { if (snap()) return; V.kBusy = false; V.kar = false; syncKar(); if (ms) ms.textContent = "Karkasu neizdevās uzbūvēt."; }
+          else { if (ms) ms.textContent = "Gatavo karkasu…";
+            fetch("/api/karkass3d/" + window.MM_LOCAL.key, { method: "POST", headers: { "Content-Type": "application/json" }, body: now }).then(async x => { if (!x.ok) throw new Error((await x.text()) || x.status); return x.json(); })
+              .then(j => { V.kdata = j; V.kAt = now; V.kSnap = false; V.kBusy = false; rebuild(); }).catch(e => { if (!snap()) { V.kBusy = false; V.kar = false; syncKar(); if (ms) ms.textContent = "Karkasu neizdevās uzbūvēt: " + ((e && e.message) || e); rebuild(); } }); }
+        }
       } else { const ms = $("v3kMsg"); if (ms) ms.textContent = ""; }
       V.grp = r.grp; V.walls = r.walls; V.picks = r.picks; V.picked = null; V.facts = r.facts; V.scene.add(V.grp); draw(); promptUpdate();
     }
@@ -627,10 +633,13 @@
       $("v3tone").onchange = e => { V.tone = e.target.value; rebuild(); };
       $("v3atm").onchange = e => { V.atm = e.target.value; promptUpdate(); };
       $("v3lens").onchange = e => { V.lens = +e.target.value; V.dist0 = null; draw(); promptUpdate(); };
-      if ($("v3kar")) { $("v3kar").onchange = e => { V.kar = e.target.checked; rebuild(); }; $("v3kLay").onchange = e => { V.kLay = e.target.value; rebuild(); }; }
+      $("v3mode").onclick = e => { const b = e.target.closest("button"); if (!b) return; V.kar = b.dataset.k === "1"; syncKar(); rebuild(); };
+      $("v3kLay").onchange = e => { V.kLay = e.target.value; rebuild(); };
+      $("v3odere").onchange = e => { const n = clone(model); n.projekts = n.projekts || {}; if (e.target.value === "fasade") n.projekts.logu_odere = "fasade"; else delete n.projekts.logu_odere; commit(n); rebuild(); };
       $("v3free").onchange = e => { V.free = e.target.checked; if (V.free) { V.el = 12; V.dist0 = null; V.pan = V.pan || [0, 0, 0]; } draw(); };
       $("v3ortho").onchange = e => { V.ortho = e.target.checked; if (V.ortho) { V.free = true; V.pan = V.pan || [0, 0, 0]; } syncCam(); draw(); };
       const orb = (az, el, ortho) => { V.az = az; V.el = el; V.ortho = ortho; V.free = true; V.pan = [0, 0, 0]; V.dist0 = null; document.querySelectorAll("#v3views button").forEach(b => b.setAttribute("aria-pressed", "false")); syncCam(); draw(); };
+      $("v3kviews").onclick = e => { const b = e.target.closest("button"); if (b) orb(+b.dataset.a, +b.dataset.e, true); };
       $("v3iso").onclick = () => orb(viewAz("SE"), 35.264, true); $("v3top").onclick = () => orb(0, 89, true);
       $("v3tOn").onchange = e => saveTerrace(e.target.checked ? {} : null);
       $("v3tSide").onchange = e => saveTerrace({ side: e.target.value });
@@ -646,11 +655,11 @@
       $("v3bkNoTex").onclick = () => { BMAT.tex = null; bkUI(); };
       $("v3copy").onclick = copyPrompt; $("v3png").onclick = savePng; $("v3close").onclick = close;
       $("v3reset").onclick = () => { V.dist0 = null; V.free = false; V.ortho = false; V.el = 0; V.pan = null; syncCam(); draw(); };
-      V.canvas.addEventListener("dblclick", () => $("v3reset").click()); V.canvas.addEventListener("contextmenu", e => e.preventDefault());
+      V.canvas.addEventListener("dblclick", () => $("v3reset").click()); V.canvas.addEventListener("contextmenu", e => e.preventDefault()); V.canvas.addEventListener("mousedown", e => { if (e.button === 1) e.preventDefault(); });
       let dr = null;
       const rayOf = e => { const r = V.canvas.getBoundingClientRect(), ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height * 2 - 1)), V.cam); return ray; };
       V.canvas.addEventListener("pointerdown", e => {
-        dr = { x: e.clientX, y: e.clientY, moved: 0 }; V.canvas.setPointerCapture(e.pointerId); V.dragWin = null;
+        if (e.button === 1) e.preventDefault(); dr = { x: e.clientX, y: e.clientY, moved: 0 }; V.canvas.setPointerCapture(e.pointerId); V.dragWin = null;
         const ph = rayOf(e).intersectObjects(V.picks || [], false)[0], rf = ph && ph.object.userData.ref;
         if (rf && rf.k === "win" && V.picked === ph.object) {   // izvēlēta loga vilkšana pa sienu
           const o = model.windows[rf.i], nrm = ph.face.normal.clone().transformDirection(ph.object.matrixWorld);
@@ -666,7 +675,7 @@
           if ((w.o === "h" ? o.x : o.y) !== nv) { if (w.o === "h") o.x = nv; else o.y = nv; w.moved = true; commit(n); const keep = w.i; rebuild(); const mm = (V.picks || []).find(q => q.userData.ref && q.userData.ref.k === "win" && q.userData.ref.i === keep); if (mm) { V.picked = mm; mm.material.emissive && mm.material.emissive.setHex(0x2266d8); draw(); } }
           return;
         }
-        if (e.shiftKey || (e.buttons & 6)) {   // pārbīde (Shift+velc vai labā/vidējā poga): kustina mērķa punktu ekrāna plaknē
+        if ((e.buttons & 4) ? e.shiftKey : (e.shiftKey || (e.buttons & 2))) {   // rullīša poga: orbīta, Shift+rullītis: pārbīde (kā SketchUp); kreisā poga arī orbīta, labā pārbīde: kustina mērķa punktu ekrāna plaknē
           enterFree(); const k = V.dist * Math.tan(fovOf(V.lens) * Math.PI / 360) * 2 / V.h, aa = V.az * Math.PI / 180; V.pan = V.pan || [0, 0, 0];
           V.pan[0] -= Math.cos(aa) * dx * k; V.pan[2] += Math.sin(aa) * dx * k; V.pan[1] += dy * k;
         } else { enterFree(); V.az = (V.az - dx * .4 + 360) % 360; V.el = Math.max(-5, Math.min(89, V.el + dy * .3)); }   // orbīta ap māju kā SketchUp
@@ -744,7 +753,7 @@
     }
     function openV() {
       V.open = true; $("v3").hidden = false; init(); if (!V.renderer) return;
-      V.tone = V.tone || lv0(); $("v3lens").value = V.lens; $("v3tone").value = V.tone; $("v3atm").value = V.atm; terraceUI(); terList(); rebuild(); resize(); setView(V.view);
+      V.tone = V.tone || lv0(); $("v3lens").value = V.lens; $("v3tone").value = V.tone; $("v3odere").value = (model.projekts || {}).logu_odere === "fasade" ? "fasade" : "aplodas"; syncKar(); $("v3atm").value = V.atm; terraceUI(); terList(); rebuild(); resize(); setView(V.view);
     }
     function close() { V.open = false; $("v3").hidden = true; }
     $("b3d").onclick = openV;

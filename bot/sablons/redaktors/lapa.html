@@ -200,6 +200,11 @@ aside > * { padding-left: 16px; padding-right: max(16px, env(safe-area-inset-rig
 #v3side { background: var(--paper, #f4efe6); color: var(--ink); padding: 12px 14px 18px; overflow: auto; display: grid; gap: 7px; align-content: start; font: 13px/1.35 var(--f-ui); }
 #v3side .v3h { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
 #v3side .v3h button { border: 0; background: transparent; font-size: 18px; cursor: pointer; }
+#v3mode { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 8px; }
+#v3mode button { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 8px 4px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; }
+#v3mode button[aria-pressed="true"] { background: #2266d8; border-color: #2266d8; color: #fff; }
+#v3kBox { margin-bottom: 8px; }
+#v3kviews { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 6px 0; }
 #v3views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 #v3views button, #v3side .v3b { border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 6px 4px; cursor: pointer; font: inherit; font-size: 12px; }
 #v3views button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: #1f1b17; font-weight: 600; }
@@ -1006,6 +1011,12 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
   <div id="v3stage"><canvas id="v3canvas" width="900" height="600"></canvas></div>
   <aside id="v3side">
     <div class="v3h"><b>3D un Gemini</b><button id="v3close" type="button" aria-label="Aizvērt"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div id="v3mode" class="v3seg"><button type="button" data-k="0" aria-pressed="true">Apvalks</button><button type="button" data-k="1" aria-pressed="false" title="Ražošanas karkass: statņi, gulšņi, pārsedzes, spāres bez apdares">Karkass</button></div>
+    <div id="v3kBox" hidden>
+      <div id="v3kviews" class="row2"><button type="button" data-a="45" data-e="35.264" class="v3b">Aksonometrija DA</button><button type="button" data-a="225" data-e="35.264" class="v3b">Aksonometrija ZR</button><button type="button" data-a="0" data-e="0" class="v3b">Fasāde (ortogrāfija)</button><button type="button" data-a="0" data-e="89" class="v3b">Plāns no augšas</button></div>
+      <label>Rādīt<select id="v3kLay"><option value="">Viss karkass</option><option value="w">Tikai sienas</option><option value="r">Tikai spāres</option></select></label>
+      <p class="pnote" id="v3kMsg"></p>
+    </div>
     <p class="pcap">Skats (fotogrāfa kadrs)</p>
     <div id="v3views"></div>
     <label>Objektīvs<select id="v3lens"><option value="35">35 mm (plats, spēcīga perspektīva)</option><option value="50">50 mm</option><option value="85">85 mm (ieteicams)</option><option value="135">135 mm (saplacināts)</option></select></label>
@@ -1013,11 +1024,6 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
     <label class="v3chk"><input type="checkbox" id="v3ortho"> Paralēlā projekcija (bez perspektīvas)</label>
     <div class="row2"><button id="v3iso" type="button" class="v3b">Izometrija</button><button id="v3top" type="button" class="v3b">No augšas</button></div>
     <button id="v3reset" type="button" class="v3b">Atiestatīt kadru</button>
-    <p class="pnote">Velc: orbīta ap māju (kā SketchUp). Shift+velc vai labā poga: pārbīde. Ritenis: tuvināt. Dubultklikšķis: atiestatīt kadru.</p>
-    <p class="pcap">Ražošanas karkass</p>
-    <label class="v3chk"><input type="checkbox" id="v3kar"> Rādīt karkasu (statņi, gulšņi, pārsedzes, spāres) bez apdares</label>
-    <label>Rādīt<select id="v3kLay"><option value="">Viss karkass</option><option value="w">Tikai sienas</option><option value="r">Tikai spāres</option></select></label>
-    <p class="pnote" id="v3kMsg"></p>
     <p class="pcap">Terase</p>
     <label class="v3chk"><input type="checkbox" id="v3tOn"> Rādīt terasi</label>
     <div id="v3tBox" hidden>
@@ -1045,6 +1051,7 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
     </div>
     <p class="pcap">Prompts Gemini</p>
     <label>Fasādes tonis<select id="v3tone"></select></label>
+    <label>Ailu odere<select id="v3odere"><option value="aplodas">Aplodu tonī</option><option value="fasade">Fasādes dēļi (vagondēlis)</option></select></label>
     <label>Apkārtne<select id="v3atm"></select></label>
     <textarea id="v3prompt" rows="9" spellcheck="false"></textarea>
     <div class="v3row"><button id="v3copy" type="button" class="v3b pri">Kopēt promptu</button><button id="v3png" type="button" class="v3b">Lejupielādēt PNG</button></div>
