@@ -281,35 +281,59 @@ def _fill(a, b, mk):
 
 
 def gwin_frame(P, o, i, ops, fixed, stud, sl):
-    """Frontona slīpā loga (piecstūra) konstrukcija: dubulti statņi abās malās līdz jumtam, palodzes gulsnis ar īsstatņiem zem tā,
-    slīpas pārsedzes pa abām augšmalas slīpnēm (paralēli jumtam, ailas augša = jumta apakša - gap)."""
+    """Frontona slīpā loga (piecstūra) konstrukcija. Aila = logs + 20 sānos, +20 augšā (perpendikulāri slīpumam), +40 apakšā.
+    Dubulti statņi abās malās līdz jumtam, palodzes gulsnis ar īsstatņiem zem tā, horizontāls visā ailā pleca augstumā,
+    slīpas pārsedzes virs ailas pa abām jumta slīpnēm un īsstatņi virs pārsedzes ik pa 600 no kores puses."""
     a0, a1, z0, gap = o['u0'], o['u1'], o['sill'], o['gap']
+    zb = NB * B
     share_l = i > 0 and a0 - ops[i - 1]['u1'] <= 180
     share_r = i + 1 < len(ops) and ops[i + 1]['u0'] - a1 <= 180
-    tp = lambda u: P.top_at(u) - gap            # ailas augšmala
+    tp = lambda u: P.top_at(u) - gap + 20 * sl(u)       # ailas augšmala (jumta apakša - sprauga + 20 perpendikulāri)
+    under = lambda u: P.top_at(u) - NT * B * sl(u)      # zem augšgulšņa
     for side, edge, shared in (('l', a0, share_l), ('r', a1, share_r)):
         kx = edge - B if side == 'l' else edge
         for j in range(1 if shared else 2):     # malas statņi: dubulti (blakus ailām kopīgi)
             stud(kx - j * B if side == 'l' else kx + j * B, 'king')
-    # statņi zem un pie ailas: apakša līdz palodzei
-    for side, edge in (('l', a0), ('r', a1)):
+    for side, edge in (('l', a0), ('r', a1)):   # statņi zem ailas
         sx = edge - B if side == 'l' else edge
-        stud(sx, 'jack', z0=(NB * B), z1=z0 - B) if z0 - B - (NB * B) > 20 else None
+        if z0 - B - zb > 20:
+            stud(sx, 'jack', z0=zb, z1=z0 - B)
     lo_f, hi_f = a0 - B - (0 if share_l else B), a1 + B + (0 if share_r else B)
     fixed.append((lo_f, hi_f))
     P.add('HOR.STATNIS', 'sill', a0 - B, a1 + B, z0 - B, z0)           # palodzes gulsnis
-    _fill(a0 - B, a1 + B, lambda u, z=z0: stud(u, 'cripple', z0=(NB * B), z1=z - B))
-    # slīpās pārsedzes: viens posms katrai jumta slīpnei, ko aila šķērso (lūzums jumta kores virsotnē)
+    _fill(a0 - B, a1 + B, lambda u, z=z0: stud(u, 'cripple', z0=zb, z1=z - B))
     pk = [u for (u, _) in P.top[1:-1]]
     cuts = [a0] + [u for u in pk if a0 < u < a1] + [a1]
     o['head'] = max(tp(u) for u in cuts)   # ailas augstākais punkts (mēriem)
+    zs = min(tp(a0), tp(a1))               # pleca augstums: te malas pāriet slīpumā
+    if o['head'] - zs > 30 and zs - z0 > 100:
+        P.add('HOR.STATNIS', 'opening_plate', a0, a1, zs, zs + B, w=P.D)   # piecstūrim horizontāls visā ailā
     for ua, ub in zip(cuts, cuts[1:]):
         ta, tb = tp(ua), tp(ub)
         k = (tb - ta) / ((ub - ua) or 1)
         hv = P.D * math.sqrt(1 + k * k)
-        poly = [(ua, ta - hv), (ub, tb - hv), (ub, tb), (ua, ta)]
-        q = P.add('PĀRSEDZE', 'header', ua, ub, min(ta, tb) - hv, max(ta, tb), length=math.hypot(ub - ua, tb - ta), w=P.D, cut='slīps griezums gar jumtu')
+        room = min(under(ua) - ta, under(ub) - tb)
+        h = min(hv, room)
+        if h < 30:
+            P.warn.append(f'frontona loga pārsedzei virs ailas nav vietas ({room:.0f} mm); vajag zemāku vai mazāku logu')
+            continue
+        if h < hv - 1:
+            msg_ = f'frontona loga pārsedze {hv:.0f} mm neietilpst zem augšgulšņa ({room:.0f} mm), vajag zemāku logu'
+            if msg_ not in P.warn:
+                P.warn.append(msg_)
+        poly = [(ua, ta), (ub, tb), (ub, tb + h), (ua, ta + h)]
+        q = P.add('PĀRSEDZE', 'header', ua, ub, min(ta, tb), max(ta, tb) + h, length=math.hypot(ub - ua, tb - ta), w=P.D, cut='slīps griezums gar jumtu')
         q['poly'] = [[_r(a_), _r(b_)] for a_, b_ in poly]
+        # īsstatņi virs pārsedzes no augstākās (kores) puses ik pa 600
+        hi_end, lo_end, step = (ub, ua, -600.0) if tb >= ta else (ua, ub, 600.0)
+        n_ = int(abs(ub - ua) // 600)
+        for t in range(n_ + 1):
+            uu = hi_end + step * t
+            if min(ua, ub) + 1 <= uu <= max(ua, ub) - 1:
+                uc = uu - B if hi_end == ub else uu
+                z_lo = (ta + (tb - ta) * ((uc + B / 2) - ua) / ((ub - ua) or 1)) + h
+                if under(uc + B / 2) - z_lo > 40:
+                    stud(uc, 'cripple', z0=z_lo, cut='virs slīpās pārsedzes')
 
 
 def build_panel(P, opens, junctions, rot_ends):
@@ -579,7 +603,7 @@ def generate(m):
                 a0_, a1_ = max(fa, uMin), min(fb, el_ - uMin)
                 if a1_ - a0_ < 50:
                     continue
-                ops.append({'u0': a0_ - ext_l, 'u1': a1_ - ext_l, 'sill': z0_, 'head': P.top_at(0) + 0, 'tips': 'gwin', 'gw': True, 'gap': gap_, 'fix': False, 'wh': 0, 'sp': 0})
+                ops.append({'u0': a0_ - 20 - ext_l, 'u1': a1_ + 20 - ext_l, 'sill': z0_ - 40, 'head': P.top_at(0) + 0, 'tips': 'gwin', 'gw': True, 'gap': gap_, 'fix': False, 'wh': 0, 'sp': 0})
         junc = []
         for p in part:
             for pt in (p['a'], p['b']):

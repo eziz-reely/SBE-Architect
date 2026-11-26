@@ -489,8 +489,6 @@ def section_page(D, res, m):
         if side == 'S':
             pl = [(span - x, z) for x, z in pl]
         g.append(_poly_s(pl, X, Y, WOOD, .3))
-    # kores dēlis
-    g.append(_poly_s([(span / 2 - 22, hr + dz - 40), (span / 2 + 22, hr + dz - 40), (span / 2 + 22, hr + dz + 160), (span / 2 - 22, hr + dz + 160)], X, Y, WOOD, .3))
     # izmēri
     yb = Y(-400) + 7
     g.append(_dash(X(xs0), yb, X(xs1), yb) + _tick(X(xs0), yb) + _tick(X(xs1), yb))
