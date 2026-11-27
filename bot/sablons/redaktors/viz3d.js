@@ -227,7 +227,7 @@
         if (bot.length >= 2) {
           const a = bot[0], b = bot[bot.length - 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), t = [(b[0] - a[0]) / L, (b[1] - a[1]) / L], cx = (a[0] + b[0]) / 2, cy = (a[1] + b[1]) / 2, at = (f, off, z) => [a[0] + (b[0] - a[0]) * f + o[0] * off, a[1] + (b[1] - a[1]) * f + o[1] * off, z];
           if (g.k === "g") {
-            grp.add(obox([cx + o[0] * (T / 2 + 13), cy + o[1] * (T / 2 + 13), z0 - 12.5], t, L + 2 * cas + 90, 26, 25, sillM));   // palodze: izvirzījums max 7 mm aiz aplodām (19 + 7)
+            grp.add(obox([cx + o[0] * (T / 2 + 13), cy + o[1] * (T / 2 + 13), z0 - 12.5], t, L + 2 * cas + 30, 26, 25, sillM));   // palodze: izvirzījums max 7 mm aiz aplodām (19 + 7), sāniski max 15 mm
             if (cas > 0) dripFlash(face, o3, cas, sillM, grp);   // lāsenis virs aplodām (arī slīpajām malām)
             const cuts = []; if (w && w.parts && w.parts.length > 1) { let u = 0; w.parts.slice(0, -1).forEach(q => { u += +q.len || 0; cuts.push(u / (w.len || L)); }); } else if (w && /^slide/.test(w.kind || "")) cuts.push(.5);
             cuts.forEach(f => grp.add(obox(at(f, -155, (z0 + z1) / 2), t, 60, 60, z1 - z0, frameM)));   // dalījuma statnis
