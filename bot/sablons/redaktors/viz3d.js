@@ -841,7 +841,7 @@
       const parts = [{ name: "MM " + m.id, mats: shell }];
       const kdat = kd || V.kdata || KAR_SNAP;
       if (kdat) { try { parts.push({ name: "KARKASS", mats: mkGroup(buildFrame(kdat, "")) }); } catch (e) { console.error("karkass eksportam:", e.message); } }
-      const tag = String(m.id).replace(/[^A-Za-z0-9]/g, "_").replace(/^[^A-Za-z]/, "X$&"), js = JSON.stringify(parts.map(p => ({ n: p.name, m: p.mats.map(q => [q.hex, q.op, q.V, q.T]) })));
+      const tag = String(m.id).replace(/[^A-Za-z0-9]/g, "_").replace(/^[^A-Za-z]/, "X$&"), js = JSON.stringify(parts.map(p => [p.name, p.mats.map(q => [q.hex, q.op, q.V, q.T])]));
       const n = parts.reduce((s, p) => s + p.mats.reduce((t, q) => t + q.T.length / 3, 0), 0);
       return ["# encoding: UTF-8", `# MM Homes 3D modelis ar visām detaļām: ${m.id} (SBE Architect). Apvalks (sienas, jumts, logi, durvis, aplodas, teknes, lāseņi) un ražošanas karkass.`,
         `module MM3D${tag}`, `  PARTS = ${js}`, "  def self.run", "    model = Sketchup.active_model", `    model.start_operation('MM 3D: ${String(m.id).replace(/'/g, "")}', true)`, "    begin",
