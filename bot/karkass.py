@@ -292,32 +292,39 @@ def gwin_frame(P, o, i, ops, fixed, stud, sl):
     slīpas pārsedzes virs ailas pa abām jumta slīpnēm un īsstatņi virs pārsedzes ik pa 600 no kores puses."""
     a0, a1, z0, gap = o['u0'], o['u1'], o['sill'], o['gap']
     zb = NB * B
-    share_l = i > 0 and a0 - ops[i - 1]['u1'] <= 180
-    share_r = i + 1 < len(ops) and ops[i + 1]['u0'] - a1 <= 180
+    share_l = i > 0 and 0 <= a0 - ops[i - 1]['u1'] <= 4 * B + 20     # ailas tuvāk par 4×45+20: starp tām tikai 2 statņi
+    share_r = i + 1 < len(ops) and 0 <= ops[i + 1]['u0'] - a1 <= 4 * B + 20
     tp = lambda u: P.top_at(u) - gap + 20 * sl(u)       # ailas augšmala (jumta apakša - sprauga + 20 perpendikulāri)
     under = lambda u: P.top_at(u) - NT * B * sl(u)      # zem augšgulšņa
     for side, edge, shared in (('l', a0, share_l), ('r', a1, share_r)):
         kx = edge - B if side == 'l' else edge
         for j in range(1 if shared else 2):     # malas statņi: dubulti (blakus ailām kopīgi)
             stud(kx - j * B if side == 'l' else kx + j * B, 'king')
-    for side, edge in (('l', a0), ('r', a1)):   # statņi zem ailas
-        sx = edge - B if side == 'l' else edge
-        if z0 - B - zb > 20:
-            stud(sx, 'jack', z0=zb, z1=z0 - B)
     lo_f, hi_f = a0 - B - (0 if share_l else B), a1 + B + (0 if share_r else B)
     fixed.append((lo_f, hi_f))
-    P.add('HOR.STATNIS', 'sill', a0 - B, a1 + B, z0 - B, z0)           # palodzes gulsnis
-    _fill(a0 - B, a1 + B, lambda u, z=z0: stud(u, 'cripple', z0=zb, z1=z - B))
+    if o.get('stack'):   # logs stāv uz durvju/loga pārsedzes zem tā: gulsnis uz pārsedzēm, īsstatņu zem tā nav
+        P.add('HOR.STATNIS', 'sill', a0 - B, a1 + B, z0 - B, z0)
+    elif z0 + 40 - zb > 100:   # palodze (45, 40 zem loga) tikai, ja logs augstāk par 100 virs apakšgulšņa; zem tās īsstatņi
+        for side, edge in (('l', a0), ('r', a1)):   # statņi zem ailas
+            sx = edge - B if side == 'l' else edge
+            if z0 - B - zb > 20:
+                stud(sx, 'jack', z0=zb, z1=z0 - B)
+        P.add('HOR.STATNIS', 'sill', a0 - B, a1 + B, z0 - B, z0)
+        _fill(a0 - B, a1 + B, lambda u, z=z0: stud(u, 'cripple', z0=zb, z1=z - B))
+    else:
+        o['sill'] = zb   # aila uz apakšgulšņa
     pk = [u for (u, _) in P.top[1:-1]]
     cuts = [a0] + [u for u in pk if a0 < u < a1] + [a1]
     o['head'] = max(tp(u) for u in cuts)   # ailas augstākais punkts (mēriem)
     zs = min(tp(a0), tp(a1))               # pleca augstums: te malas pāriet slīpumā
+    zcut = None
     if o['head'] - zs > 30 and zs - z0 > 100:
+        zcut = zs + B   # slīpās pārsedzes sēž uz horizontālā (horizontāls zāģējums), horizontālais iet pa visu ailu
         P.add('HOR.STATNIS', 'opening_plate', a0, a1, zs, zs + B, w=P.D)   # piecstūrim horizontāls visā ailā
     for ua, ub in zip(cuts, cuts[1:]):
         ta, tb = tp(ua), tp(ub)
         k = (tb - ta) / ((ub - ua) or 1)
-        hv = P.D * math.sqrt(1 + k * k)
+        hv = B * math.sqrt(1 + k * k)          # slīpā pārsedze 45×D plakaniski (frontonā visas detaļas 45×145)
         room = min(under(ua) - ta, under(ub) - tb)
         h = min(hv, room)
         if h < 30:
@@ -328,18 +335,38 @@ def gwin_frame(P, o, i, ops, fixed, stud, sl):
             if msg_ not in P.warn:
                 P.warn.append(msg_)
         poly = [(ua, ta), (ub, tb), (ub, tb + h), (ua, ta + h)]
-        q = P.add('PĀRSEDZE', 'header', ua, ub, min(ta, tb), max(ta, tb) + h, length=math.hypot(ub - ua, tb - ta), w=P.D, cut='slīps griezums gar jumtu')
+        slp = abs(tb - ta) > 1
+        if zcut is not None and slp:   # nogriež daļu zem horizontālā augšmalas
+            cl = []
+            for j_, p_ in enumerate(poly):
+                q2 = poly[(j_ + 1) % len(poly)]
+                if p_[1] >= zcut - 1e-6:
+                    cl.append(p_)
+                if (p_[1] - zcut) * (q2[1] - zcut) < 0:
+                    t_ = (zcut - p_[1]) / (q2[1] - p_[1])
+                    cl.append((p_[0] + (q2[0] - p_[0]) * t_, zcut))
+            poly = cl
+        ln_ = math.hypot(1, k)
+        prj = [(a_ + b_ * k) / ln_ for a_, b_ in poly]
+        q = P.add('SLIPAIS' if slp else 'PĀRSEDZE', 'header', min(a_ for a_, _ in poly), max(a_ for a_, _ in poly), min(b_ for _, b_ in poly), max(b_ for _, b_ in poly),
+                  length=(max(prj) - min(prj)) if slp else ub - ua, w=P.D, cut='slīps griezums gar jumtu; uz horizontālā horizontāls zāģējums' if slp and zcut is not None else 'slīps griezums gar jumtu' if slp else None)
         q['poly'] = [[_r(a_), _r(b_)] for a_, b_ in poly]
-        # īsstatņi virs pārsedzes no augstākās (kores) puses ik pa 600
+        o.setdefault('htop', []).append((ua, ub, ta + h, tb + h))   # pārsedzes augšmala (kores mezglam virs ailas)
+        # īsstatņi virs pārsedzes no augstākās (kores) puses ik pa 555+45
         hi_end, lo_end, step = (ub, ua, -600.0) if tb >= ta else (ua, ub, 600.0)
         n_ = int(abs(ub - ua) // 600)
         for t in range(n_ + 1):
             uu = hi_end + step * t
             if min(ua, ub) + 1 <= uu <= max(ua, ub) - 1:
                 uc = uu - B if hi_end == ub else uu
-                z_lo = (ta + (tb - ta) * ((uc + B / 2) - ua) / ((ub - ua) or 1)) + h
+                hz = lambda u: ta + (tb - ta) * (u - ua) / ((ub - ua) or 1) + h     # pārsedzes augšmala
+                z_lo = hz(uc + B / 2)
                 if under(uc + B / 2) - z_lo > 40:
-                    stud(uc, 'cripple', z0=z_lo, cut='virs slīpās pārsedzes')
+                    # abos galos slīpi zāģēts: apakša pa pārsedzes augšu, augša pa augšgulšņa apakšu
+                    pp = [(uc, hz(uc)), (uc + B, hz(uc + B)), (uc + B, under(uc + B)), (uc, under(uc))]
+                    q_ = stud(uc, 'cripple', z0=min(hz(uc), hz(uc + B)), cut='virs slīpās pārsedzes; abi gali slīpi')
+                    q_['poly'] = [[_r(a_), _r(b_)] for a_, b_ in pp]
+                    q_['garums'] = _r(max(pp[2][1] - pp[1][1], pp[3][1] - pp[0][1]))
 
 
 def build_panel(P, opens, junctions, rot_ends):
@@ -364,8 +391,8 @@ def build_panel(P, opens, junctions, rot_ends):
     # frontona kores mezgls: dubultstatnis 90×D zem kores; virs tā augšgulsnis pārtraukts (90 plata ligzda), tajā guļ abu jumta paneļu kores dēļi 45×DJ
     up, zpk = max(P.top, key=lambda t: t[1])
     ridge = P.kind == 'arsiena' and zpk > max(P.top[0][1], P.top[-1][1]) + 300 and 400 < up < L - 400
-    r_open = next((o for o in opens if o['u0'] - B <= up <= o['u1'] + B), None) if ridge else None
-    if r_open is not None and (r_open.get('gw') or r_open['head'] + 2 * B + P.D > zpk - 150):
+    r_open = next((o for o in sorted(opens, key=lambda o: not o.get('gw')) if o['u0'] - B <= up <= o['u1'] + B), None) if ridge else None
+    if r_open is not None and not r_open.get('gw') and r_open['head'] + 2 * B + P.D > zpk - 150:   # slīpajam logam pārbauda pēc pārsedzes
         ridge = False   # slīpais logs līdz jumtam korē: mezglam nav vietas
         P.warn.append('frontona kores mezglam traucē logs korē: kores dēļiem nav balsta, pārbaudīt')
     # augšgulšņi pa augšmalas posmiem
@@ -417,7 +444,7 @@ def build_panel(P, opens, junctions, rot_ends):
     end_l, end_r = fixed[0][1], fixed[1][0]
     if ridge:
         tk = abs(P.slope_at(up - 1))
-        zr_ = zpk + RDJ * (math.sqrt(1 + tk * tk) - 1) - B * tk   # kores dēļa apakša (dēļa augša = spāres augša pie dēļa iekšmalas)
+        zr_ = zpk - B * tk   # kores dēļa apakša = spāres apakša pie dēļa ārmalas (mezgls nav augstāks par frontona augšmalu)
         if r_open is None:
             for u_ in (up - B, up):
                 stud(u_, 'ridge', z1=zr_, cut='kores mezgls, virsū kores dēļi')
@@ -429,7 +456,7 @@ def build_panel(P, opens, junctions, rot_ends):
         if u0 - B < end_l or u0 + jw + B > end_r:
             P.warn.append(f'starpsienas pieslēgums u={_r(c)} pie gala bloka, pārbaudīt')
             continue
-        if any(o['u0'] - B <= c <= o['u1'] + B for o in opens):
+        if any(o['u0'] - B <= c <= o['u1'] + B and not (o.get('gw') and o['u0'] + B <= u0 - B and u0 + jw + B <= o['u1'] - B) for o in opens):   # zem slīpā loga (pilnībā ailā) pieslēgums iet līdz loga gulsnim
             P.warn.append(f'starpsienas pieslēgums u={_r(c)} ailā, pārbaudīt')
             continue
         stud(u0 - B, 'junction')
@@ -439,6 +466,11 @@ def build_panel(P, opens, junctions, rot_ends):
         stud(u0 + jw, 'junction')
         fixed.append((u0 - B, u0 + jw + B))
     ops = sorted(opens, key=lambda o: o['u0'])
+    for o in ops:   # frontona slīpais logs virs durvīm / loga (nedalīts frontons): logs stāv uz apakšējās ailas pārsedzes
+        if o.get('gw'):
+            tops_ = [n['head'] + B + D for n in ops if not n.get('gw') and n['u0'] < o['u1'] + B and n['u1'] > o['u0'] - B and n['head'] + B + D > o['sill'] - B]
+            if tops_:
+                o['sill'], o['stack'] = max(o['sill'], max(tops_) + B), True
     for i, o in enumerate(ops):
         if o.get('gw'):
             gwin_frame(P, o, i, ops, fixed, stud, sl)
@@ -492,19 +524,82 @@ def build_panel(P, opens, junctions, rot_ends):
         if sillz > 0:
             P.add('HOR.STATNIS', 'sill', hl, hr, sillz - B, sillz)                     # palodzes horizontālais gulsnis
             _fill(hl, hr, lambda u, z=sillz: stud(u, 'cripple', z0=zb, z1=z - B))
+    for o in ops:   # slīpā loga ailā neviens statnis neiet cauri: apakšējo ailu statņi beidzas zem loga gulšņa
+        if o.get('gw'):
+            zt_ = o['sill'] - B if (o.get('stack') or o['sill'] + 40 - zb > 100) else o['sill']
+            keep = []
+            for q in P.m:
+                if q['nos'].startswith('VERT') and q['u0'] >= o['u0'] - 1 and q['u1'] <= o['u1'] + 1 and q['z1'] > zt_ + 1 and 'virs slīpās pārsedzes' not in (q.get('cut') or ''):
+                    if q['z0'] >= zt_ - 20:
+                        continue
+                    q.update(nos='VERT.STATNIS', z1=_r(zt_), garums=_r(zt_ - q['z0']), cut=None)
+                keep.append(q)
+            P.m = keep
+    for n in ops:   # neviens statnis neiet cauri parastai ailai (piem. slīpā loga īsstatņi virs zemāka loga): sākas virs tās pārsedzes
+        if n.get('gw'):
+            continue
+        ht_ = n['head'] + B + D
+        keep = []
+        for q in P.m:
+            if q['nos'].startswith('VERT') and q['u0'] >= n['u0'] - 1 and q['u1'] <= n['u1'] + 1 and q['z0'] < n['head'] - 1 and q['z1'] > max(n['sill'], zb) + 1:
+                if q['z1'] - ht_ < 20:
+                    continue
+                q.update(z0=_r(ht_), garums=_r(q['garums'] - (ht_ - q['z0'])))
+            keep.append(q)
+        P.m = keep
+    if ridge and r_open is not None and r_open.get('gw'):   # slīpais logs zem kores: mezgls no pārsedžu augšas korē
+        hs_ = [max(ta_ + (tb_ - ta_) * (u_ - ua_) / ((ub_ - ua_) or 1) for u_ in (max(ua_, up - B), min(ub_, up + B)))
+               for ua_, ub_, ta_, tb_ in r_open.get('htop', []) if ua_ < up + B and ub_ > up - B]
+        if not hs_ or zr_ - max(hs_) < 40:
+            ridge = False
+            P.warn.append('frontona kores mezglam traucē slīpais logs korē: kores dēļiem nav balsta, pārbaudīt')
+            for (u0, z0), (u1, z1) in zip(P.top, P.top[1:]):   # ligzdu korē aizpilda ar augšgulsni
+                k = (z1 - z0) / ((u1 - u0) or 1)
+                a_, b_ = (up - B, up) if abs(u1 - up) < 1e-6 else (up, up + B) if abs(u0 - up) < 1e-6 else (None, None)
+                if a_ is not None:
+                    za, zb_ = z0 + k * (a_ - u0), z0 + k * (b_ - u0)
+                    dz = B * math.sqrt(1 + k * k)
+                    P.add('SLIPAIS', 'top_plate', a_, b_, min(za, zb_) - dz, max(za, zb_) - dz + B, length=math.hypot(b_ - a_, zb_ - za), cut='slīps griezums gar jumtu')
     if ridge and r_open is not None:   # logs zem kores: kores mezgls no loga pārsedzes augšas līdz kores dēļiem (īsstatņi tur izņemti)
-        zh_ = r_open['head'] + B + D
-        P.m = [q for q in P.m if not (q['loma'] == 'cripple' and q['z0'] >= zh_ - 1 and q['u0'] < up + B and q['u1'] > up - B)]
+        zh_ = max(hs_) if r_open.get('gw') else r_open['head'] + B + D
+        zc_ = r_open['head'] - 1 if r_open.get('gw') else zh_ - 1
+        P.m = [q for q in P.m if not (q['loma'] == 'cripple' and q['z0'] >= zc_ and q['u0'] < up + B and q['u1'] > up - B)]
         for u_ in (up - B, up):
-            stud(u_, 'ridge', z0=zh_, z1=zr_, cut='kores mezgls virs pārsedzes, virsū kores dēļi')
+            q_ = stud(u_, 'ridge', z0=zh_, z1=zr_, cut='kores mezgls virs pārsedzes, virsū kores dēļi')
+            if r_open.get('gw'):   # apakša slīpi pa slīpās pārsedzes augšu
+                def hz_(u):
+                    v = [ta_ + (tb_ - ta_) * (u - ua_) / ((ub_ - ua_) or 1) for ua_, ub_, ta_, tb_ in r_open.get('htop', []) if ua_ - 1e-6 <= u <= ub_ + 1e-6]
+                    return max(v) if v else zh_
+                pp = [(u_, hz_(u_)), (u_ + B, hz_(u_ + B)), (u_ + B, zr_), (u_, zr_)]
+                q_.update(z0=_r(min(pp[0][1], pp[1][1])), poly=[[_r(a_), _r(b_)] for a_, b_ in pp], garums=_r(zr_ - min(pp[0][1], pp[1][1])), cut='kores mezgls, apakša slīpi pa pārsedzi')
     merged = []
     for a, b in sorted(fixed):
         if merged and a <= merged[-1][1] + 1e-6:
             merged[-1] = (merged[-1][0], max(merged[-1][1], b))
         else:
             merged.append((a, b))
+    gable = P.kind == 'arsiena' and zpk > max(P.top[0][1], P.top[-1][1]) + 300 and 0 < up < L
+    if gable:
+        # frontons: statņi kreisajā pusē ik pa 600 no kreisā gala, labajā ik pa 600 no labā gala (simetriski uz kori);
+        # statni neliek tuvāk par 20 mm aizņemtai zonai (ailai, mezglam); ja tīrā atstarpe > 555, pa vidu papildu statnis
+        cand = [CC * k for k in range(1, int(up // CC) + 1) if CC * k + B <= up + 1e-6]
+        cand += [L - B - CC * k for k in range(1, int((L - up) // CC) + 1) if L - B - CC * k >= up - 1e-6]
+        occ = list(merged)
+        for c in sorted(cand):
+            if any(c < b_ + 20 and c + B > a_ - 20 for a_, b_ in occ):
+                continue
+            occ.append((c, c + B))
+            stud(c, 'stud')
+        occ.sort()
+        for (a0, a1), (b0, b1) in zip(occ, occ[1:]):
+            if b0 - a1 <= CLEAR_MAX + 1e-6 or any(o['u0'] - B <= a1 and b0 <= o['u1'] + B for o in opens):
+                continue
+            n_ = math.ceil((b0 - a1 + B) / (CLEAR_MAX + B)) - 1      # papildu statņi vienādās atstarpēs
+            st_ = (b0 - a1 - n_ * B) / (n_ + 1)
+            for t in range(n_):
+                stud(a1 + st_ * (t + 1) + B * t, 'stud')
     for (a0, a1), (b0, b1) in zip(merged, merged[1:]):
-        if any(o['u0'] - B <= a1 and b0 <= o['u1'] + B for o in opens):
+        if gable or any(o['u0'] - B <= a1 and b0 <= o['u1'] + B for o in opens):
             continue
         _fill(a1, b0, lambda u: stud(u, 'stud'))
     # horizontālais šķērsis (nogging) pusaugstumā starp statņiem, kur nav ailu
@@ -650,6 +745,12 @@ def generate(m):
                 if a1_ - a0_ < 50:
                     continue
                 ops.append({'u0': a0_ - 20 - ext_l, 'u1': a1_ + 20 - ext_l, 'sill': z0_ - 40, 'head': P.top_at(0) + 0, 'tips': 'gwin', 'gw': True, 'gap': gap_, 'fix': False, 'wh': 0, 'sp': 0})
+            # divi blakus slīpie logi (/ \) tuvāk par 700: viena aila kā piecstūris ar kopīgu horizontālo
+            gws_ = sorted((o for o in ops if o.get('gw')), key=lambda o: o['u0'])
+            for o1, o2 in zip(gws_, gws_[1:]):
+                if o1 in ops and (o2['u0'] + 20) - (o1['u1'] - 20) < 700:
+                    o2.update(u0=o1['u0'], sill=min(o1['sill'], o2['sill']), gap=min(o1['gap'], o2['gap']))
+                    ops.remove(o1)
         junc = []
         for p in part:
             for pt in (p['a'], p['b']):
@@ -855,11 +956,10 @@ def _roof_parts(res):
         pref = 'J' + (eave_w.id if eave_w else str(len(rafs)))
         s_r = max(p[0] * dx + p[1] * dy for p in poly2)          # kores līnija (spāres augšgals)
         rl = [p[0] * lx + p[1] * ly for p in poly2 if abs(p[0] * dx + p[1] * dy - s_r) < 1]
-        dzr = DJ * nn
         for k_ in range(npan):   # kores dēlis 45×DJ katra paneļa augšmalā (abu slīpju dēļi kopā 90, guļ frontona kores mezglā)
             r0, r1 = max(a_ + k_ * pw, min(rl)), min(a_ + (k_ + 1) * pw, max(rl))
             if r1 - r0 > 50:
-                zt = zf(r0 * lx + (s_r - B) * dx, r0 * ly + (s_r - B) * dy) + dzr
+                zt = zf(r0 * lx + (s_r - B) * dx, r0 * ly + (s_r - B) * dy) + DJ   # dēļa apakša pa spāres apakšu (guļ uz kores mezgla)
                 pl = [(s_r - B, zt - DJ), (s_r, zt - DJ), (s_r, zt), (s_r - B, zt)]
                 rafs.append({'pan': f'{pref}{k_ + 1}', 'nos': 'HOR.STATNIS', 'loma': 'ridge_beam', 'w': _r(r1 - r0), 'o': [_r(r0 * lx), _r(r0 * ly)], 'd': [round(dx, 5), round(dy, 5)], 'n': [round(lx, 5), round(ly, 5)], 'poly': [[_r(a__), _r(b__)] for a__, b__ in pl]})
         pos = []

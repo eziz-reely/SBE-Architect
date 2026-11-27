@@ -123,7 +123,7 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
     fs, fc = 5.0, 3.2          # Čarnikavas PDF (A3 normēts): galvenie izmēri 4,99 mm, ķēdes koordinātes 3,17 mm
     g = [f'<g font-family="{FONT}">']
     for q in sorted(P.m, key=lambda q: 0 if q['loma'] in ('bottom_plate', 'top_plate') else 1):
-        if q['nos'] == 'SLIPAIS':
+        if q['nos'] == 'SLIPAIS' and not q.get('poly'):   # augšgulsnis: zīmē zemāk pa augšmalu
             continue
         if q.get('poly'):   # slīpa pārsedze (frontona slīpais logs)
             g.append(f'<polygon points="{" ".join(f"{X(u):.2f},{Y(z):.2f}" for u, z in q["poly"])}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".06"/>')
