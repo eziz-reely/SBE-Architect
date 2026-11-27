@@ -373,8 +373,11 @@
         }).filter(Boolean);
         edges.forEach(e => { if (e.mates.length) return; const mid = [(e.a[0] + e.b[0]) / 2, (e.a[1] + e.b[1]) / 2], onWall = poly.some((p, i) => { const q = poly[(i + 1) % poly.length], dx = q[0] - p[0], dy = q[1] - p[1], l2 = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((mid[0] - p[0]) * dx + (mid[1] - p[1]) * dy) / l2)); return Math.hypot(mid[0] - p[0] - u * dx, mid[1] - p[1] - u * dy) < 6; });
           const ov = onWall ? 0 : rayHit(mid, e.ni); e.ov = ov > 5 && ov < 3000 ? ov : 0; if (e.ov) inner = clip(inner, e.a, e.ni, e.ov); });
+        // malas bez pārkares (dzega, vēja kaste): jumta pīrāgs 4 mm iekšā, dēļa priekša 1 mm aiz fasādes plaknes
+        let top = s.pl.slice();
+        edges.forEach(e => { if (e.mates.length || e.ov) return; const eaveE = Math.abs(e.za - e.zb) < 1 && s.zAt(cen[0], cen[1]) > e.za; if (eaveE || vk) { top = clip(top, e.a, e.ni, 4); inner = clip(inner, e.a, e.ni, 4); } });
         // pamatplaksne: viss pīrāgs [0..th], malas vertikālas
-        slab(s, s.pl, s.th - SH - BT, s.th, [roofM, dark], true);   // augšējā kārta (latojumi + segums) visai slīpnei vienā gabalā, lai jumtā nav šuvju līniju
+        slab(s, top, s.th - SH - BT, s.th, [roofM, dark], true);   // augšējā kārta (latojumi + segums) visai slīpnei vienā gabalā, lai jumtā nav šuvju līniju
         slab(s, inner, 0, s.th - SH - BT, [dark, dark], true, true);   // spāru kārta: līnijas nav vajadzīgas (apakšā/sānos segta)
         edges.forEach(e => {
           const eave = !e.mates.length && Math.abs(e.za - e.zb) < 1 && s.zAt(cen[0], cen[1]) > e.za, out = [-e.ni[0], -e.ni[1]], ov = e.ov || 0, L3 = new THREE.Vector3(e.d[0], 0, e.d[1]), O3 = new THREE.Vector3(out[0], 0, out[1]);
@@ -386,17 +389,18 @@
           const stripP = [e.a, e.b, [e.b[0] + e.ni[0] * ov, e.b[1] + e.ni[1] * ov], [e.a[0] + e.ni[0] * ov, e.a[1] + e.ni[1] * ov]];
           const full = s.th + 4, lo = R0 - 18;   // spāres gals vienmēr aizvērts: galda dēlis (dzega, vēja kaste) vai metāls (gals bez vēja kastes)
           const sdN = Math.abs(out[1]) > Math.abs(out[0]) ? (out[1] < 0 ? "north" : "south") : (out[0] < 0 ? "west" : "east"), flush = !ov && (eave || vk), tex = c.wallTex(sdN);   // bez pārkares: dzegas mala klāta ar to pašu vagondēli kā siena (14 mm), tikai augšā plāna metāla lāse
-          const rake = !eave && ov > 0, bt = rake ? 25 : flush ? 1 : eave || vk ? 22 : 4, edgeM = rake ? (P.vejmala === "balta" ? M("#f2f2ef") : P.sparu_hex ? rafM : fasM) : flush || (!eave && vk) ? tex : eave ? fasM : capM;   // gals ar pārkari: spāres dekoratīvais dēlis (sparu_hex) pa slīpumu + metāla mala   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
+          const rake = !eave && ov > 0, bt = rake ? 25 : flush ? 3 : eave || vk ? 22 : 4, edgeM = rake ? (P.vejmala === "balta" ? M("#f2f2ef") : P.sparu_hex ? rafM : fasM) : flush || (!eave && vk) ? tex : eave ? fasM : capM;   // gals ar pārkari: spāres dekoratīvais dēlis (sparu_hex) pa slīpumu + metāla mala   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
           if (ov) {   // pārkare: slīpā apakša (zem spārēm) + masīvs pīrāgs ar vertikālu griezumu
             slab(s, stripP, lo, R0, [sofM, sofM], true);
             slab(s, stripP, R0, s.th - SH - BT, [dark, dark], true);
           }
+          const sh = flush ? -4 : 0;   // bez pārkares: dēļa priekša 1 mm ATPAKAĻ no fasādes plaknes (nekas neizvirzās uz āru)
           const hiA = !eave && s.zAt(e.a[0], e.a[1]) > s.zAt(e.b[0], e.b[1]), ea = e.a, eb = e.b;
-          hexa([at(s, ea, ov ? lo : 0), at(s, eb, ov ? lo : 0), at(s, eb, full), at(s, ea, full)], O3.clone().multiplyScalar(bt), edgeM, edgeM === tex ? c.wallUV(sdN, at(s, e.a, 0)) : null);
-          { const sm = grp.children[grp.children.length - 1]; sm.userData.bk = { k: "ov" }; if (edgeM === tex) { sm.userData.noEdge = true; grp.userData.noSeam = true; if (!eave) { const he = hiA ? e.a : e.b; RE.push({ lo: at(s, he, 0), hi: at(s, he, full), O3, bt, tex, uv: c.wallUV(sdN, at(s, e.a, 0)) }); } } }   // bez pārkares: dēļi tajā pašā plaknē kā siena (3 mm), bez šuves līnijas   // galda / vēja dēlis vai metāla mala
+          hexa([at(s, ea, ov ? lo : 0), at(s, eb, ov ? lo : 0), at(s, eb, full), at(s, ea, full)].map(q => q.addScaledVector(O3, sh)), O3.clone().multiplyScalar(bt), edgeM, edgeM === tex ? c.wallUV(sdN, at(s, e.a, 0)) : null);
+          { const sm = grp.children[grp.children.length - 1]; sm.userData.bk = { k: "ov" }; if (edgeM === tex) { sm.userData.noEdge = true; grp.userData.noSeam = true; if (!eave) { const he = hiA ? e.a : e.b; RE.push({ lo: at(s, he, 0).addScaledVector(O3, sh), hi: at(s, he, full).addScaledVector(O3, sh), O3, bt, tex, uv: c.wallUV(sdN, at(s, e.a, 0)) }); } } }   // bez pārkares: dēļi tajā pašā plaknē kā siena (3 mm), bez šuves līnijas   // galda / vēja dēlis vai metāla mala
           if (eave && !ov) hexa([at(s, ea, s.th - 55), at(s, eb, s.th - 55), at(s, eb, s.th - 53), at(s, ea, s.th - 53)].map(q => q.addScaledVector(O3, bt + 2.5)), O3.clone().multiplyScalar(7), capM);   // lāseņa nolaidums (atloks uz āru)
           if (eave || (vk && !ov) || rake) {   // metāla lāses mala virs dēļa (dzegai un vēja kastei bez pārkares)
-            hexa([at(s, e.a, s.th - (flush ? 55 : 40)), at(s, e.b, s.th - (flush ? 55 : 40)), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt)), O3.clone().multiplyScalar(2.5), capM);
+            hexa([at(s, e.a, s.th - (flush ? 55 : 40)), at(s, e.b, s.th - (flush ? 55 : 40)), at(s, e.b, full + 2), at(s, e.a, full + 2)].map(q => q.addScaledVector(O3, bt + sh + (flush ? .1 : 0))), O3.clone().multiplyScalar(2.5), capM);
             if (eave) gutter(s, e, bt, ov, out, L3, O3, R0);
           }
           if (!eave) slab(s, [e.a, e.b, [e.b[0] + e.ni[0] * 45, e.b[1] + e.ni[1] * 45], [e.a[0] + e.ni[0] * 45, e.a[1] + e.ni[1] * 45]], s.th, s.th + 4, [capM, capM], true);   // vēja loksnes metāla josla uz jumta
