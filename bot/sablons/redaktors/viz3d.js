@@ -815,5 +815,43 @@
       const mm = (V.picks || []).find(q => q.userData.ref && q.userData.ref.k === "win" && q.userData.ref.i === keep); if (mm) pickOpening(mm); return true;
     }
     addEventListener("keydown", e => { if (V.open && e.key === "Escape") close(); else if (winKey(e)) return; }, true);
-    window.MM_VIZ3D = { open: openV, state: V, prompt: promptText, model: () => model };
+    // ---------- eksports uz SketchUp: tā pati detalizētā 3D aina (apvalks ar visām detaļām + karkass) kā Ruby skripts ----------
+    // katrs materiāls = viena PolygonMesh; koordinātas SketchUp asīs (X uz austrumiem, Y uz ziemeļiem = D - plāna y, Z uz augšu), mm
+    function exportRb(m, kd) {
+      const D = +m.D || 0, rd = v => Math.round(v * 10) / 10;
+      const mkGroup = (grp, skip) => {
+        grp.updateMatrixWorld(true);
+        const mats = {};
+        grp.traverse(o => {
+          if (!o.isMesh || o === skip || !o.geometry || !o.geometry.attributes.position) return;
+          const ms = Array.isArray(o.material) ? o.material : [o.material], g = o.geometry, pos = g.attributes.position, idx = g.index, v = new THREE.Vector3();
+          const groups = g.groups && g.groups.length ? g.groups : [{ start: 0, count: idx ? idx.count : pos.count, materialIndex: 0 }];
+          groups.forEach(gr => {
+            const mt = ms[gr.materialIndex] || ms[0]; if (!mt || mt.visible === false) return;
+            const op = mt.transparent ? Math.max(0, Math.min(1, mt.opacity)) : 1, hex = (mt.color ? mt.color.getHexString() : "888888"), key = hex + "_" + Math.round(op * 100);
+            const M = mats[key] || (mats[key] = { hex, op, map: new Map(), V: [], T: [] });
+            const vi = i => { const j = idx ? idx.getX(i) : i; v.fromBufferAttribute(pos, j).applyMatrix4(o.matrixWorld); const x = rd(v.x), y = rd(D - v.z), z = rd(v.y), k = x + "," + y + "," + z; let n = M.map.get(k); if (n == null) { n = M.V.length / 3; M.map.set(k, n); M.V.push(x, y, z); } return n; };
+            const end = Math.min(gr.start + gr.count, idx ? idx.count : pos.count);
+            for (let i = gr.start; i + 2 < end; i += 3) { const a = vi(i), b = vi(i + 1), c = vi(i + 2); if (a !== b && b !== c && a !== c) M.T.push(a, b, c); }
+          });
+        });
+        return Object.values(mats).map(M => ({ hex: M.hex, op: M.op, V: M.V, T: M.T })).filter(M => M.T.length);
+      };
+      const r = buildScene(m), shell = mkGroup(r.grp, r.gr);
+      const parts = [{ name: "MM " + m.id, mats: shell }];
+      const kdat = kd || V.kdata || KAR_SNAP;
+      if (kdat) { try { parts.push({ name: "KARKASS", mats: mkGroup(buildFrame(kdat, "")) }); } catch (e) { console.error("karkass eksportam:", e.message); } }
+      const tag = String(m.id).replace(/[^A-Za-z0-9]/g, "_").replace(/^[^A-Za-z]/, "X$&"), js = JSON.stringify(parts.map(p => ({ n: p.name, m: p.mats.map(q => [q.hex, q.op, q.V, q.T]) })));
+      const n = parts.reduce((s, p) => s + p.mats.reduce((t, q) => t + q.T.length / 3, 0), 0);
+      return ["# encoding: UTF-8", `# MM Homes 3D modelis ar visām detaļām: ${m.id} (SBE Architect). Apvalks (sienas, jumts, logi, durvis, aplodas, teknes, lāseņi) un ražošanas karkass.`,
+        `module MM3D${tag}`, `  PARTS = ${js}`, "  def self.run", "    model = Sketchup.active_model", `    model.start_operation('MM 3D: ${String(m.id).replace(/'/g, "")}', true)`, "    begin",
+        "      PARTS.each do |nm, mats|", "        grp = model.entities.add_group", "        grp.name = nm",
+        "        mats.each do |hex, op, vs, ts|", "          mat = model.materials.add(\"MM_#{hex}_#{(op * 100).round}\")", "          mat.color = Sketchup::Color.new(hex[0, 2].to_i(16), hex[2, 2].to_i(16), hex[4, 2].to_i(16))", "          mat.alpha = op if op < 1",
+        "          mesh = Geom::PolygonMesh.new", "          pts = (0...vs.size / 3).map { |i| mesh.add_point(Geom::Point3d.new(vs[3 * i].mm, vs[3 * i + 1].mm, vs[3 * i + 2].mm)) }",
+        "          ts.each_slice(3) { |a, b, c| mesh.add_polygon(pts[a], pts[b], pts[c]) }", "          grp.entities.add_faces_from_mesh(mesh, 0, mat, mat)", "        end",
+        "        grp.entities.grep(Sketchup::Edge).each { |e| f = e.faces; e.soft = e.smooth = true if f.size == 2 && f[0].normal.parallel?(f[1].normal) }   # trijstūru šuves koplanārās virsmās paslēptas",
+        "      end", "      model.commit_operation", `      UI.messagebox("MM 3D ${String(m.id).replace(/"/g, "")}: ${n} trijstūri, #{PARTS.size} grupas (apvalks un karkass).")`,
+        "    rescue StandardError => e", "      model.abort_operation", "      UI.messagebox(\"MM 3D eksports neizdevās:\\n#{e.message}\")", "    end", "  end", "end", `MM3D${tag}.run if Sketchup.active_model`, ""].join("\n");
+    }
+    window.MM_VIZ3D = { open: openV, state: V, prompt: promptText, model: () => model, exportRb };
   })();
