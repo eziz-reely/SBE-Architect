@@ -386,7 +386,7 @@
           const stripP = [e.a, e.b, [e.b[0] + e.ni[0] * ov, e.b[1] + e.ni[1] * ov], [e.a[0] + e.ni[0] * ov, e.a[1] + e.ni[1] * ov]];
           const full = s.th + 4, lo = R0 - 18;   // spāres gals vienmēr aizvērts: galda dēlis (dzega, vēja kaste) vai metāls (gals bez vēja kastes)
           const sdN = Math.abs(out[1]) > Math.abs(out[0]) ? (out[1] < 0 ? "north" : "south") : (out[0] < 0 ? "west" : "east"), flush = !ov && (eave || vk), tex = c.wallTex(sdN);   // bez pārkares: dzegas mala klāta ar to pašu vagondēli kā siena (14 mm), tikai augšā plāna metāla lāse
-          const rake = !eave && ov > 0, bt = rake ? 25 : flush ? 3 : eave || vk ? 22 : 4, edgeM = rake ? (P.vejmala === "balta" ? M("#f2f2ef") : P.sparu_hex ? rafM : fasM) : flush || (!eave && vk) ? tex : eave ? fasM : capM;   // gals ar pārkari: spāres dekoratīvais dēlis (sparu_hex) pa slīpumu + metāla mala   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
+          const rake = !eave && ov > 0, bt = rake ? 25 : flush ? 1 : eave || vk ? 22 : 4, edgeM = rake ? (P.vejmala === "balta" ? M("#f2f2ef") : P.sparu_hex ? rafM : fasM) : flush || (!eave && vk) ? tex : eave ? fasM : capM;   // gals ar pārkari: spāres dekoratīvais dēlis (sparu_hex) pa slīpumu + metāla mala   // vēja kaste: fasādes dēļi (arī ar pārkari), augšā tikai plāns metāls
           if (ov) {   // pārkare: slīpā apakša (zem spārēm) + masīvs pīrāgs ar vertikālu griezumu
             slab(s, stripP, lo, R0, [sofM, sofM], true);
             slab(s, stripP, R0, s.th - SH - BT, [dark, dark], true);
