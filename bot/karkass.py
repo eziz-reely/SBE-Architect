@@ -290,8 +290,22 @@ def gwin_frame(P, o, i, ops, fixed, stud, sl):
     """Frontona slīpā loga (piecstūra) konstrukcija. Aila = logs + 20 sānos, +20 augšā (perpendikulāri slīpumam), +40 apakšā.
     Dubulti statņi abās malās līdz jumtam, palodzes gulsnis ar īsstatņiem zem tā, horizontāls visā ailā pleca augstumā,
     slīpas pārsedzes virs ailas pa abām jumta slīpnēm un īsstatņi virs pārsedzes ik pa 600 no kores puses."""
-    a0, a1, z0, gap = o['u0'], o['u1'], o['sill'], o['gap']
     zb = NB * B
+    if o.get('stack'):   # logs uz apakšējās ailas: malas pie apakšējās ailas pilnajiem statņiem (kopīgi statņi, bez pārklāšanās)
+        kl = [q['u1'] for q in P.m if q['nos'].startswith('VERT') and q['z0'] <= zb + 1 and q['z1'] > o['sill'] and o['u0'] - 3 * B <= q['u1'] <= o['u0'] + B + 20]
+        kr = [q['u0'] for q in P.m if q['nos'].startswith('VERT') and q['z0'] <= zb + 1 and q['z1'] > o['sill'] and o['u1'] - B - 20 <= q['u0'] <= o['u1'] + 3 * B]
+        if kl:
+            o['u0'] = max(kl)
+        if kr:
+            o['u1'] = min(kr)
+    a0, a1, z0, gap = o['u0'], o['u1'], o['sill'], o['gap']
+    if o.get('stack'):   # apakšējās ailas īsstatņi virs pārsedzes beidzas zem loga gulšņa (pirms rāmē logu)
+        for q in list(P.m):
+            if q['nos'].startswith('VERT') and q['u0'] >= a0 - 1 and q['u1'] <= a1 + 1 and q['z1'] > z0 - B + 1:
+                if q['z0'] >= z0 - B - 20:
+                    P.m.remove(q)
+                else:
+                    q.update(nos='VERT.STATNIS', z1=_r(z0 - B), garums=_r(z0 - B - q['z0']), cut=None)
     share_l = i > 0 and 0 <= a0 - ops[i - 1]['u1'] <= 4 * B + 20     # ailas tuvāk par 4×45+20: starp tām tikai 2 statņi
     share_r = i + 1 < len(ops) and 0 <= ops[i + 1]['u0'] - a1 <= 4 * B + 20
     tp = lambda u: P.top_at(u) - gap + 20 * sl(u)       # ailas augšmala (jumta apakša - sprauga + 20 perpendikulāri)
@@ -302,15 +316,11 @@ def gwin_frame(P, o, i, ops, fixed, stud, sl):
             stud(kx - j * B if side == 'l' else kx + j * B, 'king')
     lo_f, hi_f = a0 - B - (0 if share_l else B), a1 + B + (0 if share_r else B)
     fixed.append((lo_f, hi_f))
-    if o.get('stack'):   # logs stāv uz durvju/loga pārsedzes zem tā: gulsnis uz pārsedzēm, īsstatņu zem tā nav
-        P.add('HOR.STATNIS', 'sill', a0 - B, a1 + B, z0 - B, z0)
+    if o.get('stack'):   # logs stāv uz durvju/loga pārsedzes zem tā: gulsnis uz pārsedzēm starp malu statņiem, īsstatņu zem tā nav
+        P.add('HOR.STATNIS', 'sill', a0, a1, z0 - B, z0)
     elif z0 + 40 - zb > 100:   # palodze (45, 40 zem loga) tikai, ja logs augstāk par 100 virs apakšgulšņa; zem tās īsstatņi
-        for side, edge in (('l', a0), ('r', a1)):   # statņi zem ailas
-            sx = edge - B if side == 'l' else edge
-            if z0 - B - zb > 20:
-                stud(sx, 'jack', z0=zb, z1=z0 - B)
-        P.add('HOR.STATNIS', 'sill', a0 - B, a1 + B, z0 - B, z0)
-        _fill(a0 - B, a1 + B, lambda u, z=z0: stud(u, 'cripple', z0=zb, z1=z - B))
+        P.add('HOR.STATNIS', 'sill', a0, a1, z0 - B, z0)          # starp malu statņiem
+        _fill(a0, a1, lambda u, z=z0: stud(u, 'cripple', z0=zb, z1=z - B))
     else:
         o['sill'] = zb   # aila uz apakšgulšņa
     pk = [u for (u, _) in P.top[1:-1]]
@@ -365,6 +375,8 @@ def gwin_frame(P, o, i, ops, fixed, stud, sl):
                     # abos galos slīpi zāģēts: apakša pa pārsedzes augšu, augša pa augšgulšņa apakšu
                     pp = [(uc, hz(uc)), (uc + B, hz(uc + B)), (uc + B, under(uc + B)), (uc, under(uc))]
                     q_ = stud(uc, 'cripple', z0=min(hz(uc), hz(uc + B)), cut='virs slīpās pārsedzes; abi gali slīpi')
+                    if not q_:
+                        continue
                     q_['poly'] = [[_r(a_), _r(b_)] for a_, b_ in pp]
                     q_['garums'] = _r(max(pp[2][1] - pp[1][1], pp[3][1] - pp[0][1]))
 
@@ -413,6 +425,15 @@ def build_panel(P, opens, junctions, rot_ends):
     def stud(u0, role, w=B, z0=None, z1=None, depth=None, cut=None):
         u1 = u0 + w
         a = zb if z0 is None else z0
+        if u0 < -1 or u1 > L + 1:   # ārpus sienas (aila pie paša gala): gala statnis to aizstāj
+            msg_ = 'aila pārāk tuvu sienas galam: malas statnis aizstāts ar gala statni, pārbaudīt'
+            if msg_ not in P.warn:
+                P.warn.append(msg_)
+            return None
+        zt_ = z1 if z1 is not None else max(P.top_at(u0), P.top_at(u1))
+        for q in P.m:   # statņi nekad nepārklājas: ja vieta jau aizņemta, esošais statnis kalpo arī šai lomai
+            if q['nos'].startswith('VERT') and min(u1, q['u1']) - max(u0, q['u0']) > 1 and min(zt_, q['z1']) - max(a, q['z0']) > 1:
+                return None
         if z1 is None:
             t0, t1 = P.top_at(u0), P.top_at(u1)
             pl = NT * B * max(sl(u0), sl(u1))
@@ -429,7 +450,7 @@ def build_panel(P, opens, junctions, rot_ends):
                 rot_ends[1] if isinstance(rot_ends[1], int) and not isinstance(rot_ends[1], bool) else None)
     if rot_ends[0]:   # kaste: 3 detaļas (statnis, pagriezts statnis, statnis), saskrūvējamas un piesledzamas frontonam
         r_ = stud(B, 'junction_rot', w=KD)
-        if sd0:
+        if r_ and sd0:
             r_['sd'] = sd0
         stud(B + KD, 'stud')
         fixed[-1] = (0, 2 * B + KD)
@@ -437,7 +458,7 @@ def build_panel(P, opens, junctions, rot_ends):
     fixed.append((L - B, L))
     if rot_ends[1]:
         r_ = stud(L - B - KD, 'junction_rot', w=KD)
-        if sd1:
+        if r_ and sd1:
             r_['sd'] = sd1
         stud(L - 2 * B - KD, 'stud')
         fixed[-1] = (L - 2 * B - KD, L)
@@ -461,7 +482,7 @@ def build_panel(P, opens, junctions, rot_ends):
             continue
         stud(u0 - B, 'junction')
         rot = stud(u0, 'junction_rot', w=jw)
-        if jsd:
+        if rot and jsd:
             rot['sd'] = jsd
         stud(u0 + jw, 'junction')
         fixed.append((u0 - B, u0 + jw + B))
@@ -471,7 +492,7 @@ def build_panel(P, opens, junctions, rot_ends):
             tops_ = [n['head'] + B + D for n in ops if not n.get('gw') and n['u0'] < o['u1'] + B and n['u1'] > o['u0'] - B and n['head'] + B + D > o['sill'] - B]
             if tops_:
                 o['sill'], o['stack'] = max(o['sill'], max(tops_) + B), True
-    for i, o in enumerate(ops):
+    for i, o in sorted(enumerate(ops), key=lambda t: bool(t[1].get('stack'))):   # logs virs ailas: rāmē pēc apakšējās ailas
         if o.get('gw'):
             gwin_frame(P, o, i, ops, fixed, stud, sl)
             continue
@@ -524,6 +545,10 @@ def build_panel(P, opens, junctions, rot_ends):
         if sillz > 0:
             P.add('HOR.STATNIS', 'sill', hl, hr, sillz - B, sillz)                     # palodzes horizontālais gulsnis
             _fill(hl, hr, lambda u, z=sillz: stud(u, 'cripple', z0=zb, z1=z - B))
+    for q in P.m:   # ailu horizontālās detaļas nekad neiet pāri gala statņiem
+        if q['loma'] in ('opening_plate', 'header', 'sill') and not q.get('poly') and (q['u0'] < end_l - 1 or q['u1'] > end_r + 1):
+            q['u0'], q['u1'] = _r(max(q['u0'], end_l)), _r(min(q['u1'], end_r))
+            q['garums'] = _r(q['u1'] - q['u0'])
     for o in ops:   # slīpā loga ailā neviens statnis neiet cauri: apakšējo ailu statņi beidzas zem loga gulšņa
         if o.get('gw'):
             zt_ = o['sill'] - B if (o.get('stack') or o['sill'] + 40 - zb > 100) else o['sill']
@@ -566,7 +591,7 @@ def build_panel(P, opens, junctions, rot_ends):
         P.m = [q for q in P.m if not (q['loma'] == 'cripple' and q['z0'] >= zc_ and q['u0'] < up + B and q['u1'] > up - B)]
         for u_ in (up - B, up):
             q_ = stud(u_, 'ridge', z0=zh_, z1=zr_, cut='kores mezgls virs pārsedzes, virsū kores dēļi')
-            if r_open.get('gw'):   # apakša slīpi pa slīpās pārsedzes augšu
+            if q_ and r_open.get('gw'):   # apakša slīpi pa slīpās pārsedzes augšu
                 def hz_(u):
                     v = [ta_ + (tb_ - ta_) * (u - ua_) / ((ub_ - ua_) or 1) for ua_, ub_, ta_, tb_ in r_open.get('htop', []) if ua_ - 1e-6 <= u <= ub_ + 1e-6]
                     return max(v) if v else zh_
