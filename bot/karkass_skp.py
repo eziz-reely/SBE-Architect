@@ -84,7 +84,7 @@ def build(m):
     for pi, role, poly, h, name in kd['det']:
         P = kd['paneli'][pi]
         pts = [tuple(p) for p in poly]
-        add(pi, NAME.get(name, name), role, _parz_role(role, pts), P['o'], P['d'], P['n'], pts, h, name == 'SLIPAIS')
+        add(pi, NAME.get(name, name), role, _parz_role(role, pts), P['o'], P['d'], P['n'], pts, h, name == 'SLIPAIS' or (name == 'PĀRSEDZE' and any(abs(a[0] - b[0]) > .5 and abs(a[1] - b[1]) > .5 for a, b in zip(pts, pts[1:] + pts[:1]))))   # slīpa frontona loga pārsedze
     if kd.get('rafs'):
         gi = len(groups)
         groups.append('JUMTS')
