@@ -781,7 +781,7 @@ def frame3d(m):
                 poly = [(u0, z0), (u1, z0), (u1, P.top_at(u1) - pl), (u0, P.top_at(u0) - pl)]
             else:
                 poly = [(u0, z0), (u1, z0), (u1, z1), (u0, z1)]
-            mem.append([pi, role, [[_r(a), _r(b)] for a, b in poly], _r(q['h'])])
+            mem.append([pi, role, [[_r(a), _r(b)] for a, b in poly], _r(q['h']), q['nos']])   # 5. = detaļas nosaukums (SketchUp eksportam)
     # spāres: katrai jumta plaknei, soļi SPARE_CC pa horizontāli perpendikulāri kritumam, nogriezti pret plaknes kontūru
     rafters, rafs = [], []
     DJ = res['DJ']

@@ -995,6 +995,7 @@ header .tb > #bRepl { margin-left: 6px; padding-left: 11px; border-left: 1px sol
       <button type="button" class="it" id="bSvg"><b>SVG vektors</b><small>Bez rastra, atveras Illustrator, Inkscape</small></button>
       <button type="button" class="it" id="bDxf"><b>DXF (AutoCAD, ArchiCAD)</b><small>Vektoru lapa mm, slāņi; DWG ar Save As</small></button>
       <button type="button" class="it" id="bSkp"><b>SketchUp 3D modelis</b><small>Imports ar MM Homes paplašinājumu</small></button>
+      <button type="button" class="it" id="bSkpK"><b>SketchUp karkass</b><small>Tikai ražošanas karkass: paneļi, detaļas, spāres. Tagus un ainas liec SketchUp</small></button>
       <button type="button" class="it" id="bAc"><b>ArchiCAD skripts (Tapir)</b><small>Atver SBE_skice.tpl, Tapir, Run script. Izmanto tavu SBE dzinēju, bez Claude</small></button>
       <button type="button" class="it" id="bAcClaude"><b>Nodot Claude: ArchiCAD skripts</b><small>Ja skripts neder: nokopē uzdevumu un atver Claude</small></button>
       <button type="button" class="it" id="bHtml"><b>Rasējums .html</b><small>Pilna SBE lapa ar šiem labojumiem</small></button>
@@ -4297,6 +4298,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     catch (e) { if (e && e.code !== "declined") status("SketchUp eksports neizdevās: " + (e.message || e.code)); }
   };
 
+  $("bSkpK").onclick = async () => {   // ražošanas karkass SketchUp (bot/karkass_skp.py): .rb eksporta mapē, imports ar MM Homes paplašinājumu
+    status("Gatavo karkasu SketchUp…");
+    try { const j = await acPost("karkass-skp"); status("Karkass SketchUp: eksports/" + j.name + " (" + j.info + "). SketchUp: Extensions → MM Homes → Importēt MM modeli…"); }
+    catch (e) { status("Karkasa SketchUp eksports neizdevās: " + (e.message || e)); }
+  };
   // ---- ArchiCAD (Tapir) skripts: ģenerē programma (bot/archicad.py), pašreizējais modelis tiek nosūtīts serverim ----
   async function acPost(kind) {
     const K = (window.MM_LOCAL || {}).key;

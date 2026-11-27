@@ -776,6 +776,27 @@ class H(BaseHTTPRequestHandler):
                 except Exception as e:
                     return self.send(500, 'Karkasa lapas neizdevās: ' + str(e), 'text/plain; charset=utf-8')
                 return self.send(200, {'ok': True, 'name': nm, 'lapas': n, 'notes': notes})
+            if p.startswith('/api/karkass-skp/'):   # tikai ražošanas karkass SketchUp (.rb: paneļu grupas, detaļas kā komponenti ar lomām); body = model.json no redaktora
+                d = path_for(p[17:]); b = self.body()
+                if not d or not isinstance(b, dict) or 'W' not in b:
+                    return self.send(400, 'Nederīgs modelis', 'text/plain; charset=utf-8')
+                try:
+                    import karkass, karkass_skp, importlib
+                    for _mod in (karkass, karkass_skp):
+                        _f = getattr(_mod, '__file__', None)
+                        if _f and os.path.getmtime(_f) > MOD_T.get(_mod.__name__, _MOD_START):
+                            importlib.reload(_mod)
+                        MOD_T[_mod.__name__] = time.time()
+                    import karkass_skp
+                    txt, nm, info = karkass_skp.script(b)
+                except Exception as e:
+                    return self.send(500, 'Karkasa SketchUp eksports neizdevās: ' + str(e), 'text/plain; charset=utf-8')
+                ed = os.path.join(d, 'eksports'); os.makedirs(ed, exist_ok=True)
+                stem, ext = os.path.splitext(nm); fp = os.path.join(ed, nm)
+                if os.path.exists(fp):
+                    nm = f"{stem}_{time.strftime('%Y-%m-%d_%H%M')}{ext}"; fp = os.path.join(ed, nm)
+                open(fp, 'w', encoding='utf-8', newline='\n').write(txt)
+                return self.send(200, {'ok': True, 'name': nm, 'path': fp, 'info': info})
             if p.startswith('/api/karkass3d/'):   # ražošanas karkass 3D skatam (body = model.json no redaktora): paneļu detaļas un spāres
                 d = path_for(p[15:]); b = self.body()
                 if not d or not isinstance(b, dict) or 'W' not in b:
