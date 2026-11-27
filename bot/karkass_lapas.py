@@ -188,7 +188,7 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
         for u in us:
             g.append(_dash(X(u), Y(0), X(u), yb + 1) + _tick(X(u), yb))
             if X(u) - lastx >= fc * 1.15:      # koordināta rakstīta rotēti pie atzīmes; blīvos mezglos izlaiž
-                g.append(f'<text transform="translate({X(u) + fc * .36:.2f} {yb + 1.8:.2f}) rotate(90)" font-size="{fc}">{u}</text>')
+                g.append(f'<text transform="translate({X(u):.2f} {yb + 1.8:.2f}) rotate(90)" font-size="{fc}" dominant-baseline="central">{u}</text>')   # teksts centrēts uz atzīmes līnijas
                 lastx = X(u)
         # ailu posmu ķēde: sienas posmi un ailas pa vidu, teksts posma vidū
         ya = yb + 14
@@ -201,7 +201,7 @@ def panel_svg(P, x0, y0, bw, bh, chain=True):
             if (u1_ - u0_) * k >= fs * 3.4:
                 g.append(f'<text x="{xm:.2f}" y="{ya - 0.9:.2f}" font-size="{fs}" text-anchor="middle">{u1_ - u0_}</text>')
             elif (u1_ - u0_) * k >= fc * 1.0:
-                g.append(f'<text transform="translate({xm + fc * .36:.2f} {ya + 1.8:.2f}) rotate(90)" font-size="{fc}">{u1_ - u0_}</text>')
+                g.append(f'<text transform="translate({xm:.2f} {ya + 1.8:.2f}) rotate(90)" font-size="{fc}" dominant-baseline="central">{u1_ - u0_}</text>')
         yb2 = ya + 10
         g.append(_dash(X(0), yb2, X(P.L), yb2) + _tick(X(0), yb2) + _tick(X(P.L), yb2) + _dash(X(P.L), Y(0), X(P.L), yb2 + 1))
         g.append(f'<text x="{(X(0) + X(P.L)) / 2:.2f}" y="{yb2 + 3.6:.2f}" font-size="{fs}" text-anchor="middle">{f0(P.L)}</text>')
@@ -216,24 +216,156 @@ def parts_rows(P):
     return [(n, f'{b}×{h}', g, c) for n, h, b, g, c in KK.cutlist([P])]
 
 
+# detaļu saraksts pa grupām: loma -> (grupa, nosaukums latviski); komponents = SketchUp definīcijas nosaukums (kā karkass_skp.py)
+ROLE_LV = {'bottom_plate': (0, 'Apakšgulsnis'), 'top_plate': (0, 'Augšgulsnis'),
+           'stud': (1, 'Statnis'), 'junction': (1, 'Mezgla statnis'), 'junction_rot': (1, 'Pagriezts statnis'), 'ridge': (1, 'Kores mezgls'),
+           'king': (2, 'Ailas malas statnis'), 'jack': (2, 'Pārsedzes balsts'), 'cripple': (2, 'Īsstatnis'), 'header': (2, 'Pārsedze'),
+           'opening_plate': (2, 'Ailas augšgulsnis'), 'sill': (2, 'Palodzes gulsnis'), 'nogging': (3, 'Šķērsis')}
+GROUP_LV = ['GULŠŅI', 'STATŅI', 'AIĻU DETAĻAS', 'ŠĶĒRSIS']
+
+
+def parts_groups(P):
+    """[('H', virsraksts, gab, tm) | ('R', poz, nosaukums, komponents, šķērsgr., garums, gab)] pa grupām, garākās vispirms."""
+    agg = {}
+    for q in P.m:
+        gi, lv = ROLE_LV.get(q['loma'], (3, q['loma']))
+        if q['nos'] in ('SLIPAIS', 'VERT.SLIPAIS'):
+            lv += ', slīps'
+        k = (gi, lv, {'PĀRSEDZE': 'HOR.STATNIS'}.get(q['nos'], q['nos']), f"{int(round(q['b']))}×{int(round(q['h']))}", int(round(q['garums'])))
+        agg[k] = agg.get(k, 0) + 1
+    out, poz = [], 0
+    for gi in sorted({k[0] for k in agg}):
+        ks = sorted((k for k in agg if k[0] == gi), key=lambda k: (k[1], -k[4]))
+        out.append(('H', GROUP_LV[gi], sum(agg[k] for k in ks), sum(agg[k] * k[4] for k in ks) / 1000))
+        for k in ks:
+            poz += 1
+            out.append(('R', poz, k[1], k[2], k[3], k[4], agg[k]))
+    return out
+
+
+def gtable_svg(x, y, items, compact=False, fs=2.6, rh=3.7):
+    """Grupēts detaļu saraksts: grupas virsraksts ar kopsummu (gab., tm), rindās poz., nosaukums, komponents, šķērsgr., garums, gab."""
+    cols = ('Detaļa', 'Šķērsgr.', 'Garums', 'Gab.') if compact else ('Poz.', 'Detaļa', 'Komponents', 'Šķērsgr.', 'Garums', 'Gab.')
+    widths = (27, 12, 12, 8) if compact else (7, 31, 21, 13, 13, 9)
+    W = sum(widths)
+    o = [f'<g font-family="{FONT}" font-size="{fs}" fill="{INK}">', f'<rect x="{x}" y="{y}" width="{W}" height="{rh + .6}" fill="#e6e7ee"/>']
+    cx = x
+    for j, (c, w) in enumerate(zip(cols, widths)):
+        r_ = j >= len(cols) - 2 or (not compact and j == 0)
+        o.append(f'<text x="{cx + w - 1 if r_ else cx + 1}" y="{y + rh - .9}" font-weight="700"{" text-anchor=\"end\"" if r_ else ""}>{esc(c)}</text>')
+        cx += w
+    yy, alt = y + rh + .6, 0
+    for it in items:
+        if it[0] == 'H':
+            yy += .8
+            o.append(f'<text x="{x + 1}" y="{yy + rh - 1}" font-weight="700" font-size="{fs * .92:.2f}" fill="{ACC}">{esc(it[1])}</text>'
+                     f'<text x="{x + W - 1}" y="{yy + rh - 1}" text-anchor="end" font-size="{fs * .88:.2f}" fill="{MUT}">{it[2]} gab. · {fm2(it[3])} tm</text>'
+                     f'<line x1="{x}" y1="{yy + rh}" x2="{x + W}" y2="{yy + rh}" stroke="{ACC}" stroke-width=".25"/>')
+            yy += rh
+            alt = 0
+            continue
+        _, poz, lv, nos, sec, L, c = it
+        if alt % 2:
+            o.append(f'<rect x="{x}" y="{yy}" width="{W}" height="{rh}" fill="#f3f2f7"/>')
+        alt += 1
+        cells = (lv, sec, L, c) if compact else (poz, lv, nos, sec, L, c)
+        cx = x
+        for j, (v, w) in enumerate(zip(cells, widths)):
+            r_ = isinstance(v, int)
+            fill = f' fill="{MUT}"' if (not compact and j == 2) else ''
+            o.append(f'<text x="{cx + w - 1 if r_ else cx + 1}" y="{yy + rh - 1}"{" text-anchor=\"end\"" if r_ else ""}{fill}>{esc(v)}</text>')
+            cx += w
+        yy += rh
+    o.append(f'<line x1="{x}" y1="{yy}" x2="{x + W}" y2="{yy}" stroke="{INK}" stroke-width=".3"/></g>')
+    return ''.join(o), yy, W
+
+
+def split_groups(items, n):
+    """Sadala sarakstu n kolonnās pēc rindu skaita; grupai, kas pārtrūkst, nākamajā kolonnā virsraksts '(turp.)'."""
+    per = math.ceil(len(items) / n)
+    cols, cur, head = [], [], None
+    for it in items:
+        if it[0] == 'H':
+            head = it
+        if len(cur) >= per and len(cols) < n - 1 and it[0] == 'R':
+            cols.append(cur)
+            cur = [('H', head[1] + ' (turp.)', head[2], head[3])]
+        elif len(cur) >= per and len(cols) < n - 1 and it[0] == 'H':
+            cols.append(cur)
+            cur = []
+        cur.append(it)
+    cols.append(cur)
+    return cols
+
+
 def wall_page(D, P):
     g, nn = P.area()
-    rows = parts_rows(P)
-    nrow = (len(rows) + 1) // 2
-    tab_h = max(4.6 + 3.9 * nrow, 20)
-    svg, s, yb = panel_svg(P, 14, 26, 392, PH - 26 - 26 - tab_h - 6)
-    cols, w = ('Detaļa', 'Šķērsgr.', 'Garums, mm', 'Gab.'), (34, 18, 24, 12)
-    ty = min(yb + 4, PH - 24 - tab_h)
-    t1, e1 = table_svg(14, ty, rows[:nrow], cols, w, fs=2.8, rh=3.9, hdr_right=(2, 3))
-    t2 = table_svg(14 + sum(w) + 8, ty, rows[nrow:], cols, w, fs=2.8, rh=3.9, hdr_right=(2, 3))[0] if nrow < len(rows) else ''
-    off = 0
-    svg = f'<g transform="translate(0 {off:.2f})">{svg}{t1}{t2}</g>'
-    t1 = t2 = ''
-    kv = (f'<g font-family="Barlow,Arial,sans-serif"><rect x="{PW - 112}" y="{PH - 44}" width="98" height="18" fill="#fff" stroke="{INK}" stroke-width=".4"/>'
-          f'<text x="{PW - 108}" y="{PH - 37}" font-size="4.2" font-weight="700">KVADRATŪRA: {fm2(g)} m²</text>'
-          f'<text x="{PW - 108}" y="{PH - 31}" font-size="2.8" fill="{MUT}">bez ailām {fm2(nn)} m² · C24 45×{P.D:.0f} · {len(P.m)} detaļas</text></g>')
-    warn = ''.join(f'<text x="14" y="{PH - 25 - i * 4}" font-family="Barlow,Arial" font-size="2.6" fill="#b45309">! {esc(w_)}</text>' for i, w_ in enumerate(P.warn[:5]))
-    D.frame(f'{P.id}  {"ĀRSIENA" if P.kind == "arsiena" else "STARPSIENA"}', svg + t1 + t2 + kv + warn,
+    items = parts_groups(P)
+    # izkārtojums: izmēģina sarakstu labajā pusē (1 kolonna) un apakšā (2 vai 3 kolonnas); ņem to, kurā rasējums ir lielākais (mazākais 1:s),
+    # tad sarakstu palielina (vienmērīgi mērogo), lai tas aizpilda visu atlikušo vietu
+    TW, TOP, BOT, RH0, KMAX = 95.0, 34.0, PH - 28, 3.3, 1.6
+    TW0 = gtable_svg(0, 0, [], rh=RH0)[2]                        # tabulas platums pie mēroga 1
+    h0 = lambda it_: gtable_svg(0, 0, it_, fs=RH0 * .7, rh=RH0)[1]   # tabulas augstums pie mēroga 1
+    nw = min(len(P.warn), 5)
+    best = None
+    for lay in ('right', 3, 2):
+        if lay == 'right':
+            cand = panel_svg(P, 14, 26, PW - 17 - TW - 14 - 10, BOT - 26 - 8 - 4 * nw)
+            cols = [items]
+        else:
+            cols = split_groups(items, lay)
+            th = max(h0(c) for c in cols) + 12
+            cand = panel_svg(P, 14, 26, PW - 28, BOT - th - 26 - 14 - 4 * nw)
+        if best is None or cand[1] < best[0] - 1e-6:
+            best = (cand[1], cand, cols, lay)
+    _, (svg, s, yb), cols, lay = best
+    if os.environ.get('SBE_LAY_DBG'):
+        print(P.id, lay, round(s, 1))
+    hd = f'{len(P.m)} detaļas · C24 45×{P.D:.0f}'
+    dy_ = 0.0
+    if lay == 'right':
+        # rasējums aizņem tikai vajadzīgo platumu; saraksts aizpilda pārējo (augstumā līdz kvadratūrai)
+        Wd = P.L / s + 24.0
+        aw = PW - 17 - min(14 + Wd + 10, PW - 17 - TW)
+        kt = max(1.0, min(KMAX, aw / TW0, (BOT - TOP - 24 - 4) / h0(items)))
+        TX = PW - 17 - TW0 * kt
+        svg, s, yb = panel_svg(P, 14, 26, TX - 14 - 10, BOT - 26 - 8 - 4 * nw)
+        tabs = [(TX, TOP)]
+        bx0, by0, bx1, by1 = TX - 3, TOP - 7, PW - 14, PH - 28
+        head = (f'<text x="{bx0 + 3:.2f}" y="{by0 + 4.6:.2f}" font-family="{FONT}" font-size="3.2" font-weight="700" fill="{INK}">DETAĻU SARAKSTS</text>'
+                f'<text x="{bx1 - 3:.2f}" y="{by0 + 4.6:.2f}" font-family="{FONT}" font-size="2.5" text-anchor="end" fill="{MUT}">{hd}</text>')
+        KW, kvy = bx1 - bx0 - 6, by1 - 21
+        kv = (f'<g font-family="{FONT}"><rect x="{bx0 + 3:.2f}" y="{kvy:.2f}" width="{KW:.2f}" height="18" fill="#fff" stroke="{INK}" stroke-width=".4"/>'
+              f'<text x="{bx0 + 7:.2f}" y="{kvy + 7:.2f}" font-size="4.2" font-weight="700">KVADRATŪRA: {fm2(g)} m²</text>'
+              f'<text x="{bx0 + 7:.2f}" y="{kvy + 13:.2f}" font-size="2.8" fill="{MUT}">bez ailām {fm2(nn)} m² · {hd}</text></g>')
+        wy = PH - 25
+    else:
+        # saraksts apakšā pa visu platumu; kvadratūra saraksta rāmja virsrakstā
+        n = len(cols)
+        gap = 5.0
+        ytop = yb + 12 + 4 * nw                                   # zem rasējuma (un brīdinājumiem)
+        kt = max(1.0, min(KMAX, (PW - 34 - (n - 1) * gap) / (n * TW0), (BOT - ytop - 13) / max(h0(c) for c in cols)))
+        th = max(h0(c) for c in cols) * kt
+        by1 = BOT
+        ty = by1 - 2 - th
+        by0 = ty - 12
+        dy_ = max(0.0, (by0 - 4 * nw - 10 - yb) / 2)          # rasējumu centrē brīvajā vietā virs saraksta
+        cw = TW0 * kt
+        tabs = [(17 + i * (cw + gap), ty) for i in range(n)]
+        bx0, bx1 = 14, PW - 14
+        head = (f'<text x="{bx0 + 3:.2f}" y="{by0 + 7:.2f}" font-family="{FONT}" font-size="3.6" font-weight="700" fill="{INK}">DETAĻU SARAKSTS</text>'
+                f'<text x="{bx0 + 46:.2f}" y="{by0 + 7:.2f}" font-family="{FONT}" font-size="2.8" fill="{MUT}">{hd}</text>'
+                f'<text x="{bx1 - 3:.2f}" y="{by0 + 7.4:.2f}" font-family="{FONT}" font-size="4.6" font-weight="700" text-anchor="end" fill="{INK}">KVADRATŪRA: {fm2(g)} m²'
+                f'<tspan font-size="2.8" font-weight="400" fill="{MUT}">  (bez ailām {fm2(nn)} m²)</tspan></text>'
+                f'<line x1="{bx0 + 3:.2f}" y1="{by0 + 10:.2f}" x2="{bx1 - 3:.2f}" y2="{by0 + 10:.2f}" stroke="{INK}" stroke-width=".25"/>')
+        kv = ''
+        wy = by0 - 3 - 4 * (nw - 1) if nw else PH - 25
+    tb = ''.join(f'<g transform="translate({x_:.2f} {y_:.2f}) scale({kt:.4f})">{gtable_svg(0, 0, c, fs=RH0 * .7, rh=RH0)[0]}</g>'
+                 for (x_, y_), c in zip(tabs, cols))
+    frame = f'<rect x="{bx0:.2f}" y="{by0:.2f}" width="{bx1 - bx0:.2f}" height="{by1 - by0:.2f}" fill="none" stroke="{INK}" stroke-width=".35" rx=".8"/>'
+    body = f'<g transform="translate(0 {dy_:.2f})">{svg}</g>{frame}{head}{tb}{kv}'
+    warn = ''.join(f'<text x="14" y="{wy + i * 4 if lay != "right" else wy - i * 4}" font-family="Barlow,Arial" font-size="2.6" fill="#b45309">! {esc(w_)}</text>' for i, w_ in enumerate(P.warn[:5]))
+    D.frame(f'{P.id}  {"ĀRSIENA" if P.kind == "arsiena" else "STARPSIENA"}', body + warn,
             f'{P.note} · garums {f0(P.L)} mm · skats no {"ārpuses" if P.kind == "arsiena" else "plāna augšas vai kreisās puses"}')
 
 
@@ -244,8 +376,7 @@ def partitions_pages(D, parts):
         for j, P in enumerate(grp):
             x0, y0 = 14 + (j % 2) * 198, 27 + (j // 2) * 124
             svg, s, yb = panel_svg(P, x0, y0 + 4, 112, 100)
-            rows = parts_rows(P)[:24]
-            t, _ = table_svg(x0 + 116, y0 + 10, rows, ('Detaļa', 'Šķērsgr.', 'Garums', 'Gab.'), (25, 15, 13, 8), fs=2.3, rh=3.2)
+            t, _, _ = gtable_svg(x0 + 116, y0 + 10, parts_groups(P)[:30], compact=True, fs=2.2, rh=3.05)
             g, nn = P.area()
             body += svg + t + (f'<text x="{x0}" y="{y0 + 4}" font-family="Barlow,Arial" font-size="5" font-weight="700">{P.id}</text>'
                                f'<text x="{x0 + 116}" y="{y0 + 4}" font-family="Barlow,Arial" font-size="2.8" font-weight="700">KVADRATŪRA: {fm2(g)} m²</text>'
@@ -440,6 +571,22 @@ def _inside(P, x, y):
     return c
 
 
+def _adim(p, q, off, label, fs=2.6):
+    """Izmērs gar nogriezni p→q (lapas mm), nobīdīts par off uz augšu (perpendikulāri), teksts paralēli."""
+    L = math.dist(p, q) or 1
+    ux, uy = (q[0] - p[0]) / L, (q[1] - p[1]) / L
+    nx, ny = uy, -ux
+    if ny > 0:
+        nx, ny = -nx, -ny
+    a, b = (p[0] + nx * off, p[1] + ny * off), (q[0] + nx * off, q[1] + ny * off)
+    tk = lambda c: _dash(c[0] - (ux - nx) * .9, c[1] - (uy - ny) * .9, c[0] + (ux - nx) * .9, c[1] + (uy - ny) * .9, .25)
+    ang = math.degrees(math.atan2(uy, ux))
+    if ang > 90 or ang < -90:
+        ang += 180
+    return (_dash(p[0], p[1], a[0] + nx, a[1] + ny) + _dash(q[0], q[1], b[0] + nx, b[1] + ny) + _dash(*a, *b) + tk(a) + tk(b)
+            + _txt((a[0] + b[0]) / 2 + nx * 1.8, (a[1] + b[1]) / 2 + ny * 1.8, label, fs, rot=ang))
+
+
 def _poly_s(pts, X, Y, fill, sw=.25, extra=''):
     return f'<polygon points="{" ".join(f"{X(a):.2f},{Y(b):.2f}" for a, b in pts)}" fill="{fill}" stroke="{LINE_C}" stroke-width="{sw}"{extra}/>'
 
@@ -474,7 +621,7 @@ def section_page(D, res, m):
     # zeme un grīda
     g.append(f'<line x1="{X(xs0 - 600):.2f}" y1="{Y(-400):.2f}" x2="{X(xs1 + 600):.2f}" y2="{Y(-400):.2f}" stroke="{LINE_C}" stroke-width=".5"/>')
     # sienas (karkass): gulšņi 2×45, augšgulsnis 1×45, statņi; augšgulsnis ZP = spāres apakša karkasa ārmalā + iezāģis
-    zp = res.get('zp') or eave + off * tan + KK.SEAT
+    zp = res.get('zp') or eave + off * tan + res.get('seat', KK.SEAT)
     for x_in in (off, span - off - DK):
         g.append(_poly_s([(x_in, 0), (x_in + DK, 0), (x_in + DK, zp), (x_in, zp)], X, Y, WOOD, .3))
         for z0, z1 in ((0, 2 * KK.B), (zp - KK.NT * KK.B, zp)):
@@ -482,7 +629,7 @@ def section_page(D, res, m):
     # spāres: iezāģis 50 mm uz augšgulšņa; bez pārkares gals vertikāls karkasa ārmalā, ar pārkari spāre iet ārā; korē vertikāls zāģējums
     c = math.cos(th)
     dz = DJ / c
-    sc = KK.SEAT / tan
+    sc = res.get('seat', KK.SEAT) / tan
     for side, oo in (('N', oN), ('S', oS)):
         zb = lambda x: eave + tan * x                         # spāres apakša (x no fasādes uz iekšu)
         pl = ([(-oo, zb(-oo)), (off, zb(off))] if oo > 1 else []) + [(off, zp), (off + sc, zp), (span / 2, hr), (span / 2, hr + dz), (-oo if oo > 1 else off, zb(-oo if oo > 1 else off) + dz)]
@@ -570,7 +717,7 @@ def roof_page(D, res, m):
         cxs = [p[0] * nrm[0] + p[1] * nrm[1] for p in p2]
         s0, s1 = min(cxs), max(cxs)
         pos = s0 + 22
-        while pos < s1:
+        while pos < s1 and not (R.get('rafs3d') or (0, 0))[1]:   # vecais zīmējums tikai, ja nav jumta paneļu (zemāk)
             base = (nrm[0] * pos, nrm[1] * pos)
             c_ = _clip_line(p2, (base[0] - d[0] * 40000, base[1] - d[1] * 40000), d)
             if c_:
@@ -581,6 +728,12 @@ def roof_page(D, res, m):
             pos += KK.SPARE_CC
         cx, cy = sum(p[0] for p in p2) / len(p2), sum(p[1] for p in p2) / len(p2)
         labs.append(_txt(X(cx), Y(cy), f'{esc(n)} · {math.degrees(math.atan(t)):.0f}°', 3.0, fill=INK))
+    for r in (R.get('rafs3d') or (0, []))[1]:   # jumta paneļi: spāres un kores dēļi plānā (tie paši, kas 3D un SketchUp)
+        ss = [q[0] for q in r['poly']]
+        w_ = r.get('w') or KK.B
+        o_, d_, n_ = r['o'], r['d'], r['n']
+        P4 = [(o_[0] + d_[0] * a + n_[0] * b, o_[1] + d_[1] * a + n_[1] * b) for a, b in ((min(ss), 0), (max(ss), 0), (max(ss), w_), (min(ss), w_))]
+        g.append(_poly_s(P4, X, Y, WOOD, .22))
     g.extend(labs)
     # kopējie izmēri
     yt = Y(y0) - 6
@@ -598,16 +751,86 @@ def roof_page(D, res, m):
         Bp = (sx + L0 * math.cos(th) * sk, sy)
         nn = (-math.sin(th), -math.cos(th))
         pts = [A, Bp, (Bp[0] + nn[0] * DJ * sk, Bp[1] + nn[1] * DJ * sk), (A[0] + nn[0] * DJ * sk, A[1] + nn[1] * DJ * sk)]
-        g.append(f'<polygon points="{" ".join(f"{a_:.2f},{b_:.2f}" for a_, b_ in pts)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".3"/>')
-        g.append(_dash(A[0], A[1] + 6, Bp[0], A[1] + 6) + _dash(Bp[0], Bp[1], Bp[0], A[1] + 7))
-        g.append(_txt(sx + 8, A[1] - 4, f'{math.degrees(th):.0f}°', 3.8, 'start'))
-        g.append(_txt((A[0] + Bp[0]) / 2 - 6, (A[1] + Bp[1]) / 2 - 9, f0(L0), 3.8, rot=-math.degrees(th)))
+        rp = next((r['poly'] for r in (R.get('rafs3d') or (0, []))[1] if r.get('loma') != 'ridge_beam' and len(r['poly']) > 4), None)
+        if rp:   # īstais spāres profils (tas pats, kas 3D un SketchUp): iezāģis 50 uz augšgulšņa, gali vertikāli
+            sa, za = min(q[0] for q in rp), min(q[1] for q in rp)
+            Lh, Hh = max(q[0] for q in rp) - sa, max(q[1] for q in rp) - za
+            sk = min(96 / Lh, 44 / Hh)
+            PX = lambda q: (sx + (q[0] - sa) * sk, sy + 48 - (q[1] - za) * sk)
+            pts = [PX(q) for q in rp]
+            A, Bp = PX((sa, za)), PX((sa + Lh, za + Hh))
+            st = next(((a_, b_) for a_, b_ in zip(rp, rp[1:]) if abs(a_[1] - b_[1]) < .5 and b_[0] > a_[0]), None)   # iezāģa horizontālā daļa
+            if st:   # mezgls lielākā mērogā: spāre uz augšgulšņa ar iezāģi (vertikāli 50, horizontāli kas sanāk)
+                sw_, zp_ = st[0][0], st[0][1]
+                hc = st[1][0] - st[0][0]
+                SV = res.get('seat', KK.SEAT)
+                tg = SV / (hc or 1)
+                bx, by, bwd = 368.0, 112.0, 42.0
+                s_lo, s_hi = sw_ - 260, sw_ + 300
+                kz = bwd / (s_hi - s_lo)
+                zlo, zhi = zp_ - 330, zp_ + (s_hi - sw_) * tg + DJ * math.sqrt(1 + tg * tg) + 20
+                bh_ = (zhi - zlo) * kz
+                MX = lambda q: (bx + (q[0] - s_lo) * kz, by + bh_ - (q[1] - zlo) * kz)
+                cid = f'cl{id(rp) % 100000}'
+                dd = [f'<clipPath id="{cid}"><rect x="{bx}" y="{by}" width="{bwd}" height="{bh_:.2f}"/></clipPath><g clip-path="url(#{cid})">']
+                Dw = res['D']
+                for z0_, z1_ in ((zp_ - KK.B, zp_), (zlo - 10, zp_ - KK.B)):   # augšgulsnis un statnis zem tā (sienas karkass no ārmalas)
+                    q = [MX((sw_, z0_)), MX((sw_ + Dw, z0_)), MX((sw_ + Dw, z1_)), MX((sw_, z1_))]
+                    dd.append(f'<polygon points="{" ".join(f"{a_:.2f},{b_:.2f}" for a_, b_ in q)}" fill="{WOOD if z1_ == zp_ else "#f3e2b5"}" stroke="{LINE_C}" stroke-width=".25"/>')
+                dd.append(f'<polygon points="{" ".join(f"{a_:.2f},{b_:.2f}" for a_, b_ in (MX(q) for q in rp))}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".3"/>')
+                a1_, a2_ = MX((sw_, zp_ - SV)), MX((sw_ + hc, zp_))
+                dd.append(_dash(*MX((sw_ - 200, zp_ - SV - 200 * tg)), *a1_) + _dash(*a1_, *a2_))   # spāres apakšas līnija līdz iezāģim
+                dd.append('</g>')
+                p0, p1 = MX((sw_, zp_)), MX((sw_, zp_ - SV))
+                dd.append(_dash(p0[0] - 3, p0[1], p0[0] - 1, p0[1]) + _dash(p0[0] - 3, p1[1], p0[0] - 1, p1[1]) + _dash(p0[0] - 2, p0[1], p0[0] - 2, p1[1]))
+                dd.append(_txt(p0[0] - 4.5, (p0[1] + p1[1]) / 2, f'{SV:.0f}', 2.8, 'end'))
+                h0, h1 = MX((sw_, zp_)), MX((sw_ + hc, zp_))
+                dd.append(_dash(h0[0], h0[1] - 3, h1[0], h1[1] - 3) + _tick(h0[0], h0[1] - 3) + _tick(h1[0], h1[1] - 3))
+                dd.append(_txt((h0[0] + h1[0]) / 2, h0[1] - 5, f'{hc:.0f}', 2.8))
+                dd.append(f'<rect x="{bx}" y="{by}" width="{bwd}" height="{bh_:.2f}" fill="none" stroke="{INK}" stroke-width=".3"/>')
+                dd.append(_txt(bx + bwd / 2, by + bh_ + 4, (f'iezāģis {SV:.0f} vertikāli uz augšgulšņa' if SV <= KK.SEAT + .5 else f'bez pārkares: guļ uz {hc:.0f}') + f' · M 1:{round(1 / kz)}', 2.4))
+                dd.append(_txt(bx + bwd / 2, by - 3, 'MEZGLS: SPĀRE UZ SIENAS', 2.8))
+                g.append(''.join(dd))
+            g.append(f'<polygon points="{" ".join(f"{a_:.2f},{b_:.2f}" for a_, b_ in pts)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".3"/>')
+            if st:   # mēri kā lietotāja paraugā: gar spāri (pārkare, līdz korei, kopā), horizontālās projekcijas, iezāģis 50 / horizontālā daļa
+                sm = max(q[0] for q in rp)
+                t0 = max((q for q in rp if abs(q[0] - sa) < .5), key=lambda q: q[1])
+                t1 = max((q for q in rp if abs(q[0] - sm) < .5), key=lambda q: q[1])
+                tz = lambda sv: t0[1] + (t1[1] - t0[1]) * (sv - t0[0]) / ((t1[0] - t0[0]) or 1)
+                sw2 = st[0][0]
+                ov_ = sw2 - sa > 1
+                tw = (sw2, tz(sw2))
+                dd = []
+                wl, wr = PX((sw2, st[0][1])), PX((sw2 + res['D'], st[0][1] - 350))   # sienas karkass zem spāres
+                dd.append(f'<rect x="{wl[0]:.2f}" y="{wl[1]:.2f}" width="{wr[0] - wl[0]:.2f}" height="{wr[1] - wl[1]:.2f}" fill="#f3e2b5" stroke="{LINE_C}" stroke-width=".25"/>')
+                if ov_:
+                    dd.append(_adim(PX(t0), PX(tw), 4, f0(math.dist(t0, tw))))
+                if ov_:
+                    dd.append(_adim(PX(tw), PX(t1), 4, f0(math.dist(tw, t1))))
+                dd.append(_adim(PX(t0), PX(t1), 9 if ov_ else 5, f0(math.dist(t0, t1))))
+                yb = wr[1] + 4
+                for a_, b_ in ([(sa, sw2)] if ov_ else []) + [(sw2, sm)]:
+                    xa, xb = PX((a_, 0))[0], PX((b_, 0))[0]
+                    dd.append(_dash(xa, yb, xb, yb) + _tick(xa, yb) + _tick(xb, yb) + _txt((xa + xb) / 2, yb - 1.8, f0(b_ - a_), 2.6))
+                sp_ = PX(st[0])
+                dd.append(_txt(sp_[0] - 3, sp_[1] + 1.2, f'{res.get("seat", KK.SEAT):.0f}', 2.6, 'end') + _txt(sp_[0] + 1.5, sp_[1] - 2.2, f'{st[1][0] - st[0][0]:.0f}', 2.6, 'start'))
+                dd.append(_txt(PX((sm, 0))[0] - 2, sy - 6, f'{math.degrees(math.atan(res.get("seat", KK.SEAT) / ((st[1][0] - st[0][0]) or 1))):.0f}°', 3.4, 'end'))
+                g.append(''.join(dd))
+            # spāres garums: mēros gar spāri (kopā) un sarakstā
+            L0 = None
+        else:
+            g.append(f'<polygon points="{" ".join(f"{a_:.2f},{b_:.2f}" for a_, b_ in pts)}" fill="{WOOD}" stroke="{LINE_C}" stroke-width=".3"/>')
+        if L0 is not None:
+            g.append(_dash(A[0], A[1] + 6, Bp[0], A[1] + 6) + _dash(Bp[0], Bp[1], Bp[0], A[1] + 7))
+            g.append(_txt((A[0] + Bp[0]) / 2 - 6, (A[1] + Bp[1]) / 2 - 9, f0(L0), 3.8, rot=-math.degrees(th)))
+        if L0 is not None:
+            g.append(_txt(sx + 8, A[1] - 4, f'{math.degrees(th):.0f}°', 3.8, 'start'))
     rows = [(n, f'{b}×{h}', gg, c) for n, h, b, gg, c in KK.spare_list(R, res['DJ'])]
     t, ye = table_svg(282, 112, rows[:34], ('Detaļa', 'Šķērsgr.', 'Garums', 'Gab.'), (34, 18, 18, 12), fs=2.8, rh=3.8, hdr_right=(2, 3))
     tot = sum(r[2] * r[3] for r in rows) / 1000
     kv = (f'<g font-family="{FONT}"><rect x="282" y="{PH - 52}" width="124" height="26" fill="#fff" stroke="{INK}" stroke-width=".4"/>'
           f'<text x="286" y="{PH - 44}" font-size="4.2" font-weight="700">KVADRATŪRA: {fm2(KK.roof_area(R))} m²</text>'
-          f'<text x="286" y="{PH - 38}" font-size="2.8" fill="{MUT}">spāres C24 45×{res["DJ"]:.0f} c/c 600 · {len(R["spares"])} gab. · {fm2(tot)} tm</text>'
+          f'<text x="286" y="{PH - 38}" font-size="2.8" fill="{MUT}">spāres C24 45×{res["DJ"]:.0f} c/c 600 · {sum(1 for r in (R.get("rafs3d") or (0, []))[1] if r.get("loma") != "ridge_beam") or len(R["spares"])} gab. · {fm2(tot)} tm</text>'
           f'<text x="286" y="{PH - 32.5}" font-size="2.8" fill="{MUT}">kore {f0(R["ridge"])} mm no ±0,000 (jumta apakša)</text></g>')
     g.append(f'<text x="{16 + 22 + bw:.2f}" y="30" font-size="2.6" text-anchor="end" fill="{MUT}">M 1:{s}</text></g>')
     D.frame('JUMTS', ''.join(g) + t + kv, 'spāru plāns ar c/c 600, viena spāre ar slīpumu un garumu, saraksts')
