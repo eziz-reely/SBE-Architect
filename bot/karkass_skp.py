@@ -11,7 +11,7 @@ Ko uztaisa (kā karkass_parzimet līgums, sk. SVG_IMPORTS_RASEJUMI.md 2. sadaļu
   zīmēts detaļas asīs (slīpajām pagriezts pa slīpumu), lai bounding box = īstais garums × platums × biezums;
   vienādām detaļām viena definīcija;
 - atribūti: karkass_parzimet/loma (parzimet lomas), karkass_generate/loma (SBE loma), karkass_generate/panelis;
-- jumta spāres grupā JUMTS.
+- jumta paneļi JA1, JA2 … (katrs sava grupa: spāres SPARE un kores dēlis 45×195 HOR.STATNIS/ridge_beam; salaidumā 2 spāres).
 Tagus, ainas un materiālus NEVEIDO (tos lietotājs liek SketchUp pats). Viss vienā darbībā (Ctrl+Z atceļ visu).
 Koordinātas kā skp.py: X uz austrumiem, Y uz ziemeļiem (Y = D − plāna y), Z no ±0,000.
 """
@@ -22,7 +22,7 @@ sys.path.insert(0, HERE)
 import karkass
 
 # SBE loma -> karkass_parzimet loma (core.rb sarakstā nav opening_plate, cripple, nogging)
-ROLE = {'opening_plate': 'header_edge', 'nogging': 'block'}
+ROLE = {'opening_plate': 'header_edge', 'nogging': 'block', 'ridge': 'king'}   # frontona kores mezgls = dubultstatnis
 NAME = {'PĀRSEDZE': 'HOR.STATNIS'}   # sienas pārsedze parzimet līgumā ir HOR.STATNIS (PARSEDZE tikai jumta logam); loma paliek header
 
 
@@ -85,11 +85,12 @@ def build(m):
         P = kd['paneli'][pi]
         pts = [tuple(p) for p in poly]
         add(pi, NAME.get(name, name), role, _parz_role(role, pts), P['o'], P['d'], P['n'], pts, h, name == 'SLIPAIS' or (name == 'PĀRSEDZE' and any(abs(a[0] - b[0]) > .5 and abs(a[1] - b[1]) > .5 for a, b in zip(pts, pts[1:] + pts[:1]))))   # slīpa frontona loga pārsedze
-    if kd.get('rafs'):
-        gi = len(groups)
-        groups.append('JUMTS')
-        for r in kd['rafs']:
-            add(gi, 'SPARE', 'rafter', 'rafter', r['o'], r['d'], r['n'], [tuple(p) for p in r['poly']], kd['B'], True)
+    for r in kd.get('rafs') or []:   # jumta paneļi JA1, JA2 … (katrs sava grupa)
+        nm = r.get('pan') or 'JUMTS'
+        if nm not in groups:
+            groups.append(nm)
+        ro = r.get('loma') or 'rafter'   # spāre vai kores dēlis (HOR.STATNIS, ridge_beam, garums = paneļa garums)
+        add(groups.index(nm), r.get('nos') or 'SPARE', ro, ro, r['o'], r['d'], r['n'], [tuple(p) for p in r['poly']], r.get('w') or kd['B'], ro == 'rafter')
     return {'id': kd.get('id') or m.get('id'), 'groups': groups, 'defs': defs, 'inst': inst, 'D': kd['D'], 'DJ': kd['DJ']}
 
 

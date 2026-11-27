@@ -61,7 +61,7 @@
       g1.count = keepIdx.length * 3; geo.computeBoundingSphere();
     }
     // ---------- ražošanas karkass (karkass.py frame3d): statņi, gulšņi, pārsedzes, spāres kā SketchUp modelis ----------
-    const KCOL = { stud: "#dcbe8f", bottom_plate: "#c29a64", top_plate: "#c29a64", king: "#d3aa76", jack: "#d3aa76", junction: "#cfa672", junction_rot: "#c6995f", header: "#b88a55", opening_plate: "#c29a64", sill: "#c29a64", cripple: "#dcbe8f", nogging: "#e0c79c", rafter: "#e8cf9e" };
+    const KCOL = { stud: "#dcbe8f", bottom_plate: "#c29a64", top_plate: "#c29a64", king: "#d3aa76", jack: "#d3aa76", junction: "#cfa672", junction_rot: "#c6995f", header: "#b88a55", opening_plate: "#c29a64", sill: "#c29a64", cripple: "#dcbe8f", nogging: "#e0c79c", rafter: "#e8cf9e", ridge: "#b88a55", ridge_beam: "#c29a64" };
     function buildFrame(kd, lay) {
       const g = new THREE.Group(), up = new THREE.Vector3(0, 1, 0), mats = {}, edgeM = new THREE.LineBasicMaterial({ color: "#0b0d0e" });
       const mt = r => mats[r] || (mats[r] = new THREE.MeshLambertMaterial({ color: KCOL[r] || "#d8b98a", side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 }));
@@ -74,7 +74,7 @@
       });
       if (lay !== "w" && kd.rafs) kd.rafs.forEach(r => {   // spāre ar iezāģi un vertikāliem galiem: profils vertikālā plaknē, biezums B
         const sh = new THREE.Shape(r.poly.map(q => new THREE.Vector2(q[0], q[1])));
-        const me = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: kd.B, bevelEnabled: false }), mt("rafter"));
+        const me = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: r.w || kd.B, bevelEnabled: false }), mt(r.loma || "rafter"));   // r.w: kores dēlis paneļa garumā
         me.applyMatrix4(new THREE.Matrix4().makeBasis(new THREE.Vector3(r.d[0], 0, r.d[1]), up, new THREE.Vector3(r.n[0], 0, r.n[1])).setPosition(T3([r.o[0], r.o[1], 0]))); add(me);
       });
       if (lay !== "w" && !kd.rafs) (kd.spares || []).forEach(([a, b, nv]) => {

@@ -4334,11 +4334,11 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
     d.innerHTML = `<form method="dialog"><h3>Karkasa iestatījumi</h3>
       <label>Ailas uzlaide platumā, mm (kopā)<input type="number" id="ksW" min="0" max="100" step="1" value="${+S.uzlaide_w || 0}"></label>
       <label>Ailas uzlaide augstumā, mm (kopā)<input type="number" id="ksH" min="0" max="100" step="1" value="${+S.uzlaide_h || 0}"></label>
-      <label>Apakšgulšņi (augšgulsnis vienmēr viens)<select id="ksB"><option value="2">Dubulti</option><option value="1">Viens</option></select></label>
+      <label>Apakšgulšņi (augšgulsnis vienmēr viens)<select id="ksB"><option value="0">Pēc pamatiem</option><option value="2">Dubulti</option><option value="1">Viens</option></select></label>
       <label>Logu malās vertikāli statņi<select id="ksD"><option value="1">Dubulti</option><option value="0">Viens pilnais</option></select></label>
       <label>Loga pārsedze un palodze<select id="ksP"><option value="1">Pastiprinātas</option><option value="0">Vienkāršas</option></select></label>
       <div class="btns"><button type="button" id="ksX">Atcelt</button><button type="submit" class="pri">Saglabāt un pārbūvēt</button></div></form>`;
-    d.querySelector("#ksB").value = S.apaksgulsni === 1 ? "1" : "2";
+    d.querySelector("#ksB").value = S.apaksgulsni === 1 ? "1" : S.apaksgulsni === 2 ? "2" : "0";   // 0: plātnei 2, stabveida 1
     d.querySelector("#ksD").value = S.logu_dubulti === false ? "0" : "1";
     d.querySelector("#ksP").value = S.logu_pastiprinajums === false ? "0" : "1";
     d.querySelector("#ksX").onclick = () => d.close();
@@ -4346,7 +4346,7 @@ addEventListener("error", e => { try { let b = document.getElementById("errbar")
       const n = clone(model); n.projekts = n.projekts || {};
       const v = { uzlaide_w: +d.querySelector("#ksW").value || 0, uzlaide_h: +d.querySelector("#ksH").value || 0, apaksgulsni: +d.querySelector("#ksB").value,
         logu_dubulti: d.querySelector("#ksD").value === "1", logu_pastiprinajums: d.querySelector("#ksP").value === "1" };
-      const def = !v.uzlaide_w && !v.uzlaide_h && v.apaksgulsni === 2 && v.logu_dubulti && v.logu_pastiprinajums;
+      const def = !v.uzlaide_w && !v.uzlaide_h && !v.apaksgulsni && v.logu_dubulti && v.logu_pastiprinajums;
       if (def) delete n.projekts.karkass_iest; else n.projekts.karkass_iest = v;
       commit(n); setTimeout(razBuild, 50);
     };
